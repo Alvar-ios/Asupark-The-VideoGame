@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Drift Rush</title>
+<style>
+:root{--bg:#0a0d16;--panel:rgba(14,18,30,.82);--line:rgba(255,255,255,.10);--txt:#eef2ff;--dim:#8f9ab8;--acc:#ffc928;--cy:#38e1ff;--mg:#ff3fb4}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none}
+html,body{margin:0;height:100%;overscroll-behavior:none;background:#000;color:var(--txt);font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;overflow:hidden}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;background:#0a0d16}
+.hidden{display:none!important}
+#fx-lines{position:fixed;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;background:repeating-conic-gradient(from 0deg at 50% 52%,rgba(255,255,255,.0) 0deg,rgba(255,255,255,.55) .6deg,rgba(255,255,255,0) 1.8deg,rgba(255,255,255,0) 6deg);-webkit-mask-image:radial-gradient(ellipse at 50% 52%,transparent 38%,#000 85%);mask-image:radial-gradient(ellipse at 50% 52%,transparent 38%,#000 85%)}
+#fx-flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 55%,rgba(255,170,40,0) 40%,rgba(255,120,20,.55) 100%)}
+#hud{position:fixed;inset:0;pointer-events:none;font-style:italic;font-weight:800;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+#hud>*{position:absolute}
+#h-pos{left:max(16px,env(safe-area-inset-left));top:14px;font-size:54px;line-height:1;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 16px;backdrop-filter:blur(6px)}
+#h-pos b{color:var(--acc);font-size:64px}#h-pos span{font-size:26px;color:var(--dim)}
+#h-lap{left:max(16px,env(safe-area-inset-left));top:104px;font-size:17px;letter-spacing:.08em;color:var(--dim);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 12px}
+#h-lap b{color:var(--txt);font-size:20px}
+#h-time{left:50%;top:12px;transform:translateX(-50%);text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 18px;min-width:170px}
+#time{font-size:34px;font-variant-numeric:tabular-nums}#best{font-size:13px;color:var(--cy);letter-spacing:.1em;font-weight:700}
+#mini{right:max(14px,env(safe-area-inset-right));top:14px;width:150px;height:150px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+#h-speed span{font-size:18px;color:var(--dim);margin-left:6px}
+#bars{right:max(18px,env(safe-area-inset-right));bottom:22px;width:min(300px,52vw)}
+.bar{position:relative;height:14px;margin-top:6px;background:rgba(255,255,255,.10);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#ff7a18,#ffd23f)}
+.bar.drift i{background:#4aa8ff}
+.bar u{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.5)}.bar u:nth-of-type(1){left:29%}.bar u:nth-of-type(2){left:62%}.bar u:nth-of-type(3){left:98%}
+.bar em{position:absolute;left:8px;top:-1px;font-size:10px;letter-spacing:.14em;font-style:normal;color:#fff;opacity:.85}
+#msg{left:50%;top:26%;transform:translate(-50%,0);font-size:44px;color:var(--acc);white-space:nowrap;opacity:0;transition:opacity .25s;letter-spacing:.04em}
+#msg.show{opacity:1}
+#msg.warn{color:#ff5d5d}#msg.cy{color:var(--cy)}
+#count{left:50%;top:38%;transform:translate(-50%,-50%);font-size:150px;color:#fff;opacity:0}
+#count.pop{animation:pop .9s ease-out}
+@keyframes pop{0%{opacity:0;transform:translate(-50%,-50%) scale(1.8)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(.8)}}
+#help{left:max(16px,env(safe-area-inset-left));bottom:18px;font-size:13px;font-style:normal;font-weight:600;color:var(--dim);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;line-height:1.6;transition:opacity 1s}
+#help b{color:var(--txt)}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%,rgba(30,36,70,.78),rgba(6,8,16,.94));overflow:auto;padding:16px;z-index:5}
+.panel{width:min(980px,100%);margin:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px 24px;backdrop-filter:blur(8px)}
+h1{margin:0;font-size:46px;font-style:italic;font-weight:900;letter-spacing:.02em}
+h1 span{color:var(--acc)}
+.tag{margin:2px 0 14px;color:var(--dim);font-size:15px}
+h3{margin:14px 0 8px;font-size:12px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
+.card{position:relative;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:10px;cursor:pointer;transition:transform .12s,border-color .12s,background .12s;touch-action:manipulation}
+.card:hover{transform:translateY(-2px);background:rgba(255,255,255,.07)}
+.card.on{border-color:var(--acc);background:rgba(255,201,40,.10);box-shadow:0 0 0 1px var(--acc) inset}
+.card canvas{width:100%;height:78px;display:block;border-radius:8px;background:rgba(0,0,0,.25)}
+.card b{display:block;margin-top:6px;font-size:15px}.card small{color:var(--dim);font-size:12px;display:block}
+.card .rec{color:var(--cy);font-size:11px;margin-top:3px}
+.stat{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--dim);margin-top:4px;letter-spacing:.08em}
+.stat i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.12);position:relative;overflow:hidden}.stat i s{position:absolute;left:0;top:0;bottom:0;background:var(--acc)}
+.row{display:flex;gap:24px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{background:transparent;color:var(--txt);border:0;padding:9px 14px;font:inherit;font-size:14px;cursor:pointer;touch-action:manipulation}
+.seg button.on{background:var(--acc);color:#111;font-weight:800}
+button.big{margin-top:18px;width:100%;padding:16px;border:0;border-radius:14px;background:linear-gradient(90deg,#ffb400,#ffe14a);color:#111;font:inherit;font-size:22px;font-weight:900;font-style:italic;letter-spacing:.06em;cursor:pointer;touch-action:manipulation;box-shadow:0 8px 24px rgba(255,190,0,.25)}
+button.big:hover{filter:brightness(1.06)}
+button.ghost{background:rgba(255,255,255,.08);color:var(--txt);box-shadow:none;font-size:17px;font-style:normal;font-weight:700}
+.keys{margin:12px 0 0;color:var(--dim);font-size:12.5px;line-height:1.7}.keys b{color:var(--txt)}
+.rbox{text-align:center;max-width:520px}
+.rbox .big-n{font-size:64px;font-style:italic;font-weight:900;color:var(--acc);line-height:1}
+.rbox table{width:100%;border-collapse:collapse;margin:12px 0;font-variant-numeric:tabular-nums}.rbox td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}.rbox td:last-child{text-align:right}
+.rbox tr.me td{color:var(--acc);font-weight:800}
+.newrec{display:inline-block;background:var(--cy);color:#00222a;font-weight:900;padding:3px 10px;border-radius:8px;font-size:13px;margin-top:6px}
+#pbtn{position:fixed;right:14px;top:172px;z-index:4;width:44px;height:44px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:#fff;font-size:18px;cursor:pointer}
+
+#h-time{top:10px}
+#secs{display:flex;gap:6px;margin-top:6px;justify-content:center}
+.sec{min-width:78px;background:rgba(255,255,255,.08);border:1px solid var(--line);border-bottom:3px solid rgba(255,255,255,.18);border-radius:8px;padding:3px 8px;font-size:15px;line-height:1.15;font-variant-numeric:tabular-nums}
+.sec b{display:block;font-size:10px;letter-spacing:.14em;color:var(--dim)}
+.sec span{font-weight:800}
+.sec.cur{border-bottom-color:var(--cy)}
+.sec.orange{background:rgba(255,154,46,.30);border-color:#ff9a2e}.sec.green{background:rgba(61,220,132,.28);border-color:#3ddc84}.sec.purple{background:rgba(194,91,255,.34);border-color:#c25bff}
+#msg.orange{color:#ff9a2e}#msg.green{color:#3ddc84}#msg.purple{color:#c25bff}
+#h-speed{display:flex;align-items:flex-end;gap:14px;right:max(18px,env(safe-area-inset-right));bottom:84px;font-size:70px;line-height:.9}
+#h-speed>div:last-child{text-align:right}
+#gearBox{text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px 12px 6px;font-size:40px;line-height:1}
+#gearBox small{display:block;font-size:9px;letter-spacing:.16em;color:var(--dim);font-style:normal}
+#gearBox b{color:var(--acc)}
+#rpmBar{right:max(18px,env(safe-area-inset-right));bottom:58px;display:flex;gap:3px;width:min(300px,52vw)}
+#rpmBar i{flex:1;height:8px;border-radius:2px;background:rgba(255,255,255,.12)}
+#rpmBar i.on{background:#3ddc84}#rpmBar i.on:nth-child(n+9){background:#ffd23f}#rpmBar i.on:nth-child(n+13){background:#ff4d4d}
+#bars{bottom:20px}
+.bar{height:18px}
+.bar i{background:linear-gradient(90deg,#1fb5ff,#5af0ff);transition:width .08s linear}
+.bar em{top:1px;font-size:11px}.bar em b{font-style:normal;margin-left:6px;opacity:.9}
+.bar.on{box-shadow:0 0 14px 2px rgba(90,240,255,.65)}.bar.low i{background:linear-gradient(90deg,#ff4d4d,#ff9a2e)}
+.tog{background:rgba(255,255,255,.07);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font:inherit;font-size:14px;cursor:pointer;touch-action:manipulation}.tog.on{background:var(--acc);color:#111;font-weight:800}
+#touch{position:fixed;inset:0;pointer-events:none;z-index:3}
+#touch .t{position:absolute;pointer-events:auto;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.3);color:#fff;font-weight:900;font-size:16px;backdrop-filter:blur(3px);touch-action:none}
+#touch .t.on{background:rgba(255,201,40,.55)}
+#tL{left:max(16px,env(safe-area-inset-left));bottom:22px;width:104px;height:104px;font-size:34px}
+#tR{left:calc(max(16px,env(safe-area-inset-left)) + 118px);bottom:22px;width:104px;height:104px;font-size:34px}
+#tG{right:max(16px,env(safe-area-inset-right));bottom:20px;width:112px;height:112px;font-size:19px}
+#tB{right:140px;bottom:20px;width:82px;height:82px;font-size:14px}
+#tE{right:150px;bottom:116px;width:72px;height:72px;font-size:16px;background:rgba(90,240,255,.18);border-color:rgba(90,240,255,.6)}
+#tE.on{background:rgba(90,240,255,.6)}
+#tD{right:max(16px,env(safe-area-inset-right));bottom:144px;width:64px;height:64px;font-size:12px}
+#rotate{display:none;position:fixed;inset:0;z-index:20;background:rgba(6,8,16,.96);align-items:center;justify-content:center;text-align:center;font-size:26px;font-weight:800;line-height:1.5}
+#rotate small{font-size:14px;color:var(--dim);font-weight:500}
+@media (orientation:portrait){body.mobile.racing #rotate{display:flex}}
+body.mobile #help{display:none}
+body.mobile #h-speed{font-size:50px;bottom:auto;top:auto;right:auto;left:50%;transform:translateX(-50%);bottom:54px}
+body.mobile #gearBox{font-size:28px;padding:2px 10px 4px}
+body.mobile #rpmBar{right:auto;left:50%;transform:translateX(-50%);bottom:40px;width:min(250px,34vw)}
+body.mobile #bars{right:auto;left:50%;transform:translateX(-50%);bottom:12px;width:min(250px,34vw)}
+body.mobile .bar{height:16px}
+body.mobile #mini{width:104px;height:104px;top:8px}
+body.mobile #h-pos{top:8px;font-size:34px;padding:4px 12px}body.mobile #h-pos b{font-size:42px}
+body.mobile #h-lap{top:70px;font-size:13px;padding:4px 10px}
+body.mobile #h-time{top:6px;padding:4px 12px;min-width:150px}
+body.mobile #time{font-size:24px}body.mobile #best{font-size:11px}
+body.mobile .sec{min-width:62px;font-size:12px;padding:2px 6px}
+body.mobile #msg{top:30%;font-size:28px}
+body.mobile #count{font-size:100px}
+body.mobile #pbtn{top:120px;right:10px;width:40px;height:40px}
+@media (max-height:480px){.overlay{align-items:flex-start}}
+@media (max-width:760px){h1{font-size:34px}.panel{padding:16px}}
+
+/* ---- menú compacto en móvil ---- */
+body.mobile .overlay{padding:8px;align-items:flex-start}
+body.mobile .panel{padding:12px 14px 78px;border-radius:16px;position:relative}
+body.mobile h1{font-size:28px}body.mobile .tag{font-size:12px;margin:0 0 6px}
+body.mobile h3{margin:10px 0 6px;font-size:11px}
+body.mobile .grid{display:flex;overflow-x:auto;gap:8px;padding-bottom:6px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;touch-action:pan-x}
+body.mobile .card{flex:0 0 138px;padding:7px;scroll-snap-align:start;touch-action:pan-x}
+body.mobile .card canvas{height:52px}body.mobile .card b{font-size:13px;margin-top:4px}body.mobile .card small{font-size:10.5px}
+body.mobile .card .rec{font-size:10px}
+body.mobile .stat{font-size:9px;margin-top:3px}
+body.mobile .row{gap:10px}body.mobile .seg button{padding:8px 10px;font-size:12.5px}
+body.mobile .tog{padding:8px 10px;font-size:12.5px}
+body.mobile .keys{display:none}
+body.mobile button.big#startBtn{position:fixed;left:12px;right:12px;bottom:max(10px,env(safe-area-inset-bottom));width:auto;margin:0;padding:13px;font-size:19px;z-index:6}
+body.mobile .overlay{touch-action:pan-y}
+body.mobile .rbox{padding-bottom:14px}
+body.mobile .rbox button.big{position:static;margin-top:10px;padding:12px;font-size:16px}
+
+#lights{left:50%;top:34%;transform:translateX(-50%);display:flex;gap:12px;background:rgba(8,10,18,.78);padding:12px 18px;border-radius:16px;border:1px solid var(--line)}
+#lights i{width:38px;height:38px;border-radius:50%;background:#2a1013;box-shadow:inset 0 0 0 3px #12060a}
+#lights i.on{background:#ff2a2a;box-shadow:0 0 22px 6px rgba(255,40,40,.7),inset 0 0 0 3px #7a0c0c}
+#delta{font-size:19px;min-height:22px;font-weight:900;letter-spacing:.03em;margin-top:2px}
+#delta.bad{color:#ff6b6b}#delta.good{color:#3ddc84}
+#rbtn{position:fixed;right:14px;top:222px;z-index:4;width:44px;height:44px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:#fff;font-size:22px;cursor:pointer}
+.streak{margin-top:8px;font-weight:800;color:#ff9a2e}
+.rbox tr.gap td{text-align:center;color:var(--dim);padding:0}
+#menu{align-items:flex-start;background:linear-gradient(90deg,rgba(6,8,16,.94) 0,rgba(6,8,16,.84) 44%,rgba(6,8,16,.04) 80%);justify-content:flex-start}
+#menu .panel{width:min(640px,100%);margin:0 0 0 2vw;background:rgba(14,18,30,.5)}
+@media (max-width:900px){#menu{background:rgba(6,8,16,.55);justify-content:center}#menu .panel{margin:auto;background:rgba(14,18,30,.72)}}
+body.mobile #lights{top:38%;gap:8px;padding:8px 12px}body.mobile #lights i{width:26px;height:26px}
+body.mobile #rbtn{top:168px;right:10px;width:40px;height:40px}
+body.mobile #delta{font-size:15px;min-height:18px}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="fx-lines"></div><div id="fx-flash"></div>
+<div id="hud" class="hidden">
+  <div id="h-pos"><b id="pos">1</b><span>/4</span></div>
+  <div id="h-lap">VUELTA <b id="lap">1/3</b></div>
+  <div id="h-time"><div id="time">0:00.00</div><div id="best">MEJOR --</div><div id="delta"></div>
+    <div id="secs"><div class="sec" id="s0"><b>S1</b><span>--</span></div><div class="sec" id="s1"><b>S2</b><span>--</span></div><div class="sec" id="s2"><b>S3</b><span>--</span></div></div>
+  </div>
+  <canvas id="mini" width="300" height="300"></canvas>
+  <div id="h-speed"><div id="gearBox"><small>MARCHA</small><b id="gear">N</b></div><div><b id="kmh">0</b><span>km/h</span></div></div>
+  <div id="rpmBar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div id="bars"><div class="bar" id="ersBar"><i id="ersFill"></i><em>ERS <b id="ersPct">60%</b></em></div></div>
+  <div id="lights" class="hidden"><i></i><i></i><i></i><i></i><i></i></div>
+  <div id="msg"></div>
+  <div id="count"></div>
+  <div id="help"><b>↑/W</b> acelerar · <b>↓/S</b> frenar (recarga ERS) · <b>←→</b> girar<br><b>SHIFT/E</b> desplegar ERS · <b>ESPACIO</b> freno de mano · <b>R</b> volver a pista · <b>C</b> cámara · <b>M</b> sonido · <b>ESC</b> pausa</div>
+</div>
+<button id="pbtn" class="hidden" aria-label="Pausa">❚❚</button><button id="rbtn" class="hidden" aria-label="Reiniciar (T)">↺</button>
+<div id="touch" class="hidden"><div class="t" id="tL">◀</div><div class="t" id="tR">▶</div><div class="t" id="tG">ACEL</div><div class="t" id="tB">FRENO</div><div class="t" id="tE">ERS</div><div class="t" id="tD">F.M.</div></div>
+<div id="rotate"><div>↻<br>Gira el móvil<br><small>El juego se disfruta en horizontal</small></div></div>
+
+<div id="menu" class="overlay">
+  <div class="panel">
+    <h1>DRIFT <span>RUSH</span></h1>
+    <p class="tag">Carreras arcade: derrapa, salta rampas y pisa los turbos.</p>
+    <h3>Pista</h3><div id="trackList" class="grid"></div>
+    <div class="row">
+      <div><h3>Modo</h3><div id="modeSel" class="seg"><button data-v="race" class="on">Carrera vs 3 rivales</button><button data-v="tt">Contrarreloj + fantasma</button></div></div>
+      <div id="diffWrap"><h3>Rivales</h3><div id="diffSel" class="seg"><button data-v="0">Fácil</button><button data-v="1" class="on">Normal</button><button data-v="2">Difícil</button></div></div>
+    </div>
+    <h3>Coche</h3><div id="carList" class="grid"></div>
+    <div class="row" style="margin-top:12px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
+    <button id="startBtn" class="big">¡A CORRER!</button>
+    <p class="keys"><b>↑ ↓ ← →</b> o <b>W A S D</b> para conducir · <b>SHIFT / E</b> despliega el ERS (más potencia); se recarga <b>frenando</b> y en las zonas ERS · <b>ESPACIO</b> freno de mano · <b>R</b> vuelve a la pista · Sectores: <span style="color:#ff9a2e">naranja</span> peor, <span style="color:#3ddc84">verde</span> mejor, <span style="color:#c25bff">morado</span> récord. También con mando y en el móvil.</p>
+  </div>
+</div>
+<div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar carrera</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
+<div id="results" class="overlay hidden"><div class="panel rbox"><h1 id="rTitle">META</h1><div class="big-n" id="rBig">1º</div><div id="rNew"></div><table id="rTable"></table><button id="againBtn" class="big">OTRA VEZ</button><button id="menuBtn2" class="big ghost">Menú principal</button></div></div>
+<script>/*BUNDLE*/</script>
+</body>
+</html>

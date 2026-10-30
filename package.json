@@ -1,0 +1,14 @@
+{
+  "name": "drift-rush",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "three": "^0.187.0"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "sim": "node test/sim.mjs"
+  }
+}
