@@ -5,9 +5,10 @@ export const G = 14; // gravedad "flotante" arcade
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 export const CARS = [
-  { id: 'turbo', name: 'Turbo GT', desc: 'Equilibrado y fácil', color: 0xe8372c, vmax: 57, accel: 14.5, yaw: 2.3, grip: 12.5, driftGrip: 2.8, radius: 1.15, kind: 'gt' },
-  { id: 'drifter', name: 'Drifter', desc: 'Ágil y deslizante', color: 0x2f9bff, vmax: 54, accel: 15.5, yaw: 2.6, grip: 10.5, driftGrip: 3.4, radius: 1.15, kind: 'drift' },
-  { id: 'bruiser', name: 'Bruiser', desc: 'Pesado, rápido y estable', color: 0xf7b32b, vmax: 60, accel: 12.5, yaw: 2.05, grip: 13.5, driftGrip: 2.4, radius: 1.3, kind: 'truck' },
+  { id: 'bora', name: 'VW Bora VR6', desc: 'Berlina 2005 · estable y noble', color: 0x0b4d2c, vmax: 56, accel: 14, yaw: 2.25, grip: 13, driftGrip: 2.7, radius: 1.2, kind: 'bora', custom: true },
+  { id: 'turbo', name: 'Turbo GT', custom: true, desc: 'Equilibrado y fácil', color: 0xe8372c, vmax: 57, accel: 14.5, yaw: 2.3, grip: 12.5, driftGrip: 2.8, radius: 1.15, kind: 'gt' },
+  { id: 'drifter', name: 'Drifter', custom: true, desc: 'Ágil y deslizante', color: 0x2f9bff, vmax: 54, accel: 15.5, yaw: 2.6, grip: 10.5, driftGrip: 3.4, radius: 1.15, kind: 'drift' },
+  { id: 'bruiser', name: 'Bruiser', custom: true, desc: 'Pesado, rápido y estable', color: 0xf7b32b, vmax: 60, accel: 12.5, yaw: 2.05, grip: 13.5, driftGrip: 2.4, radius: 1.3, kind: 'truck' },
 ];
 export const AI_COLORS = [0x37d67a, 0xb06bff, 0xff7a3d, 0xeaeaea, 0x19c3d6];
 

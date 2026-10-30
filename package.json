@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "node build.mjs",
-    "sim": "node test/sim.mjs"
+    "sim": "node test/sim.mjs",
+    "optimize-glb": "node tools/optimize-glb.mjs"
   }
 }

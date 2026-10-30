@@ -151,6 +151,13 @@ body.mobile .rbox button.big{position:static;margin-top:10px;padding:12px;font-s
 body.mobile #lights{top:38%;gap:8px;padding:8px 12px}body.mobile #lights i{width:26px;height:26px}
 body.mobile #rbtn{top:168px;right:10px;width:40px;height:40px}
 body.mobile #delta{font-size:15px;min-height:18px}
+
+#paints{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.25);cursor:pointer;padding:0;touch-action:manipulation}
+.sw.on{border-color:#fff;box-shadow:0 0 0 3px rgba(255,201,40,.8)}
+input.sw.custom{-webkit-appearance:none;appearance:none;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);overflow:hidden}
+input.sw.custom::-webkit-color-swatch-wrapper{padding:0;opacity:0}
+body.mobile .sw{width:26px;height:26px}
 </style>
 </head>
 <body>
@@ -185,6 +192,7 @@ body.mobile #delta{font-size:15px;min-height:18px}
       <div id="diffWrap"><h3>Rivales</h3><div id="diffSel" class="seg"><button data-v="0">Fácil</button><button data-v="1" class="on">Normal</button><button data-v="2">Difícil</button></div></div>
     </div>
     <h3>Coche</h3><div id="carList" class="grid"></div>
+    <h3>Pintura · <span id="paintName" style="color:var(--txt);letter-spacing:.06em">—</span></h3><div id="paints"></div>
     <div class="row" style="margin-top:12px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
     <button id="startBtn" class="big">¡A CORRER!</button>
     <p class="keys"><b>↑ ↓ ← →</b> o <b>W A S D</b> para conducir · <b>SHIFT / E</b> despliega el ERS (más potencia); se recarga <b>frenando</b> y en las zonas ERS · <b>ESPACIO</b> freno de mano · <b>R</b> vuelve a la pista · Sectores: <span style="color:#ff9a2e">naranja</span> peor, <span style="color:#3ddc84">verde</span> mejor, <span style="color:#c25bff">morado</span> récord. También con mando y en el móvil.</p>

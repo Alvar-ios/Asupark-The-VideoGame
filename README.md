@@ -1,4 +1,4 @@
-# Drift Rush (Asupark-The-VideoGame)
+# Drift Rush
 
 Juego de carreras arcade para navegador (three.js). Un solo HTML final, sin servidor.
 
@@ -19,3 +19,13 @@ npm run sim        # simulación sin gráficos: comprueba que todas las pistas s
 ## Flujo de trabajo
 Ramas por cambio (`git checkout -b mi-cambio`), `npm run sim` antes de subir, y pull request.
 Ideas pendientes: ranking online (Supabase), PWA, escenario de juguete en todas las pistas.
+
+## Coches 3D (.glb)
+El VW Bora VR6 se carga desde `src/assets/bora_*.glb` (incrustado en el HTML al compilar).
+- Versiones optimizadas: carrocería `hi` (~49k tris) y `lo` (~15k) + rueda `hi`/`lo`; compresión meshopt.
+- `tools/optimize-glb.mjs` regenera esos archivos desde el modelo original (necesita `@gltf-transform/*` y `meshoptimizer` en una carpeta aparte; ver cabecera del script).
+- Materiales por rol (PAINT, CHROME, GLASS, LENS…); la pintura (`PAINT`) se recolorea desde el menú.
+- Para añadir otro coche: carrocería con el morro hacia +Z, sin ruedas, y una rueda en el origen con el eje en X.
+
+## Despliegue (Vercel)
+`vercel.json` ya configura `npm run build` y `dist`. Importar el repositorio en Vercel y listo; cada rama genera una URL de prueba.

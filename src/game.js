@@ -6,6 +6,7 @@ import { hashStr } from './rng.js';
 import { buildSpeedProfile, aiInput, benchmark } from './ai.js';
 import { buildWorld, disposeScene } from './world.js';
 import { Sound } from './audio.js';
+import { loadBora, buildBora, boraReady } from './bora.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -51,8 +52,10 @@ addTrack('pruebas', THEMES.pruebas.name, THEMES.pruebas.sub, THEMES.pruebas.seed
 addTrack('daily', daily.name, daily.sub, daily.seed, daily.style, daily.theme);
 for (const k of THEME_LIST) if (k !== 'pruebas') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
 
-const sel = { track: 0, mode: 'tt', diff: 1, car: 0, autoGas: false };
-const saved = store.get('sel'); if (saved) { sel.car = clamp(saved.car | 0, 0, CARS.length - 1); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.mute = !!saved.mute; }
+const sel = { track: 0, mode: 'tt', diff: 1, car: 0, autoGas: false, colors: {} };
+const PAINTS = [['Verde botella', '#0b4d2c'], ['Rojo', '#d32a22'], ['Azul', '#1f6fff'], ['Amarillo', '#f7b32b'], ['Naranja', '#ff7a1a'], ['Blanco', '#f2f2f2'], ['Negro', '#16181d'], ['Plata', '#b9bec6'], ['Morado', '#8a4bff']];
+const paintOf = (c) => sel.colors[c.id] || '#' + new THREE.Color(c.color).getHexString();
+const saved = store.get('sel'); if (saved) { sel.car = clamp(saved.car | 0, 0, CARS.length - 1); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
 
 function drawPreview(cv, tr, th) {
   const w = (cv.width = 300), h = (cv.height = 130), x = cv.getContext('2d');
@@ -81,7 +84,7 @@ function buildMenu() {
   const cl = $('carList'); cl.innerHTML = '';
   CARS.forEach((c, i) => {
     const d = document.createElement('div'); d.className = 'card' + (i === sel.car ? ' on' : '');
-    const hex = '#' + new THREE.Color(c.color).getHexString();
+    const hex = new THREE.Color(paintOf(c)).lerp(new THREE.Color(0xffffff), 0.32).getStyle();
     d.innerHTML = `<b style="color:${hex}">${c.name}</b><small>${c.desc}</small>` + [['VEL', (c.vmax - 50) / 12], ['ACEL', (c.accel - 11) / 6], ['GIRO', (c.yaw - 1.9) / 0.9], ['DESLIZ.', (14 - c.grip) / 5]].map(([n, v]) => `<div class="stat">${n}<i><s style="width:${clamp(v, 0.1, 1) * 100}%;background:${hex}"></s></i></div>`).join('');
     d.onclick = () => { sel.car = i; buildMenu(); refreshShowcase(); };
     cl.appendChild(d);
@@ -89,10 +92,20 @@ function buildMenu() {
   $('diffWrap').style.display = sel.mode === 'race' ? '' : 'none';
   for (const b of $('modeSel').children) b.classList.toggle('on', b.dataset.v === sel.mode);
   for (const b of $('diffSel').children) b.classList.toggle('on', +b.dataset.v === sel.diff);
-  sound.setMuted(!!sel.mute); $('sndBtn').classList.toggle('on', !sel.mute); $('sndBtn').textContent = 'Sonido: ' + (sel.mute ? 'NO' : 'SÍ');
+  buildPaints(); sound.setMuted(!!sel.mute); $('sndBtn').classList.toggle('on', !sel.mute); $('sndBtn').textContent = 'Sonido: ' + (sel.mute ? 'NO' : 'SÍ');
   $('autoGas').classList.toggle('on', sel.autoGas); $('autoGas').textContent = 'Acelerador automático: ' + (sel.autoGas ? 'SÍ' : 'NO');
 }
 $('sndBtn').onclick = () => { sel.mute = !sel.mute; store.set('sel', sel); buildMenu(); };
+function buildPaints() {
+  const box = $('paints'); box.innerHTML = '';
+  const car = CARS[sel.car], cur = paintOf(car).toLowerCase();
+  PAINTS.forEach(([n, hex]) => { const b = document.createElement('button'); b.className = 'sw' + (hex.toLowerCase() === cur ? ' on' : ''); b.style.background = hex; b.title = n; b.onclick = () => { sel.colors[car.id] = hex; store.set('sel', sel); buildMenu(); refreshShowcase(); }; box.appendChild(b); });
+  const inp = document.createElement('input'); inp.type = 'color'; inp.value = cur; inp.title = 'Color personalizado'; inp.className = 'sw custom';
+  inp.oninput = () => { sel.colors[car.id] = inp.value; store.set('sel', sel); const m = S.menu && S.menu.car && S.menu.car.paint; if (m) m.color.set(inp.value); };
+  inp.onchange = () => { buildMenu(); };
+  box.appendChild(inp);
+  $('paintName').textContent = (PAINTS.find((p) => p[1].toLowerCase() === cur) || ['Personalizado'])[0];
+}
 $('autoGas').onclick = () => { sel.autoGas = !sel.autoGas; buildMenu(); };
 $('fsBtn').onclick = () => { try { const e = document.documentElement; (e.requestFullscreen || e.webkitRequestFullscreen).call(e); } catch (_) {} try { screen.orientation.lock('landscape').catch(() => {}); } catch (_) {} };
 $('modeSel').onclick = (e) => { if (e.target.dataset.v) { sel.mode = e.target.dataset.v; buildMenu(); } };
@@ -114,7 +127,9 @@ const PROFILES = {
   drift: { W: 2.0, wr: 0.36, wz: 1.4, body: [[-2.15, 0.34], [-2.15, 0.64], [-1.7, 0.76], [-0.85, 0.82], [-0.45, 1.1], [0.35, 1.12], [0.95, 0.82], [2.05, 0.68], [2.22, 0.5], [2.15, 0.34]], glass: [[-0.85, 0.84], [-0.5, 1.07], [0.32, 1.09], [0.88, 0.84]] },
   truck: { W: 2.15, wr: 0.5, wz: 1.45, body: [[-2.3, 0.55], [-2.3, 1.22], [-0.85, 1.22], [-0.85, 1.98], [0.3, 2.0], [0.85, 1.42], [2.25, 1.32], [2.35, 0.95], [2.3, 0.55]], glass: [[-0.8, 1.32], [-0.8, 1.92], [0.26, 1.94], [0.76, 1.46]] },
 };
-function buildCarMesh(color, kind) {
+function buildCarMesh(color, kind, lod = 'hi') {
+  if (kind === 'bora' && boraReady()) { const b = buildBora(color, lod); b.root.scale.setScalar(CS * 0.97); return b; }
+  if (kind === 'bora') kind = 'gt';
   const root = new THREE.Group(), tilt = new THREE.Group(); root.add(tilt);
   const P = PROFILES[kind] || PROFILES.gt, W = P.W, wr = P.wr * 1.22, wz = P.wz;
   const body = new THREE.MeshStandardMaterial({ color, metalness: 0.45, roughness: 0.28, envMapIntensity: 1.25 });
@@ -223,7 +238,7 @@ function buildShowcase() {
   clearShowcase();
   const ti = tracks[sel.track], type = CARS[sel.car];
   const w = buildWorld(ti.tr, ti.th, { mobile: MOBILE, shadows: QUAL.shadows, renderer });
-  const car = buildCarMesh(type.color, type.kind);
+  const car = buildCarMesh(paintOf(type), type.kind, 'hi');
   const pt = { x: 0, y: 0, z: 0, tx: 0, tz: 1 }; pointAt(ti.tr, 8, 0, pt);
   car.root.position.set(pt.x, pt.y, pt.z); car.root.rotation.y = Math.atan2(pt.tx, pt.tz) + 0.5;
   w.scene.add(car.root);
@@ -283,19 +298,19 @@ function startRace(restart = false) {
     const blobTex = new THREE.CanvasTexture(bc), blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
     const mkCar = (ct, color, name, isPlayer) => {
       const c = makeCar(ct, name, isPlayer);
-      c.color = color; c.mesh = buildCarMesh(color, ct.kind); scene.add(c.mesh.root);
+      c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer || !MOBILE ? 'hi' : 'lo'); scene.add(c.mesh.root);
       c.blob = new THREE.Mesh(blobGeo, new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
       c.blob.scale.set(3.6 * CS, 1, 5.4 * CS); scene.add(c.blob);
       return c;
     };
-    const player = mkCar(type, type.color, 'TÚ', true);
+    const player = mkCar(type, paintOf(type), 'TÚ', true);
     S.player = player; S.cars = [player];
     if (sel.mode === 'race') {
-      const rivals = [CARS[(sel.car + 1) % 3], CARS[(sel.car + 2) % 3], CARS[(sel.car + 0) % 3]];
+      const pool = CARS.filter((_, i) => i !== sel.car), rivals = [pool[0], pool[1], pool[2]];
       const base = [0.955, 0.94, 0.925], diff = [0.88, 0.95, 1.01][sel.diff], names = ['Nova', 'Rayo', 'Duna'];
       rivals.forEach((rt, i) => { const c = mkCar(rt, AI_COLORS[i], names[i], false); c.ai = { lane: [-3, 3, -1.5][i], skill: base[i] * diff, base: base[i] * diff }; S.cars.push(c); });
     } else {
-      S.ghostMesh = buildCarMesh(0xffffff, type.kind);
+      S.ghostMesh = buildCarMesh(0xffffff, type.kind, 'lo');
       S.ghostMesh.root.traverse((o) => { o.castShadow = false; if (o.material) { o.material.transparent = true; o.material.opacity = 0.38; o.material.depthWrite = false; } });
       S.ghostMesh.root.visible = false; scene.add(S.ghostMesh.root);
     }
@@ -802,5 +817,6 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 buildMenu();
+loadBora().then(() => { if (S.state === 'menu') { buildMenu(); buildShowcase(); } }).catch((e) => console.warn('Bora no cargado', e));
 buildShowcase();
 window.__dr = { S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows };
