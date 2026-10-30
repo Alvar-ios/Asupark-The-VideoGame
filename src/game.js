@@ -238,7 +238,7 @@ function buildShowcase() {
   clearShowcase();
   const ti = tracks[sel.track], type = CARS[sel.car];
   const w = buildWorld(ti.tr, ti.th, { mobile: MOBILE, shadows: QUAL.shadows, renderer });
-  const car = buildCarMesh(paintOf(type), type.kind, 'hi');
+  const car = buildCarMesh(paintOf(type), type.kind, MOBILE ? 'mid' : 'hi');
   const pt = { x: 0, y: 0, z: 0, tx: 0, tz: 1 }; pointAt(ti.tr, 8, 0, pt);
   car.root.position.set(pt.x, pt.y, pt.z); car.root.rotation.y = Math.atan2(pt.tx, pt.tz) + 0.5;
   w.scene.add(car.root);
@@ -298,7 +298,7 @@ function startRace(restart = false) {
     const blobTex = new THREE.CanvasTexture(bc), blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
     const mkCar = (ct, color, name, isPlayer) => {
       const c = makeCar(ct, name, isPlayer);
-      c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer || !MOBILE ? 'hi' : 'lo'); scene.add(c.mesh.root);
+      c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer ? (MOBILE ? 'mid' : 'hi') : (MOBILE ? 'lo' : 'mid')); scene.add(c.mesh.root);
       c.blob = new THREE.Mesh(blobGeo, new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
       c.blob.scale.set(3.6 * CS, 1, 5.4 * CS); scene.add(c.blob);
       return c;
@@ -817,6 +817,6 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 buildMenu();
-loadBora().then(() => { if (S.state === 'menu') { buildMenu(); buildShowcase(); } }).catch((e) => console.warn('Bora no cargado', e));
+loadBora(MOBILE ? ['mid', 'lo'] : ['hi', 'mid', 'lo']).then(() => { if (S.state === 'menu') { buildMenu(); buildShowcase(); } }).catch((e) => console.warn('Bora no cargado', e));
 buildShowcase();
 window.__dr = { S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows };
