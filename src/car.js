@@ -7,6 +7,10 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export const CARS = [
   { id: 'bora', name: 'VW Bora VR6', desc: 'Berlina 2005 · estable y noble', color: 0x0b4d2c, vmax: 56, accel: 14, yaw: 2.25, grip: 13, driftGrip: 2.7, radius: 1.2, kind: 'bora', custom: true },
   { id: 'porsche', name: 'Porsche 911 Turbo S', desc: 'Rapidísimo, motor trasero: cuidado al frenar', color: 0x0a1a28, vmax: 60, accel: 15.5, yaw: 2.35, grip: 11.8, driftGrip: 2.9, radius: 1.2, kind: 'porsche', custom: true },
+  { id: 'm3', name: 'BMW M3 E46', desc: 'Tracción trasera, ágil y rabioso', color: 0x0070ed, vmax: 58, accel: 15, yaw: 2.45, grip: 12.4, driftGrip: 2.7, radius: 1.2, kind: 'm3', custom: true },
+  { id: 'cupra', name: 'Cupra León', desc: 'Compacto deportivo: mucho agarre', color: 0x193078, vmax: 56, accel: 14.5, yaw: 2.5, grip: 13.4, driftGrip: 2.6, radius: 1.2, kind: 'cupra', custom: true },
+  { id: 'mini', name: 'Mini Cooper S Clubman', desc: 'Pequeño y nervioso: gira como un kart', color: 0xf7f7f7, vmax: 53, accel: 14, yaw: 2.8, grip: 13.6, driftGrip: 3.0, radius: 1.1, kind: 'mini', custom: true },
+  { id: 'qashqai', name: 'Nissan Qashqai', desc: 'SUV pesado y estable', color: 0xf7f7f7, vmax: 54, accel: 12.5, yaw: 2.05, grip: 14, driftGrip: 2.3, radius: 1.3, kind: 'qashqai', custom: true },
   { id: 'turbo', name: 'Turbo GT', custom: true, desc: 'Equilibrado y fácil', color: 0xe8372c, vmax: 57, accel: 14.5, yaw: 2.3, grip: 12.5, driftGrip: 2.8, radius: 1.15, kind: 'gt' },
   { id: 'drifter', name: 'Drifter', custom: true, desc: 'Ágil y deslizante', color: 0x2f9bff, vmax: 54, accel: 15.5, yaw: 2.6, grip: 10.5, driftGrip: 3.4, radius: 1.15, kind: 'drift' },
   { id: 'bruiser', name: 'Bruiser', custom: true, desc: 'Pesado, rápido y estable', color: 0xf7b32b, vmax: 60, accel: 12.5, yaw: 2.05, grip: 13.5, driftGrip: 2.4, radius: 1.3, kind: 'truck' },

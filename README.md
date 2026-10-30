@@ -36,5 +36,10 @@ no usan `fetch` ni WebAssembly, así que funcionan también en páginas con CSP 
 `test/csp_server.py` sirve `dist/` con una CSP restrictiva para comprobarlo.
 
 ## Coches y circuitos
-- Coches: VW Bora VR6, Porsche 911 (964) Turbo S, Turbo GT, Drifter, Bruiser. Pintura personalizable desde el menú.
+- Coches: VW Bora VR6, Porsche 911 (964) Turbo S, BMW M3 E46, Cupra León, Mini Cooper S Clubman, Nissan Qashqai, Turbo GT, Drifter, Bruiser. Pintura personalizable desde el menú.
 - Circuito *Puerto Urbano* (estilo Mónaco): trazado fijo (`fixedNodes`), perfil de altura (`hillPts`), pianos con vibración y cuestas más exigentes.
+
+## Añadir un coche desde un .glb
+`tools/prep-car.mjs` orienta el modelo (Y arriba, morro +Z), lo escala a metros reales, separa las 4 ruedas por geometría
+y genera dos niveles de detalle (`hi` ~100k y `lo` ~15k triángulos). Después se importa en `src/modelcars.js` y se añade a `src/car.js`.
+Los coches se cargan bajo demanda al elegirlos (el HTML final pesa ~14 MB por los modelos).

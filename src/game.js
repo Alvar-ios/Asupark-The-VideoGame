@@ -8,6 +8,7 @@ import { buildWorld, disposeScene } from './world.js';
 import { Sound } from './audio.js';
 import { loadBora, buildBora, boraReady } from './bora.js';
 import { loadPorsche, buildPorsche, porscheReady } from './porsche.js';
+import { loadModelCar, buildModelCar, modelCarReady, MODEL } from './modelcars.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -130,6 +131,8 @@ const PROFILES = {
   truck: { W: 2.15, wr: 0.5, wz: 1.45, body: [[-2.3, 0.55], [-2.3, 1.22], [-0.85, 1.22], [-0.85, 1.98], [0.3, 2.0], [0.85, 1.42], [2.25, 1.32], [2.35, 0.95], [2.3, 0.55]], glass: [[-0.8, 1.32], [-0.8, 1.92], [0.26, 1.94], [0.76, 1.46]] },
 };
 function buildCarMesh(color, kind, lod = 'hi') {
+  if (MODEL[kind] && modelCarReady(kind, lod)) { const b = buildModelCar(kind, color, lod); b.root.scale.setScalar(CS * 0.98); return b; }
+  if (MODEL[kind]) kind = 'gt';
   if (kind === 'porsche' && porscheReady()) { const b = buildPorsche(color, lod === 'hi' && !MOBILE ? 'hi' : 'lo'); b.root.scale.setScalar(CS * 0.98); return b; }
   if (kind === 'porsche') kind = 'gt';
   if (kind === 'bora' && boraReady()) { const b = buildBora(color, lod); b.root.scale.setScalar(CS * 0.97); return b; }
@@ -243,6 +246,7 @@ function buildShowcase() {
   const ti = tracks[sel.track], type = CARS[sel.car];
   const w = buildWorld(ti.tr, ti.th, { mobile: MOBILE, shadows: QUAL.shadows, renderer });
   const car = buildCarMesh(paintOf(type), type.kind, MOBILE ? 'mid' : 'hi');
+  if (MODEL[type.kind] && !modelCarReady(type.kind, MOBILE ? 'lo' : 'hi')) loadModelCar(type.kind, MOBILE ? ['lo'] : ['hi', 'lo']).then(() => { if (S.state === 'menu') refreshShowcase(); }).catch(() => {});
   const pt = { x: 0, y: 0, z: 0, tx: 0, tz: 1 }; pointAt(ti.tr, 8, 0, pt);
   car.root.position.set(pt.x, pt.y, pt.z); car.root.rotation.y = Math.atan2(pt.tx, pt.tz) + 0.5;
   w.scene.add(car.root);
@@ -279,8 +283,20 @@ function leaderboard(skey, benchLap, pbLap) {
 }
 const benchFor = (ti, type) => benchmark(ti.tr, type, { gripMul: ti.th.gripMul, offroad: ti.th.offroad, slope: ti.th.slope }, ti.key + '.' + ti.tr.seed + '.' + type.id);
 
-function startRace(restart = false) {
+// carga de modelos 3D bajo demanda
+const needLods = (kind, player) => (player ? (MOBILE ? ['lo'] : ['hi', 'lo']) : ['lo']);
+function ensureModels(types, playerType) {
+  const jobs = [];
+  for (const t of types) if (MODEL[t.kind]) jobs.push(loadModelCar(t.kind, needLods(t.kind, t === playerType)));
+  return Promise.all(jobs);
+}
+async function startRace(restart = false) {
   sound.init();
+  { // asegurar los modelos del jugador y los rivales
+    const pt = CARS[sel.car], pool = CARS.filter((_, i) => i !== sel.car);
+    const need = [pt, ...(sel.mode === 'race' ? pool.slice(0, 3) : [])];
+    if (need.some((t) => MODEL[t.kind] && !modelCarReady(t.kind, t === pt && !MOBILE ? 'hi' : 'lo'))) { const b = $('startBtn'); const old = b.textContent; b.textContent = 'Cargando coche…'; try { await ensureModels(need, pt); } catch (e) { console.warn('modelo', e); } b.textContent = old; }
+  }
   const ti = tracks[sel.track], tr = ti.tr, type = CARS[sel.car];
   const sig = [sel.track, sel.car, sel.mode, sel.diff].join('|');
   const reuse = !!(restart && S.raceScene && S.sig === sig && S.scene);
@@ -302,7 +318,7 @@ function startRace(restart = false) {
     const blobTex = new THREE.CanvasTexture(bc), blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
     const mkCar = (ct, color, name, isPlayer) => {
       const c = makeCar(ct, name, isPlayer);
-      c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer ? (MOBILE ? 'mid' : 'hi') : (MOBILE ? 'lo' : 'mid')); scene.add(c.mesh.root);
+      c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer ? (MOBILE ? 'mid' : 'hi') : 'lo'); scene.add(c.mesh.root);
       c.blob = new THREE.Mesh(blobGeo, new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
       c.blob.scale.set(3.6 * CS, 1, 5.4 * CS); scene.add(c.blob);
       return c;
@@ -672,9 +688,9 @@ function updateCamera(dt, snap) {
     fov += 8;
   } else {
     const far = S.camMode === 1 ? 1.45 : 1;
-    const dist = (5.6 + speed * 0.02 + S.fovT * 0.7) * far, hgt = (2.3 + speed * 0.004) * far;
+    const dist = (5.3 + speed * 0.02 + S.fovT * 0.7) * far, hgt = (3.6 + speed * 0.005) * far;
     camera.position.set(x - sn * dist + rx, S.camY + hgt + ry, z - cs * dist);
-    camera.lookAt(x + sn * 5, y + 0.9, z + cs * 5);
+    camera.lookAt(x + sn * 4.2, y + 0.35, z + cs * 4.2);
   }
   if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
   S.shake = Math.max(0, S.shake - dt * 2.6);
@@ -826,4 +842,4 @@ buildMenu();
 loadPorsche(MOBILE ? ['lo'] : ['hi', 'lo']).then(() => { if (S.state === 'menu') { buildMenu(); buildShowcase(); } }).catch((e) => console.warn('Porsche no cargado', e));
 loadBora(MOBILE ? ['mid', 'lo'] : ['hi', 'mid', 'lo']).then(() => { if (S.state === 'menu') { buildMenu(); buildShowcase(); } }).catch((e) => console.warn('Bora no cargado', e));
 buildShowcase();
-window.__dr = { S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady };
+window.__dr = { S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };
