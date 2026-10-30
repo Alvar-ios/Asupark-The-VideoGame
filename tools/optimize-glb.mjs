@@ -1,4 +1,3 @@
-// Uso: instalar en una carpeta aparte  npm i @gltf-transform/core @gltf-transform/extensions @gltf-transform/functions meshoptimizer  y ajustar SRC.
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { flatten, join, weld, simplify, prune, dedup, getBounds, reorder, quantize, meshopt } from '@gltf-transform/functions';
@@ -48,11 +47,12 @@ async function build(kind, ratio, outName, full = false) {
     }
     await doc.transform(prune());
   }
-  await doc.transform(weld({ tolerance: 0 }), reorder({ encoder: MeshoptEncoder }), prune(), quantize({ quantizePosition: full ? 16 : 14, quantizeNormal: 10 }), meshopt({ encoder: MeshoptEncoder, level: 'high' }));
+  await doc.transform(weld({ tolerance: 0 }), prune(), quantize({ quantizePosition: full ? 16 : 14, quantizeNormal: 10 }));
   // ejes: dejar la escena sin la rotación de Sketchfab (ya aplicada por flatten); contar
   let tris = 0; for (const m of root.listMeshes()) for (const p of m.listPrimitives()) tris += p.getIndices().getCount() / 3;
   const b = getBounds(doc.getRoot().listScenes()[0]);
     await io.write(outName, doc);
+  (await import('node:child_process')).execSync(`gzip -9 -f -k ${outName}`);
   const sz = (await import('node:fs')).statSync(outName).size;
   console.log(outName, 'tris', tris, 'meshes', root.listMeshes().length, 'KB', (sz / 1024) | 0, 'min', b.min.map((v) => +v.toFixed(2)), 'max', b.max.map((v) => +v.toFixed(2)));
 }

@@ -22,10 +22,19 @@ Ideas pendientes: ranking online (Supabase), PWA, escenario de juguete en todas 
 
 ## Coches 3D (.glb)
 El VW Bora VR6 se carga desde `src/assets/bora_*.glb` (incrustado en el HTML al compilar).
-- Versiones optimizadas: carrocería `hi` (~49k tris) y `lo` (~15k) + rueda `hi`/`lo`; compresión meshopt.
+- Versiones optimizadas: carrocería `hi` (~183k tris), `mid` (~68k) y `lo` (~20k) + ruedas; gzip, sin WebAssembly.
 - `tools/optimize-glb.mjs` regenera esos archivos desde el modelo original (necesita `@gltf-transform/*` y `meshoptimizer` en una carpeta aparte; ver cabecera del script).
 - Materiales por rol (PAINT, CHROME, GLASS, LENS…); la pintura (`PAINT`) se recolorea desde el menú.
 - Para añadir otro coche: carrocería con el morro hacia +Z, sin ruedas, y una rueda en el origen con el eje en X.
 
 ## Despliegue (Vercel)
 `vercel.json` ya configura `npm run build` y `dist`. Importar el repositorio en Vercel y listo; cada rama genera una URL de prueba.
+
+## Carga de modelos y CSP
+Los .glb van incrustados en gzip (`src/assets/*.glb.gz`) y se leen con `DecompressionStream` + `GLTFLoader.parse` (`src/glbload.js`):
+no usan `fetch` ni WebAssembly, así que funcionan también en páginas con CSP estricta (p. ej. artefactos de Claude).
+`test/csp_server.py` sirve `dist/` con una CSP restrictiva para comprobarlo.
+
+## Coches y circuitos
+- Coches: VW Bora VR6, Porsche 911 (964) Turbo S, Turbo GT, Drifter, Bruiser. Pintura personalizable desde el menú.
+- Circuito *Puerto Urbano* (estilo Mónaco): trazado fijo (`fixedNodes`), perfil de altura (`hillPts`), pianos con vibración y cuestas más exigentes.

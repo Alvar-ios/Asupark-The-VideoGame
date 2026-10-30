@@ -6,6 +6,7 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 export const CARS = [
   { id: 'bora', name: 'VW Bora VR6', desc: 'Berlina 2005 · estable y noble', color: 0x0b4d2c, vmax: 56, accel: 14, yaw: 2.25, grip: 13, driftGrip: 2.7, radius: 1.2, kind: 'bora', custom: true },
+  { id: 'porsche', name: 'Porsche 911 Turbo S', desc: 'Rapidísimo, motor trasero: cuidado al frenar', color: 0x0a1a28, vmax: 60, accel: 15.5, yaw: 2.35, grip: 11.8, driftGrip: 2.9, radius: 1.2, kind: 'porsche', custom: true },
   { id: 'turbo', name: 'Turbo GT', custom: true, desc: 'Equilibrado y fácil', color: 0xe8372c, vmax: 57, accel: 14.5, yaw: 2.3, grip: 12.5, driftGrip: 2.8, radius: 1.15, kind: 'gt' },
   { id: 'drifter', name: 'Drifter', custom: true, desc: 'Ágil y deslizante', color: 0x2f9bff, vmax: 54, accel: 15.5, yaw: 2.6, grip: 10.5, driftGrip: 3.4, radius: 1.15, kind: 'drift' },
   { id: 'bruiser', name: 'Bruiser', custom: true, desc: 'Pesado, rápido y estable', color: 0xf7b32b, vmax: 60, accel: 12.5, yaw: 2.05, grip: 13.5, driftGrip: 2.4, radius: 1.3, kind: 'truck' },
@@ -21,7 +22,7 @@ export function makeCar(type, name, isPlayer) {
     grip: type.grip, hint: -1, loc: { i: 0, t: 0, s: 0, h: 0, tx: 0, tz: 1, lat: 0 },
     lap: 0, lastS: 0, D: 0, safeD: 0, safeT: 0, padCool: 0, events: [], stuckT: 0,
     finished: false, finishTime: 0, brake: 0, throttle: 0, speed: 0, vf: 0, vl: 0, offroad: false,
-    visPitch: 0, visRoll: 0, wheelSpin: 0, lapStart: 0, airTime: 0,
+    visPitch: 0, visRoll: 0, onKerb: false, wheelSpin: 0, lapStart: 0, airTime: 0,
   };
 }
 
@@ -102,7 +103,7 @@ export function stepCar(c, inp, dt, tr, env) {
     }
     if (vf > vmaxE) vf -= (vf - vmaxE) * (off ? 3 : 1.1) * dt;
     if (off) vf *= Math.exp(-0.5 * dt);
-    vf -= 9.8 * c.grad * 0.7 * dt;
+    vf -= 9.8 * c.grad * (env.slope || 0.7) * dt;
     const gT = (c.drifting ? T.driftGrip : T.grip) * env.gripMul * (inp.brake > 0.5 && speed > 20 ? 0.85 : 1);
     c.grip += (gT - c.grip) * Math.min(1, (c.drifting ? 9 : 4) * dt);
     vl *= Math.exp(-c.grip * dt);
@@ -141,6 +142,9 @@ export function stepCar(c, inp, dt, tr, env) {
     c.drifting = false;
   }
 
+  // pianos (bordillos): frenan un poco y vibran
+  c.onKerb = !c.air && Math.abs(loc.lat) > ROAD_HALF - 0.2 && Math.abs(loc.lat) < ROAD_HALF + 1.15;
+  if (c.onKerb && c.speed > 8) { c.vx *= Math.exp(-0.18 * dt); c.vz *= Math.exp(-0.18 * dt); }
   // altura y saltos
   const hNew = loc.h;
   if (!c.air) {

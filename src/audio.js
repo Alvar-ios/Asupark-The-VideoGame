@@ -43,6 +43,7 @@ export class Sound {
     this.skid.g.gain.setTargetAtTime(Math.max(0, Math.min(1, (p.slip - 3) / 10)) * (p.air ? 0 : 0.07), t, 0.08);
     const r = Math.min(1, p.speed / p.vmax);
     this.wind.g.gain.setTargetAtTime(r * r * 0.06, t, 0.15);
+    this.skid.g.gain.setTargetAtTime(Math.max(0, Math.min(1, (p.slip - 3) / 10)) * (p.air ? 0 : 0.07) + (p.onKerb ? 0.05 : 0), t, 0.05);
   }
   beep(freq, dur = 0.15, vol = 0.12, type = 'sine') {
     if (!this.ok) return;

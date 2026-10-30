@@ -65,9 +65,10 @@ function curvatureOf(P, ds) {
 
 function generate(seed, style, attempt) {
   const rng = rngFromSeed(seed + ':' + attempt);
-  const n = style.nodes, nodes = [];
+  const n = style.fixedNodes ? style.fixedNodes.length : style.nodes, nodes = [];
   const phase = rng() * TAU, sx = 0.8 + rng() * 0.45, sz = 1 / sx;
-  for (let i = 0; i < n; i++) {
+  if (style.fixedNodes) for (const q of style.fixedNodes) nodes.push([q[0], q[1]]);
+  else for (let i = 0; i < n; i++) {
     const th = phase + ((i + (rng() - 0.5) * style.angJit) / n) * TAU;
     let r = 1 + (rng() * 2 - 1) * style.wobble;
     if (rng() < style.pinch) r *= 0.45 + rng() * 0.2;
@@ -76,7 +77,7 @@ function generate(seed, style, attempt) {
   let dense = catmullClosed(nodes, 40);
   let len0 = 0;
   for (let i = 0; i < dense.length; i++) { const a = dense[i], b = dense[(i + 1) % dense.length]; len0 += Math.hypot(b[0] - a[0], b[1] - a[1]); }
-  const sc = style.length / len0;
+  const sc = style.fixedNodes ? style.scale || 1 : style.length / len0;
   dense = dense.map((p) => [p[0] * sc, p[1] * sc]);
   let P = resampleClosed(dense, DS);
   P = smoothClosed(P, 3);
@@ -198,13 +199,18 @@ export function buildTrack(seed, style) {
   tr.pads.sort((a, b) => a.s - b.s);
 
   // --- perfil de altura ---
-  const A1 = style.hill, ph = [rng() * TAU, rng() * TAU, rng() * TAU];
+  const A1 = style.hill || 0, ph = [rng() * TAU, rng() * TAU, rng() * TAU];
   const k1 = 1 + Math.floor(rng() * 2), k2 = 3 + Math.floor(rng() * 2), k3 = 6 + Math.floor(rng() * 2);
   let minBase = 1e9;
   const base = new Float64Array(N);
   for (let i = 0; i < N; i++) {
     const u = (i * ds) / len;
     base[i] = A1 * Math.sin(TAU * k1 * u + ph[0]) + A1 * 0.45 * Math.sin(TAU * k2 * u + ph[1]) + A1 * 0.15 * Math.sin(TAU * k3 * u + ph[2]);
+    if (style.hillPts) { // perfil de altura explícito [fracción de vuelta, altura], interpolado con coseno
+      const pts = style.hillPts; let a = pts[pts.length - 1], b = pts[0], uu = u;
+      for (let q = 0; q < pts.length - 1; q++) if (u >= pts[q][0] && u <= pts[q + 1][0]) { a = pts[q]; b = pts[q + 1]; break; }
+      const t = b[0] === a[0] ? 0 : (uu - a[0]) / (b[0] - a[0]); base[i] = a[1] + (b[1] - a[1]) * (0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, t))));
+    }
     minBase = Math.min(minBase, base[i]);
   }
   // fuera de la salida la pista es llana (primeros metros)

@@ -9,6 +9,15 @@ export const THEMES = {
     wall1: 0x1f6fff, wall2: 0xffffff, mount: 0x7d8fa0, sun: 0xfff3d6, sunDir: [-0.4, 0.8, 0.35],
     hemiSky: 0xffffff, hemiGround: 0xc99a5a, hemiI: 1.15, sunI: 1.0, deco: 'toy', treeCol: 0x3d7a3c, night: false, gripMul: 1, offroad: 0.62, toy: true,
   },
+  monaco: {
+    id: 'monaco', name: 'Puerto Urbano', sub: 'Estilo Mónaco: horquillas, pianos y cuestas', seed: 'monaco-1',
+    style: { fixedNodes: [[-80, 0], [40, 0], [150, 5], [205, 40], [210, 100], [175, 150], [115, 165], [65, 150], [25, 175], [-25, 205], [-32, 252], [8, 288], [70, 282], [102, 242], [150, 210], [215, 200], [262, 222], [290, 262], [262, 305], [190, 312], [125, 330], [60, 338], [-60, 335], [-150, 285], [-165, 185], [-155, 100], [-128, 38]], scale: 0.85, chicanes: 0, hill: 0, ramps: 0, rollers: 0, pads: 3, minR: 20, sep: 38, padSep: 80, candFrom: 80, candTo: 80, thr: [0.006, 0.01, 0.014],
+      hillPts: [[0, 0], [0.09, 1.5], [0.2, 9], [0.3, 17], [0.4, 16], [0.47, 9], [0.55, 4], [0.65, 3], [0.8, 1], [1, 0]] },
+    skyTop: 0x3f95f0, skyHor: 0xeaf4ff, fog: 0xdce9f6, fogNear: 240, fogFar: 1400,
+    ground: 0x2a7fb5, grass: 0xa7adb5, dirt: 0x8c929a, road: 0x40434b, kerb1: 0xe5352f, kerb2: 0xffffff,
+    wall1: 0xf3f3f3, wall2: 0xdf2f2a, mount: 0xb9c7d6, sun: 0xfff1cf, sunDir: [-0.35, 0.65, 0.5],
+    hemiSky: 0xe6f1ff, hemiGround: 0x8a8f96, hemiI: 1.05, sunI: 1.15, deco: 'toy', harbor: true, palette: [0xf3e9d8, 0xe8c9a0, 0xd9a47a, 0xf6f2ea, 0xcf8f6b, 0xe9dcc2], treeCol: 0x3d7a3c, night: false, gripMul: 1, offroad: 0.6, slope: 1.5,
+  },
   valle: {
     id: 'valle', name: 'Valle Verde', sub: 'Rápida y fluida', seed: 'valle-11',
     style: { nodes: 11, wobble: 0.3, pinch: 0.15, angJit: 0.5, length: 2300, hill: 5.5, chicanes: 2, ramps: 2, pads: 6, rollers: 1 },
@@ -42,7 +51,7 @@ export const THEMES = {
     hemiSky: 0xe6f1ff, hemiGround: 0x9fb2c4, hemiI: 1.05, sunI: 1.0, deco: 'snowpine', treeCol: 0x2d6a55, night: false, gripMul: 0.78, offroad: 0.75,
   },
 };
-export const THEME_LIST = ['pruebas', 'valle', 'desierto', 'neon', 'nieve'];
+export const THEME_LIST = ['pruebas', 'monaco', 'valle', 'desierto', 'neon', 'nieve'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

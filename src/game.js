@@ -7,6 +7,7 @@ import { buildSpeedProfile, aiInput, benchmark } from './ai.js';
 import { buildWorld, disposeScene } from './world.js';
 import { Sound } from './audio.js';
 import { loadBora, buildBora, boraReady } from './bora.js';
+import { loadPorsche, buildPorsche, porscheReady } from './porsche.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -49,8 +50,9 @@ const tracks = [];
 function addTrack(key, name, sub, seed, style, th) { const tr = buildTrack(seed, style); tracks.push({ key, name, sub, tr, th }); }
 const daily = dailyInfo();
 addTrack('pruebas', THEMES.pruebas.name, THEMES.pruebas.sub, THEMES.pruebas.seed, THEMES.pruebas.style, THEMES.pruebas);
+addTrack('monaco', THEMES.monaco.name, THEMES.monaco.sub, THEMES.monaco.seed, THEMES.monaco.style, THEMES.monaco);
 addTrack('daily', daily.name, daily.sub, daily.seed, daily.style, daily.theme);
-for (const k of THEME_LIST) if (k !== 'pruebas') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
+for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
 
 const sel = { track: 0, mode: 'tt', diff: 1, car: 0, autoGas: false, colors: {} };
 const PAINTS = [['Verde botella', '#0b4d2c'], ['Rojo', '#d32a22'], ['Azul', '#1f6fff'], ['Amarillo', '#f7b32b'], ['Naranja', '#ff7a1a'], ['Blanco', '#f2f2f2'], ['Negro', '#16181d'], ['Plata', '#b9bec6'], ['Morado', '#8a4bff']];
@@ -128,6 +130,8 @@ const PROFILES = {
   truck: { W: 2.15, wr: 0.5, wz: 1.45, body: [[-2.3, 0.55], [-2.3, 1.22], [-0.85, 1.22], [-0.85, 1.98], [0.3, 2.0], [0.85, 1.42], [2.25, 1.32], [2.35, 0.95], [2.3, 0.55]], glass: [[-0.8, 1.32], [-0.8, 1.92], [0.26, 1.94], [0.76, 1.46]] },
 };
 function buildCarMesh(color, kind, lod = 'hi') {
+  if (kind === 'porsche' && porscheReady()) { const b = buildPorsche(color, lod === 'hi' && !MOBILE ? 'hi' : 'lo'); b.root.scale.setScalar(CS * 0.98); return b; }
+  if (kind === 'porsche') kind = 'gt';
   if (kind === 'bora' && boraReady()) { const b = buildBora(color, lod); b.root.scale.setScalar(CS * 0.97); return b; }
   if (kind === 'bora') kind = 'gt';
   const root = new THREE.Group(), tilt = new THREE.Group(); root.add(tilt);
@@ -273,7 +277,7 @@ function leaderboard(skey, benchLap, pbLap) {
   rows.sort((a, b) => a.time - b.time);
   return rows.map((r, i) => ({ ...r, rank: i + 1 }));
 }
-const benchFor = (ti, type) => benchmark(ti.tr, type, { gripMul: ti.th.gripMul, offroad: ti.th.offroad }, ti.key + '.' + ti.tr.seed + '.' + type.id);
+const benchFor = (ti, type) => benchmark(ti.tr, type, { gripMul: ti.th.gripMul, offroad: ti.th.offroad, slope: ti.th.slope }, ti.key + '.' + ti.tr.seed + '.' + type.id);
 
 function startRace(restart = false) {
   sound.init();
@@ -455,7 +459,7 @@ function carCollide(a, b) {
 }
 
 function stepAll() {
-  const tr = S.tr, env = { gripMul: S.th.gripMul, offroad: S.th.offroad };
+  const tr = S.tr, env = { gripMul: S.th.gripMul, offroad: S.th.offroad, slope: S.th.slope };
   const p = S.player;
   if (p.finished) { inp.throttle = 0.4; inp.brake = 0; inp.steer = 0; inp.ers = false; }
   // los rivales
@@ -689,6 +693,7 @@ function updateCarVisual(c, dt) {
   const roll = -c.steer * sf * 0.1 - c.yawRate * 0.012 + clamp(c.vl * 0.015, -0.14, 0.14);
   const kk = 1 - Math.exp(-7 * dt);
   c.visPitch += (pitch - c.visPitch) * kk; c.visRoll += (roll - c.visRoll) * kk;
+  if (c.onKerb && c.speed > 10) c.bounceV += (Math.random() - 0.5) * 2.2;
   c.bounceV += (-c.bounce * 120 - c.bounceV * 9) * dt; c.bounce = clamp(c.bounce + c.bounceV * dt, -0.3, 0.3);
   m.tilt.rotation.set(c.visPitch, 0, c.visRoll); m.tilt.position.y = c.bounce;
   c.wheelSpin += (c.vf / 0.4) * dt;
@@ -790,6 +795,7 @@ function frame(now) {
     for (const c of S.cars) updateCarVisual(c, dt);
     emitFx(dt);
     updateCamera(dt, false);
+    if (p.onKerb && p.speed > 10) S.shake = Math.max(S.shake, 0.09);
     followSun(S.world, lerp(p.px, p.x, S.alpha), lerp(p.py, p.y, S.alpha), lerp(p.pz, p.z, S.alpha));
     // fantasma
     if (S.ghostMesh && !S.ghostBest) S.ghostMesh.root.visible = false;
@@ -809,7 +815,7 @@ function frame(now) {
       if (p.stuckT > 4) { showMsg('Pulsa R para volver a la pista', 1200, 'warn'); p.stuckT = 2; }
     }
     const gi = gearInfo(p.speed, p.type.vmax);
-    sound.update({ speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), ersOn: p.ersOn, ersRegen: p.brake > 0.1 && p.vf > 3 && p.ers < 0.999, air: p.air, offroad: p.offroad });
+    sound.update({ speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), onKerb: p.onKerb, ersOn: p.ersOn, ersRegen: p.brake > 0.1 && p.vf > 3 && p.ers < 0.999, air: p.air, offroad: p.offroad });
     updateHud(dt);
   }
   renderer.render(S.scene, camera);
@@ -817,6 +823,7 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 buildMenu();
+loadPorsche(MOBILE ? ['lo'] : ['hi', 'lo']).then(() => { if (S.state === 'menu') { buildMenu(); buildShowcase(); } }).catch((e) => console.warn('Porsche no cargado', e));
 loadBora(MOBILE ? ['mid', 'lo'] : ['hi', 'mid', 'lo']).then(() => { if (S.state === 'menu') { buildMenu(); buildShowcase(); } }).catch((e) => console.warn('Bora no cargado', e));
 buildShowcase();
-window.__dr = { S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows };
+window.__dr = { S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady };

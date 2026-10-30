@@ -118,7 +118,7 @@ function roadMesh(tr, th, stride = 1) {
     const eoI = L + 2.5 + hi * 1.1, eoJ = L + 2.5 + hj * 1.1;
     const lat = (k, h, eo) => [[-eo, 0], [-L, h - 0.05], [-(hw + 1), h], [-hw, h], [-0.22, h], [0.22, h], [hw, h], [hw + 1, h], [L, h - 0.05], [eo, 0]][k];
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
-    const stripe = Math.floor(s / 5) % 2 === 0;
+    const stripe = Math.floor(s / (tr.absK[i] > 0.012 ? 2.2 : 5)) % 2 === 0;
     const dashOn = Math.floor(s / 8) % 2 === 0;
     for (let b = 0; b < 9; b++) {
       const [l0, y0i] = lat(b, hi, eoI), [l1, y1i] = lat(b + 1, hi, eoI);
@@ -268,10 +268,10 @@ function scenery(tr, th, scene, rng, q) {
     inst(new THREE.CylinderGeometry(0.28, 0.28, 1.6, 6).rotateZ(Math.PI / 2).translate(0.9, 2.6, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
     inst(new THREE.DodecahedronGeometry(2.2, 0).translate(0, 1.0, 0), lam(0xa65f35), spots.slice(half), (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.set(s[2] * 1.4, s[2] * 0.9, s[2] * 1.2); d.rotation.set(0, s[3], 0); });
   } else if (th.deco === 'toy') {
-    const pal = [0xff3b3b, 0x3bb0ff, 0xffd23b, 0x4cd964, 0xb36bff, 0xff8a3b].map(col);
-    const half = spots.length >> 1;
+    const pal = (th.palette || [0xff3b3b, 0x3bb0ff, 0xffd23b, 0x4cd964, 0xb36bff, 0xff8a3b]).map(col);
+    const half = th.harbor ? spots.length : spots.length >> 1;
     const bm = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), half);
-    spots.slice(0, half).forEach((s, k) => { const w = 5 + s[2] * 7; dummy.position.set(s[0], 0, s[1]); dummy.scale.set(w, w * (0.7 + (k % 3) * 0.35), w); dummy.rotation.set(0, s[3], 0); dummy.updateMatrix(); bm.setMatrixAt(k, dummy.matrix); bm.setColorAt(k, pal[k % 6]); });
+    spots.slice(0, half).forEach((s, k) => { const w = th.harbor ? 7 + s[2] * 9 : 5 + s[2] * 7; dummy.position.set(s[0], 0, s[1]); dummy.scale.set(w, th.harbor ? 10 + (k % 5) * 9 + s[2] * 8 : w * (0.7 + (k % 3) * 0.35), w); dummy.rotation.set(0, s[3], 0); dummy.updateMatrix(); bm.setMatrixAt(k, dummy.matrix); bm.setColorAt(k, pal[k % 6]); });
     bm.frustumCulled = false; scene.add(bm);
     const rest = spots.slice(half);
     const cm = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 14).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), rest.length);

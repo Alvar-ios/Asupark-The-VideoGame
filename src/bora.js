@@ -1,22 +1,20 @@
 // Volkswagen Bora VR6 (modelo .glb optimizado): carrocería + ruedas con neumáticos propios
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { parseGlb } from './glbload.js';
 import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import bodyHi from './assets/bora_body_hi.glb';
-import bodyMid from './assets/bora_body_mid.glb';
-import bodyLo from './assets/bora_body_lo.glb';
-import wheelHi from './assets/bora_wheel_hi.glb';
-import wheelMid from './assets/bora_wheel_mid.glb';
-import wheelLo from './assets/bora_wheel_lo.glb';
+import bodyHi from './assets/bora_body_hi.glb.gz';
+import bodyMid from './assets/bora_body_mid.glb.gz';
+import bodyLo from './assets/bora_body_lo.glb.gz';
+import wheelHi from './assets/bora_wheel_hi.glb.gz';
+import wheelMid from './assets/bora_wheel_mid.glb.gz';
+import wheelLo from './assets/bora_wheel_lo.glb.gz';
 
 const cache = { ready: false };
 export const boraReady = () => cache.ready;
 export async function loadBora(lods = ['hi', 'mid', 'lo']) {
-  const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
   const src = { hi: [bodyHi, wheelHi], mid: [bodyMid, wheelMid], lo: [bodyLo, wheelLo] };
   for (const l of lods) {
-    const [b, w] = await Promise.all(src[l].map((u) => loader.loadAsync(u)));
+    const [b, w] = await Promise.all(src[l].map((u) => parseGlb(u)));
     // la decimación deja las normales irregulares: rehacerlas suaves con aristas marcadas (el nivel hi conserva las originales)
     if (l !== 'hi') for (const sc of [b.scene, w.scene]) sc.traverse((o) => { if (!o.isMesh) return; try { const g = toCreasedNormals(o.geometry, Math.PI / 4.2); o.geometry.dispose(); o.geometry = g; } catch (e) { o.geometry.computeVertexNormals(); } });
     cache[l] = { body: b.scene, wheel: w.scene };

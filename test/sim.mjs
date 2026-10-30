@@ -24,7 +24,7 @@ for (const it of list) {
     let t = 0, walls = 0, lapTimes = [], lastLap = 0, resets = 0, air = 0, pads = 0, maxSpeed = 0, offT = 0;
     while (t < 500 && lapTimes.length < 2) {
       aiInput(c, tr, prof, ai, inp);
-      stepCar(c, inp, dt, tr, { gripMul: it.th.gripMul, offroad: it.th.offroad });
+      stepCar(c, inp, dt, tr, { gripMul: it.th.gripMul, offroad: it.th.offroad, slope: it.th.slope });
       for (const e of c.events) { if (e.t === 'wall') walls++; if (e.t === 'takeoff') air++; if (e.t === 'pad') pads++; }
       c.events.length = 0;
       if (c.offroad) offT += dt;
@@ -33,7 +33,7 @@ for (const it of list) {
       t += dt;
       if (c.D >= (lapTimes.length + 1) * tr.len) { lapTimes.push(t - lastLap); lastLap = t; }
     }
-    const bm = benchmark(tr, type, { gripMul: it.th.gripMul, offroad: it.th.offroad }, it.seed + type.id);
+    const bm = benchmark(tr, type, { gripMul: it.th.gripMul, offroad: it.th.offroad, slope: it.th.slope }, it.seed + type.id);
     const ok = lapTimes.length >= 2 && resets === 0 && bm;
     if (!ok) bad++;
     console.log(`${ok ? 'OK ' : 'FAIL'} ${it.name.padEnd(22)} ${type.id.padEnd(8)} len=${tr.len | 0}m Rmin=${(1 / maxK) | 0}m gen=${tgen}ms ramps=${tr.ramps.length} pads=${tr.pads.length} rollers=${tr.rollers.length} lap=${lapTimes.map((x) => x.toFixed(1)).join('/')}s walls=${walls} jumps=${air} pads=${pads} resets=${resets} vmax=${(maxSpeed * 3.6) | 0}km/h off=${offT.toFixed(1)}s bench=${bm ? bm.lap.toFixed(1) + ' [' + bm.sec.map((x) => x.toFixed(1)).join(',') + ']' : 'NONE'}`);
