@@ -2,7 +2,7 @@
 import { THEMES, THEME_LIST, dailyInfo } from '../src/themes.js';
 import { buildTrack, ROAD_HALF } from '../src/track.js';
 import { CARS, makeCar, placeCar, stepCar, resetToTrack } from '../src/car.js';
-import { buildSpeedProfile, aiInput, benchmark } from '../src/ai.js';
+import { buildSpeedProfile, aiInput, benchmark, aiType } from '../src/ai.js';
 
 const dt = 1 / 120;
 const list = THEME_LIST.map((k) => ({ name: THEMES[k].name, seed: THEMES[k].seed, style: THEMES[k].style, th: THEMES[k] }));
@@ -18,7 +18,7 @@ for (const it of list) {
   let maxK = 0, maxGrad = 0;
   for (let i = 0; i < tr.N; i++) { maxK = Math.max(maxK, tr.absK[i]); }
   for (const type of CARS) {
-    const c = makeCar(type, 'bot', false), prof = buildSpeedProfile(tr, type);
+    const bt = aiType(type), c = makeCar(bt, 'bot', false), prof = buildSpeedProfile(tr, bt);
     placeCar(c, tr, 0, 0, 0);
     const ai = { lane: 0, skill: 0.96 }, inp = { steer: 0, throttle: 0, brake: 0, drift: false, ers: false };
     let t = 0, walls = 0, lapTimes = [], lastLap = 0, resets = 0, air = 0, pads = 0, maxSpeed = 0, offT = 0;

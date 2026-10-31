@@ -15,3 +15,9 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Listas del menú con scroll vertical en móvil.
 - HUD móvil mínimo: solo datos, sin textos.
 - Marca de cada coche en el selector.
+
+## 0.0.3
+- Cartoon un 20% más pequeños.
+- Circuitos Valle, Desierto, Neón y Nieve rediseñados (estrechos y cortos, estilo Interlagos, México, Suzuka y Alpino) con rasgos propios: túneles, curvas peraltadas y rampas a medida; también en Pruebas, Mónaco y Spa.
+- IA calibrada con los tiempos reales de la clasificación (`node test/calib.mjs`).
+- Clasificación por circuito y grupo, con diferencia al primero.

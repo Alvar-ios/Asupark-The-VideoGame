@@ -4,7 +4,7 @@ import { THEMES, THEME_LIST, dailyInfo } from './themes.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo } from './car.js';
 import { hashStr } from './rng.js';
-import { buildSpeedProfile, aiInput, benchmark } from './ai.js';
+import { buildSpeedProfile, aiInput, benchmark, aiType } from './ai.js';
 import { buildWorld, disposeScene } from './world.js';
 import { Sound } from './audio.js';
 import { Leaderboard } from './leaderboard.js';
@@ -80,10 +80,12 @@ const FLAGS = {
   at: '<rect width="30" height="20" fill="#ed2939"/><rect y="6.67" width="30" height="6.67" fill="#f4f4f4"/>',
   ma: '<rect width="30" height="20" fill="#c1272d"/><polygon points="' + starPts(15, 10.4, 5.6, 2.2) + '" fill="none" stroke="#006233" stroke-width="1.1"/>',
   jp: '<rect width="30" height="20" fill="#f4f4f4"/><circle cx="15" cy="10" r="5.6" fill="#bc002d"/>',
+  br: '<rect width="30" height="20" fill="#009c3b"/><polygon points="15,2.5 27,10 15,17.5 3,10" fill="#ffdf00"/><circle cx="15" cy="10" r="3.6" fill="#002776"/>',
+  mx: '<rect width="10" height="20" fill="#006847"/><rect x="10" width="10" height="20" fill="#f4f4f4"/><rect x="20" width="10" height="20" fill="#ce1126"/><circle cx="15" cy="10" r="2.2" fill="#8c6a2a"/>',
   ch: '<rect width="30" height="20" fill="#da291c"/><rect x="13" y="4" width="4" height="12" fill="#f4f4f4"/><rect x="9" y="8" width="12" height="4" fill="#f4f4f4"/>',
 };
 const flagSvg = (c) => `<svg viewBox="0 0 30 20" aria-hidden="true">${FLAGS[c] || FLAGS.es}</svg>`;
-const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['at', 'Austria'], desierto: ['ma', 'Marruecos'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'] };
+const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'] };
 const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
 function drawPreview(cv, tr, th) {
   const w = 300, h = 130, dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
@@ -166,6 +168,7 @@ $('modeSel').onclick = (e) => { if (e.target.dataset.v) { sel.mode = e.target.da
 $('diffSel').onclick = (e) => { if (e.target.dataset.v) { sel.diff = +e.target.dataset.v; buildMenu(); } };
 
 // ---------- modelos de coche ----------
+const CARTOON = new Set(CARS.filter((c) => c.group === 'cartoon').map((c) => c.kind));
 function buildCarMesh(color, kind, lod = 'lo') {
   let b;
   if (MODEL[kind]) {
@@ -178,7 +181,7 @@ function buildCarMesh(color, kind, lod = 'lo') {
     if (!boraReady(lod)) throw new Error(`El modelo VW Bora (${lod}) no est? cargado`);
     b = buildBora(color, lod);
   } else throw new Error(`No existe un modelo real para ${kind}`);
-  b.root.scale.setScalar(CS * (kind === 'bora' ? 0.97 : 0.98));
+  b.root.scale.setScalar(CS * (kind === 'bora' ? 0.97 : 0.98) * (CARTOON.has(kind) ? 0.8 : 1)); // los cartoon, más chiquitillos
   return b;
 }
 
@@ -341,7 +344,7 @@ async function startRace(restart = false) {
     clearRace();
     const world = buildWorld(tr, ti.th, { mobile: MOBILE, shadows: QUAL.shadows, renderer }); S.world = world; S.scene = world.scene;
     const scene = S.scene;
-    S.prof = {}; for (const c of CARS) S.prof[c.id] = buildSpeedProfile(tr, c);
+    S.prof = {}; for (const c of CARS) S.prof[c.id] = buildSpeedProfile(tr, aiType(c));
     S.particles = new Particles(scene);
     const sg = new THREE.PlaneGeometry(0.34, 1.45, 1, 1).rotateX(-Math.PI / 2);
     S.skidN = MOBILE ? 300 : 900;
@@ -372,7 +375,7 @@ async function startRace(restart = false) {
     if (sel.mode === 'race') {
       const gi = (c) => GROUPS.findIndex((g) => g.id === c.group), pg = gi(CARS[sel.car]), pool = CARS.filter((_, i) => i !== sel.car).sort((a, b) => Math.abs(gi(a) - pg) - Math.abs(gi(b) - pg)), rivals = [pool[0], pool[1], pool[2]];
       const base = [0.955, 0.94, 0.925], diff = [0.88, 0.95, 1.01][sel.diff], names = ['Nova', 'Rayo', 'Duna'];
-      rivals.forEach((rt, i) => { const c = mkCar(rt, AI_COLORS[i], names[i], false); c.ai = { lane: [-3, 3, -1.5][i], skill: base[i] * diff, base: base[i] * diff }; S.cars.push(c); });
+      rivals.forEach((rt, i) => { const c = mkCar(aiType(rt), AI_COLORS[i], names[i], false); c.ai = { lane: [-3, 3, -1.5][i], skill: base[i] * diff, base: base[i] * diff }; S.cars.push(c); });
     } else {
       S.ghostMesh = buildCarMesh(0xffffff, type.kind, 'lo'); makeGhost(S.ghostMesh.root);
       S.ghostMesh.root.visible = false; scene.add(S.ghostMesh.root);
@@ -886,31 +889,33 @@ const firstGesture = () => { sound.init(); S.musicOn = null; window.removeEventL
 window.addEventListener('pointerdown', firstGesture); window.addEventListener('keydown', firstGesture);
 
 // ---------- clasificación ----------
+const BD = { track: 0, group: 'all' };
+const boardRow2 = (r, best) => `<tr class="${r.you ? 'me' : ''}"><td class="rk">${r.rank}</td><td>${esc(r.name)}</td><td class="car"><small>${esc((CARS.find((c) => c.id === r.carId) || {}).brand || '')}</small> ${esc(carName(r.carId))}</td><td class="tm">${fmt(r.ms / 1000)}</td><td class="gp">${r.rank === 1 ? '' : '+' + ((r.ms - best) / 1000).toFixed(2)}</td></tr>`;
 async function renderBoard() {
-  const ti = tracks[+$('boardTrack').value], f = $('boardCar').value, st = $('boardStatus');
+  const ti = tracks[BD.track], st = $('boardStatus');
+  $('boardTracks').innerHTML = tracks.map((t, i) => `<button type="button" class="${i === BD.track ? 'on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span>${t.key === 'daily' ? 'Del día' : esc(t.name.replace(/ · .*$/, ''))}</button>`).join('');
+  $('boardGroups').innerHTML = [['all', 'Todos']].concat(GROUPS.map((g) => [g.id, g.name])).map(([id, n]) => `<button type="button" class="${id === BD.group ? 'on' : ''}" data-g="${id}">${esc(n)}</button>`).join('');
   $('boardTable').innerHTML = '<tr><td>Cargando…</td></tr>'; st.textContent = '';
   const res = await getRows(ti);
-  if (!res.online) st.textContent = res.error ? 'No se pudo conectar con la clasificación. Mostrando tus tiempos de este dispositivo.' : 'Clasificación online desactivada: aquí solo ves tus tiempos de este dispositivo.';
-  const head = '<tr><th>#</th><th>Piloto</th><th>Coche</th><th>Tiempo</th></tr>';
+  if (BD.track !== tracks.indexOf(ti)) return;
+  if (!res.online) st.textContent = res.error ? 'Sin conexión con la clasificación: se muestran solo tus tiempos de este dispositivo.' : 'Clasificación online desactivada: solo ves tus tiempos de este dispositivo.';
   let html = '';
-  if (!f) { // por categorías: el mejor tiempo de cada piloto dentro de cada grupo
-    for (const g of GROUPS) { const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === g.id); if (!list.length) continue; html += `<tr class="gh"><td colspan="4">${esc(g.name)}</td></tr>` + topWithMe(list, 8).map(boardRow).join(''); }
-    if (res.online && html) st.textContent = 'Mejor tiempo de cada piloto en cada categoría';
-  } else {
-    const pred = f.startsWith('g:') ? (r) => groupIdOfCar(r.carId) === f.slice(2) : (r) => r.carId === f.slice(2);
-    html = rankRows(res.rows, pred).map(boardRow).join('');
+  for (const g of GROUPS) {
+    if (BD.group !== 'all' && BD.group !== g.id) continue;
+    const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === g.id); if (!list.length) continue;
+    const best = list[0].ms;
+    html += `<tr class="gh"><td colspan="5">${esc(g.name)} <small>${list.length} piloto${list.length === 1 ? '' : 's'}</small></td></tr>` + list.filter((r) => r.rank <= 10 || r.you).map((r) => boardRow2(r, best)).join('');
   }
-  if (res.online && !html) st.textContent = 'Aún no hay tiempos en este circuito. ¡Pon el primero!';
-  $('boardTable').innerHTML = head + html;
+  if (!html) st.textContent = res.online ? 'Aún no hay tiempos aquí. ¡Pon el primero!' : st.textContent;
+  $('boardTable').innerHTML = html;
 }
 function openBoard(trackKey) {
-  const bt = $('boardTrack'), bc = $('boardCar');
-  bt.innerHTML = tracks.map((t, i) => `<option value="${i}">${esc(t.name)}</option>`).join('');
-  bc.innerHTML = '<option value="">Por categorías</option><optgroup label="Una categoría">' + GROUPS.map((g) => `<option value="g:${g.id}">${esc(g.name)}</option>`).join('') + '</optgroup><optgroup label="Un coche">' + CARS.map((c) => `<option value="c:${c.id}">${esc(c.name)}</option>`).join('') + '</optgroup>';
-  bt.value = String(Math.max(0, tracks.findIndex((t) => t.key === (trackKey || tracks[sel.track].key)))); bc.value = '';
+  BD.track = Math.max(0, tracks.findIndex((t) => t.key === (trackKey || tracks[sel.track].key))); BD.group = 'all';
   $('board').classList.remove('hidden'); renderBoard();
+  setTimeout(() => { const on = $('boardTracks').querySelector('.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' }); }, 30);
 }
-$('boardTrack').onchange = renderBoard; $('boardCar').onchange = renderBoard;
+$('boardTracks').onclick = (e) => { const b = e.target.closest('button'); if (b) { BD.track = +b.dataset.i; renderBoard(); } };
+$('boardGroups').onclick = (e) => { const b = e.target.closest('button'); if (b) { BD.group = b.dataset.g; renderBoard(); } };
 $('boardBtn').onclick = () => openBoard(); $('boardBtn2').onclick = () => openBoard(S.trackInfo && S.trackInfo.key); $('boardClose').onclick = () => $('board').classList.add('hidden');
 $('pname').onchange = (e) => { e.target.value = lb.setName(e.target.value); };
 $('pname').onkeydown = (e) => e.stopPropagation();
@@ -1087,4 +1092,4 @@ async function renderThumb(id, w = 420, h = 250) {
   for (let y = 0; y < h; y++) img.data.set(px.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4);
   x.putImageData(img, 0, 0); return cv.toDataURL('image/png');
 }
-window.__dr = { renderThumb, showRaceBanner, pointAt, makeGhost, lb, S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };
+window.__dr = { placeCar, renderThumb, showRaceBanner, pointAt, makeGhost, lb, S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };

@@ -149,7 +149,8 @@ export function stepCar(c, inp, dt, tr, env) {
     if (puddleWater > 0.05) vf *= Math.exp(-puddleWater * 0.45 * dt);
     // ----- lógica de agarre: el neumático tiene un límite; si se le pide más, el coche se va un poco -----
     const wet = surfaceGrip * (1 - puddleWater * 0.5) * (1 - mud * 0.5);
-    const limitG = 9.5 * (T.grip / 12.5) * env.gripMul * wet * (0.88 + 0.24 * c.tireTemp);
+    const bankG = 1 + 1.6 * Math.abs(tr.bank ? tr.bank[loc.i] : 0); // las curvas peraltadas agarran más
+    const limitG = 9.5 * (T.grip / 12.5) * env.gripMul * wet * bankG * (0.88 + 0.24 * c.tireTemp);
     const demand = (Math.abs(c.yawRate) * speed) / Math.max(3, limitG); c.demand = demand;
     const overload = smoothstep(0.78, 1.3, demand);
     // neumáticos: recto y acelerando se calientan y agarran más; al forzar en curva o deslizar se enfrían

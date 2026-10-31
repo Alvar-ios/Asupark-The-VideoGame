@@ -200,6 +200,14 @@ export function buildTrack(seed, style) {
   }
   tr.pads.sort((a, b) => a.s - b.s);
 
+  // --- rasgos propios de cada circuito: rampas a medida, túneles y curvas peraltadas ---
+  if (style.rampList) tr.ramps = style.rampList.map((r) => ({ s0: r.u * len, len: r.len || 12, h: r.h || 1.6 }));
+  tr.tunnels = (style.tunnels || []).map(([u0, u1]) => ({ s0: u0 * len, s1: u1 * len }));
+  tr.bank = new Float32Array(N); // ángulo de peralte (rad) en cada muestra; positivo = sube el lado derecho
+  for (const [u0, u1, deg] of style.banks || []) {
+    const a = Math.floor(u0 * N), b = Math.floor(u1 * N); let km = 0; for (let i = a; i < b; i++) km += kap[i % N]; const sg = km >= 0 ? 1 : -1;
+    for (let i = a; i < b; i++) { const u = (i - a) / (b - a); tr.bank[i % N] = Math.sin(Math.PI * u) ** 0.6 * (deg * Math.PI / 180) * sg; }
+  }
   // --- perfil de altura ---
   const A1 = style.hill || 0, ph = [rng() * TAU, rng() * TAU, rng() * TAU];
   const k1 = 1 + Math.floor(rng() * 2), k2 = 3 + Math.floor(rng() * 2), k3 = 6 + Math.floor(rng() * 2);

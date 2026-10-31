@@ -122,6 +122,22 @@ function tyreStacks(tr, th, scene) {
 }
 
 // Malla estática de carretera + arcenes + terraplenes (colores por vértice)
+// túnel: carcasa elíptica oscura sobre la pista, con aros de luz en el techo y bocas más claras
+function tunnelMesh(tr, t, th) {
+  const g = new THREE.Group(), N = tr.N, Lh = WALL + 0.5, steps = Math.max(2, Math.round((t.s1 - t.s0) / 2)), ring = 14;
+  const pos = [], idx = [], lights = [];
+  for (let k = 0; k <= steps; k++) {
+    const i = Math.floor((t.s0 + (t.s1 - t.s0) * k / steps) / tr.ds) % N, h = tr.Y[i];
+    for (let r = 0; r <= ring; r++) { const a = Math.PI * r / ring, l = Lh * Math.cos(a), y = h + 0.2 + 2.6 + 4.4 * Math.sin(a); pos.push(tr.X[i] + -tr.TZ[i] * l, y, tr.Z[i] + tr.TX[i] * l); }
+    if (k % 4 === 0) { const l = 0; lights.push([tr.X[i] + -tr.TZ[i] * l, h + 7.1, tr.Z[i] + tr.TX[i] * l, Math.atan2(tr.TX[i], tr.TZ[i])]); }
+  }
+  for (let k = 0; k < steps; k++) for (let r = 0; r < ring; r++) { const a = k * (ring + 1) + r, b = a + 1, c = a + ring + 1, d = c + 1; idx.push(a, b, c, b, d, c); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+  g.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x4a4e55, side: THREE.DoubleSide })));
+  const lm = new THREE.InstancedMesh(new THREE.BoxGeometry(5, 0.18, 0.7), new THREE.MeshBasicMaterial({ color: 0xfff0b8 }), lights.length), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+  lights.forEach((L, n) => { e.set(0, L[3], 0); q.setFromEuler(e); m.compose(new THREE.Vector3(L[0], L[1], L[2]), q, new THREE.Vector3(1, 1, 1)); lm.setMatrixAt(n, m); });
+  g.add(lm); return g;
+}
 function roadMesh(tr, th, stride = 1) {
   const N = tr.N, hw = ROAD_HALF, L = WALL;
   const pos = [], colors = [], uvs = [];
@@ -147,7 +163,7 @@ function roadMesh(tr, th, stride = 1) {
     for (let b = 0; b < 13; b++) {
       const [l0, y0i] = lat(b, hi, eoI, krI), [l1, y1i] = lat(b + 1, hi, eoI, krI);
       const [l0j, y0j] = lat(b, hj, eoJ, krJ), [l1j, y1j] = lat(b + 1, hj, eoJ, krJ);
-      const P = (idx, l, y) => [tr.X[idx] + -tr.TZ[idx] * l, y, tr.Z[idx] + tr.TX[idx] * l];
+      const P = (idx, l, y) => [tr.X[idx] + -tr.TZ[idx] * l, y + (Math.abs(l) <= L ? l * Math.tan(tr.bank[idx]) : (l > 0 ? 1 : -1) * L * Math.tan(tr.bank[idx])), tr.Z[idx] + tr.TX[idx] * l];
       const a = P(i, l0, y0i), bb = P(i, l1, y1i), c = P(j, l0j, y0j), d = P(j, l1j, y1j);
       let color;
       let outerColor = null;
@@ -471,6 +487,7 @@ export function buildWorld(tr, th, opt = {}) {
   };
 
   const road = roadMesh(tr, th, q.stride); scene.add(road);
+  for (const t of tr.tunnels || []) scene.add(tunnelMesh(tr, t, th));
   // Marcas tenues de goma en la trazada: dos huellas de rueda, sin línea central de carretera.
   const rubber = new THREE.MeshStandardMaterial({ color: th.weather === 'rain' ? 0x35404a : 0x25292d, roughness: 0.94, metalness: 0.02, transparent: true, opacity: th.weather === 'rain' ? 0.36 : 0.24, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide });
   for (const side of [-1, 1]) {

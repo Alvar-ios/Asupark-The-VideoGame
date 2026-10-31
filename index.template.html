@@ -525,6 +525,17 @@ body.mobile #raceBanner{width:min(200px,50vw);padding:6px 9px 8px;opacity:.95}
 body.mobile #raceBanner small{display:none}
 body.mobile #raceBanner strong{font-size:22px;margin:0}
 @media (orientation:portrait){body.mobile #hud #h-rec{top:48px}body.mobile #pbtn{top:94px}body.mobile #rbtn{top:138px}}
+/* clasificación */
+#board .tabs{display:flex;gap:6px;overflow-x:auto;flex-wrap:nowrap;margin:0 0 8px;padding-bottom:4px;touch-action:pan-x}
+#board .tabs button{flex:none;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#c8d0dc;border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+#board .tabs button.on{background:#ffc928;border-color:#ffc928;color:#111;font-weight:700}
+#board .tabs .flag{width:18px;height:12px;border-radius:2px;overflow:hidden;display:inline-block}#board .tabs .flag svg{display:block;width:100%;height:100%}
+#boardGroups button{font-size:11px;padding:5px 11px}
+.lbt td.rk{width:34px;color:#8e98a8;font-weight:800}.lbt tr.me td.rk{color:#ffc928}
+.lbt td.tm{font-weight:700;font-variant-numeric:tabular-nums}.lbt td.gp{color:#8e98a8;font-size:12px;text-align:right;width:62px}
+.lbt td.car small{color:#6f7b8e;font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
+.lbt tr.gh td{background:rgba(255,201,40,.08);padding-top:10px}.lbt tr.gh small{color:#8e98a8;font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
+.lbt td:last-child,.lbt th:last-child{text-align:right}
 </style>
 </head>
 <body>
@@ -577,7 +588,7 @@ body.mobile #raceBanner strong{font-size:22px;margin:0}
   </aside>
 </div>
 <div id="board" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="max-width:680px;text-align:left"><h1 style="font-size:30px">CLASIFICACIÓN</h1>
-  <div class="row" style="gap:8px;margin-bottom:6px"><select id="boardTrack" class="sel"></select><select id="boardCar" class="sel"></select></div>
+  <div id="boardTracks" class="tabs"></div><div id="boardGroups" class="tabs"></div>
   <div id="boardStatus" class="keys" style="display:block;margin:4px 0 8px"></div>
   <div style="max-height:50vh;overflow:auto"><table id="boardTable" class="lbt"></table></div>
   <button id="boardClose" class="big">CERRAR</button></div></div>
