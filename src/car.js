@@ -100,7 +100,7 @@ export function stepCar(c, inp, dt, tr, env) {
       } else vf = Math.max(-16, vf - 14 * inp.brake * dt);
     } else if (inp.throttle > 0.01) {
       if (vf < 0) vf += 28 * dt;
-      else if (vf < vmaxE) vf += T.accel * (env.traction || 1) * inp.throttle * (1 - Math.pow(vf / vmaxE, 2.5)) * dt;
+      else if (vf < vmaxE) vf += T.accel * ACCEL_SCALE * (env.traction || 1) * inp.throttle * (1 - Math.pow(vf / vmaxE, 2.2)) * dt;
     } else if (vf !== 0) {
       const d = Math.min(Math.abs(vf), (2.2 + 0.0007 * vf * vf) * dt);
       vf -= Math.sign(vf) * d;
@@ -189,10 +189,12 @@ export function stepCar(c, inp, dt, tr, env) {
   if (c.speed < 1.5) c.stuckT += dt; else c.stuckT = 0;
 }
 
-const GT = [0.19, 0.34, 0.49, 0.64, 0.8, 1.0];
+// Aceleración: más progresiva (0-100 km/h en ~5 s y máxima en ~25 s); marchas más largas
+export const ACCEL_SCALE = 0.42;
+const GT = [0.27, 0.44, 0.6, 0.75, 0.88, 1.0];
 // marcha y régimen (0..1) a partir de la velocidad
 export function gearInfo(speed, vmax) {
-  const top = vmax * 1.1;
+  const top = vmax * 1.08;
   let g = 0;
   while (g < 5 && speed > top * GT[g] * 0.97) g++;
   const lo = g ? top * GT[g - 1] * 0.6 : 0, hi = top * GT[g];
