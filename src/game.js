@@ -138,7 +138,7 @@ function buildMenu() {
     if (c.group !== sel.group) return;
     const d = document.createElement('div'); d.className = 'card car-card' + (i === sel.car ? ' on' : '');
     const hex = new THREE.Color(paintOf(c)).lerp(new THREE.Color(0xffffff), 0.32).getStyle();
-    d.innerHTML = `<img class="cthumb" src="./assets/thumbs/${c.id}.webp" alt=""><b style="color:${hex}">${c.name}</b><small>${c.desc}</small>` + [['VEL', (c.vmax - 44) / 32], ['ACEL', (c.accel - 11) / 11], ['GIRO', (c.yaw - 1.9) / 1.3], ['DESLIZ.', (15 - c.grip) / 5]].map(([n, v]) => `<div class="stat">${n}<i><s style="width:${clamp(v, 0.1, 1) * 100}%;background:${hex}"></s></i></div>`).join('');
+    d.innerHTML = `<img class="cthumb" src="./assets/thumbs/${c.id}.webp" alt=""><em class="brand">${c.brand || ''}</em><b style="color:${hex}">${c.name}</b><small>${c.desc}</small>` + [['VEL', (c.vmax - 44) / 32], ['ACEL', (c.accel - 11) / 11], ['GIRO', (c.yaw - 1.9) / 1.3], ['DESLIZ.', (15 - c.grip) / 5]].map(([n, v]) => `<div class="stat">${n}<i><s style="width:${clamp(v, 0.1, 1) * 100}%;background:${hex}"></s></i></div>`).join('');
     d.querySelector('img').onerror = (e) => { e.target.style.display = 'none'; };
     d.onclick = () => { sel.car = i; sel.carId = c.id; store.set('sel', sel); buildMenu(); };
     cl.appendChild(d);

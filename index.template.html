@@ -505,6 +505,26 @@ body.mobile #hud #h-lap{top:54px;font-size:11px;padding:3px 16px 3px 10px;border
   body.mobile.tt #hud #weatherBadge{top:98px}
   body.mobile #pbtn{top:128px}body.mobile #rbtn{top:174px}
 }
+/* ===== móvil: listas con scroll vertical y HUD mínimo ===== */
+#menu #flyout,#menu #flyout *{touch-action:pan-y}
+#menu #flyout{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+body.mobile #menu #flyout .grid{display:grid;overflow:visible}
+body.mobile #menu #flyout .card{flex:none;min-width:0}
+#menu .brand{display:block;font-style:normal;font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#8e98a8;margin:0 0 2px}
+body.mobile #hud #weatherBadge,body.mobile #hud #best,body.mobile #hud #h-rec>span,body.mobile #hud #h-rec>small,body.mobile #hud #h-rec .rs small,body.mobile #hud .sec b,body.mobile #hud #gearBox small,body.mobile #hud #h-speed span,body.mobile #hud #h-lap{display:none!important}
+body.mobile #hud #h-rec{min-width:0;padding:2px 14px 3px 8px;top:56px}
+body.mobile #hud #h-rec b{font-size:15px}
+body.mobile #hud #h-rec .rs{gap:6px}body.mobile #hud #h-rec .rs b{font-size:10px}
+body.mobile #hud #h-time{min-width:0}
+body.mobile #hud #secs{display:none}
+body.mobile #hud #h-pos{opacity:.9}
+body.mobile #hud #h-speed{font-size:38px}
+body.mobile #hud #gearBox{padding:0 8px 2px}body.mobile #hud #gearBox b{font-size:28px}
+body.mobile #hud #mini{width:76px;height:76px;opacity:.85}
+body.mobile #raceBanner{width:min(200px,50vw);padding:6px 9px 8px;opacity:.95}
+body.mobile #raceBanner small{display:none}
+body.mobile #raceBanner strong{font-size:22px;margin:0}
+@media (orientation:portrait){body.mobile #hud #h-rec{top:48px}body.mobile #pbtn{top:94px}body.mobile #rbtn{top:138px}}
 </style>
 </head>
 <body>

@@ -10,3 +10,8 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Contrarreloj infinita con récord de grupo y de sectores en el HUD, aviso de sector y fantasma solo con el exterior.
 - HUD y controles para móvil en vertical y en horizontal.
 - Motor más bajo, limpio y redondo; arreglos de cortes de audio.
+
+## 0.0.2
+- Listas del menú con scroll vertical en móvil.
+- HUD móvil mínimo: solo datos, sin textos.
+- Marca de cada coche en el selector.
