@@ -36,3 +36,8 @@ Los modelos se preparan desde archivos `.glb` optimizados con varios niveles de 
 ## Verificación
 
 `npm run build` comprueba que el bundle se compile. `npm run sim` ejecuta una simulación sin gráficos.
+
+## Clasificaciones online (Supabase)
+El juego guarda el mejor tiempo de cada piloto por circuito y por coche, y muestra con qué coche se hizo (menú → 🏆 Clasificación y pantalla de resultados).
+Para activarlo: crear un proyecto de Supabase, ejecutar `supabase/leaderboard.sql` y rellenar `config.js` con la URL del proyecto y su clave publicable.
+Sin configurar, el juego funciona igual con los tiempos locales. La escritura solo es posible mediante la función `submit_lap`, que conserva el mejor tiempo y valida los datos.

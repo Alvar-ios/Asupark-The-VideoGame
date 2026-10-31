@@ -7,6 +7,7 @@ fs.writeFileSync('dist/game.js', r.outputFiles[0].text);
 fs.writeFileSync('dist/index.html', tpl.replace('<script>/*BUNDLE*/</script>', '<script src="./game.js" defer></script>'));
 fs.mkdirSync('dist/assets', { recursive: true });
 for (const name of fs.readdirSync('src/assets')) if (name.endsWith('.glb.gz')) fs.copyFileSync(`src/assets/${name}`, `dist/assets/${name}`);
+fs.copyFileSync('config.js', 'dist/config.js');
 fs.copyFileSync('src/engine-dsp.js', 'dist/engine-dsp.js');
 fs.copyFileSync('src/engine-worklet.js', 'dist/engine-worklet.js');
 fs.mkdirSync('dist/lab', { recursive: true });

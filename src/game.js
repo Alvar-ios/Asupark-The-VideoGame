@@ -6,6 +6,7 @@ import { hashStr } from './rng.js';
 import { buildSpeedProfile, aiInput, benchmark } from './ai.js';
 import { buildWorld, disposeScene } from './world.js';
 import { Sound } from './audio.js';
+import { Leaderboard } from './leaderboard.js';
 import { loadBora, buildBora, boraReady } from './bora.js';
 import { loadPorsche, buildPorsche, porscheReady } from './porsche.js';
 import { loadModelCar, buildModelCar, modelCarReady, MODEL } from './modelcars.js';
@@ -97,7 +98,7 @@ function buildMenu() {
     const d = document.createElement('div'); d.className = 'card track-card' + (i === sel.track ? ' on' : '');
     const environment = t.th.weather === 'rain' ? ['rain', 'LLUVIA · PISTA MOJADA'] : t.th.surface === 'snow' ? ['snow', 'NIEVE · BAJA ADHERENCIA'] : t.th.surface === 'dirt' ? ['dirt', 'TIERRA · POLVO'] : ['dry', 'ASFALTO · SECO'];
     let best = null; for (const cc of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = { ...r, car: cc }; }
-    d.innerHTML = `<canvas></canvas><b>${t.key === 'daily' ? '★ ' : ''}${t.name}</b><small class="track-sub">${t.sub}</small><span class="track-env ${environment[0]}">${environment[1]}</span><small class="track-meta">${(t.tr.len / 1000).toFixed(1)} km · ${t.tr.ramps.length} curvas/rampas</small><div class="rec">${best ? medalFor(best.lap, (benchFor(t, best.car) || {}).lap) + ' Mejor ' + fmt(best.lap) : '&nbsp;'}${t.key === 'daily' ? (streakInfo().done ? ' ✓ hecho hoy' : streakInfo().n ? ' 🔥 ' + streakInfo().n + ' días' : ' Reto de hoy') : ''}</div>`;
+    d.innerHTML = `<canvas></canvas><b>${t.key === 'daily' ? '★ ' : ''}${t.name}</b><small class="track-sub">${t.sub}</small><span class="track-env ${environment[0]}">${environment[1]}</span><small class="track-meta">${(t.tr.len / 1000).toFixed(1)} km · ${t.tr.ramps.length} curvas/rampas</small><div class="rec">${best ? medalFor(best.lap, (benchFor(t, best.car) || {}).lap) + ' Mejor ' + fmt(best.lap) + ' · ' + best.car.name.split(' ')[0] : '&nbsp;'}${t.key === 'daily' ? (streakInfo().done ? ' ✓ hecho hoy' : streakInfo().n ? ' 🔥 ' + streakInfo().n + ' días' : ' Reto de hoy') : ''}</div>`;
     drawPreview(d.querySelector('canvas'), t.tr, t.th);
     d.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
     tl.appendChild(d);
@@ -219,14 +220,17 @@ function markDaily() {
   store.set('streak', { last: t, n: st.last === yesterdayKey() ? st.n + 1 : 1 });
   showMsg('🔥 Reto diario completado', 1800, 'cy');
 }
-const BOTS = [['Nova', 1.0], ['Rayo', 1.028], ['Kai', 1.06], ['Duna', 1.1], ['Mika', 1.15], ['Zeta', 1.22]];
-function leaderboard(skey, benchLap, pbLap) {
-  const h = hashStr(skey + todayKey());
-  const rows = BOTS.map(([name, f], i) => ({ name, time: benchLap * (f + ((h >>> (i * 3)) & 7) / 7 * 0.012), bot: true }));
-  if (pbLap != null) rows.push({ name: 'TÚ', time: pbLap, you: true });
-  rows.sort((a, b) => a.time - b.time);
-  return rows.map((r, i) => ({ ...r, rank: i + 1 }));
+const lb = new Leaderboard();
+const trackIdOf = (ti) => (ti.key === 'daily' ? 'daily:' + ti.tr.seed : ti.key);
+const carName = (id) => (CARS.find((c) => c.id === id) || { name: id }).name;
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// tus mejores tiempos guardados en este dispositivo, por coche
+function localRows(ti, carId) {
+  const rows = [];
+  for (const c of CARS) { if (carId && c.id !== carId) continue; const r = store.get('pb.' + ti.key + '.' + ti.tr.seed + '.' + c.id); if (r && r.lap != null) rows.push({ name: lb.name, carId: c.id, ms: Math.round(r.lap * 1000), you: true }); }
+  rows.sort((a, b) => a.ms - b.ms); rows.forEach((r, i) => { r.rank = i + 1; }); return rows;
 }
+const boardRow = (r) => `<tr class="${r.you ? 'me' : ''}"><td>${r.rank}º</td><td>${esc(r.name)}</td><td class="car">${esc(carName(r.carId))}</td><td>${fmt(r.ms / 1000)}</td></tr>`;
 const benchFor = (ti, type) => benchmark(ti.tr, type, ti.th, ti.key + '.' + ti.tr.seed + '.' + type.id);
 
 // Cargar modelos reales antes de empezar; un error de red nunca se convierte en un coche genérico.
@@ -551,6 +555,7 @@ function onPlayerLap(c, lt, done) {
   if (valid) {
     if (S.lapPB == null || lt < S.lapPB) {
       newPB = true; S.lapPB = lt; S.bestLap = lt;
+      lb.submit(trackIdOf(S.trackInfo), c.type.id, Math.round(lt * 1000)).catch(() => {});
       S.pbRec.lap = lt; S.pbRec.prof = Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000));
       store.set('pb.' + S.skey, S.pbRec);
       S.refProf = S.pbRec.prof; S.refName = 'PB';
@@ -580,6 +585,16 @@ function onPlayerFinish() {
   setTimeout(() => { if (S.state === 'racing' || S.state === 'paused') showResults(); }, 1600);
 }
 
+async function fillResultsBoard() {
+  const ti = S.trackInfo, res = await lb.top(trackIdOf(ti), null);
+  if (S.state !== 'finished') return;
+  const list = res.remote && !res.error ? res.rows : localRows(ti, null), me = list.find((r) => r.you);
+  const shown = list.filter((r) => r.rank <= 5 || r.you), out = [];
+  shown.forEach((r, i) => { if (i && r.rank - shown[i - 1].rank > 1) out.push('<tr class="gap"><td colspan="4">···</td></tr>'); out.push(boardRow(r)); });
+  $('rTable').innerHTML = out.join('') || '<tr class="gap"><td colspan="4">Aún no hay tiempos</td></tr>';
+  if (res.remote && !res.error && me) $('rTitle').textContent = `${medalFor(S.lapPB, S.bench && S.bench.lap)} PUESTO ${me.rank} DE ${list.length}`;
+  else if (!res.remote) $('rTitle').textContent = $('rTitle').textContent + ' · SOLO LOCAL';
+}
 function showResults() {
   S.state = 'finished';
   const p = S.player, rows = [];
@@ -593,11 +608,9 @@ function showResults() {
     rest.forEach((c, i) => rows.push(`<tr><td>${order.length + i + 1}º</td><td>${c.name}</td><td>—</td></tr>`));
     $('rBig').textContent = rank + 'º'; $('rTitle').textContent = rank === 1 ? '¡VICTORIA!' : rank <= 3 ? '¡PODIO!' : 'META';
   } else {
-    const board = leaderboard(S.skey, benchLap, S.lapPB), me = board.find((r) => r.you);
-    const shown = board.filter((r) => r.rank <= 5 || r.you);
-    shown.forEach((r, i) => { if (i && r.rank - shown[i - 1].rank > 1) rows.push('<tr class="gap"><td colspan="3">···</td></tr>'); rows.push(`<tr class="${r.you ? 'me' : ''}"><td>${r.rank}º</td><td>${r.name}</td><td>${fmt(r.time)}</td></tr>`); });
     const md = medalFor(S.lapPB, benchLap);
-    $('rBig').textContent = fmt(S.lapPB); $('rTitle').textContent = `${md} ${me ? 'PUESTO ' + me.rank + ' DE ' + board.length : 'META'}`;
+    $('rBig').textContent = fmt(S.lapPB); $('rTitle').textContent = `${md} TU MEJOR VUELTA`;
+    rows.push('<tr class="gap"><td colspan="4">Cargando clasificación…</td></tr>'); fillResultsBoard();
     const st = streakInfo();
     if (S.trackInfo.key === 'daily') extra = `<div class="streak">🔥 Racha: ${st.n} día${st.n === 1 ? '' : 's'}</div>`;
   }
@@ -767,8 +780,32 @@ function updateHud(dt) {
 const firstGesture = () => { sound.init(); S.musicOn = null; window.removeEventListener('pointerdown', firstGesture); window.removeEventListener('keydown', firstGesture); };
 window.addEventListener('pointerdown', firstGesture); window.addEventListener('keydown', firstGesture);
 
+// ---------- clasificación ----------
+async function renderBoard() {
+  const ti = tracks[+$('boardTrack').value], carId = $('boardCar').value || null, st = $('boardStatus');
+  $('boardTable').innerHTML = '<tr><td>Cargando…</td></tr>'; st.textContent = '';
+  const res = await lb.top(trackIdOf(ti), carId);
+  let rows = res.rows;
+  if (!res.remote) { rows = localRows(ti, carId); st.textContent = 'Clasificación online desactivada: aquí solo ves tus tiempos de este dispositivo.'; }
+  else if (res.error) { rows = localRows(ti, carId); st.textContent = 'No se pudo conectar con la clasificación. Mostrando tus tiempos locales.'; }
+  else st.textContent = rows.length ? `Mejor tiempo de cada piloto · ${rows.length} piloto${rows.length === 1 ? '' : 's'}` : 'Aún no hay tiempos en este circuito. ¡Pon el primero!';
+  $('boardTable').innerHTML = '<tr><th>#</th><th>Piloto</th><th>Coche</th><th>Tiempo</th></tr>' + (rows.map(boardRow).join('') || '');
+}
+function openBoard(trackKey) {
+  const bt = $('boardTrack'), bc = $('boardCar');
+  bt.innerHTML = tracks.map((t, i) => `<option value="${i}">${esc(t.name)}</option>`).join('');
+  bc.innerHTML = '<option value="">Todos los coches</option>' + CARS.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  bt.value = String(Math.max(0, tracks.findIndex((t) => t.key === (trackKey || tracks[sel.track].key)))); bc.value = '';
+  $('board').classList.remove('hidden'); renderBoard();
+}
+$('boardTrack').onchange = renderBoard; $('boardCar').onchange = renderBoard;
+$('boardBtn').onclick = () => openBoard(); $('boardBtn2').onclick = () => openBoard(S.trackInfo && S.trackInfo.key); $('boardClose').onclick = () => $('board').classList.add('hidden');
+$('pname').onchange = (e) => { e.target.value = lb.setName(e.target.value); };
+lb.flush();
+
 // ---------- ajustes ----------
 function buildSettings() {
+  $('pname').value = lb.name;
   for (const k of ['master', 'music', 'engine']) { $('v_' + k).value = Math.round(sel.vol[k] * 100); $('vt_' + k).textContent = Math.round(sel.vol[k] * 100) + '%'; }
   for (const b of $('gfxSel').children) b.classList.toggle('on', b.dataset.v === sel.gfx);
 }
@@ -852,4 +889,4 @@ requestAnimationFrame(frame);
 
 buildMenu();
 applyGfx(); sound.setVolumes(sel.vol); sound.setMuted(!!sel.mute);
-window.__dr = { S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };
+window.__dr = { lb, S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };

@@ -301,6 +301,43 @@ body.mobile .sw{width:26px;height:26px}
 #menu .keys{margin:7px 0 0;font-size:10px;line-height:1.4;text-align:center;color:#8996ad}
 @media(max-width:900px){#menu{padding:10px}#menu .panel{width:min(760px,98vw);height:96dvh;max-height:96dvh}#menu .menu-scroll{padding:18px 18px 13px}#menu .menu-footer{padding:10px 18px max(12px,env(safe-area-inset-bottom))}#menu #trackList{grid-template-columns:repeat(3,minmax(0,1fr))}#menu #carList{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){#menu{padding:0;align-items:stretch}#menu .panel{width:100%;height:100dvh;max-height:100dvh;border-radius:0}#menu .menu-scroll{padding:14px 13px 10px}#menu .menu-footer{padding:9px 13px max(12px,env(safe-area-inset-bottom))}#menu .menu-brand{margin-bottom:9px}#menu h1{font-size:36px}#menu .tag{margin:4px 0 11px;font-size:11px}#menu .daily-feature{min-height:0;align-items:flex-start;flex-direction:column;gap:10px;margin-bottom:11px;padding:12px}.daily-copy h2{margin-top:7px;font-size:18px}.daily-copy p{font-size:10px}.daily-proof{gap:5px;margin-top:9px}.daily-proof span{font-size:7px;padding:4px 6px}.daily-cta{align-self:stretch;justify-content:center;padding:10px}.daily-feature:after{right:-55px;top:-75px}#menu .section-heading{margin-top:10px}#menu #trackList{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#menu #carList{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#menu .card{padding:7px}#menu .card canvas{height:40px}#menu .card b{font-size:11px}#menu .card small{font-size:9px}#menu .track-env{font-size:7px}#menu .stat{font-size:8px;margin-top:3px}#menu .seg button{padding:7px 8px;font-size:10px}#menu .row{gap:9px}#menu .tog{padding:7px 8px;font-size:10px}#menu .sw{width:23px;height:23px}#menu .keys{font-size:9px}}
+
+/* ===== HUD estilo retransmisión de F1: plano, anguloso, condensado ===== */
+#hud{font-family:"Bahnschrift","DIN Alternate","Barlow Condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif;font-style:italic;font-weight:700;text-transform:uppercase;letter-spacing:.035em;text-shadow:none}
+#hud #h-pos,#hud #h-lap,#hud #h-time,#hud #gearBox,#hud #weatherBadge,#hud #help{background:rgba(11,13,19,.9);border:0;border-radius:0;box-shadow:none;backdrop-filter:none}
+#hud #h-pos{left:0;top:14px;display:flex;align-items:baseline;gap:6px;padding:4px 26px 4px 16px;border-left:7px solid #e10600;clip-path:polygon(0 0,100% 0,calc(100% - 16px) 100%,0 100%);line-height:1}
+#hud #h-pos b{font-size:50px;color:#fff;letter-spacing:-.02em}#hud #h-pos b::before{content:"P";font-size:.52em;color:#e10600;margin-right:3px;vertical-align:.32em}
+#hud #h-pos span{font-size:18px;color:#8e98a8}
+#hud #h-lap{left:0;top:78px;padding:5px 24px 5px 14px;border-left:7px solid #f4f4f4;clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%);font-size:15px;color:#aeb7c4}
+#hud #h-lap b{color:#fff;font-size:18px}
+#hud #h-time{top:0;min-width:310px;padding:6px 28px 8px;border-bottom:3px solid #e10600;clip-path:polygon(0 0,100% 0,calc(100% - 16px) 100%,16px 100%)}
+#hud #time{font-size:44px;font-weight:800;line-height:1;color:#fff;letter-spacing:.01em}
+#hud #best{font-size:12px;color:#8e98a8;letter-spacing:.14em;font-weight:700}
+#hud #delta{font-size:19px;min-height:22px;font-weight:800}
+#hud #secs{gap:3px;margin-top:6px}
+#hud .sec{min-width:88px;padding:2px 8px 3px;background:#222833;border:0;border-bottom:4px solid #4a5363;border-radius:0;font-size:15px;color:#e9edf3;clip-path:polygon(0 0,100% 0,calc(100% - 7px) 100%,0 100%)}
+#hud .sec b{color:#8e98a8;font-size:10px}#hud .sec.cur{border-bottom-color:#fff}
+#hud .sec.orange{background:#f59e0b;color:#111;border-bottom-color:#b45309}#hud .sec.orange b{color:#5b3300}
+#hud .sec.green{background:#16a34a;border-bottom-color:#0b6b2f}#hud .sec.green b{color:#cdeed7}
+#hud .sec.purple{background:#9333ea;border-bottom-color:#5b1b9a}#hud .sec.purple b{color:#e5d0fb}
+#hud #mini{background:rgba(11,13,19,.55);border:0;border-radius:0;clip-path:polygon(14px 0,100% 0,100% 100%,0 100%,0 14px)}
+#hud #weatherBadge{font-size:12px;letter-spacing:.12em;border-left:4px solid #e10600}
+body:not(.mobile) #hud #rpmBar{left:50%;right:auto;transform:translateX(-50%);bottom:112px;width:min(430px,60vw);gap:4px}
+#hud #rpmBar i{height:11px;border-radius:0;transform:skewX(-20deg);background:#1b212c}
+#hud #rpmBar i.on:nth-child(-n+5){background:#22e06a;box-shadow:0 0 8px rgba(34,224,106,.7)}
+#hud #rpmBar i.on:nth-child(n+6){background:#ff2d2d;box-shadow:0 0 8px rgba(255,45,45,.7)}
+#hud #rpmBar i.on:nth-child(n+11){background:#6a7dff;box-shadow:0 0 8px rgba(106,125,255,.8)}
+body:not(.mobile) #hud #h-speed{left:50%;right:auto;transform:translateX(-50%);bottom:26px;gap:16px;align-items:flex-end;font-size:80px}
+#hud #gearBox{padding:2px 14px 6px;border-left:6px solid #e10600;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)}
+#hud #gearBox b{color:#fff;font-size:48px}#hud #gearBox small{color:#e10600;font-style:italic}
+#hud #h-speed>div:last-child b{color:#fff;font-weight:800;letter-spacing:-.03em}
+#hud #h-speed span{color:#8e98a8;font-size:16px}
+body:not(.mobile) #hud #help{left:0;bottom:0;font-size:11px;padding:6px 14px;color:#aeb7c4;text-transform:none;font-style:normal;letter-spacing:0}
+
+.sel{background:#141a26;color:#eef2ff;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:9px 10px;font:inherit;font-size:14px;flex:1;min-width:0}
+.lbt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.lbt td,.lbt th{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;font-size:14px}
+.lbt th{color:#8e98a8;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}.lbt td:last-child,.lbt th:last-child{text-align:right}
+.lbt tr.me td{color:#ffc928;font-weight:800;background:rgba(255,201,40,.07)}.lbt td.car{color:#9db0cc;font-size:12px}
 </style>
 </head>
 <body>
@@ -345,7 +382,7 @@ body.mobile .sw{width:26px;height:26px}
     </div>
     <div class="section-heading garage-heading"><div><span class="eyebrow">TU GARAJE</span><h3>Elige coche</h3></div><span class="section-note">Cada coche tiene su carácter</span></div><div id="carList" class="grid"></div>
     <h3>Pintura · <span id="paintName" style="color:var(--txt);letter-spacing:.06em">—</span></h3><div id="paints"></div>
-    <div class="row" style="margin-top:12px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="setBtn" class="tog">⚙ Ajustes</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
+    <div class="row" style="margin-top:12px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="setBtn" class="tog">⚙ Ajustes</button><button id="boardBtn" class="tog">🏆 Clasificación</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
     </div>
     <div class="menu-footer">
     <button id="startBtn" class="big">JUGAR MODO SELECCIONADO</button>
@@ -354,17 +391,25 @@ body.mobile .sw{width:26px;height:26px}
     </div>
   </div>
 </div>
+<div id="board" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="max-width:680px;text-align:left"><h1 style="font-size:30px">CLASIFICACIÓN</h1>
+  <div class="row" style="gap:8px;margin-bottom:6px"><select id="boardTrack" class="sel"></select><select id="boardCar" class="sel"></select></div>
+  <div id="boardStatus" class="keys" style="display:block;margin:4px 0 8px"></div>
+  <div style="max-height:50vh;overflow:auto"><table id="boardTable" class="lbt"></table></div>
+  <button id="boardClose" class="big">CERRAR</button></div></div>
 <div id="settings" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="text-align:left;max-width:520px"><h1 style="font-size:32px">AJUSTES</h1>
   <h3>Sonido</h3>
   <div class="row"><label style="flex:1">Volumen general <b id="vt_master"></b><input id="v_master" type="range" min="0" max="100" style="width:100%"></label></div>
   <div class="row"><label style="flex:1">Música del menú <b id="vt_music"></b><input id="v_music" type="range" min="0" max="100" style="width:100%"></label></div>
   <div class="row"><label style="flex:1">Motor <b id="vt_engine"></b><input id="v_engine" type="range" min="0" max="100" style="width:100%"></label></div>
+  <h3>Piloto</h3>
+  <div class="row"><label style="flex:1">Nombre en la clasificación<input id="pname" maxlength="20" class="sel" style="width:100%;margin-top:4px"></label></div>
   <h3>Gráficos</h3>
   <div id="gfxSel" class="seg"><button data-v="auto">Auto</button><button data-v="high">Alta</button><button data-v="medium">Media</button><button data-v="low">Baja</button></div>
   <p class="keys" style="display:block">Auto baja la calidad solo si el juego va lento. «Baja» quita las sombras y reduce la resolución: úsala si va a tirones en el móvil.</p>
   <button id="setClose" class="big">LISTO</button></div></div>
 <div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar carrera</button><button id="setBtn2" class="big ghost">Ajustes</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
-<div id="results" class="overlay hidden"><div class="panel rbox"><h1 id="rTitle">META</h1><div class="big-n" id="rBig">1º</div><div id="rNew"></div><table id="rTable"></table><button id="againBtn" class="big">OTRA VEZ</button><button id="menuBtn2" class="big ghost">Menú principal</button></div></div>
+<div id="results" class="overlay hidden"><div class="panel rbox"><h1 id="rTitle">META</h1><div class="big-n" id="rBig">1º</div><div id="rNew"></div><table id="rTable"></table><button id="againBtn" class="big">OTRA VEZ</button><button id="boardBtn2" class="big ghost">Clasificación completa</button><button id="menuBtn2" class="big ghost">Menú principal</button></div></div>
+<script src="./config.js"></script>
 <script>/*BUNDLE*/</script>
 </body>
 </html>
