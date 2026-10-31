@@ -269,7 +269,9 @@ export function locate(tr, x, z, hint, out) {
   out.s = (sg.a + sg.t) * ds;
   out.h = Y[sg.a] + (Y[sg.b] - Y[sg.a]) * sg.t;
   out.tx = tx; out.tz = tz;
+  out.bank = tr.bank ? tr.bank[sg.a] + (tr.bank[sg.b] - tr.bank[sg.a]) * sg.t : 0;
   out.lat = (x - sg.px) * -tz + (z - sg.pz) * tx; // + = derecha
+  if (out.bank) out.h += Math.tan(out.bank) * (out.lat > WALL ? WALL : out.lat < -WALL ? -WALL : out.lat); // la superficie peraltada sube hacia fuera
   return out;
 }
 

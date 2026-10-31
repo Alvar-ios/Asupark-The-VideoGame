@@ -555,6 +555,23 @@ body.mobile #raceBanner strong{font-size:22px;margin:0}
 body.mobile #raceBanner{top:62px!important;min-width:0;padding:4px 10px 5px!important;gap:8px}
 body.mobile #raceBanner small{font-size:8px!important}body.mobile #raceBanner strong{font-size:16px!important}body.mobile #raceBanner span{font-size:10px!important}
 body.mobile #hud #secs{display:flex!important}body.mobile #hud .sec span{display:none}body.mobile #hud .sec{border-top-width:4px!important;padding:0!important;min-width:30px!important}
+/* ===== Gran Premio y torre de posiciones ===== */
+#menu .modes .seg{flex-wrap:wrap}#menu .modes .seg button{flex:1 1 30%}
+#menu .modes .seg button.gp{flex:1 1 100%;order:-1;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.1)}
+#menu .modes .seg button.gp.on{background:linear-gradient(100deg,#ffc928,#ff9d2e);color:#111}
+#menu .modeinfo{margin:7px 2px 0;font-size:12px;line-height:1.4;color:#9aa6b8}
+#tower{position:absolute;left:0;top:12px;min-width:150px;background:rgba(11,13,19,.9);padding:4px 0;font-style:italic;font-weight:700;text-transform:uppercase;pointer-events:none;border-left:5px solid #e10600}
+#tower .th{padding:2px 14px 4px 10px;font-size:11px;letter-spacing:.14em;color:#aeb7c4;border-bottom:1px solid rgba(255,255,255,.1)}
+#tower .tr{display:flex;align-items:center;gap:7px;padding:1px 12px 1px 8px;font-size:14px;line-height:19px;color:#e6ebf2}
+#tower .tr b{width:18px;text-align:right;color:#8e98a8;font-weight:800}
+#tower .tr .flag{width:18px;height:12px;border-radius:2px;overflow:hidden;flex:none;display:inline-block}#tower .tr .flag svg{display:block;width:100%;height:100%}
+#tower .tr i{font-style:italic;flex:1;letter-spacing:.06em}#tower .tr em{font-style:normal;color:#8e98a8;font-size:12px;min-width:40px;text-align:right}
+#tower .tr.me{background:#ffc928;color:#111}#tower .tr.me b,#tower .tr.me em{color:#222}
+body.race #hud #weatherBadge{top:auto;bottom:10px}
+.flag.sm{display:inline-block;width:18px;height:12px;border-radius:2px;overflow:hidden;vertical-align:-1px;margin-right:6px}.flag.sm svg{display:block;width:100%;height:100%}
+body.mobile #tower{top:6px;min-width:96px;padding:2px 0}body.mobile #tower .th{font-size:8px;padding:1px 8px 2px}
+body.mobile #tower .tr{font-size:10px;line-height:13px;gap:4px;padding:0 6px 0 4px}body.mobile #tower .tr b{width:12px}body.mobile #tower .tr .flag{width:12px;height:8px}body.mobile #tower .tr em{font-size:8px;min-width:26px}
+body.mobile.race #hud #h-lap{display:none!important}
 </style>
 </head>
 <body>
@@ -563,6 +580,7 @@ body.mobile #hud #secs{display:flex!important}body.mobile #hud .sec span{display
 <div id="hud" class="hidden">
   <div id="h-pos"><b id="pos">1</b><span>/4</span></div>
   <div id="h-lap">VUELTA <b id="lap">1/3</b></div>
+  <div id="tower"></div>
   <div id="h-rec"><small id="recLabel">RÉCORD</small><b id="recLap">--</b><span id="recWho"></span><div class="rs"><i><small>S1</small><b id="rs0">--</b></i><i><small>S2</small><b id="rs1">--</b></i><i><small>S3</small><b id="rs2">--</b></i></div></div>
   <div id="h-time"><div id="time">0:00.00</div><div id="best">MEJOR --</div><div id="delta"></div>
     <div id="secs"><div class="sec" id="s0"><b>S1</b><span>--</span></div><div class="sec" id="s1"><b>S2</b><span>--</span></div><div class="sec" id="s2"><b>S3</b><span>--</span></div></div>
@@ -591,7 +609,7 @@ body.mobile #hud #secs{display:flex!important}body.mobile #hud .sec span{display
         <p id="modelStatus" role="status" hidden></p>
         <button id="pickTrack" class="pick" type="button"><small>Circuito</small><b id="pickTrackName">—</b><span id="pickTrackSub"></span><em id="pickTrackFlag" class="pk-flag"></em><i>›</i></button>
         <button id="pickCar" class="pick" type="button"><small>Coche</small><b id="pickCarName">—</b><span id="pickCarSub"></span><img id="pickCarImg" class="pk-img" alt=""><i>›</i></button>
-        <div class="modes"><div id="modeSel" class="seg"><button data-v="tt">Contrarreloj</button><button data-v="race">Carrera</button></div>
+        <div class="modes"><div id="modeSel" class="seg"><button data-v="tt">Contrarreloj</button><button data-v="race">Carrera</button><button data-v="gp" class="gp">Gran Premio</button></div><p id="modeInfo" class="modeinfo"></p>
           <div id="diffWrap"><div id="diffSel" class="seg"><button data-v="0">Fácil</button><button data-v="1" class="on">Normal</button><button data-v="2">Difícil</button></div></div></div>
         <div class="links"><button id="dailyBtn" class="link" type="button">Reto del día</button><button id="boardBtn" class="link" type="button">Clasificación</button><button id="setBtn" class="link" type="button">Ajustes</button></div>
       </div>

@@ -37,3 +37,11 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Mónaco: trazado inspirado en el real (Santa Devota, subida de Beau Rivage, Massenet, Casino, horquilla, túnel, chicane, Tabac, piscina y Rascasse) con sus subidas y bajadas.
 - Edificios más bajos, con huecos y no siempre pegados a la valla.
 - Túnel cerrado desde el suelo, más alto, con marcos en las bocas y luces dentro.
+
+## 0.0.7
+- IA con las mismas stats que tu coche (sin trucos de potencia): línea de carrera óptima y conducción más suave.
+- Diez pilotos con nombre, país y nivel (de Senna a Woods), repartidos al azar entre los coches rivales en cada carrera.
+- Torre de posiciones en tiempo real durante la carrera.
+- Contrarreloj con salida lanzada: el crono arranca al cruzar la meta.
+- Gran Premio: 3 vueltas de clasificación, parrilla según tu mejor vuelta y 5 vueltas de carrera contra 9 pilotos.
+- Peraltes corregidos: la superficie sube con la inclinación, empujan hacia dentro y dan más agarre y giro.

@@ -114,7 +114,7 @@ export function stepCar(c, inp, dt, tr, env) {
   // giro
   let eff = Math.sign(c.steer) * Math.pow(Math.abs(c.steer), 1.35); // respuesta progresiva: suave al centro
   if (c.drifting) eff = c.driftDir * 0.48 + c.steer * 0.68;
-    const tireAuthority = clamp(Math.sqrt(T.grip / 12), 0.86, 1.08) * (1 - offroadBlend * (1 - (env.steerOffroad || 0.72))) * (env.surface === 'snow' ? 0.93 : 1) * SP.s;
+    const tireAuthority = clamp(Math.sqrt(T.grip / 12), 0.86, 1.08) * (1 - offroadBlend * (1 - (env.steerOffroad || 0.72))) * (env.surface === 'snow' ? 0.93 : 1) * SP.s * (1 + 2.5 * Math.abs(loc.bank || 0));
   const maxYaw = T.yaw * YAW_SCALE * tireAuthority / (1 + (speed / YAW_SPEED) * (speed / YAW_SPEED));
   const auth = Math.min(1, Math.abs(vf) / 5) * (ground ? 1 : 0.22);
   const sgn = vf >= -0.3 ? 1 : -1;
@@ -156,7 +156,8 @@ export function stepCar(c, inp, dt, tr, env) {
     if (puddleWater > 0.05) vf *= Math.exp(-puddleWater * 0.45 * dt);
     // ----- lógica de agarre: el neumático tiene un límite; si se le pide más, el coche se va un poco -----
     const wet = surfaceGrip * (1 - puddleWater * 0.5) * (1 - mud * 0.5);
-    const bankG = 1 + 1.6 * Math.abs(tr.bank ? tr.bank[loc.i] : 0); // las curvas peraltadas agarran más
+    const bk = loc.bank || 0, bankG = 1 + 2.2 * Math.abs(bk); // las curvas peraltadas agarran más
+    vl -= 9.8 * Math.sin(bk) * 1.1 * dt; // y la pendiente lateral empuja el coche hacia dentro de la curva
     const limitG = 9.5 * (T.grip / 12.5) * env.gripMul * wet * bankG * (0.88 + 0.24 * c.tireTemp);
     const demand = (Math.abs(c.yawRate) * speed) / Math.max(3, limitG); c.demand = demand;
     const overload = smoothstep(0.78, 1.3, demand);

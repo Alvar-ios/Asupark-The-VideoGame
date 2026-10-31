@@ -20,7 +20,7 @@ for (const it of list) {
   for (const type of CARS) {
     const bt = aiType(type), c = makeCar(bt, 'bot', false), prof = buildSpeedProfile(tr, bt);
     placeCar(c, tr, 0, 0, 0);
-    const ai = { lane: 0, skill: 0.96 }, inp = { steer: 0, throttle: 0, brake: 0, drift: false, ers: false };
+    const ai = { lane: 0, skill: 1.4 }, inp = { steer: 0, throttle: 0, brake: 0, drift: false, ers: false };
     let t = 0, walls = 0, lapTimes = [], lastLap = 0, resets = 0, air = 0, pads = 0, maxSpeed = 0, offT = 0;
     while (t < 500 && lapTimes.length < 2) {
       aiInput(c, tr, prof, ai, inp);
