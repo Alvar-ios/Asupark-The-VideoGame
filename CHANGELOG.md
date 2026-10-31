@@ -45,3 +45,11 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Contrarreloj con salida lanzada: el crono arranca al cruzar la meta.
 - Gran Premio: 3 vueltas de clasificación, parrilla según tu mejor vuelta y 5 vueltas de carrera contra 9 pilotos.
 - Peraltes corregidos: la superficie sube con la inclinación, empujan hacia dentro y dan más agarre y giro.
+
+## 0.0.8
+- Carreras y Gran Premio: los rivales son siempre del mismo grupo que tu coche, al azar y pudiendo repetirse.
+- Diferencias de la torre siempre sobre ti (− va por delante, + por detrás).
+- Al terminar: resultados completos con todos los pilotos, podio y confeti; se espera a que acaben los demás.
+- Salida lanzada con piloto automático y cuenta atrás 3-2-1 hasta la meta.
+- Clasificación del Gran Premio con los tiempos de los rivales en directo.
+- Mónaco: pista más ancha, menos edificios y sin edificios dentro de las curvas.

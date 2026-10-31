@@ -333,13 +333,13 @@ async function ensureModels(types, playerType) {
     for (const lod of required) if (!carAssetReady(type, lod)) throw new Error(`No se pudo preparar el modelo ${type.name}`);
   }
 }
-function pickRivals(n = 3) {
-  const gi = (c) => GROUPS.findIndex((g) => g.id === c.group), pg = gi(CARS[sel.car]);
-  return CARS.filter((_, i) => i !== sel.car).sort((a, b) => Math.abs(gi(a) - pg) - Math.abs(gi(b) - pg)).slice(0, n);
+function pickRivals(n = 3) { // solo coches del mismo grupo que el tuyo, al azar y pudiendo repetirse (también tu modelo)
+  const pool = CARS.filter((c) => c.group === CARS[sel.car].group);
+  return Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]);
 }
 function makeField(ti) {
   const rts = pickRivals(9), drs = shuffled(DRIVERS).slice(0, rts.length);
-  return rts.map((rt, i) => { const bm = benchFor(ti, rt); return { rt, driver: drs[i], t: (bm ? bm.lap : 60) / Math.pow(drs[i].level, 0.8) * (1 + (Math.random() - 0.5) * 0.01) }; });
+  return rts.map((rt, i) => { const bm = benchFor(ti, rt), t = (bm ? bm.lap : 60) / Math.pow(drs[i].level, 0.8) * (1 + (Math.random() - 0.5) * 0.01); return { rt, driver: drs[i], t, rev: 9 + (0.1 + Math.random() * 0.9) * t * 2.6 }; });
 }
 async function startRace(restart = false) {
   sound.init(CARS[sel.car].id);
@@ -347,11 +347,14 @@ async function startRace(restart = false) {
   if (gpMode && (!restart || !S.gp)) S.gp = { phase: 'quali', qBest: null, grid: null };
   if (!gpMode) S.gp = null;
   S.mode = gpMode ? (S.gp.phase === 'race' ? 'race' : 'tt') : sel.mode; S.laps = gpMode ? (S.gp.phase === 'race' ? 5 : LAPS) : LAPS; S.nRiv = gpMode ? 9 : 3;
-  if (gpMode && S.gp.phase === 'quali') pickRivals(9).forEach((r) => loadCarAsset(r, false).catch(() => {})); // los rivales se van cargando mientras clasificas
+  const ti0 = tracks[sel.track];
+  if (gpMode && S.gp.phase === 'quali' && !S.gp.field) S.gp.field = makeField(ti0);
+  if (S.mode === 'race') { if (gpMode) S.rivalTypes = S.gp.field.map((f) => f.rt); else if (!restart || !S.rivalTypes) S.rivalTypes = pickRivals(S.nRiv); }
+  if (gpMode && S.gp.phase === 'quali') CARS.filter((c) => c.group === CARS[sel.car].group).forEach((r) => loadCarAsset(r, false).catch(() => {})); // los rivales se van cargando mientras clasificas
   const button = $('startBtn'), previousLabel = button.textContent, status = $('modelStatus');
   button.disabled = true; button.textContent = 'CARGANDO COCHES…'; status.hidden = true;
   const pt = CARS[sel.car], pool = CARS.filter((_, i) => i !== sel.car);
-  const need = [pt, ...(S.mode === 'race' ? pickRivals(S.nRiv) : [])]; // los mismos rivales que luego se crean (antes no coincidían y la carrera se quedaba en «cargando»)
+  const need = [pt, ...(S.mode === 'race' ? S.rivalTypes : [])]; // los mismos rivales que luego se crean (antes no coincidían y la carrera se quedaba en «cargando»)
   try { await ensureModels(need, pt); }
   catch (e) {
     console.error('No se pudo cargar un modelo de coche', e);
@@ -401,8 +404,7 @@ async function startRace(restart = false) {
     const player = mkCar(type, paintOf(type), 'TÚ', true);
     S.player = player; S.cars = [player];
     if (S.mode === 'race') {
-      if (gpMode && !S.gp.field) S.gp.field = makeField(ti);
-      const rivals = gpMode ? S.gp.field.map((f) => f.rt) : pickRivals(S.nRiv), drivers = gpMode ? S.gp.field.map((f) => f.driver) : shuffled(DRIVERS).slice(0, rivals.length), diff = gpMode ? 1 : [0.92, 1, 1.05][sel.diff];
+      const rivals = S.rivalTypes, drivers = gpMode ? S.gp.field.map((f) => f.driver) : shuffled(DRIVERS).slice(0, rivals.length), diff = gpMode ? 1 : [0.92, 1, 1.05][sel.diff];
       rivals.forEach((rt, i) => {
         const d = drivers[i], c = mkCar(aiType(rt), new THREE.Color().setHSL((i * 0.61) % 1, 0.7, 0.55).getHex(), d.name, false);
         c.driver = d; c.code = d.code; c.ai = { lane: (Math.random() * 2 - 1) * 3, skill: AI_TOP * d.level * diff, base: AI_TOP * d.level * diff }; S.cars.push(c);
@@ -439,7 +441,7 @@ async function startRace(restart = false) {
     order.forEach((c, k) => { c.grid = k + 1; if (c !== player) c.ai.skill = c.ai.base; placeCar(c, tr, -7 - 10 * (k >> 1), (k & 1 ? 1 : -1) * latG, 0); });
     S.ghostBest = null;
   } else {
-    placeCar(player, tr, -150, 0, 32); // contrarreloj: salida lanzada, el crono arranca al cruzar la meta
+    placeCar(player, tr, -190, 0, 30); S.auto = true; flashCount(''); showMsg('PILOTO AUTOMÁTICO', 4200, 'cy'); // contrarreloj: salida lanzada, el crono arranca al cruzar la meta
     const rec = store.get('best.' + ti.key + '.' + tr.seed + '.' + type.id);
     S.ghostBest = rec && rec.ghost ? Float32Array.from(rec.ghost) : null;
     if (S.ghostMesh) S.ghostMesh.root.visible = false;
@@ -458,7 +460,7 @@ async function startRace(restart = false) {
   S.curProf = new Float32Array(Math.ceil(tr.len / 10) + 2).fill(-1);
   S.secIdx = -1; S.secStart = 0; S.secInvalid = false;
   for (let k = 0; k < 3; k++) { const e = $('s' + k); e.className = 'sec'; e.lastElementChild.textContent = '--'; }
-  document.body.classList.toggle('tt', S.mode === 'tt'); $('h-rec').style.display = S.mode === 'tt' ? '' : 'none'; $('endBtn').style.display = S.mode === 'tt' ? '' : 'none';
+  document.body.classList.toggle('tt', S.mode === 'tt'); $('h-rec').style.display = S.mode === 'tt' && !S.gp ? '' : 'none'; $('endBtn').style.display = S.mode === 'tt' ? '' : 'none';
   for (const c of S.cars) { c.lapStart = 0; c.lapsDone = 0; c.finished = false; c.bestLap = null; c.bounce = 0; c.bounceV = 0; c.visPitch = 0; c.visRoll = 0; c.impact = 0; c.impactSide = 0; }
   S.camYaw = player.psi; S.camY = player.y + 3; S.fovT = 0;
   player.crossed = false;
@@ -469,7 +471,7 @@ async function startRace(restart = false) {
   $('delta').textContent = ''; $('msg').className = ''; setLights(S.mode === 'tt' ? -1 : 0);
   $('help').style.opacity = 1; clearTimeout(S.helpT); S.helpT = setTimeout(() => { $('help').style.opacity = 0; }, 9000);
   $('pos').nextElementSibling.textContent = '/' + S.cars.length;
-  $('h-pos').style.display = 'none'; $('h-lap').style.display = S.mode === 'race' ? 'none' : ''; $('tower').style.display = S.mode === 'race' ? '' : 'none'; document.body.classList.toggle('race', S.mode === 'race'); towerT = 1;
+  const tw = S.mode === 'race' || !!S.gp; $('h-pos').style.display = 'none'; $('h-lap').style.display = tw ? 'none' : ''; $('tower').style.display = tw ? '' : 'none'; $('tower').innerHTML = ''; document.body.classList.toggle('race', tw); towerT = 1;
   updateCamera(0, true);
 }
 function setLights(n) { const l = $('lights').children; for (let i = 0; i < l.length; i++) l[i].classList.toggle('on', i < n); $('lights').classList.toggle('hidden', n < 0); }
@@ -573,11 +575,16 @@ function stepAll() {
   const tr = S.tr, env = S.th;
   const p = S.player;
   if (p.finished) { inp.throttle = 0.4; inp.brake = 0; inp.steer = 0;  }
+  if (S.waitRes && S.state === 'racing' && (S.cars.every((c) => c.finished) || S.t - S.finishedAt > 14)) { S.waitRes = false; showResults(); }
   // los rivales
   const aiIn = S.aiIn || (S.aiIn = { steer: 0, throttle: 0, brake: 0, drift: false });
   for (const c of S.cars) {
     if (c === p) {
-      if (p.finished) { aiInput(p, tr, S.prof[p.type.id], { lane: 0, skill: 0.7 }, aiIn); stepCar(p, aiIn, H, tr, env); }
+      if (p.finished || S.auto) {
+        aiInput(p, tr, S.prof[p.type.id], { lane: 0, skill: p.finished ? 0.7 : 0.55 }, aiIn);
+        if (S.auto) { aiIn.brake = 0; aiIn.throttle = p.speed < 29 ? 1 : p.speed > 33 ? 0 : 0.35; } // velocidad de crucero hasta la meta
+        stepCar(p, aiIn, H, tr, env);
+      }
       else stepCar(p, inp, H, tr, env);
     } else {
       const rb = clamp((p.D - c.D) / 320, -0.035, 0.06);
@@ -601,6 +608,7 @@ function stepAll() {
   }
   trackSectors(p);
   if (!p.finished && p.D >= 0) { const k = Math.floor((p.D % tr.len) / 10); if (S.curProf[k] < 0) S.curProf[k] = S.t - p.lapStart; }
+  if (S.auto && S.mode === 'tt' && p.D >= 0) { S.auto = false; flashCount('¡YA!'); }
   if (S.mode === 'tt' && !p.crossed && p.D >= 0) { p.crossed = true; p.lapStart = S.t; S.curProf.fill(-1); S.ghostRec = []; S.deltaS = null; }
   if (S.mode === 'tt' && p.crossed && !p.finished && S.step % 3 === 0) S.ghostRec.push(p.x, p.y, p.z, p.psi);
   // eventos del jugador
@@ -714,11 +722,14 @@ function onPlayerLap(c, lt, done) {
   }
 }
 
+let lastCountTxt = '';
+function flashCount(txt) { const el = $('count'); if (txt === lastCountTxt) return; lastCountTxt = txt; el.textContent = txt; el.className = ''; if (txt) { void el.offsetWidth; el.className = 'pop'; } }
 function onPlayerFinish() {
   sound.play('finish');
   S.finishedAt = S.t;
   showMsg('¡META!', 2000);
-  setTimeout(() => { if (S.state === 'racing' || S.state === 'paused') showResults(); }, 1600);
+  if (S.mode === 'race') { S.waitRes = true; showMsg('¡META! Esperando al resto…', 4000); }
+  else setTimeout(() => { if (S.state === 'racing' || S.state === 'paused') showResults(); }, 1600);
 }
 
 async function fillResultsBoard() {
@@ -740,6 +751,12 @@ function fillProf(prof) {
   for (let i = 0; i < first; i++) a[i] = a[first] * (i / first); for (let i = last + 1; i < a.length; i++) a[i] = a[last] + (i - last) * 0.1 * 0 + 0;
   return a;
 }
+// podio: tres escalones (2º, 1º, 3º) con bandera, nombre, coche y tiempo
+function podiumHtml(top, me) {
+  const step = (r, n) => r ? `<div class="pd p${n}${r.c === me ? ' me' : ''}"><span class="flag">${r.c.driver ? flagSvg(r.c.driver.flag) : ''}</span><b>${esc(r.c.isPlayer ? 'TÚ' : r.c.name)}</b><small>${esc(r.c.type.name)}</small><em>${r.est ? '~' : ''}${fmt(r.t)}</em><div class="blk">${n}</div></div>` : '';
+  return `<div class="podium">${step(top[1], 2)}${step(top[0], 1)}${step(top[2], 3)}</div>`;
+}
+const confettiHtml = () => '<div class="confetti">' + Array.from({ length: 36 }, (_, i) => `<i style="left:${(i * 2.8 + (i % 5)) % 100}%;animation-delay:${(i % 9) * 0.18}s;background:${['#ffc928', '#e10600', '#22c55e', '#4aa8ff', '#fff', '#b44bff'][i % 6]}"></i>`).join('') + '</div>';
 function showResults() {
   S.state = 'finished';
   const p = S.player, rows = [];
@@ -756,10 +773,13 @@ function showResults() {
     $('rBig').textContent = 'P' + pos; $('rTitle').textContent = 'CLASIFICACIÓN';
     $('againBtn').textContent = 'EMPEZAR CARRERA · 5 VUELTAS';
   } else if (S.mode === 'race') {
-    order.forEach((c, i) => rows.push(`<tr class="${c === p ? 'me' : ''}"><td>${i + 1}º</td><td>${c.name}</td><td>${fmt(c.finishTime)}</td></tr>`));
-    const rest = S.cars.filter((c) => !c.finished).sort((a, b) => b.D - a.D);
-    rest.forEach((c, i) => rows.push(`<tr><td>${order.length + i + 1}º</td><td>${c.name}</td><td>—</td></tr>`));
-    $('rBig').textContent = rank + 'º'; $('rTitle').textContent = rank === 1 ? '¡VICTORIA!' : rank <= 3 ? '¡PODIO!' : 'META';
+    const fin = S.cars.filter((c) => c.finished).sort((a, b) => a.finishTime - b.finishTime);
+    const rest = S.cars.filter((c) => !c.finished).map((c) => ({ c, est: S.t + (S.laps * S.tr.len - c.D) / Math.max(14, c.speed) })).sort((a, b) => a.est - b.est);
+    const all = fin.map((c) => ({ c, t: c.finishTime, est: false })).concat(rest.map((r) => ({ c: r.c, t: r.est, est: true })));
+    all.forEach((r, i) => rows.push(`<tr class="${r.c === p ? 'me' : ''}"><td>${i + 1}º</td><td>${r.c.driver ? `<span class="flag sm">${flagSvg(r.c.driver.flag)}</span>` : ''}${esc(r.c.isPlayer ? 'TÚ' : r.c.name)} <small class="cartag">${esc(r.c.type.name)}</small></td><td>${r.est ? '~' : ''}${fmt(r.t)}</td></tr>`));
+    const prank = all.findIndex((r) => r.c === p) + 1;
+    $('rBig').textContent = prank + 'º'; $('rTitle').textContent = prank === 1 ? '¡VICTORIA!' : prank <= 3 ? '¡PODIO!' : 'META';
+    extra = podiumHtml(all.slice(0, 3), p) + (prank <= 3 ? confettiHtml() : '');
   } else {
     const md = medalFor(S.lapPB, benchLap);
     $('rBig').textContent = S.lapPB != null ? fmt(S.lapPB) : '—'; $('rTitle').textContent = S.lapPB != null ? (md ? md + ' · ' : '') + 'TU MEJOR VUELTA' : 'SESIÓN TERMINADA';
@@ -769,7 +789,7 @@ function showResults() {
   }
   $('rTable').innerHTML = rows.join('');
   const isRec = S.lapPB != null && S.bench && S.lapPB < S.bench.lap - 1e-6;
-  $('rNew').innerHTML = (isRec ? '<span class="newrec">¡Récord de pista!</span>' : '') + extra;
+  $('rNew').innerHTML = (S.mode === 'race' ? '' : '') + (isRec ? '<span class="newrec">¡Récord de pista!</span>' : '') + extra;
   $('results').classList.remove('hidden'); $('touch').classList.add('hidden');
 }
 
@@ -903,13 +923,23 @@ let miniT = 0, lastFx = -1, lastRpm = -1;
 let towerT = 0;
 function updateTower(dt) {
   towerT += dt; if (towerT < 0.25) return; towerT = 0;
-  const cars = S.cars.slice().sort((a, b) => (b.finished - a.finished) || (a.finished && b.finished ? a.finishTime - b.finishTime : (Math.round(b.D * 0.5) - Math.round(a.D * 0.5)) || (a.grid - b.grid))), lead = cars[0];
-  const done = Math.max(0, Math.floor(S.player.D / S.tr.len));
+  const me = S.player, cars = S.cars.slice().sort((a, b) => (b.finished - a.finished) || (a.finished && b.finished ? a.finishTime - b.finishTime : (Math.round(b.D * 0.5) - Math.round(a.D * 0.5)) || (a.grid - b.grid)));
+  const done = Math.max(0, Math.floor(me.D / S.tr.len));
   let h = `<div class="th">VUELTA ${Math.min(S.laps, done + 1)}/${S.laps}</div>`;
   cars.forEach((c, i) => {
-    const gap = i === 0 ? '' : c.finished && lead.finished ? '+' + (c.finishTime - lead.finishTime).toFixed(1) : '+' + (Math.max(0, lead.D - c.D) / Math.max(12, lead.speed || 12)).toFixed(1);
-    h += `<div class="tr${c.isPlayer ? ' me' : ''}"><b>${i + 1}</b><span class="flag">${c.driver ? flagSvg(c.driver.flag) : ''}</span><i>${c.isPlayer ? 'TÚ' : c.code}</i><em>${gap}</em></div>`;
+    let g = '', cl = '';
+    if (c !== me) { const d = c.finished && me.finished ? me.finishTime - c.finishTime : (c.D - me.D) / Math.max(12, me.speed); g = (d >= 0 ? '−' : '+') + Math.abs(d).toFixed(1); cl = d >= 0 ? ' ahead' : ' behind'; } // siempre sobre ti: − va por delante, + por detrás
+    h += `<div class="tr${c.isPlayer ? ' me' : ''}"><b>${i + 1}</b><span class="flag">${c.driver ? flagSvg(c.driver.flag) : ''}</span><i>${c.isPlayer ? 'TÚ' : c.code}</i><em class="${cl}">${g}</em></div>`;
   });
+  $('tower').innerHTML = h;
+}
+// clasificación en directo: los rivales van marcando sus tiempos y tú ves tu posición al instante
+function updateTowerQuali(dt) {
+  towerT += dt; if (towerT < 0.4) return; towerT = 0;
+  const done = Math.max(0, Math.floor(S.player.D / S.tr.len)), rows = S.gp.field.filter((f) => S.t >= f.rev).map((f) => ({ code: f.driver.code, flag: f.driver.flag, t: f.t }));
+  rows.push({ code: 'TÚ', t: S.gp.qBest != null ? S.gp.qBest : 1e9, me: 1 }); rows.sort((a, b) => a.t - b.t);
+  let h = `<div class="th">CLASIF. · VUELTA ${Math.min(3, done + 1)}/3</div>`;
+  rows.forEach((r, i) => { h += `<div class="tr${r.me ? ' me' : ''}"><b>${i + 1}</b><span class="flag">${r.flag ? flagSvg(r.flag) : ''}</span><i>${r.code}</i><em>${r.t < 1e8 ? fmtS(r.t) : '--'}</em></div>`; });
   $('tower').innerHTML = h;
 }
 function updateHud(dt) {
@@ -932,7 +962,8 @@ function updateHud(dt) {
     const q = Math.round(S.deltaS * 100) / 100;
     if (q !== hudCache.dq) { hudCache.dq = q; const el = $('delta'); el.textContent = (q > 0 ? '+' : q < 0 ? '−' : '') + Math.abs(q).toFixed(2); el.className = q > 0.02 ? 'bad' : q < -0.02 ? 'good' : ''; }
   }
-  if (S.mode === 'race') updateTower(dt);
+  if (S.auto && S.mode === 'tt' && !S.player.crossed) { const tl = -S.player.D / Math.max(10, S.player.speed); if (tl <= 3.2) { flashCount(String(Math.max(1, Math.ceil(tl)))); } }
+  if (S.mode === 'race') updateTower(dt); else if (S.gp) updateTowerQuali(dt);
   if (S.mode === 'race') { const rank = S.cars.slice().sort((a, b) => (b.finished - a.finished) || (a.finished && b.finished ? a.finishTime - b.finishTime : b.D - a.D)).indexOf(p) + 1; setText('pos', String(rank)); }
   const sp = clamp((p.speed - 52) / 45, 0, 1) * 0.28;
   const spq = Math.round(sp * 25) / 25;

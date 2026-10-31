@@ -572,6 +572,22 @@ body.race #hud #weatherBadge{top:auto;bottom:10px}
 body.mobile #tower{top:6px;min-width:96px;padding:2px 0}body.mobile #tower .th{font-size:8px;padding:1px 8px 2px}
 body.mobile #tower .tr{font-size:10px;line-height:13px;gap:4px;padding:0 6px 0 4px}body.mobile #tower .tr b{width:12px}body.mobile #tower .tr .flag{width:12px;height:8px}body.mobile #tower .tr em{font-size:8px;min-width:26px}
 body.mobile.race #hud #h-lap{display:none!important}
+/* podio, confeti y diferencias sobre ti */
+#tower .tr em.ahead{color:#ff8a8a}#tower .tr em.behind{color:#7ee2a0}#tower .tr.me em{color:#222}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:6px;margin:6px 0 12px}
+.podium .pd{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;min-width:0}
+.podium .pd .flag{width:26px;height:17px;border-radius:3px;overflow:hidden;display:block;margin-bottom:3px}.podium .pd .flag svg{display:block;width:100%;height:100%}
+.podium .pd b{font-size:14px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.podium .pd small{font-size:9px;color:#8e98a8;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.podium .pd em{font-style:normal;font-size:12px;color:#c8d0dc;margin:2px 0 4px;font-variant-numeric:tabular-nums}
+.podium .blk{width:100%;display:flex;align-items:flex-start;justify-content:center;padding-top:6px;font-size:22px;font-weight:900;color:#111;border-radius:6px 6px 0 0;animation:rise .7s cubic-bezier(.2,.8,.2,1) both}
+.podium .p1 .blk{height:84px;background:linear-gradient(#f6d365,#e0a82e)}.podium .p2 .blk{height:60px;background:linear-gradient(#e6e9ef,#aab3c0);animation-delay:.15s}.podium .p3 .blk{height:44px;background:linear-gradient(#e2a06a,#b8743c);animation-delay:.3s}
+.podium .me b{color:#ffc928}
+@keyframes rise{from{transform:scaleY(.1);transform-origin:bottom;opacity:.2}to{transform:none;opacity:1}}
+.cartag{color:#6f7b8e;font-size:10px;margin-left:4px}
+#results{position:relative}.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:30}
+.confetti i{position:absolute;top:-12px;width:7px;height:12px;opacity:.9;animation:fall 3.2s linear infinite}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+#results .rbox{max-height:96dvh;overflow-y:auto}#results #rTable{margin-bottom:8px}
 </style>
 </head>
 <body>

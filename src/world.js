@@ -131,11 +131,12 @@ function urbanMesh(tr, th) {
     if ((tr.tunnels || []).some((t) => s > t.s0 - 4 && s < t.s1 + 4)) continue;
     for (const side of [-1, 1]) {
       const hsh = Math.abs(Math.sin(s * 12.9898 + side * 78.233) * 43758.5453) % 1, h2 = Math.abs(Math.sin(s * 4.1414 + side * 9.77) * 24634.6345) % 1;
-      if (h2 < 0.16) continue; // huecos: plazas y calles laterales
+      if (h2 < 0.36) continue; // huecos: plazas y calles laterales
       const d = 8 + hsh * 6, off = WALL + 0.4 + (h2 > 0.55 ? (h2 - 0.55) * 14 : 0) + d / 2;
       const x = tr.X[i] + -tr.TZ[i] * side * off, z = tr.Z[i] + tr.TX[i] * side * off;
       let clash = false;
-      for (let j = 0; j < N; j += 5) { const gap = Math.min(Math.abs(j - i), N - Math.abs(j - i)); if (gap < 40) continue; if ((tr.X[j] - x) ** 2 + (tr.Z[j] - z) ** 2 < (WALL + d * 0.6 + 2) ** 2) { clash = true; break; } }
+      for (let j = 0; j < N; j += 3) { const gap = Math.min(Math.abs(j - i), N - Math.abs(j - i)); if (gap < 14) continue; if ((tr.X[j] - x) ** 2 + (tr.Z[j] - z) ** 2 < (WALL + d * 0.75 + 3) ** 2) { clash = true; break; } }
+      const kk = tr.kap[i] * side; if (kk < -0.0005 && 1 / -kk < off + d * 0.75 + 4) clash = true; // por la cara interior de una curva cerrada el edificio acabaría dentro de la pista
       if (clash) continue;
       items.push({ x, z, ry: Math.atan2(tr.TX[i], tr.TZ[i]), d, w: step + 0.6, h: tr.Y[i] + 6 + hsh * 9 + (Math.floor(s / step) % 3) * 2.5, c: pal[Math.floor(hsh * 997) % pal.length] });
     }
