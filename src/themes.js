@@ -10,13 +10,14 @@ export const THEMES = {
     hemiSky: 0xd9e7fa, hemiGround: 0x565849, hemiI: 0.92, sunI: 1.2, deco: 'pine', treeCol: 0x3d6840, night: false, temp: 22, humidity: 0.35, wind: [3, 0.6], gripMul: 1, offroad: 0.62,
   },
   monaco: {
-    id: 'monaco', name: 'Puerto Urbano', sub: 'Estilo Mónaco: horquillas, pianos y cuestas', seed: 'monaco-1',
-    style: {zones: [[0.45,0.55,'dry'],[0.78,0.82,'gravel']],  fixedNodes: [[-80, 0], [40, 0], [150, 5], [205, 40], [210, 100], [175, 150], [115, 165], [65, 150], [25, 175], [-25, 205], [-32, 252], [8, 288], [70, 282], [102, 242], [150, 210], [215, 200], [262, 222], [290, 262], [262, 305], [190, 312], [125, 330], [60, 338], [-60, 335], [-150, 285], [-165, 185], [-155, 100], [-128, 38]], scale: 0.85, chicanes: 0, hill: 0, ramps: 0, rollers: 0, pads: 3, minR: 20, sep: 38, padSep: 80, candFrom: 80, candTo: 80, thr: [0.006, 0.01, 0.014],
-      tunnels: [[0.45,0.55]], hillPts: [[0, 0], [0.09, 1.5], [0.2, 9], [0.3, 17], [0.4, 16], [0.47, 9], [0.55, 4], [0.65, 3], [0.8, 1], [1, 0]] },
+    id: 'monaco', name: 'Puerto Urbano', sub: 'Calles estrechísimas, edificios pegados y horquillas', seed: 'monaco-1',
+    style: { zones: [[0.5,0.6,'dry']], fixedNodes: [[0,0],[50,0],[100,-6],[138,-26],[146,-62],[124,-92],[84,-100],[54,-124],[56,-160],[90,-182],[132,-176],[160,-148],[196,-134],[228,-150],[236,-186],[214,-214],[176,-218],[160,-246],[178,-274],[214,-282],[240,-262],[266,-272],[272,-304],[246,-326],[206,-322],[170,-338],[150,-368],[110,-376],[76,-352],[70,-316],[40,-296],[0,-304],[-34,-286],[-44,-250],[-24,-222],[-52,-196],[-60,-160],[-40,-128],[-60,-96],[-50,-56],[-26,-24]], scale: 0.75, half: 3.4, wall: 5.2, chicanes: 0, hill: 0, ramps: 0, rollers: 0, pads: 2, minR: 7, sep: 18, padSep: 80, candFrom: 80, candTo: 80,
+      tunnels: [[0.5,0.6]], hillPts: [[0, 0], [0.09, 1.2], [0.2, 6], [0.3, 11], [0.4, 10], [0.47, 6], [0.55, 3], [0.65, 2], [0.8, 1], [1, 0]] },
+
     skyTop: 0x3f95f0, skyHor: 0xeaf4ff, fog: 0xdce9f6, fogNear: 240, fogFar: 1400,
     ground: 0x2a7fb5, grass: 0xa7adb5, dirt: 0x8c929a, road: 0x40434b, kerb1: 0xe5352f, kerb2: 0xffffff,
     wall1: 0xf3f3f3, wall2: 0xdf2f2a, mount: 0xb9c7d6, sun: 0xfff1cf, sunDir: [-0.35, 0.65, 0.5],
-    hemiSky: 0xe6f1ff, hemiGround: 0x8a8f96, hemiI: 1.05, sunI: 1.15, deco: 'toy', harbor: true, palette: [0xf3e9d8, 0xe8c9a0, 0xd9a47a, 0xf6f2ea, 0xcf8f6b, 0xe9dcc2], treeCol: 0x3d7a3c, night: false, temp: 19, humidity: 0.85, wind: [5, 2.2], gripMul: 1, offroad: 0.6, slope: 1.5, weather: 'rain', wetGrip: 0.76, brakeForce: 22,
+    hemiSky: 0xe6f1ff, hemiGround: 0x8a8f96, hemiI: 1.05, sunI: 1.15, deco: 'toy', harbor: true, urban: true, noKerbs: true, palette: [0xf3e9d8, 0xe8c9a0, 0xd9a47a, 0xf6f2ea, 0xcf8f6b, 0xe9dcc2], treeCol: 0x3d7a3c, night: false, temp: 19, humidity: 0.85, wind: [5, 2.2], gripMul: 1, offroad: 0.6, slope: 1.5, weather: 'rain', wetGrip: 0.76, brakeForce: 22,
   },
   spa: {
     id: 'spa', name: 'Ardenas · estilo Spa', sub: 'Corto y estrecho: horquilla, Eau Rouge y cambios de rasante', seed: 'spa-1',

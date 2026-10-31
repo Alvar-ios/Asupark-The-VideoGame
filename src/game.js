@@ -319,12 +319,16 @@ async function ensureModels(types, playerType) {
     for (const lod of required) if (!carAssetReady(type, lod)) throw new Error(`No se pudo preparar el modelo ${type.name}`);
   }
 }
+function pickRivals() {
+  const gi = (c) => GROUPS.findIndex((g) => g.id === c.group), pg = gi(CARS[sel.car]);
+  return CARS.filter((_, i) => i !== sel.car).sort((a, b) => Math.abs(gi(a) - pg) - Math.abs(gi(b) - pg)).slice(0, 3);
+}
 async function startRace(restart = false) {
   sound.init(CARS[sel.car].id);
   const button = $('startBtn'), previousLabel = button.textContent, status = $('modelStatus');
   button.disabled = true; button.textContent = 'CARGANDO COCHES…'; status.hidden = true;
   const pt = CARS[sel.car], pool = CARS.filter((_, i) => i !== sel.car);
-  const need = [pt, ...(sel.mode === 'race' ? pool.slice(0, 3) : [])];
+  const need = [pt, ...(sel.mode === 'race' ? pickRivals() : [])]; // los mismos rivales que luego se crean (antes no coincidían y la carrera se quedaba en «cargando»)
   try { await ensureModels(need, pt); }
   catch (e) {
     console.error('No se pudo cargar un modelo de coche', e);
@@ -374,7 +378,7 @@ async function startRace(restart = false) {
     const player = mkCar(type, paintOf(type), 'TÚ', true);
     S.player = player; S.cars = [player];
     if (sel.mode === 'race') {
-      const gi = (c) => GROUPS.findIndex((g) => g.id === c.group), pg = gi(CARS[sel.car]), pool = CARS.filter((_, i) => i !== sel.car).sort((a, b) => Math.abs(gi(a) - pg) - Math.abs(gi(b) - pg)), rivals = [pool[0], pool[1], pool[2]];
+      const rivals = pickRivals();
       const base = [0.955, 0.94, 0.925], diff = [0.88, 0.95, 1.01][sel.diff], names = ['Nova', 'Rayo', 'Duna'];
       rivals.forEach((rt, i) => { const c = mkCar(aiType(rt), AI_COLORS[i], names[i], false); c.ai = { lane: [-3, 3, -1.5][i], skill: base[i] * diff, base: base[i] * diff }; S.cars.push(c); });
     } else {

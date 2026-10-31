@@ -123,6 +123,25 @@ function tyreStacks(tr, th, scene) {
 }
 
 // Malla estática de carretera + arcenes + terraplenes (colores por vértice)
+// calles de ciudad: fachadas continuas pegadas a las vallas (sin hueco entre muro y edificio)
+function urbanMesh(tr, th) {
+  const pal = (th.palette || [0xf3e9d8, 0xe8c9a0, 0xd9a47a]).map(col), N = tr.N, items = [], step = 8;
+  for (let s = 0; s < tr.len; s += step) {
+    const i = Math.floor(s / tr.ds) % N;
+    if ((tr.tunnels || []).some((t) => s > t.s0 - 4 && s < t.s1 + 4)) continue;
+    for (const side of [-1, 1]) {
+      const hsh = Math.abs(Math.sin(s * 12.9898 + side * 78.233) * 43758.5453) % 1, d = 9 + hsh * 6, off = WALL + 0.5 + d / 2;
+      const x = tr.X[i] + -tr.TZ[i] * side * off, z = tr.Z[i] + tr.TX[i] * side * off;
+      let clash = false;
+      for (let j = 0; j < N; j += 5) { const gap = Math.min(Math.abs(j - i), N - Math.abs(j - i)); if (gap < 40) continue; if ((tr.X[j] - x) ** 2 + (tr.Z[j] - z) ** 2 < (WALL + d * 0.6 + 2) ** 2) { clash = true; break; } }
+      if (clash) continue;
+      items.push({ x, z, ry: Math.atan2(tr.TX[i], tr.TZ[i]), d, w: step + 0.6, h: tr.Y[i] + 14 + hsh * 30 + (Math.floor(s / step) % 3) * 6, c: pal[Math.floor(hsh * 997) % pal.length] });
+    }
+  }
+  const m = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), items.length), D = new THREE.Object3D();
+  items.forEach((b, k) => { D.position.set(b.x, -1, b.z); D.scale.set(b.d, b.h + 1, b.w); D.rotation.set(0, b.ry, 0); D.updateMatrix(); m.setMatrixAt(k, D.matrix); m.setColorAt(k, b.c); });
+  m.frustumCulled = false; return m;
+}
 // túnel: carcasa elíptica oscura sobre la pista, con aros de luz en el techo y bocas más claras
 function tunnelMesh(tr, t, th) {
   const g = new THREE.Group(), N = tr.N, Lh = WALL + 0.5, steps = Math.max(2, Math.round((t.s1 - t.s0) / 2)), ring = 14;
@@ -158,7 +177,7 @@ function roadMesh(tr, th, stride = 1) {
     // perfil lateral: hierba | pianos en relieve (rampa, cresta, escalón) | asfalto | escalón, cresta, rampa | hierba
     const lat = (k, h, eo, kr) => [[-eo, 0], [-L, h - 0.05], [-(hw + 1), h + 0.02], [-(hw + 0.35), h + kr], [-hw, h + kr], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw, h + kr], [hw + 0.35, h + kr], [hw + 1, h + 0.02], [L, h - 0.05], [eo, 0]][k];
     const sLen = tr.absK[i] > 0.012 ? 2.2 : 5, s2k = (i + stride) * tr.ds;
-    const krI = 0.06 + 0.035 * Math.sin(Math.PI * s / sLen), krJ = 0.06 + 0.035 * Math.sin(Math.PI * s2k / sLen);
+    const kk = th.noKerbs ? 0 : 1, krI = kk * (0.06 + 0.035 * Math.sin(Math.PI * s / sLen)), krJ = kk * (0.06 + 0.035 * Math.sin(Math.PI * s2k / sLen));
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
     const stripe = Math.floor(s / (tr.absK[i] > 0.012 ? 2.2 : 5)) % 2 === 0;
     for (let b = 0; b < 13; b++) {
@@ -170,7 +189,7 @@ function roadMesh(tr, th, stride = 1) {
       let outerColor = null;
       if (b === 0 || b === 12) { color = cGrass; outerColor = cDirt; }
       else if (b === 1 || b === 11) color = cGrass;
-      else if (b === 2 || b === 3 || b === 4 || b === 8 || b === 9 || b === 10) color = stripe ? k1 : k2;
+      else if (b === 2 || b === 3 || b === 4 || b === 8 || b === 9 || b === 10) color = th.noKerbs ? cGrass : stripe ? k1 : k2;
       else {
         color = Math.floor(s / 24) % 2 ? cRoad : cRoad2;
         const zn = zoneAt(tr, s); if (zn && zn.w > 0.5 && zn.key !== 'asphalt') { const zc = SURF[zn.key].col; if (zc != null) color = col(zc).multiplyScalar(Math.floor(s / 6) % 2 ? 1 : 0.93); }
@@ -377,11 +396,11 @@ function scenery(tr, th, scene, rng, q) {
     inst(new THREE.DodecahedronGeometry(2.2, 0).translate(0, 1.0, 0), lam(0xa65f35), spots.slice(half), (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.set(s[2] * 1.4, s[2] * 0.9, s[2] * 1.2); d.rotation.set(0, s[3], 0); });
   } else if (th.deco === 'toy') {
     const pal = (th.palette || [0xff3b3b, 0x3bb0ff, 0xffd23b, 0x4cd964, 0xb36bff, 0xff8a3b]).map(col);
-    const half = th.harbor ? spots.length : spots.length >> 1;
+    const half = th.urban ? 0 : th.harbor ? spots.length : spots.length >> 1;
     const bm = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), half);
     spots.slice(0, half).forEach((s, k) => { const w = th.harbor ? 7 + s[2] * 9 : 5 + s[2] * 7; dummy.position.set(s[0], 0, s[1]); dummy.scale.set(w, th.harbor ? 10 + (k % 5) * 9 + s[2] * 8 : w * (0.7 + (k % 3) * 0.35), w); dummy.rotation.set(0, s[3], 0); dummy.updateMatrix(); bm.setMatrixAt(k, dummy.matrix); bm.setColorAt(k, pal[k % 6]); });
     bm.frustumCulled = false; scene.add(bm);
-    const rest = spots.slice(half);
+    const rest = th.urban ? [] : spots.slice(half);
     const cm = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 14).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), rest.length);
     rest.forEach((s, k) => { const r = 2.5 + s[2] * 3; dummy.position.set(s[0], 0, s[1]); dummy.scale.set(r, r * (1.6 + (k % 3) * 0.5), r); dummy.rotation.set(0, s[3], 0); dummy.updateMatrix(); cm.setMatrixAt(k, dummy.matrix); cm.setColorAt(k, pal[(k + 2) % 6]); });
     cm.frustumCulled = false; scene.add(cm);
@@ -490,6 +509,7 @@ export function buildWorld(tr, th, opt = {}) {
 
   const road = roadMesh(tr, th, q.stride); scene.add(road);
   for (const t of tr.tunnels || []) scene.add(tunnelMesh(tr, t, th));
+  if (th.urban) scene.add(urbanMesh(tr, th));
   // Marcas tenues de goma en la trazada: dos huellas de rueda, sin línea central de carretera.
   const rubber = new THREE.MeshStandardMaterial({ color: th.weather === 'rain' ? 0x35404a : 0x25292d, roughness: 0.94, metalness: 0.02, transparent: true, opacity: th.weather === 'rain' ? 0.36 : 0.24, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide });
   for (const side of [-1, 1]) {

@@ -27,3 +27,8 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Clima por circuito: temperatura (el frío enfría los neumáticos y cambia el hielo), humedad y viento con rachas.
 - Circuitos de superficie mixta (hielo en Spa, Neón y Nieve; tierra, hierba, grava y arena en otros; tramos secos en los túneles). La pista del día es ahora procedural y estrecha, con dos tramos de otra superficie.
 - La IA conoce el agarre de cada tramo. El HUD muestra superficie, temperatura y viento.
+
+## 0.0.5
+- Mónaco rehecho: calles estrechísimas, edificios pegados a las vallas, casi sin pianos y mucho más revirado.
+- Carrera: arreglado el «cargando coches» que no dejaba empezar (se cargaban unos rivales y se creaban otros).
+- Sectores estilo F1: barra fina de colores bajo el cronómetro y aviso compacto que no tapa la carretera.

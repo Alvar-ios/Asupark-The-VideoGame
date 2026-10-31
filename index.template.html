@@ -537,6 +537,24 @@ body.mobile #raceBanner strong{font-size:22px;margin:0}
 .lbt tr.gh td{background:rgba(255,201,40,.08);padding-top:10px}.lbt tr.gh small{color:#8e98a8;font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
 .lbt td:last-child,.lbt th:last-child{text-align:right}
 #menu .track-env.zone{background:rgba(255,255,255,.1);color:#d7dee9}
+/* ===== sectores estilo retransmisión de F1: barra fina arriba y aviso compacto bajo el cronómetro (sin tapar la carretera) ===== */
+#hud #secs{display:flex!important;gap:3px;margin-top:5px}
+#hud .sec,body.mobile #hud .sec{flex:1;min-width:0!important;background:transparent!important;border:0!important;border-top:5px solid #4a5363!important;border-radius:0;clip-path:none;padding:3px 2px 0!important;text-align:center;font-size:12px;color:#c9d1dd;line-height:1.1}
+#hud .sec b{display:none}
+#hud .sec.cur{border-top-color:#fff!important;animation:secp 1s ease-in-out infinite}
+@keyframes secp{50%{border-top-color:rgba(255,255,255,.35)}}
+#hud .sec.purple{border-top-color:#b44bff!important;color:#e0b4ff}
+#hud .sec.green{border-top-color:#22c55e!important;color:#86f0ad}
+#hud .sec.orange{border-top-color:#f5c518!important;color:#ffe27a}
+#raceBanner,body.mobile #raceBanner{left:50%!important;top:112px!important;width:auto!important;min-width:min(380px,86vw);max-width:92vw;padding:6px 16px 7px!important;transform:translate(-50%,-8px)!important;display:flex;align-items:baseline;justify-content:center;gap:12px;border-left:0!important;border-bottom:4px solid #56e4ff;border-radius:0 0 6px 6px!important;background:rgba(8,11,18,.88)!important;box-shadow:none}
+#raceBanner.show,body.mobile #raceBanner.show{transform:translate(-50%,0)!important}
+#raceBanner.green{border-bottom-color:#22c55e!important}#raceBanner.orange{border-bottom-color:#f5c518!important}#raceBanner.purple{border-bottom-color:#b44bff!important}
+#raceBanner small,body.mobile #raceBanner small{display:inline!important;font-size:10px!important;letter-spacing:.14em;color:#aab5c5}
+#raceBanner strong,body.mobile #raceBanner strong{display:inline!important;margin:0!important;font-size:22px!important}
+#raceBanner span,body.mobile #raceBanner span{display:inline!important;font-size:12px!important}
+body.mobile #raceBanner{top:62px!important;min-width:0;padding:4px 10px 5px!important;gap:8px}
+body.mobile #raceBanner small{font-size:8px!important}body.mobile #raceBanner strong{font-size:16px!important}body.mobile #raceBanner span{font-size:10px!important}
+body.mobile #hud #secs{display:flex!important}body.mobile #hud .sec span{display:none}body.mobile #hud .sec{border-top-width:4px!important;padding:0!important;min-width:30px!important}
 </style>
 </head>
 <body>
