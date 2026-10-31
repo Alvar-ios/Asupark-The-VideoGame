@@ -9,7 +9,7 @@ export function buildSpeedProfile(tr, T) {
   for (let i = 0; i < N; i++) {
     let k = 0;
     for (let d = -6; d <= 6; d++) k = Math.max(k, tr.absK[(i + d + N) % N]);
-    const f = (s) => k * s * (1 + (s / 45) * (s / 45)) - 0.70 * T.yaw;
+    const f = (s) => k * s * (1 + (s / YAW_SPEED) * (s / YAW_SPEED)) - 0.70 * T.yaw * YAW_SCALE;
     if (f(vmax) <= 0) v[i] = vmax;
     else { let lo = 6, hi = vmax; for (let it = 0; it < 14; it++) { const m = (lo + hi) / 2; if (f(m) > 0) hi = m; else lo = m; } v[i] = lo; }
   }
@@ -43,7 +43,7 @@ export function aiInput(c, tr, prof, ai, out) {
 }
 
 // Récord de referencia de la pista: una vuelta lanzada del piloto automático (3 sectores + vuelta).
-import { makeCar, placeCar, stepCar } from './car.js';
+import { makeCar, placeCar, stepCar, YAW_SCALE, YAW_SPEED } from './car.js';
 const benchCache = {};
 export function benchmark(tr, type, env, key) {
   if (benchCache[key]) return benchCache[key];

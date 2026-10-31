@@ -2,6 +2,7 @@
 import { ROAD_HALF, WALL, locate, pointAt, wrapPi } from './track.js';
 import { puddleAt, smoothstep } from './surface.js';
 
+export const YAW_SCALE = 0.8, YAW_SPEED = 42; // sensibilidad de giro global
 export const G = 14; // gravedad "flotante" arcade
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
@@ -67,7 +68,7 @@ export function stepCar(c, inp, dt, tr, env) {
 
   // dirección suavizada
   const st = clamp(inp.steer, -1, 1);
-  const rate = (st === 0 || st * c.steer < 0 ? 9 : 5.2) * clamp(0.78 + T.yaw * 0.12, 0.9, 1.2);
+  const rate = (st === 0 || st * c.steer < 0 ? 8 : 3.6) * clamp(0.78 + T.yaw * 0.12, 0.9, 1.2);
   c.steer += clamp(st - c.steer, -rate * dt, rate * dt);
 
   // freno de mano y derrape
@@ -79,10 +80,10 @@ export function stepCar(c, inp, dt, tr, env) {
   if (c.drifting && Math.abs(vl) > 2.2) c.driftT += dt;
 
   // giro
-  let eff = c.steer;
+  let eff = Math.sign(c.steer) * Math.pow(Math.abs(c.steer), 1.35); // respuesta progresiva: suave al centro
   if (c.drifting) eff = c.driftDir * 0.48 + c.steer * 0.68;
     const tireAuthority = clamp(Math.sqrt(T.grip / 12), 0.86, 1.08) * (1 - offroadBlend * (1 - (env.steerOffroad || 0.72))) * (env.surface === 'snow' ? 0.93 : 1);
-  const maxYaw = T.yaw * tireAuthority / (1 + (speed / 52) * (speed / 52));
+  const maxYaw = T.yaw * YAW_SCALE * tireAuthority / (1 + (speed / YAW_SPEED) * (speed / YAW_SPEED));
   const auth = Math.min(1, Math.abs(vf) / 5) * (ground ? 1 : 0.22);
   const sgn = vf >= -0.3 ? 1 : -1;
   const yawT = eff * maxYaw * auth * sgn * (c.drifting ? 1.12 : 1);

@@ -31,12 +31,18 @@ const canvas = $('gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 const QUAL = { shadows: true };
+function applyGfx() {
+  const g = sel.gfx;
+  pixelRatio = g === 'low' ? Math.min(BASE_PR, 0.75) : g === 'medium' ? Math.min(BASE_PR, 1.1) : BASE_PR;
+  setShadows(g === 'low' ? false : true); resize();
+}
 function setShadows(on) {
   QUAL.shadows = on; renderer.shadowMap.enabled = on;
   if (S.scene) S.scene.traverse((o) => { if (o.isDirectionalLight) o.castShadow = on; if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.needsUpdate = true; }); });
 }
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
-let pixelRatio = Math.min(window.devicePixelRatio || 1, MOBILE ? 1.75 : 2);
+const BASE_PR = Math.min(window.devicePixelRatio || 1, MOBILE ? 1.75 : 2);
+let pixelRatio = BASE_PR;
 renderer.setPixelRatio(pixelRatio);
 const camera = new THREE.PerspectiveCamera(65, 1, 0.5, 4000);
 camera.up.set(0, 1, 0);
@@ -57,10 +63,11 @@ addTrack('daily', daily.name, daily.sub, daily.seed, daily.style, daily.theme);
 for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
 
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
-const sel = { track: 0, mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, colors: {} };
+const sel = { track: 0, mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, colors: {}, vol: { master: 1, music: 0.7, engine: 1 }, gfx: 'auto' };
 const PAINTS = [['Verde botella', '#0b4d2c'], ['Rojo', '#d32a22'], ['Azul', '#1f6fff'], ['Amarillo', '#f7b32b'], ['Naranja', '#ff7a1a'], ['Blanco', '#f2f2f2'], ['Negro', '#16181d'], ['Plata', '#b9bec6'], ['Morado', '#8a4bff']];
 const paintOf = (c) => sel.colors[c.id] || '#' + new THREE.Color(c.color).getHexString();
 const saved = store.get('sel'); if (saved) { const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
+if (saved) { if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
 
 function drawPreview(cv, tr, th) {
   const w = 300, h = 130, dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
@@ -755,6 +762,20 @@ function updateHud(dt) {
   }
 }
 
+// el navegador solo deja sonar tras un gesto del usuario: el primero activa el audio (y la música del menú)
+const firstGesture = () => { sound.init(); S.musicOn = null; window.removeEventListener('pointerdown', firstGesture); window.removeEventListener('keydown', firstGesture); };
+window.addEventListener('pointerdown', firstGesture); window.addEventListener('keydown', firstGesture);
+
+// ---------- ajustes ----------
+function buildSettings() {
+  for (const k of ['master', 'music', 'engine']) { $('v_' + k).value = Math.round(sel.vol[k] * 100); $('vt_' + k).textContent = Math.round(sel.vol[k] * 100) + '%'; }
+  for (const b of $('gfxSel').children) b.classList.toggle('on', b.dataset.v === sel.gfx);
+}
+for (const k of ['master', 'music', 'engine']) $('v_' + k).oninput = (e) => { sel.vol[k] = e.target.value / 100; $('vt_' + k).textContent = e.target.value + '%'; sound.init(); sound.setVolumes(sel.vol); store.set('sel', sel); };
+$('gfxSel').onclick = (e) => { if (e.target.dataset.v) { sel.gfx = e.target.dataset.v; store.set('sel', sel); applyGfx(); buildSettings(); } };
+const openSettings = () => { buildSettings(); $('settings').classList.remove('hidden'); };
+$('setBtn').onclick = openSettings; $('setBtn2').onclick = openSettings; $('setClose').onclick = () => $('settings').classList.add('hidden');
+
 // ---------- bucle principal ----------
 let last = performance.now(), slowAcc = 0, slowN = 0;
 function frame(now) {
@@ -764,10 +785,13 @@ function frame(now) {
   slowAcc += dt; slowN++;
   if (slowAcc > 2.5) {
     const avg = slowAcc / slowN;
-    if (avg > 0.026 && pixelRatio > 0.8) { pixelRatio = Math.max(0.75, pixelRatio - 0.25); resize(); }
-    else if (avg > 0.03 && QUAL.shadows) setShadows(false);
+    if (sel.gfx === 'auto') {
+      if (avg > 0.026 && pixelRatio > 0.8) { pixelRatio = Math.max(0.75, pixelRatio - 0.25); resize(); }
+      else if (avg > 0.03 && QUAL.shadows) setShadows(false);
+    }
     slowAcc = 0; slowN = 0;
   }
+  { const driving = S.state === 'racing' || S.state === 'countdown' || S.state === 'finished'; sound.setEngineActive(driving); const wantMusic = S.state === 'menu' && !sel.mute && sel.vol.music > 0.001; if (wantMusic !== S.musicOn) { S.musicOn = wantMusic; sound.setMusic(wantMusic); } }
   if (S.state === 'menu') {
     renderer.setClearColor(0x0b111c, 1); renderer.clear();
     return;
@@ -826,4 +850,5 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 buildMenu();
+applyGfx(); sound.setVolumes(sel.vol); sound.setMuted(!!sel.mute);
 window.__dr = { S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };

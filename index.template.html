@@ -345,7 +345,7 @@ body.mobile .sw{width:26px;height:26px}
     </div>
     <div class="section-heading garage-heading"><div><span class="eyebrow">TU GARAJE</span><h3>Elige coche</h3></div><span class="section-note">Cada coche tiene su carácter</span></div><div id="carList" class="grid"></div>
     <h3>Pintura · <span id="paintName" style="color:var(--txt);letter-spacing:.06em">—</span></h3><div id="paints"></div>
-    <div class="row" style="margin-top:12px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
+    <div class="row" style="margin-top:12px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="setBtn" class="tog">⚙ Ajustes</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
     </div>
     <div class="menu-footer">
     <button id="startBtn" class="big">JUGAR MODO SELECCIONADO</button>
@@ -354,7 +354,16 @@ body.mobile .sw{width:26px;height:26px}
     </div>
   </div>
 </div>
-<div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar carrera</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
+<div id="settings" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="text-align:left;max-width:520px"><h1 style="font-size:32px">AJUSTES</h1>
+  <h3>Sonido</h3>
+  <div class="row"><label style="flex:1">Volumen general <b id="vt_master"></b><input id="v_master" type="range" min="0" max="100" style="width:100%"></label></div>
+  <div class="row"><label style="flex:1">Música del menú <b id="vt_music"></b><input id="v_music" type="range" min="0" max="100" style="width:100%"></label></div>
+  <div class="row"><label style="flex:1">Motor <b id="vt_engine"></b><input id="v_engine" type="range" min="0" max="100" style="width:100%"></label></div>
+  <h3>Gráficos</h3>
+  <div id="gfxSel" class="seg"><button data-v="auto">Auto</button><button data-v="high">Alta</button><button data-v="medium">Media</button><button data-v="low">Baja</button></div>
+  <p class="keys" style="display:block">Auto baja la calidad solo si el juego va lento. «Baja» quita las sombras y reduce la resolución: úsala si va a tirones en el móvil.</p>
+  <button id="setClose" class="big">LISTO</button></div></div>
+<div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar carrera</button><button id="setBtn2" class="big ghost">Ajustes</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
 <div id="results" class="overlay hidden"><div class="panel rbox"><h1 id="rTitle">META</h1><div class="big-n" id="rBig">1º</div><div id="rNew"></div><table id="rTable"></table><button id="againBtn" class="big">OTRA VEZ</button><button id="menuBtn2" class="big ghost">Menú principal</button></div></div>
 <script>/*BUNDLE*/</script>
 </body>

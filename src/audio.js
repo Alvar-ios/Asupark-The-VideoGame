@@ -1,5 +1,6 @@
 // El motor es sintético (src/engine-dsp.js, en un AudioWorklet). Las grabaciones CC0 quedan solo como respaldo si el worklet no carga.
 import { PROFILES } from './engine-dsp.js';
+import { Music } from './music.js';
 const SYNTH_ID = { bora: 'bora', porsche: 'porsche', m3: 'm3', cupra: 'cupra', mini: 'mini', qashqai: 'qashqai' };
 const RECORDED_ENGINES = {
   bora: ['./assets/audio/engine_bora.wav', 0.72, 0.28, 3900],
@@ -25,7 +26,7 @@ function seamlessLoop(ctx, source, fadeSeconds = 0.12) {
   return loop;
 }
 export class Sound {
-  constructor() { this.ctx = null; this.muted = false; this.ok = false; this.engineSource = null; this.engineCar = null; this.engineToken = 0; this.requestedCar = null; this.engineRpm = 0.22; this.lastAudioTime = 0; }
+  constructor() { this.ctx = null; this.muted = false; this.ok = false; this.engineSource = null; this.engineCar = null; this.engineToken = 0; this.vol = { master: 1, music: 0.7, engine: 1 }; this.engineOn = true; this.music = null; this.requestedCar = null; this.engineRpm = 0.22; this.lastAudioTime = 0; }
   init(carId) {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); if (carId) this.startSynth(carId); return; }
     try {
@@ -44,6 +45,7 @@ export class Sound {
       this.rain = nz('lowpass', 1150, 0.35);
       this.gravel = nz('bandpass', 850, 1.2);
       this.spray = nz('highpass', 720, 0.45);
+      this.music = new Music(ctx, this.master, buf); this.applyVolumes();
       this.ok = true;
       if (carId) this.startSynth(carId);
     } catch (e) { this.ok = false; }
@@ -57,7 +59,7 @@ export class Sound {
     try {
       await this.ctx.audioWorklet.addModule(new URL('engine-worklet.js', document.baseURI).href);
       const node = new AudioWorkletNode(this.ctx, 'drift-engine', { outputChannelCount: [2] });
-      this.engineGain = this.ctx.createGain(); this.engineGain.gain.value = 0.9; node.connect(this.engineGain); this.engineGain.connect(this.master);
+      this.engineGain = this.ctx.createGain(); this.engineGain.gain.value = this.engineOn ? 0.9 * this.vol.engine : 0; node.connect(this.engineGain); this.engineGain.connect(this.master);
       this.synth = node; this.synthCar = this.requestedSynth || carId; node.port.postMessage({ profile: SYNTH_ID[this.synthCar] || 'porsche' }); this.synthTried = 'ok';
     } catch (e) { this.synthTried = 'failed'; console.warn('Motor sintético no disponible; uso grabaciones', e); this.ensureEngine(carId); }
   }
@@ -86,7 +88,24 @@ export class Sound {
       if (token === this.engineToken) { this.requestedCar = null; console.warn('No se pudo cargar la grabación del motor', e); }
     }
   }
-  setMuted(m) { this.muted = m; if (this.master) this.master.gain.value = m ? 0 : 0.58; }
+  setMuted(m) { this.muted = m; this.applyVolumes(); }
+  setVolumes(v) { Object.assign(this.vol, v); this.applyVolumes(); }
+  applyVolumes() {
+    if (this.master) this.master.gain.value = this.muted ? 0 : 0.58 * this.vol.master;
+    if (this.music) this.music.setVolume(0.55 * this.vol.music);
+    if (this.engineGain && this.engineOn) this.engineGain.gain.value = 0.9 * this.vol.engine;
+  }
+  // El motor y los ruidos de rodadura solo suenan durante la carrera (no en menú ni en pausa)
+  setEngineActive(on) {
+    if (this.engineOn === on || !this.ok) { this.engineOn = on; return; }
+    this.engineOn = on; const t = this.ctx.currentTime;
+    if (this.engineGain) this.engineGain.gain.setTargetAtTime(on ? 0.9 * this.vol.engine : 0, t, on ? 0.08 : 0.04);
+    if (!on) {
+      if (this.engineSource) this.engineSource.gain.gain.setTargetAtTime(0, t, 0.04);
+      for (const n of [this.wind, this.rain, this.spray, this.gravel, this.skid]) if (n) n.g.gain.setTargetAtTime(0, t, 0.05);
+    }
+  }
+  setMusic(on) { if (!this.music) return; if (on) this.music.start(); else this.music.stop(); }
   update(p) {
     if (!this.ok) return;
     if (p.carId && p.carId !== (this.synth ? this.synthCar : this.engineCar)) this.startSynth(p.carId);
@@ -106,7 +125,7 @@ export class Sound {
       this.engineSource.source.playbackRate.setTargetAtTime(rate, t, throttle > 0.12 ? 0.07 : 0.18);
       this.engineSource.filter.frequency.setTargetAtTime(Math.max(750, Math.min(profile[3], 820 + this.engineRpm * 4200 + throttle * 1500 - brake * 520)), t, throttle > 0.12 ? 0.08 : 0.18);
       const load = Math.max(0.12, Math.min(1, 0.16 + this.engineRpm * 0.38 + throttle * 0.55 - brake * 0.16));
-      this.engineSource.gain.gain.setTargetAtTime(profile[2] * load * (p.air ? 0.72 : 1), t, 0.1);
+      this.engineSource.gain.gain.setTargetAtTime(profile[2] * load * (p.air ? 0.72 : 1) * this.vol.engine, t, 0.1);
     }
     const r = Math.min(1, p.speed / p.vmax);
     this.wind.g.gain.setTargetAtTime(r * r * 0.09, t, 0.15);

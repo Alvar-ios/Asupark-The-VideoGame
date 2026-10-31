@@ -29,5 +29,9 @@ for (const [id, P] of Object.entries(PROFILES)) {
 // pops: debe haber más energía de picos al soltar el gas en el Mini que en el Qashqai
 const pk = (id) => mx(render(id, 6, () => ({ rpm: 5500, throttle: 0, boost: 0, limiter: false })).slice(sr * 2));
 console.log('pico al soltar gas: mini', pk('mini').toFixed(2), '| bora', pk('bora').toFixed(2), '| qashqai', pk('qashqai').toFixed(2));
+// limitador natural: las vueltas deben oscilar (no quedarse clavadas) y el ritmo debe variar
+{ const d = new EngineDSP(sr, 'porsche'), tmp = new Float32Array(128), r = []; for (let o = 0; o < sr * 4; o += 128) { d.process(tmp, { rpm: 7000, throttle: 1, boost: 1, limiter: true }); if (o > sr) r.push(d.lastRpm); }
+  const lo = Math.min(...r), hi = Math.max(...r), swing = (hi - lo) / hi; let flips = 0; for (let i = 2; i < r.length; i++) if ((r[i] - r[i - 1]) * (r[i - 1] - r[i - 2]) < 0) flips++;
+  console.log('limitador: rpm entre', lo.toFixed(0), 'y', hi.toFixed(0), '| oscilación', (swing * 100).toFixed(1) + '%'); if (swing < 0.025) { console.log('  FALLO: limitador constante'); bad++; } }
 console.log(bad ? `${bad} fallos` : 'Todo correcto');
 process.exit(bad ? 1 : 0);

@@ -36,7 +36,7 @@ export class EngineDSP {
   constructor(sr, profile = 'porsche', seed = 1) {
     this.sr = sr; this.setProfile(profile); this.seed = seed >>> 0 || 1;
     this.phase = 0; this.cyl = 0; this.env = 0; this.hp = 0; this.hpIn = 0;
-    this.rpmS = 900; this.thrS = 0; this.boostS = 0; this.pend = 0; this.pendEnv = 0; this.limT = 0; this.t = 0;
+    this.limPh = 0; this.limHz = 9; this.limDepth = 0.05; this.limMix = 0; this.lastRpm = 0; this.rpmS = 900; this.thrS = 0; this.boostS = 0; this.pend = 0; this.pendEnv = 0; this.limT = 0; this.t = 0;
     this.subLP = 0; this.rumLP = 0; this.wob = 0; this.wobT = 0; this.evS = 0;
     this.nF = new SVF(); this.fanF = new SVF(); this.turF = new SVF(); this.crkF = new SVF(); this.crkF2 = new SVF(); this.thF = new SVF();
     this.turPh = 0; this.scPh = 0; this.evPh = 0; this.crk = 0; this.thump = 0; this.popsLeft = 0; this.popT = 0; this.popAmp = 0;
@@ -53,7 +53,13 @@ export class EngineDSP {
       // ralentí inestable: el régimen "caza" arriba y abajo
       const lowRpm = Math.max(0, 1 - this.rpmS / 2800);
       this.wobT += 1 / sr; if (this.wobT > 0.05) { this.wobT = 0; this.wob += (this.rnd() - 0.5) * 0.02 - this.wob * 0.05; }
-      const rpm = this.rpmS * (1 + (this.wob + 0.012 * Math.sin(6.28 * 1.7 * this.t)) * lowRpm);
+      const rpm0 = this.rpmS * (1 + (this.wob + 0.012 * Math.sin(6.28 * 1.7 * this.t)) * lowRpm);
+      // limitador real: corta el encendido, las vueltas caen un poco y vuelve a entrar; ritmo y profundidad irregulares
+      this.limMix += ((p.limiter ? 1 : 0) - this.limMix) * 0.003;
+      this.limPh += this.limHz / sr;
+      if (this.limPh >= 1) { this.limPh -= 1; this.limHz = 6.5 + this.rnd() * 6; this.limDepth = 0.035 + this.rnd() * 0.045; }
+      const dip = this.limPh < 0.4 ? this.limPh / 0.4 : 1 - (this.limPh - 0.4) / 0.6, cutting = p.limiter && this.limPh < 0.4;
+      const rpm = rpm0 * (1 - this.limDepth * dip * this.limMix); this.lastRpm = rpm;
       const thr = this.thrS, load = thr * Math.min(1, 0.35 + rpm / 4500);
       const firingHz = rpm / 60 * (P.cyl / 2), period = 1 / Math.max(20, firingHz);
       // híbrido: a pocas vueltas y poco gas manda el eléctrico
@@ -65,7 +71,7 @@ export class EngineDSP {
         const vr = P.rough * (0.35 + 1.1 * lowRpm);
         let a = P.amp[this.cyl] * (0.5 + 0.9 * load) * (1 - vr + 2 * vr * this.rnd()) * Math.pow(Math.max(0.4, firingHz / 100), 0.85);
         if (this.rnd() < P.miss * lowRpm * (1.2 - load)) a *= 0.22; // encendido flojo
-        if (p.limiter) { this.limT++; if (this.limT & 1) a *= 0.18; } else this.limT = 0;
+        if (cutting) a *= 0.12;
         if (thr < 0.04 && rpm > 1500) a *= 0.4;
         this.pend = Math.max(0, (this.rnd() * 0.08) * period * sr); this.pendEnv = a;
       }
