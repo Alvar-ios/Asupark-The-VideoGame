@@ -441,7 +441,7 @@ async function startRace(restart = false) {
     order.forEach((c, k) => { c.grid = k + 1; if (c !== player) c.ai.skill = c.ai.base; placeCar(c, tr, -7 - 10 * (k >> 1), (k & 1 ? 1 : -1) * latG, 0); });
     S.ghostBest = null;
   } else {
-    placeCar(player, tr, -190, 0, 30); S.auto = true; flashCount(''); showMsg('PILOTO AUTOMÁTICO', 4200, 'cy'); // contrarreloj: salida lanzada, el crono arranca al cruzar la meta
+    placeCar(player, tr, -260, 0, 18); S.auto = true; S.autoAi = { lane: 0, skill: AI_TOP * 0.5 }; flashCount(''); showMsg('PILOTO AUTOMÁTICO', 4200, 'cy'); // contrarreloj: salida lanzada, el crono arranca al cruzar la meta
     const rec = store.get('best.' + ti.key + '.' + tr.seed + '.' + type.id);
     S.ghostBest = rec && rec.ghost ? Float32Array.from(rec.ghost) : null;
     if (S.ghostMesh) S.ghostMesh.root.visible = false;
@@ -549,10 +549,8 @@ function showMsg(text, ms = 1100, cls = '') {
 }
 let bannerTimer = 0;
 function showRaceBanner(label, value, detail = '', cls = '') {
-  const card = $('raceBanner');
-  $('bannerLabel').textContent = label; $('bannerTime').textContent = value; $('bannerDelta').textContent = detail;
-  card.className = 'show ' + cls; clearTimeout(bannerTimer);
-  bannerTimer = setTimeout(() => { card.className = ''; }, 2700);
+  if (/^SECTOR/.test(label)) return; // los sectores se muestran en su casilla, arriba junto al cronómetro
+  S.lapMsg = { text: `${label.replace('MEJOR VUELTA PERSONAL', 'MEJOR VUELTA')} ${value} ${detail}`.trim(), cls, until: performance.now() + 3600 };
 }
 
 // ---------- simulación ----------
@@ -581,8 +579,8 @@ function stepAll() {
   for (const c of S.cars) {
     if (c === p) {
       if (p.finished || S.auto) {
-        aiInput(p, tr, S.prof[p.type.id], { lane: 0, skill: p.finished ? 0.7 : 0.55 }, aiIn);
-        if (S.auto) { aiIn.brake = 0; aiIn.throttle = p.speed < 29 ? 1 : p.speed > 33 ? 0 : 0.35; } // velocidad de crucero hasta la meta
+        aiInput(p, tr, S.prof[p.type.id], p.finished ? { lane: 0, skill: 0.7 } : S.autoAi, aiIn);
+        if (S.auto && p.speed > 34) { aiIn.throttle = 0; aiIn.brake = Math.max(aiIn.brake, 0.15); } // crucero: respeta la línea y las curvas, sin pasarse de 34 m/s
         stepCar(p, aiIn, H, tr, env);
       }
       else stepCar(p, inp, H, tr, env);
@@ -684,7 +682,7 @@ function sectorDone(i, t) {
   if (cls === 'purple') { S.secRec[i] = t; sound.play('purple'); updateRecPanel(); } else sound.play('sector');
   if (S.secPB[i] == null || t < S.secPB[i]) { S.secPB[i] = t; S.pbRec.sec[i] = t; store.set('pb.' + S.skey, S.pbRec); }
   const el = $('s' + i); el.className = 'sec ' + cls + (S.secIdx === i ? ' cur' : '');
-  el.lastElementChild.textContent = fmtS(t);
+  el.lastElementChild.innerHTML = `${fmtS(t)}<small>${cls === 'purple' && recB >= 1e8 ? '' : sg(t - (cls === 'purple' ? recB : pbB != null ? pbB : t)).replace(' s', '')}</small>`;
   showRaceBanner(`SECTOR ${i + 1} · ${head.toUpperCase()}`, fmtS(t), detail, cls);
 }
 
@@ -953,7 +951,7 @@ function updateHud(dt) {
   const done = Math.max(0, Math.floor(p.D / tr.len));
   setText('lap', S.mode === 'tt' ? (S.gp ? Math.min(3, done + 1) + '/3' : String(done + 1)) : Math.min(S.laps, done + 1) + '/' + S.laps);
   setText('time', S.state === 'countdown' || (S.mode === 'tt' && !p.crossed) ? fmt(0) : fmt(p.finished ? p.finishTime - p.lapStart : S.t - p.lapStart));
-  setText('best', (S.lapPB != null ? 'MEJOR ' + fmt(S.lapPB) : 'SIN TIEMPO'));
+  { const lm = S.lapMsg && performance.now() < S.lapMsg.until ? S.lapMsg : null; setText('best', lm ? lm.text : (S.lapPB != null ? 'MEJOR ' + fmt(S.lapPB) : 'SIN TIEMPO')); $('best').className = lm ? 'lm ' + lm.cls : ''; }
   if (S.refFill && S.state === 'racing' && !p.finished && p.D >= 0) {
     // diferencia con la vuelta de referencia: perfil interpolado y suavizado en el tiempo (como en la tele de F1)
     const F = S.refFill, dist = (p.D % tr.len) / 10, k = Math.min(F.length - 2, Math.floor(dist)), ref = F[k] + (F[k + 1] - F[k]) * (dist - k);
@@ -962,7 +960,7 @@ function updateHud(dt) {
     const q = Math.round(S.deltaS * 100) / 100;
     if (q !== hudCache.dq) { hudCache.dq = q; const el = $('delta'); el.textContent = (q > 0 ? '+' : q < 0 ? '−' : '') + Math.abs(q).toFixed(2); el.className = q > 0.02 ? 'bad' : q < -0.02 ? 'good' : ''; }
   }
-  if (S.auto && S.mode === 'tt' && !S.player.crossed) { const tl = -S.player.D / Math.max(10, S.player.speed); if (tl <= 3.2) { flashCount(String(Math.max(1, Math.ceil(tl)))); } }
+  if (S.auto && S.mode === 'tt' && !S.player.crossed) { const tl = -S.player.D / Math.max(20, S.player.speed); if (tl <= 5.5) { flashCount(String(Math.max(1, Math.ceil(tl)))); } }
   if (S.mode === 'race') updateTower(dt); else if (S.gp) updateTowerQuali(dt);
   if (S.mode === 'race') { const rank = S.cars.slice().sort((a, b) => (b.finished - a.finished) || (a.finished && b.finished ? a.finishTime - b.finishTime : b.D - a.D)).indexOf(p) + 1; setText('pos', String(rank)); }
   const sp = clamp((p.speed - 52) / 45, 0, 1) * 0.28;

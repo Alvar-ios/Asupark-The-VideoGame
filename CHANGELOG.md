@@ -53,3 +53,7 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Salida lanzada con piloto automático y cuenta atrás 3-2-1 hasta la meta.
 - Clasificación del Gran Premio con los tiempos de los rivales en directo.
 - Mónaco: pista más ancha, menos edificios y sin edificios dentro de las curvas.
+
+## 0.0.9
+- Piloto automático de la salida lanzada rehecho: parte más lento, respeta la línea de carrera y llega a la meta sin chocar en todos los circuitos y coches (`node test/autopilot.mjs`). La cuenta atrás dura 5 s.
+- Los sectores ya no tapan la pantalla: el tiempo y la diferencia salen dentro de su casilla, arriba junto al cronómetro, y el resultado de la vuelta aparece en la línea del cronómetro.

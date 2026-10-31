@@ -588,6 +588,11 @@ body.mobile.race #hud #h-lap{display:none!important}
 .confetti i{position:absolute;top:-12px;width:7px;height:12px;opacity:.9;animation:fall 3.2s linear infinite}
 @keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
 #results .rbox{max-height:96dvh;overflow-y:auto}#results #rTable{margin-bottom:8px}
+/* sectores arriba, junto al cronómetro: el tiempo y la diferencia dentro de su casilla; sin avisos sobre la carretera */
+#raceBanner,body.mobile #raceBanner{display:none!important}
+#hud .sec span{display:block;line-height:1.15}
+#hud .sec span small{display:block;font-size:10px;opacity:.85;font-weight:600}
+#hud #best.lm{font-weight:800;letter-spacing:.06em}#hud #best.lm.purple{color:#e0b4ff}#hud #best.lm.green{color:#86f0ad}#hud #best.lm.orange{color:#ffe27a}
 </style>
 </head>
 <body>
