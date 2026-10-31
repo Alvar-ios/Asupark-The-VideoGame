@@ -1,4 +1,6 @@
-// El motor sale de grabaciones CC0; no se mezcla con tonos de motor sintetizados.
+// El motor es sintético (src/engine-dsp.js, en un AudioWorklet). Las grabaciones CC0 quedan solo como respaldo si el worklet no carga.
+import { PROFILES } from './engine-dsp.js';
+const SYNTH_ID = { bora: 'bora', porsche: 'porsche', m3: 'm3', cupra: 'cupra', mini: 'mini', qashqai: 'qashqai' };
 const RECORDED_ENGINES = {
   bora: ['./assets/audio/engine_bora.wav', 0.72, 0.28, 3900],
   porsche: ['./assets/audio/engine_porsche.wav', 0.86, 0.32, 5200],
@@ -25,7 +27,7 @@ function seamlessLoop(ctx, source, fadeSeconds = 0.12) {
 export class Sound {
   constructor() { this.ctx = null; this.muted = false; this.ok = false; this.engineSource = null; this.engineCar = null; this.engineToken = 0; this.requestedCar = null; this.engineRpm = 0.22; this.lastAudioTime = 0; }
   init(carId) {
-    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); if (carId) this.ensureEngine(carId); return; }
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); if (carId) this.startSynth(carId); return; }
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -43,8 +45,21 @@ export class Sound {
       this.gravel = nz('bandpass', 850, 1.2);
       this.spray = nz('highpass', 720, 0.45);
       this.ok = true;
-      if (carId) this.ensureEngine(carId);
+      if (carId) this.startSynth(carId);
     } catch (e) { this.ok = false; }
+  }
+  // Intenta el motor sintético; si falla, usa la grabación de respaldo
+  async startSynth(carId) {
+    if (!this.ctx || this.synthTried === 'failed') { this.ensureEngine(carId); return; }
+    if (this.synth) { if (this.synthCar !== carId) { this.synthCar = carId; this.synth.port.postMessage({ profile: SYNTH_ID[carId] || 'porsche' }); } return; }
+    if (this.synthTried) return;
+    this.synthTried = 'loading';
+    try {
+      await this.ctx.audioWorklet.addModule(new URL('engine-worklet.js', document.baseURI).href);
+      const node = new AudioWorkletNode(this.ctx, 'drift-engine', { outputChannelCount: [2] });
+      this.engineGain = this.ctx.createGain(); this.engineGain.gain.value = 0.9; node.connect(this.engineGain); this.engineGain.connect(this.master);
+      this.synth = node; this.synthCar = this.requestedSynth || carId; node.port.postMessage({ profile: SYNTH_ID[this.synthCar] || 'porsche' }); this.synthTried = 'ok';
+    } catch (e) { this.synthTried = 'failed'; console.warn('Motor sintético no disponible; uso grabaciones', e); this.ensureEngine(carId); }
   }
   async ensureEngine(carId) {
     const profile = RECORDED_ENGINES[carId];
@@ -74,13 +89,18 @@ export class Sound {
   setMuted(m) { this.muted = m; if (this.master) this.master.gain.value = m ? 0 : 0.58; }
   update(p) {
     if (!this.ok) return;
-    if (p.carId && p.carId !== this.engineCar) this.ensureEngine(p.carId);
+    if (p.carId && p.carId !== (this.synth ? this.synthCar : this.engineCar)) this.startSynth(p.carId);
+    if (p.carId) this.requestedSynth = p.carId;
     const t = this.ctx.currentTime, dt = this.lastAudioTime ? Math.min(0.1, Math.max(0, t - this.lastAudioTime)) : 1 / 60;
     this.lastAudioTime = t;
     const throttle = Math.max(0, Math.min(1, p.throttle || 0)), brake = Math.max(0, Math.min(1, p.brake || 0));
     const targetRpm = Math.max(0.16, Math.min(1, p.rpm * 0.72 + throttle * 0.34 - brake * 0.2));
     this.engineRpm += (targetRpm - this.engineRpm) * (1 - Math.exp(-dt / (throttle > 0.12 ? 0.075 : 0.2)));
-    if (this.engineSource) {
+    if (this.synth) {
+      const pr = PROFILES[SYNTH_ID[p.carId] || 'porsche'], norm = Math.max(0, Math.min(1, (p.rpm - 0.22) / 0.78));
+      const rpm = pr.idle + (pr.redline * 0.97 - pr.idle) * norm, hiRev = rpm / pr.redline;
+      this.synth.port.postMessage({ rpm, throttle, boost: throttle * Math.min(1, Math.max(0.15, (hiRev - 0.25) * 1.8)), limiter: p.rpm > 0.985 && throttle > 0.5 });
+    } else if (this.engineSource) {
       const profile = this.engineSource.profile;
       const rate = Math.max(0.68, Math.min(1.62, profile[1] + this.engineRpm * 0.55 + throttle * 0.24 - brake * 0.11));
       this.engineSource.source.playbackRate.setTargetAtTime(rate, t, throttle > 0.12 ? 0.07 : 0.18);
