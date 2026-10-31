@@ -43,6 +43,13 @@ export const CARS = [
   { id: 'lotus', brand: 'Lotus', group: 'f1', drive: 'rwd', name: 'Lotus 72D (1972)', desc: 'Clásico negro y oro: ligero pero nervioso', color: 0x16181d, vmax: 66, accel: 17.8, yaw: 3.0, grip: 14, driftGrip: 3.0, radius: 1.1, mass: 650, kind: 'lotus', nopaint: true, custom: true },
   { id: 'aston', brand: 'Aston Martin', group: 'f1', name: 'Aston Martin AMR23', desc: 'Monoplaza actual: apoyo aerodinámico enorme', color: 0x0e7a6b, vmax: 74, accel: 21, yaw: 3.1, grip: 17, driftGrip: 2.8, radius: 1.2, mass: 800, kind: 'aston', nopaint: true, custom: true },
 ];
+// efecto suelo / aerodinámica (apoyo que crece con el cuadrado de la velocidad), tracción y potencia de frenada
+const AERO = { aston: 1.0, mclaren: 0.55, lotus: 0.4, stradale: 0.12, slr: 0.08, gtr: 0.06, f360: 0.05, cobra: 0.03 };
+const DRIVE = { s4: 'awd', porsche: 'rwd' };
+const BRAKE = { cartoon: 1, cv100: 0.95, cv150: 1, cv200: 1.1, competicion: 1.2, f1: 1.5 };
+for (const c of CARS) { c.aero = AERO[c.id] || 0; c.drive = c.drive || DRIVE[c.id] || 'fwd'; c.brakeMul = BRAKE[c.group] || 1; }
+// el apoyo aerodinámico sustituye al agarre base de los monoplazas: en curvas lentas agarran como un coche normal, a alta velocidad se pegan al suelo
+for (const [id, g] of [['aston', 13.8], ['mclaren', 13.4], ['lotus', 13.6]]) CARS.find((c) => c.id === id).grip = g;
 export const AI_COLORS = [0x37d67a, 0xb06bff, 0xff7a3d, 0xeaeaea, 0x19c3d6];
 
 export function makeCar(type, name, isPlayer) {
@@ -115,7 +122,9 @@ export function stepCar(c, inp, dt, tr, env) {
   let eff = Math.sign(c.steer) * Math.pow(Math.abs(c.steer), 1.35); // respuesta progresiva: suave al centro
   if (c.drifting) eff = c.driftDir * 0.48 + c.steer * 0.68;
     const tireAuthority = clamp(Math.sqrt(T.grip / 12), 0.86, 1.08) * (1 - offroadBlend * (1 - (env.steerOffroad || 0.72))) * (env.surface === 'snow' ? 0.93 : 1) * SP.s * (1 + 2.5 * Math.abs(loc.bank || 0));
-  const maxYaw = T.yaw * YAW_SCALE * tireAuthority / (1 + (speed / YAW_SPEED) * (speed / YAW_SPEED));
+  const rA = clamp(speed / T.vmax, 0, 1.2), dfk = 1 + (T.aero || 0) * 1.6 * rA * rA; c.df = (T.aero || 0) * rA * rA; // efecto suelo
+  const dtr = T.drive === 'fwd' ? (inp.throttle > 0.6 && Math.abs(c.steer) > 0.4 ? 0.95 : 1) : T.drive === 'awd' ? 1.03 : 1; // tracción delantera: subvira al acelerar; total: más neutro
+  const maxYaw = T.yaw * YAW_SCALE * tireAuthority * (1 + (T.aero || 0) * 0.8 * rA * rA) * dtr / (1 + (speed / YAW_SPEED) * (speed / YAW_SPEED));
   const auth = Math.min(1, Math.abs(vf) / 5) * (ground ? 1 : 0.22);
   const sgn = vf >= -0.3 ? 1 : -1;
   const yawT = eff * maxYaw * auth * sgn * (c.drifting ? 1.12 : 1);
@@ -128,12 +137,12 @@ export function stepCar(c, inp, dt, tr, env) {
   if (ground) {
     if (inp.brake > 0.05) {
       if (vf > 1) {
-        const dv = Math.min(vf, (env.brakeForce || 24) * SP.b * inp.brake * dt);
+        const dv = Math.min(vf, (env.brakeForce || 24) * SP.b * (T.brakeMul || 1) * inp.brake * dt);
         vf -= dv;
       } else vf = Math.max(-16, vf - 14 * inp.brake * dt);
     } else if (inp.throttle > 0.01) {
       if (vf < 0) vf += 28 * dt;
-      else if (vf < vmaxE) vf += T.accel * ACCEL_SCALE * (env.traction || 1) * SP.a * inp.throttle * (1 - Math.pow(vf / vmaxE, 2.2)) * dt;
+      else if (vf < vmaxE) vf += T.accel * ACCEL_SCALE * (env.traction || 1) * clamp(1 + (SP.a - 1) * (T.drive === 'awd' ? 0.45 : T.drive === 'rwd' ? 1.1 : 0.9), 0.3, 1.6) * inp.throttle * (1 - Math.pow(vf / vmaxE, 2.2)) * dt;
     } else if (vf !== 0) {
       const d = Math.min(Math.abs(vf), (2.2 + 0.0007 * vf * vf) * dt);
       vf -= Math.sign(vf) * d;
@@ -158,7 +167,7 @@ export function stepCar(c, inp, dt, tr, env) {
     const wet = surfaceGrip * (1 - puddleWater * 0.5) * (1 - mud * 0.5);
     const bk = loc.bank || 0, bankG = 1 + 2.2 * Math.abs(bk); // las curvas peraltadas agarran más
     vl -= 9.8 * Math.sin(bk) * 1.1 * dt; // y la pendiente lateral empuja el coche hacia dentro de la curva
-    const limitG = 9.5 * (T.grip / 12.5) * env.gripMul * wet * bankG * (0.88 + 0.24 * c.tireTemp);
+    const limitG = 9.5 * (T.grip / 12.5) * env.gripMul * wet * bankG * dfk * (0.88 + 0.24 * c.tireTemp);
     const demand = (Math.abs(c.yawRate) * speed) / Math.max(3, limitG); c.demand = demand;
     const overload = smoothstep(0.78, 1.3, demand);
     // neumáticos: recto y acelerando se calientan y agarran más; al forzar en curva o deslizar se enfrían
@@ -168,7 +177,7 @@ export function stepCar(c, inp, dt, tr, env) {
     // tracción trasera: acelerar a fondo con el volante girado descoloca la zaga
     c.oversteer = 1;
     if (T.drive === 'rwd' && inp.throttle > 0.7 && Math.abs(c.steer) > 0.35 && speed > 12) { c.oversteer = 1.07; }
-    const gT = (c.drifting ? T.driftGrip : T.grip) * env.gripMul * wet * (0.9 + 0.2 * c.tireTemp) * (1 - 0.36 * overload) * (c.oversteer > 1 ? 0.9 : 1) * (inp.brake > 0.5 && speed > 20 ? (env.brakeGrip || 0.85) : 1);
+    const gT = (c.drifting ? T.driftGrip : T.grip) * env.gripMul * wet * dfk * (0.9 + 0.2 * c.tireTemp) * (1 - 0.36 * overload) * (c.oversteer > 1 ? 0.9 : 1) * (inp.brake > 0.5 && speed > 20 ? (env.brakeGrip || 0.85) : 1);
     c.grip += (gT - c.grip) * Math.min(1, (c.drifting ? 7 : 3.2) * dt);
     vl *= Math.exp(-c.grip * dt);
     if (c.drifting) vf *= Math.exp(-0.08 * dt);

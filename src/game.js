@@ -896,13 +896,13 @@ function updateCarVisual(c, dt) {
   let pitch = -Math.atan(c.grad) * 0.9;
   if (c.air) pitch = clamp(-Math.atan2(c.vy, Math.max(8, c.speed)) * 0.9, -0.45, 0.45);
   else pitch += c.brake * sf * 0.075 - c.throttle * (1 - Math.min(1, c.speed / c.type.vmax)) * 0.045 + impact * 0.055;
-  const roll = -c.steer * sf * 0.075 - c.yawRate * 0.02 + clamp(c.vl * 0.022, -0.2, 0.2) + c.impactSide * impact * 0.11;
+  const roll = -c.steer * sf * 0.075 - c.yawRate * 0.02 + clamp(c.vl * 0.022, -0.2, 0.2) + c.impactSide * impact * 0.11 - (c.loc.bank || 0) * 0.95; // y se inclina con el peralte
   c.impact *= Math.exp(-7 * dt);
   const kk = 1 - Math.exp(-8.5 * dt);
   c.visPitch += (pitch - c.visPitch) * kk; c.visRoll += (roll - c.visRoll) * kk;
   if (c.onKerb && c.speed > 10) c.bounceV += Math.sin(c.wheelSpin * 1.8 + c.psi) * Math.min(5, c.speed * 0.075) * dt;
   c.bounceV += (-c.bounce * 120 - c.bounceV * 9) * dt; c.bounce = clamp(c.bounce + c.bounceV * dt, -0.3, 0.3);
-  m.tilt.rotation.set(c.visPitch, 0, c.visRoll); m.tilt.position.y = c.bounce;
+  m.tilt.rotation.set(c.visPitch, 0, c.visRoll); m.tilt.position.y = c.bounce - (c.df || 0) * 0.07; // el efecto suelo aplasta el coche contra el asfalto
   c.wheelSpin += (c.vf / 0.4) * dt;
   for (const w of m.wheels) { w.spin.rotation.x = c.wheelSpin; if (w.front) w.pivot.rotation.y = -c.steer * 0.4; }
   m.tail.color.setHex(c.brake > 0.1 ? 0xff2a2a : 0x8a0f0f);

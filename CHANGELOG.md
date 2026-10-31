@@ -57,3 +57,9 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 ## 0.0.9
 - Piloto automático de la salida lanzada rehecho: parte más lento, respeta la línea de carrera y llega a la meta sin chocar en todos los circuitos y coches (`node test/autopilot.mjs`). La cuenta atrás dura 5 s.
 - Los sectores ya no tapan la pantalla: el tiempo y la diferencia salen dentro de su casilla, arriba junto al cronómetro, y el resultado de la vuelta aparece en la línea del cronómetro.
+
+## 0.0.10
+- Efecto suelo: el apoyo aerodinámico crece con el cuadrado de la velocidad (Aston muy alto, McLaren y Lotus medio, supercoches algo). En curvas lentas agarran como un coche normal; a alta velocidad se pegan al suelo, giran más y se aplastan visualmente contra el asfalto.
+- Tracción por coche: delantera (subvira al acelerar en curva), trasera (se descoloca) y total (el S4; pierde menos tracción en nieve, hielo y tierra).
+- Frenada por grupo: los F1 y la competición frenan mucho más fuerte.
+- Peraltes: el coche se inclina con la superficie, la IA los tiene en cuenta y empujan hacia dentro.

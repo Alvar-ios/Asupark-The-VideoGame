@@ -36,7 +36,8 @@ export function buildSpeedProfile(tr, T) {
     let k = 0;
     for (let d = -6; d <= 6; d++) k = Math.max(k, LN.k[(i + d + N) % N]);
     const zg = zoneGrip(tr, i * tr.ds);
-    const f = (s) => k * s * (1 + (s / YAW_SPEED) * (s / YAW_SPEED)) - AICFG.grip * T.yaw * YAW_SCALE * zg;
+    const bf = 1 + 2.5 * Math.abs(tr.bank ? tr.bank[i] : 0), vm = T.vmax, aero = T.aero || 0;
+    const f = (s) => k * s * (1 + (s / YAW_SPEED) * (s / YAW_SPEED)) - AICFG.grip * T.yaw * YAW_SCALE * zg * bf * (1 + aero * 0.8 * (s / vm) * (s / vm));
     if (f(vmax) <= 0) v[i] = vmax;
     else { let lo = 6, hi = vmax; for (let it = 0; it < 14; it++) { const m = (lo + hi) / 2; if (f(m) > 0) hi = m; else lo = m; } v[i] = lo; }
   }
