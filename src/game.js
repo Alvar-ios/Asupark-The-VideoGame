@@ -39,6 +39,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure
 let pixelRatio = Math.min(window.devicePixelRatio || 1, MOBILE ? 1.75 : 2);
 renderer.setPixelRatio(pixelRatio);
 const camera = new THREE.PerspectiveCamera(65, 1, 0.5, 4000);
+camera.up.set(0, 1, 0);
 function resize() {
   renderer.setPixelRatio(pixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -180,7 +181,7 @@ class Particles {
 // ---------- estado de la carrera ----------
 const S = {
   state: 'menu', trackInfo: null, tr: null, th: null, world: null, scene: null, cars: [], player: null, prof: {}, acc: 0, t: 0, cd: 0, lastCount: 4,
-  shake: 0, camKick: 0, camYaw: 0, camFixedYaw: 0, camY: 0, camMode: 0, particles: null, skid: null, skidI: 0, mini: null, ghostMesh: null, ghostRec: [], ghostBest: null, bestLap: null, finishOrder: [], msgT: 0, wrongT: 0, step: 0, flash: 0, raceNo: 0,
+  shake: 0, camKick: 0, camYaw: 0, camY: 0, camMode: 0, particles: null, skid: null, skidI: 0, mini: null, ghostMesh: null, ghostRec: [], ghostBest: null, bestLap: null, finishOrder: [], msgT: 0, wrongT: 0, step: 0, flash: 0, raceNo: 0,
 };
 const input = { keys: new Set(), touch: { l: 0, r: 0, g: 0, b: 0, d: 0 } };
 const inp = { steer: 0, throttle: 0, brake: 0, drift: false };
@@ -347,7 +348,7 @@ async function startRace(restart = false) {
   S.secIdx = -1; S.secStart = 0; S.secInvalid = false;
   for (let k = 0; k < 3; k++) { const e = $('s' + k); e.className = 'sec'; e.lastElementChild.textContent = '--'; }
   for (const c of S.cars) { c.lapStart = 0; c.lapsDone = 0; c.finished = false; c.bestLap = null; c.bounce = 0; c.bounceV = 0; c.visPitch = 0; c.visRoll = 0; c.impact = 0; c.impactSide = 0; }
-  S.camYaw = Math.atan2(player.loc.tx, player.loc.tz); S.camFixedYaw = S.camYaw; S.camY = player.y + 3; S.fovT = 0;
+  S.camYaw = player.psi; S.camY = player.y + 3; S.fovT = 0;
   S.cd = 3.6; S.state = 'countdown'; S.raceNo++;
   $('menu').classList.add('hidden'); $('results').classList.add('hidden'); $('pause').classList.add('hidden');
   $('hud').classList.remove('hidden'); $('pbtn').classList.remove('hidden'); $('rbtn').classList.remove('hidden'); document.body.classList.add('racing');
@@ -674,8 +675,9 @@ function updateCamera(dt, snap) {
   const c = S.player; if (!c) return;
   const a = S.alpha == null ? 1 : S.alpha;
   const x = lerp(c.px, c.x, a), y = lerp(c.py, c.y, a), z = lerp(c.pz, c.z, a);
-  // El horizonte permanece fijo al rumbo inicial, aunque el coche derrape o cambie de orientación.
-  S.camYaw = S.camFixedYaw;
+  // Camera follows the car heading in yaw only, with global up kept level.
+  const psi = c.ppsi + wrapPi(c.psi - c.ppsi) * a;
+  S.camYaw = psi;
   S.fovT = (S.fovT == null ? 0 : S.fovT); S.fovT += (0 - S.fovT) * (snap ? 1 : 1 - Math.exp(-5 * dt));
   const sn = Math.sin(S.camYaw), cs = Math.cos(S.camYaw);
   const speed = c.speed;
