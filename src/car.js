@@ -1,6 +1,7 @@
 // Física arcade del coche (sin dependencias de three)
 import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi } from './track.js';
-import { puddleAt, mudAt, smoothstep } from './surface.js';
+import { puddleAt, mudAt, smoothstep, surfaceAt } from './surface.js';
+const SP = { key: 'asphalt', g: 1, b: 1, d: 0, s: 1, a: 1 };
 
 export const YAW_SCALE = 0.8, YAW_SPEED = 42; // sensibilidad de giro global
 export const GROUPS = [
@@ -92,6 +93,7 @@ export function stepCar(c, inp, dt, tr, env) {
   const speed = Math.hypot(c.vx, c.vz);
   const ground = !c.air;
   const offroadBlend = smoothstep(ROAD_HALF - 0.7, ROAD_HALF + 2.4, Math.abs(loc.lat));
+  surfaceAt(tr, env, loc.s, SP); c.surf = SP.key; // superficie bajo el coche (zonas mixtas + temperatura y humedad)
   const off = offroadBlend > 0.5;
   c.offroadFactor = ground ? offroadBlend : 0;
   c.offroad = off && ground;
@@ -112,7 +114,7 @@ export function stepCar(c, inp, dt, tr, env) {
   // giro
   let eff = Math.sign(c.steer) * Math.pow(Math.abs(c.steer), 1.35); // respuesta progresiva: suave al centro
   if (c.drifting) eff = c.driftDir * 0.48 + c.steer * 0.68;
-    const tireAuthority = clamp(Math.sqrt(T.grip / 12), 0.86, 1.08) * (1 - offroadBlend * (1 - (env.steerOffroad || 0.72))) * (env.surface === 'snow' ? 0.93 : 1);
+    const tireAuthority = clamp(Math.sqrt(T.grip / 12), 0.86, 1.08) * (1 - offroadBlend * (1 - (env.steerOffroad || 0.72))) * (env.surface === 'snow' ? 0.93 : 1) * SP.s;
   const maxYaw = T.yaw * YAW_SCALE * tireAuthority / (1 + (speed / YAW_SPEED) * (speed / YAW_SPEED));
   const auth = Math.min(1, Math.abs(vf) / 5) * (ground ? 1 : 0.22);
   const sgn = vf >= -0.3 ? 1 : -1;
@@ -126,12 +128,12 @@ export function stepCar(c, inp, dt, tr, env) {
   if (ground) {
     if (inp.brake > 0.05) {
       if (vf > 1) {
-        const dv = Math.min(vf, (env.brakeForce || 24) * inp.brake * dt);
+        const dv = Math.min(vf, (env.brakeForce || 24) * SP.b * inp.brake * dt);
         vf -= dv;
       } else vf = Math.max(-16, vf - 14 * inp.brake * dt);
     } else if (inp.throttle > 0.01) {
       if (vf < 0) vf += 28 * dt;
-      else if (vf < vmaxE) vf += T.accel * ACCEL_SCALE * (env.traction || 1) * inp.throttle * (1 - Math.pow(vf / vmaxE, 2.2)) * dt;
+      else if (vf < vmaxE) vf += T.accel * ACCEL_SCALE * (env.traction || 1) * SP.a * inp.throttle * (1 - Math.pow(vf / vmaxE, 2.2)) * dt;
     } else if (vf !== 0) {
       const d = Math.min(Math.abs(vf), (2.2 + 0.0007 * vf * vf) * dt);
       vf -= Math.sign(vf) * d;
@@ -139,8 +141,13 @@ export function stepCar(c, inp, dt, tr, env) {
     if (vf > vmaxE) vf -= (vf - vmaxE) * (offroadBlend > 0.5 ? 3 : 1.1) * dt;
     if (offroadBlend > 0) vf *= Math.exp(-offroadBlend * (env.rollingDrag || 0.5) * dt);
     vf -= 9.8 * c.grad * (env.slope || 0.7) * dt;
+    if (SP.d > 0.01) vf *= Math.exp(-SP.d * 0.25 * dt);
+    if (env.wind && env.wind[0] && speed > 2) { // viento: gusts suaves; de cara frena, de cola empuja, de lado desvía
+      const gust = env.wind[0] * (1 + 0.35 * Math.sin(c.D * 0.017 + 1.7)), wx = Math.sin(env.wind[1]) * gust, wz = Math.cos(env.wind[1]) * gust, sp = clamp(speed / 40, 0, 1.2);
+      vf += (wx * fx + wz * fz) * 0.05 * sp * dt; const wl = wx * rx + wz * rz; vl += wl * 0.25 * sp * dt / mf; c.psi += wl * 0.0035 * sp * dt / mf;
+    }
     const soilGrip = env.offroadGrip || 0.68;
-    const surfaceGrip = (1 - offroadBlend * (1 - soilGrip)) * (env.weather === 'rain' ? (env.wetGrip || 0.78) : 1);
+    const surfaceGrip = (1 - offroadBlend * (1 - soilGrip)) * (env.weather === 'rain' ? (env.wetGrip || 0.78) : 1) * SP.g;
     const puddleWater = env.weather === 'rain' ? puddleAt(loc.s, loc.lat) : 0;
     c.puddleWater = puddleWater;
     c.inPuddle = puddleWater > 0.12;
@@ -155,7 +162,7 @@ export function stepCar(c, inp, dt, tr, env) {
     const overload = smoothstep(0.78, 1.3, demand);
     // neumáticos: recto y acelerando se calientan y agarran más; al forzar en curva o deslizar se enfrían
     const straightGas = Math.abs(c.steer) < 0.18 && inp.throttle > 0.4 && inp.brake < 0.1;
-    const tTarget = straightGas ? 1 : demand > 1 ? 0 : 0.5, tRate = straightGas ? 0.55 : demand > 1 ? 0.9 : 0.16;
+    const tTarget = straightGas ? 1 : demand > 1 ? 0 : 0.5, tRate = (straightGas ? 0.55 : demand > 1 ? 0.9 : 0.16) * clamp(0.55 + ((env.temp == null ? 20 : env.temp) + 5) / 40, 0.5, 1.25); // con frío los neumáticos tardan en calentarse
     c.tireTemp += (tTarget - c.tireTemp) * Math.min(1, tRate * dt);
     // tracción trasera: acelerar a fondo con el volante girado descoloca la zaga
     c.oversteer = 1;

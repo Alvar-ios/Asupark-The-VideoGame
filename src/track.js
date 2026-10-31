@@ -202,6 +202,11 @@ export function buildTrack(seed, style) {
 
   // --- rasgos propios de cada circuito: rampas a medida, túneles y curvas peraltadas ---
   if (style.rampList) tr.ramps = style.rampList.map((r) => ({ s0: r.u * len, len: r.len || 12, h: r.h || 1.6 }));
+  tr.zones = (style.zones || []).map(([u0, u1, type]) => ({ s0: u0 * len, s1: u1 * len, type }));
+  if (style.autoZones && !tr.zones.length) { // circuitos del día: dos tramos de otra superficie en puntos al azar
+    const k = style.autoZones; let u = 0.12 + rng() * 0.15;
+    for (let n = 0; n < 2; n++) { const w = 0.05 + rng() * 0.04; tr.zones.push({ s0: u * len, s1: (u + w) * len, type: k[Math.floor(rng() * k.length)] }); u += 0.38 + rng() * 0.2; if (u + w > 0.95) break; }
+  }
   tr.tunnels = (style.tunnels || []).map(([u0, u1]) => ({ s0: u0 * len, s1: u1 * len }));
   tr.bank = new Float32Array(N); // ángulo de peralte (rad) en cada muestra; positivo = sube el lado derecho
   for (const [u0, u1, deg] of style.banks || []) {

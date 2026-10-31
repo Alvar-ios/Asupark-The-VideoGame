@@ -5,6 +5,8 @@ export const AI_BOOST = { vmax: envNum('BV', 1.12), accel: envNum('BA', 1.6), ya
 export const aiType = (t) => ({ ...t, vmax: t.vmax * AI_BOOST.vmax, accel: t.accel * AI_BOOST.accel, yaw: t.yaw * AI_BOOST.yaw, grip: t.grip * AI_BOOST.grip, driftGrip: t.driftGrip * AI_BOOST.grip });
 export const AI_GRIP = envNum('AIG', 1.0), AI_BRAKE = envNum('AIB', 26);
 import { ROAD_HALF, setRoad } from './track.js';
+import { SURF, zoneAt } from './surface.js';
+const zoneGrip = (tr, s) => { const z = zoneAt(tr, s); return z ? 1 + (Math.min(1, SURF[z.key].g) - 1) * z.w : 1; };
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 // Velocidad máxima admisible en cada punto según curvatura + frenada anticipada
@@ -13,15 +15,17 @@ export function buildSpeedProfile(tr, T) {
   for (let i = 0; i < N; i++) {
     let k = 0;
     for (let d = -6; d <= 6; d++) k = Math.max(k, tr.absK[(i + d + N) % N]);
-    const f = (s) => k * s * (1 + (s / YAW_SPEED) * (s / YAW_SPEED)) - AI_GRIP * T.yaw * YAW_SCALE;
+    const zg = zoneGrip(tr, i * tr.ds);
+    const f = (s) => k * s * (1 + (s / YAW_SPEED) * (s / YAW_SPEED)) - AI_GRIP * T.yaw * YAW_SCALE * zg;
     if (f(vmax) <= 0) v[i] = vmax;
     else { let lo = 6, hi = vmax; for (let it = 0; it < 14; it++) { const m = (lo + hi) / 2; if (f(m) > 0) hi = m; else lo = m; } v[i] = lo; }
   }
   const brk = AI_BRAKE;
+  const bz = (i) => 0.45 + 0.55 * zoneGrip(tr, i * tr.ds);
   for (let pass = 0; pass < 3; pass++) {
     for (let i = N - 1; i >= 0; i--) {
       const j = (i + 1) % N;
-      v[i] = Math.min(v[i], Math.sqrt(v[j] * v[j] + 2 * brk * tr.ds));
+      v[i] = Math.min(v[i], Math.sqrt(v[j] * v[j] + 2 * brk * bz(j) * tr.ds));
     }
   }
   return v;

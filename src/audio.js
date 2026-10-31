@@ -143,7 +143,7 @@ export class Sound {
     this.wind.g.gain.setTargetAtTime(r * r * 0.09, t, 0.15);
     this.rain.g.gain.setTargetAtTime(p.weather === 'rain' ? 0.021 : 0, t, 0.3);
     this.spray.g.gain.setTargetAtTime(p.weather === 'rain' ? Math.min(0.035, (p.puddleWater || 0) * 0.035 * r + (p.offroadFactor || 0) * 0.008 * r) : 0, t, 0.07);
-    const tireTone = p.surface === 'snow' ? 850 : p.surface === 'dirt' ? 1050 : p.weather === 'rain' ? 2050 : 1550;
+    const tireTone = { snow: 850, ice: 2600, dirt: 1050, gravel: 950, grass: 700, sand: 800, wet: 2050 }[p.surface] || (p.weather === 'rain' ? 2050 : 1550);
     this.skid.b.frequency.setTargetAtTime(tireTone, t, 0.18);
     const offroad = p.offroadFactor || (p.offroad ? 1 : 0);
     this.gravel.g.gain.setTargetAtTime(Math.min(0.035, r * 0.035 * offroad), t, 0.16);

@@ -21,3 +21,9 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Circuitos Valle, Desierto, Neón y Nieve rediseñados (estrechos y cortos, estilo Interlagos, México, Suzuka y Alpino) con rasgos propios: túneles, curvas peraltadas y rampas a medida; también en Pruebas, Mónaco y Spa.
 - IA calibrada con los tiempos reales de la clasificación (`node test/calib.mjs`).
 - Clasificación por circuito y grupo, con diferencia al primero.
+
+## 0.0.4
+- Superficies que se notan: asfalto, mojado, tierra, grava, hierba, arena, nieve y hielo, cada una con su agarre, frenada, resistencia, dirección y tracción.
+- Clima por circuito: temperatura (el frío enfría los neumáticos y cambia el hielo), humedad y viento con rachas.
+- Circuitos de superficie mixta (hielo en Spa, Neón y Nieve; tierra, hierba, grava y arena en otros; tramos secos en los túneles). La pista del día es ahora procedural y estrecha, con dos tramos de otra superficie.
+- La IA conoce el agarre de cada tramo. El HUD muestra superficie, temperatura y viento.

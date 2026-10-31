@@ -7,6 +7,7 @@ import { hashStr } from './rng.js';
 import { buildSpeedProfile, aiInput, benchmark, aiType } from './ai.js';
 import { buildWorld, disposeScene } from './world.js';
 import { Sound } from './audio.js';
+import { SURF } from './surface.js';
 import { Leaderboard } from './leaderboard.js';
 import { loadBora, buildBora, boraReady } from './bora.js';
 import { loadPorsche, buildPorsche, porscheReady } from './porsche.js';
@@ -128,7 +129,7 @@ function buildMenu() {
     const environment = t.th.weather === 'rain' ? ['rain', 'Lluvia'] : t.th.surface === 'snow' ? ['snow', 'Nieve'] : t.th.surface === 'dirt' ? ['dirt', 'Tierra'] : ['dry', 'Asfalto seco'];
     let best = null; for (const cc of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = { ...r, car: cc }; }
     const [cc, cname] = countryOf(t), st = streakInfo();
-    d.innerHTML = `<div class="tc-head"><span class="flag">${flagSvg(cc)}</span><span class="cty">${cname}</span><span class="tc-len">${(t.tr.len / 1000).toFixed(1)} km</span></div><canvas></canvas><b>${t.name}</b><small class="track-sub">${t.sub}</small><div class="tc-foot"><span class="track-env ${environment[0]}">${environment[1]}</span>${t.key === 'daily' ? `<span class="tag-daily">${st.done ? 'Hecho hoy' : st.n ? 'Racha ' + st.n + ' d' : 'Reto de hoy'}</span>` : ''}</div><div class="rec">${best ? medalTag(best.lap, (benchFor(t, best.car) || {}).lap) + 'Mejor ' + fmt(best.lap) + ' · ' + best.car.name.split(' ')[0] : '&nbsp;'}</div>`;
+    d.innerHTML = `<div class="tc-head"><span class="flag">${flagSvg(cc)}</span><span class="cty">${cname}</span><span class="tc-len">${(t.tr.len / 1000).toFixed(1)} km</span></div><canvas></canvas><b>${t.name}</b><small class="track-sub">${t.sub}</small><div class="tc-foot"><span class="track-env ${environment[0]}">${environment[1]}</span>${[...new Set((t.tr.zones || []).map((z) => (z.type === 'dry' ? 'asphalt' : z.type)))].filter((k) => k !== (t.th.surface === 'snow' ? 'snow' : t.th.surface === 'dirt' ? 'dirt' : '')).map((k) => `<span class="track-env zone">${SURF[k].name[0] + SURF[k].name.slice(1).toLowerCase()}</span>`).join('')}${t.key === 'daily' ? `<span class="tag-daily">${st.done ? 'Hecho hoy' : st.n ? 'Racha ' + st.n + ' d' : 'Reto de hoy'}</span>` : ''}</div><div class="rec">${best ? medalTag(best.lap, (benchFor(t, best.car) || {}).lap) + 'Mejor ' + fmt(best.lap) + ' · ' + best.car.name.split(' ')[0] : '&nbsp;'}</div>`;
     drawPreview(d.querySelector('canvas'), t.tr, t.th);
     d.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); if (narrowMenu()) setView('home'); };
     tl.appendChild(d);
@@ -753,7 +754,7 @@ function emitFx(dt) {
     if (!c.air && c.speed > 9 && (slip > 3.2 || (c.drifting && slip > 1.5))) {
       for (const sx of [-1, 1]) {
         wheelPos(c, sx, -1, wp);
-        const snow = th.surface === 'snow', smokeRate = c.drifting ? 0.36 : 0.18;
+        const snow = c.surf === 'snow' || c.surf === 'ice', smokeRate = c.drifting ? 0.36 : 0.18;
         if (Math.random() < smokeRate) P.emit(wp.x, wp.y + 0.25, wp.z, c.vx * 0.045 + (Math.random() - 0.5) * 1.2, 0.35 + Math.random() * 0.65, c.vz * 0.045 + (Math.random() - 0.5) * 1.2, snow ? 0.85 : (c.drifting ? 1.05 : 0.72), 0.65, snow ? 2.5 : (c.drifting ? 3.2 : 2.4), snow ? 0.78 : 0.76, snow ? 0.88 : 0.8, snow ? 0.98 : 0.86, c.drifting ? 0.4 : 0.27, 0.9);
         if (c.drifting && Math.random() < 0.16) P.emit(wp.x, wp.y + 0.12, wp.z, (Math.random() - 0.5) * 5, 1 + Math.random() * 2.5, (Math.random() - 0.5) * 5, 0.26, 0.28, 0.03, 1, 0.68, 0.25, 0.92, 1.2, 11);
         // marcas
@@ -853,6 +854,7 @@ let miniT = 0, lastFx = -1, lastRpm = -1;
 function updateHud(dt) {
   const p = S.player, tr = S.tr;
   setText('kmh', String(Math.round(p.speed * 3.6)));
+  if (S.t - (hudCache.wl || -1) > 0.3) { hudCache.wl = S.t; const w = S.th.wind ? Math.round(S.th.wind[0] * 3.6) : 0; setText('weatherLabel', `${SURF[p.surf || 'asphalt'].name} · ${S.th.temp != null ? Math.round(S.th.temp) : 20}°C · VIENTO ${w}`); }
   const gi = gearInfo(p.speed, p.type.vmax); p.gearNow = gi.gear; p.rpmNow = gi.rpm;
   setText('gear', p.speed < 1.5 ? 'N' : p.vf < -0.5 ? 'R' : String(gi.gear));
   const lit = Math.round(gi.rpm * rpmSegs.length);
@@ -1064,7 +1066,7 @@ function frame(now) {
     const gi = gearInfo(p.speed, p.type.vmax);
     if (S.lastAudioGear && gi.gear !== S.lastAudioGear && p.speed > 8) sound.play('shift');
     S.lastAudioGear = gi.gear;
-    sound.update({ carId: p.type.id, speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), onKerb: p.onKerb, weather: S.th.weather, surface: S.th.surface, air: p.air, offroad: p.offroad, offroadFactor: p.offroadFactor, puddleWater: p.puddleWater });
+    sound.update({ carId: p.type.id, speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), onKerb: p.onKerb, weather: S.th.weather, surface: p.surf || S.th.surface, air: p.air, offroad: p.offroad, offroadFactor: p.offroadFactor, puddleWater: p.puddleWater });
     updateHud(dt);
   }
   renderer.render(S.scene, camera);

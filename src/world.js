@@ -1,6 +1,7 @@
 // Construcción de la escena 3D de una pista (three.js)
 import * as THREE from 'three';
 import { ROAD_HALF, WALL, setRoad } from './track.js';
+import { SURF, zoneAt } from './surface.js';
 import { mudParams, MUD_START, MUD_STEP } from './surface.js';
 import { rngFromSeed } from './rng.js';
 
@@ -172,6 +173,7 @@ function roadMesh(tr, th, stride = 1) {
       else if (b === 2 || b === 3 || b === 4 || b === 8 || b === 9 || b === 10) color = stripe ? k1 : k2;
       else {
         color = Math.floor(s / 24) % 2 ? cRoad : cRoad2;
+        const zn = zoneAt(tr, s); if (zn && zn.w > 0.5 && zn.key !== 'asphalt') { const zc = SURF[zn.key].col; if (zc != null) color = col(zc).multiplyScalar(Math.floor(s / 6) % 2 ? 1 : 0.93); }
         if (inRamp) color = Math.floor(s / 1.5) % 2 ? yel : blk;
       }
       const s2 = (i + stride) * tr.ds, K = 1 / 5;
