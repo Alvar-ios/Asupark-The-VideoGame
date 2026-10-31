@@ -1,5 +1,6 @@
 // Física arcade del coche (sin dependencias de three)
 import { ROAD_HALF, WALL, locate, pointAt, wrapPi } from './track.js';
+import { puddleAt, smoothstep } from './surface.js';
 
 export const G = 14; // gravedad "flotante" arcade
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -11,22 +12,20 @@ export const CARS = [
   { id: 'cupra', name: 'Cupra León', desc: 'Compacto deportivo: mucho agarre', color: 0x193078, vmax: 56, accel: 14.5, yaw: 2.5, grip: 13.4, driftGrip: 2.6, radius: 1.2, kind: 'cupra', custom: true },
   { id: 'mini', name: 'Mini Cooper S Clubman', desc: 'Pequeño y nervioso: gira como un kart', color: 0xf7f7f7, vmax: 53, accel: 14, yaw: 2.8, grip: 13.6, driftGrip: 3.0, radius: 1.1, kind: 'mini', custom: true },
   { id: 'qashqai', name: 'Nissan Qashqai', desc: 'SUV pesado y estable', color: 0xf7f7f7, vmax: 54, accel: 12.5, yaw: 2.05, grip: 14, driftGrip: 2.3, radius: 1.3, kind: 'qashqai', custom: true },
-  { id: 'turbo', name: 'Turbo GT', custom: true, desc: 'Equilibrado y fácil', color: 0xe8372c, vmax: 57, accel: 14.5, yaw: 2.3, grip: 12.5, driftGrip: 2.8, radius: 1.15, kind: 'gt' },
-  { id: 'drifter', name: 'Drifter', custom: true, desc: 'Ágil y deslizante', color: 0x2f9bff, vmax: 54, accel: 15.5, yaw: 2.6, grip: 10.5, driftGrip: 3.4, radius: 1.15, kind: 'drift' },
-  { id: 'bruiser', name: 'Bruiser', custom: true, desc: 'Pesado, rápido y estable', color: 0xf7b32b, vmax: 60, accel: 12.5, yaw: 2.05, grip: 13.5, driftGrip: 2.4, radius: 1.3, kind: 'truck' },
 ];
 export const AI_COLORS = [0x37d67a, 0xb06bff, 0xff7a3d, 0xeaeaea, 0x19c3d6];
 
 export function makeCar(type, name, isPlayer) {
   return {
     type, name, isPlayer,
+    mass: ({ porsche: 1510, m3: 1570, qashqai: 1780, mini: 1390 }[type.id] || 1460),
     x: 0, y: 0, z: 0, vx: 0, vz: 0, vy: 0, psi: 0,
     px: 0, py: 0, pz: 0, ppsi: 0,
-    steer: 0, yawRate: 0, air: false, grad: 0, ers: 0.6, ersOn: false, drifting: false, driftDir: 0, driftT: 0,
+    steer: 0, yawRate: 0, air: false, grad: 0, drifting: false, driftDir: 0, driftT: 0,
     grip: type.grip, hint: -1, loc: { i: 0, t: 0, s: 0, h: 0, tx: 0, tz: 1, lat: 0 },
-    lap: 0, lastS: 0, D: 0, safeD: 0, safeT: 0, padCool: 0, events: [], stuckT: 0,
+    lap: 0, lastS: 0, D: 0, safeD: 0, safeT: 0, events: [], stuckT: 0,
     finished: false, finishTime: 0, brake: 0, throttle: 0, speed: 0, vf: 0, vl: 0, offroad: false,
-    visPitch: 0, visRoll: 0, onKerb: false, wheelSpin: 0, lapStart: 0, airTime: 0,
+    visPitch: 0, visRoll: 0, impact: 0, impactSide: 0, onKerb: false, wheelSpin: 0, lapStart: 0, airTime: 0,
   };
 }
 
@@ -37,7 +36,7 @@ export function placeCar(c, tr, s, lat, speed = 0) {
   c.x = c.px = tmp.x; c.z = c.pz = tmp.z; c.y = c.py = tmp.y;
   c.psi = c.ppsi = Math.atan2(tmp.tx, tmp.tz);
   c.vx = Math.sin(c.psi) * speed; c.vz = Math.cos(c.psi) * speed; c.vy = 0;
-  c.air = false; c.steer = 0; c.yawRate = 0; c.drifting = false; c.ersOn = false; c.grad = 0; c.grip = c.type.grip; c.driftT = 0;
+  c.air = false; c.steer = 0; c.yawRate = 0; c.drifting = false; c.grad = 0; c.grip = c.type.grip; c.driftT = 0;
   c.hint = -1;
   locate(tr, c.x, c.z, -1, c.loc);
   c.hint = c.loc.i;
@@ -61,54 +60,60 @@ export function stepCar(c, inp, dt, tr, env) {
   let vf = c.vx * fx + c.vz * fz, vl = c.vx * rx + c.vz * rz;
   const speed = Math.hypot(c.vx, c.vz);
   const ground = !c.air;
-  const off = Math.abs(loc.lat) > ROAD_HALF + 0.9;
+  const offroadBlend = smoothstep(ROAD_HALF - 0.7, ROAD_HALF + 2.4, Math.abs(loc.lat));
+  const off = offroadBlend > 0.5;
+  c.offroadFactor = ground ? offroadBlend : 0;
   c.offroad = off && ground;
 
   // dirección suavizada
   const st = clamp(inp.steer, -1, 1);
-  const rate = st === 0 || st * c.steer < 0 ? 9 : 5.2;
+  const rate = (st === 0 || st * c.steer < 0 ? 9 : 5.2) * clamp(0.78 + T.yaw * 0.12, 0.9, 1.2);
   c.steer += clamp(st - c.steer, -rate * dt, rate * dt);
 
-  // freno de mano / derrape (recoge un poco de ERS)
-  const wantD = inp.drift && ground && speed > 13;
+  // freno de mano y derrape
+  const wantD = inp.drift && ground && speed > 11;
   if (!c.drifting) {
-    if (wantD && Math.abs(c.steer) > 0.25) { c.drifting = true; c.driftDir = Math.sign(c.steer); c.driftT = 0; }
+    if (wantD && Math.abs(c.steer) > 0.2) { c.drifting = true; c.driftDir = Math.sign(c.steer); c.driftT = 0; c.events.push({ t: 'drift' }); }
   } else if (!wantD) { c.drifting = false; c.driftT = 0; }
-  if (c.drifting && Math.abs(vl) > 2.2) { c.driftT += dt; c.ers = Math.min(1, c.ers + 0.045 * dt); }
+  if (c.drifting && Math.abs(c.steer) > 0.58 && Math.sign(c.steer) !== c.driftDir) c.driftDir = Math.sign(c.steer);
+  if (c.drifting && Math.abs(vl) > 2.2) c.driftT += dt;
 
   // giro
   let eff = c.steer;
-  if (c.drifting) eff = c.driftDir * 0.62 + c.steer * 0.58;
-  const maxYaw = T.yaw / (1 + (speed / 45) * (speed / 45));
+  if (c.drifting) eff = c.driftDir * 0.48 + c.steer * 0.68;
+    const tireAuthority = clamp(Math.sqrt(T.grip / 12), 0.86, 1.08) * (1 - offroadBlend * (1 - (env.steerOffroad || 0.72))) * (env.surface === 'snow' ? 0.93 : 1);
+  const maxYaw = T.yaw * tireAuthority / (1 + (speed / 52) * (speed / 52));
   const auth = Math.min(1, Math.abs(vf) / 5) * (ground ? 1 : 0.22);
   const sgn = vf >= -0.3 ? 1 : -1;
   const yawT = eff * maxYaw * auth * sgn * (c.drifting ? 1.12 : 1);
   c.yawRate += (yawT - c.yawRate) * Math.min(1, (ground ? 8 : 2) * dt);
   const yaw = c.yawRate;
 
-  // motor / freno / ERS
-  c.ersOn = !!inp.ers && c.ers > 0.003 && ground && inp.brake < 0.1;
-  if (c.ersOn) c.ers = Math.max(0, c.ers - 0.22 * dt);
-  const boost = c.ersOn;
-  const vmaxE = T.vmax * (boost ? 1.1 : 1) * (off ? env.offroad : 1);
+  // motor y freno
+  const vmaxE = T.vmax * (1 - offroadBlend * (1 - (env.offroad || 0.62))) * (env.weather === 'rain' ? 0.97 : 1);
   c.throttle = inp.throttle; c.brake = inp.brake;
   if (ground) {
     if (inp.brake > 0.05) {
       if (vf > 1) {
-        const dv = Math.min(vf, 30 * inp.brake * dt);
-        vf -= dv; c.ers = Math.min(1, c.ers + dv * 0.0105); // recuperación al frenar
+        const dv = Math.min(vf, (env.brakeForce || 28) * inp.brake * dt);
+        vf -= dv;
       } else vf = Math.max(-16, vf - 14 * inp.brake * dt);
     } else if (inp.throttle > 0.01) {
       if (vf < 0) vf += 28 * dt;
-      else if (vf < vmaxE) vf += T.accel * (boost ? 1.75 : 1) * inp.throttle * (1 - Math.pow(vf / vmaxE, 2.5)) * dt;
+      else if (vf < vmaxE) vf += T.accel * (env.traction || 1) * inp.throttle * (1 - Math.pow(vf / vmaxE, 2.5)) * dt;
     } else if (vf !== 0) {
       const d = Math.min(Math.abs(vf), (2.2 + 0.0007 * vf * vf) * dt);
       vf -= Math.sign(vf) * d;
     }
-    if (vf > vmaxE) vf -= (vf - vmaxE) * (off ? 3 : 1.1) * dt;
-    if (off) vf *= Math.exp(-0.5 * dt);
+    if (vf > vmaxE) vf -= (vf - vmaxE) * (offroadBlend > 0.5 ? 3 : 1.1) * dt;
+    if (offroadBlend > 0) vf *= Math.exp(-offroadBlend * (env.rollingDrag || 0.5) * dt);
     vf -= 9.8 * c.grad * (env.slope || 0.7) * dt;
-    const gT = (c.drifting ? T.driftGrip : T.grip) * env.gripMul * (inp.brake > 0.5 && speed > 20 ? 0.85 : 1);
+    const soilGrip = env.offroadGrip || 0.68;
+    const surfaceGrip = (1 - offroadBlend * (1 - soilGrip)) * (env.weather === 'rain' ? (env.wetGrip || 0.78) : 1);
+    const puddleWater = env.weather === 'rain' ? puddleAt(loc.s, loc.lat) : 0;
+    c.puddleWater = puddleWater;
+    c.inPuddle = puddleWater > 0.12;
+    const gT = (c.drifting ? T.driftGrip : T.grip) * env.gripMul * surfaceGrip * (1 - puddleWater * 0.34) * (inp.brake > 0.5 && speed > 20 ? (env.brakeGrip || 0.85) : 1);
     c.grip += (gT - c.grip) * Math.min(1, (c.drifting ? 9 : 4) * dt);
     vl *= Math.exp(-c.grip * dt);
     if (c.drifting) vf *= Math.exp(-0.08 * dt);
@@ -148,7 +153,9 @@ export function stepCar(c, inp, dt, tr, env) {
 
   // pianos (bordillos): frenan un poco y vibran
   c.onKerb = !c.air && Math.abs(loc.lat) > ROAD_HALF - 0.2 && Math.abs(loc.lat) < ROAD_HALF + 1.15;
-  if (c.onKerb && c.speed > 8) { c.vx *= Math.exp(-0.18 * dt); c.vz *= Math.exp(-0.18 * dt); }
+  if (c.onKerb && c.speed > 8) {
+    c.vx *= Math.exp(-0.16 * dt); c.vz *= Math.exp(-0.16 * dt);
+  }
   // altura y saltos
   const hNew = loc.h;
   if (!c.air) {
@@ -173,22 +180,6 @@ export function stepCar(c, inp, dt, tr, env) {
       c.events.push({ t: 'land', v: impact });
     }
   }
-
-  // turbos del asfalto
-  if (c.padCool > 0) c.padCool -= dt;
-  if (ground && c.padCool <= 0) {
-    for (let k = 0; k < tr.pads.length; k++) {
-      const p = tr.pads[k];
-      let ds = loc.s - p.s;
-      if (ds > tr.len / 2) ds -= tr.len; else if (ds < -tr.len / 2) ds += tr.len;
-      if (ds >= 0 && ds < p.len && Math.abs(loc.lat - p.lat) < p.w / 2 + 0.8) {
-        c.ers = Math.min(1, c.ers + 0.35); c.padCool = 0.7;
-        c.events.push({ t: 'pad' });
-        break;
-      }
-    }
-  }
-
   // progreso
   let dS = loc.s - c.lastS;
   if (dS < -tr.len / 2) c.lap++; else if (dS > tr.len / 2) c.lap--;

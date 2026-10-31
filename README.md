@@ -1,45 +1,38 @@
 # Drift Rush
 
-Juego de carreras arcade para navegador (three.js). Un solo HTML final, sin servidor.
+Juego de carreras arcade 3D para navegador, desarrollado con Three.js. El juego se ejecuta en el navegador; no hay un servidor de juego ni backend online por ahora.
 
-## Empezar
+## Desarrollo local
+
 ```bash
 npm install
-npm run build      # genera dist/index.html (abrirlo en el navegador)
-npm run sim        # simulación sin gráficos: comprueba que todas las pistas se completan
+npm run serve
 ```
 
+Abre la URL que imprime el servidor (normalmente `http://localhost:4173`). Si ese puerto ya está ocupado, probará automáticamente el siguiente, por ejemplo `4174`. Déjalo abierto mientras juegas y usa `Ctrl+C` para cerrarlo. `npm run serve` compila y sirve `dist/` para que el navegador pueda cargar los modelos y sonidos locales. No abras `dist/index.html` con doble clic: los navegadores bloquean algunas cargas de archivos locales.
+
+`npm run build` compila el HTML, el bundle JavaScript y los modelos en `dist/`. La interfaz se mantiene en `index.template.html`, el juego en `src/` y los modelos se cargan bajo demanda desde `src/assets/`.
+
+## Despliegue
+
+`vercel.json` configura `npm run build` como compilación y `dist` como salida estática. Al desplegar en Vercel, se accede desde una URL web; los tiempos y récords siguen guardándose localmente en el navegador. Ligas y clasificaciones compartidas requerirán un backend futuro.
+
 ## Estructura
-- `src/car.js` física del coche (pesada, ERS, marchas) · `src/ai.js` rivales y récord de referencia
-- `src/track.js` generador de pistas · `src/themes.js` pistas/escenarios · `src/world.js` escena 3D
-- `src/game.js` bucle, HUD, menú, sectores, medallas · `src/audio.js` sonido
-- `index.template.html` HTML/CSS · `build.mjs` empaqueta todo en `dist/index.html`
-- `test/` simulación (`sim.mjs`) y pruebas de navegador con Playwright (`e2e*.cjs`)
 
-## Flujo de trabajo
-Ramas por cambio (`git checkout -b mi-cambio`), `npm run sim` antes de subir, y pull request.
-Ideas pendientes: ranking online (Supabase), PWA, escenario de juguete en todas las pistas.
+- `src/car.js`: coches y física.
+- `src/ai.js`: rivales y perfiles de referencia.
+- `src/track.js`: generación de circuitos.
+- `src/themes.js` y `src/world.js`: climas, superficies y mundo 3D.
+- `src/game.js`: cámara, carrera, interfaz y efectos.
+- `src/audio.js`: audio del juego.
+- `src/assets/`: modelos GLB comprimidos, cargados bajo demanda.
+- `build.mjs` y `serve.mjs`: compilación y servidor de desarrollo local.
+- `PROJECT_PLAN.md`: visión y decisiones del proyecto.
 
-## Coches 3D (.glb)
-El VW Bora VR6 se carga desde `src/assets/bora_*.glb` (incrustado en el HTML al compilar).
-- Versiones optimizadas: carrocería `hi` (~183k tris), `mid` (~68k) y `lo` (~20k) + ruedas; gzip, sin WebAssembly.
-- `tools/optimize-glb.mjs` regenera esos archivos desde el modelo original (necesita `@gltf-transform/*` y `meshoptimizer` en una carpeta aparte; ver cabecera del script).
-- Materiales por rol (PAINT, CHROME, GLASS, LENS…); la pintura (`PAINT`) se recolorea desde el menú.
-- Para añadir otro coche: carrocería con el morro hacia +Z, sin ruedas, y una rueda en el origen con el eje en X.
+## Coches 3D
 
-## Despliegue (Vercel)
-`vercel.json` ya configura `npm run build` y `dist`. Importar el repositorio en Vercel y listo; cada rama genera una URL de prueba.
+Los modelos se preparan desde archivos `.glb` optimizados con varios niveles de detalle para reducir la descarga inicial y mostrar primero una versión ligera. `tools/optimize-glb.mjs` y `tools/prep-car.mjs` contienen utilidades para preparar modelos; algunas requieren dependencias adicionales descritas en sus cabeceras.
 
-## Carga de modelos y CSP
-Los .glb van incrustados en gzip (`src/assets/*.glb.gz`) y se leen con `DecompressionStream` + `GLTFLoader.parse` (`src/glbload.js`):
-no usan `fetch` ni WebAssembly, así que funcionan también en páginas con CSP estricta (p. ej. artefactos de Claude).
-`test/csp_server.py` sirve `dist/` con una CSP restrictiva para comprobarlo.
+## Verificación
 
-## Coches y circuitos
-- Coches: VW Bora VR6, Porsche 911 (964) Turbo S, BMW M3 E46, Cupra León, Mini Cooper S Clubman, Nissan Qashqai, Turbo GT, Drifter, Bruiser. Pintura personalizable desde el menú.
-- Circuito *Puerto Urbano* (estilo Mónaco): trazado fijo (`fixedNodes`), perfil de altura (`hillPts`), pianos con vibración y cuestas más exigentes.
-
-## Añadir un coche desde un .glb
-`tools/prep-car.mjs` orienta el modelo (Y arriba, morro +Z), lo escala a metros reales, separa las 4 ruedas por geometría
-y genera dos niveles de detalle (`hi` ~100k y `lo` ~15k triángulos). Después se importa en `src/modelcars.js` y se añade a `src/car.js`.
-Los coches se cargan bajo demanda al elegirlos (el HTML final pesa ~14 MB por los modelos).
+`npm run build` comprueba que el bundle se compile. `npm run sim` ejecuta una simulación sin gráficos.

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "node build.mjs",
+    "serve": "npm run build && node serve.mjs",
     "sim": "node test/sim.mjs",
     "optimize-glb": "node tools/optimize-glb.mjs"
   }

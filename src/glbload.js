@@ -6,7 +6,13 @@ export async function gunzip(u8) {
   const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'));
   return new Response(stream).arrayBuffer();
 }
-export async function parseGlb(u8gz) {
+export async function parseGlb(source) {
+  let u8gz = source;
+  if (typeof source === 'string') {
+    const response = await fetch(source);
+    if (!response.ok) throw new Error(`No se pudo cargar el modelo (${response.status}): ${source}`);
+    u8gz = new Uint8Array(await response.arrayBuffer());
+  }
   const buf = await gunzip(u8gz);
   const loader = new GLTFLoader();
   // las texturas se cargan con <img> (blob:) y no con fetch, que una CSP estricta puede bloquear

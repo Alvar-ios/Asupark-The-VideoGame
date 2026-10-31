@@ -39,7 +39,6 @@ export function aiInput(c, tr, prof, ai, out) {
   if (speed > vt + 1.5) { out.throttle = 0; out.brake = clamp((speed - vt) / 7, 0.25, 1); }
   else { out.brake = 0; out.throttle = speed < vt ? 1 : 0.35; }
   out.drift = false;
-  out.ers = !!(c.ers > 0.3 && vt > T_VMAX_FRAC(c) && Math.abs(kAhead) < 0.004 && out.throttle === 1);
   return out;
 }
 
@@ -50,7 +49,7 @@ export function benchmark(tr, type, env, key) {
   if (benchCache[key]) return benchCache[key];
   const c = makeCar(type, 'bench', false), prof = buildSpeedProfile(tr, type);
   placeCar(c, tr, 2, 0, 0);
-  const ai = { lane: 0, skill: 0.985 }, inp = { steer: 0, throttle: 0, brake: 0, drift: false, ers: false };
+  const ai = { lane: 0, skill: 0.985 }, inp = { steer: 0, throttle: 0, brake: 0, drift: false };
   const T = [0, 0, 0, 0, 0, 0, 0], third = tr.len / 3;
   const nP = Math.ceil(tr.len / 10) + 1, prof2 = new Float32Array(nP).fill(-1);
   let t = 0, j = 1;

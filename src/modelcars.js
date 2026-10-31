@@ -2,19 +2,14 @@
 import * as THREE from 'three';
 import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { parseGlb } from './glbload.js';
-import m3hi from './assets/car_m3_hi.glb.gz'; import m3lo from './assets/car_m3_lo.glb.gz';
-import qahi from './assets/car_qashqai_hi.glb.gz'; import qalo from './assets/car_qashqai_lo.glb.gz';
-import minihi from './assets/car_mini_hi.glb.gz'; import minilo from './assets/car_mini_lo.glb.gz';
-import cuhi from './assets/car_cupra_hi.glb.gz'; import culo from './assets/car_cupra_lo.glb.gz';
-
 export const MODEL = {
-  m3: { hi: m3hi, lo: m3lo, paint: /^Material$/ },
-  qashqai: { hi: qahi, lo: qalo, paint: /carpaint/i },
-  mini: { hi: minihi, lo: minilo, paint: /carpaint/i },
-  cupra: { hi: cuhi, lo: culo, paint: /^body$/i },
+  m3: { hi: './assets/car_m3_hi.glb.gz', lo: './assets/car_m3_lo.glb.gz', paint: /^Material$/ },
+  qashqai: { hi: './assets/car_qashqai_hi.glb.gz', lo: './assets/car_qashqai_lo.glb.gz', paint: /carpaint/i },
+  mini: { hi: './assets/car_mini_hi.glb.gz', lo: './assets/car_mini_lo.glb.gz', paint: /carpaint/i },
+  cupra: { hi: './assets/car_cupra_hi.glb.gz', lo: './assets/car_cupra_lo.glb.gz', paint: /^body$/i },
 };
 const cache = {}, pending = {};
-export const modelCarReady = (id, lod) => !!(cache[id] && (cache[id][lod || 'hi'] || cache[id].lo));
+export const modelCarReady = (id, lod = 'hi') => !!(cache[id] && cache[id][lod]);
 export function loadModelCar(id, lods = ['hi', 'lo']) {
   const key = id + lods.join();
   if (pending[key]) return pending[key];

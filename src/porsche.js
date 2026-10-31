@@ -1,13 +1,10 @@
 // Porsche 911 (964) Turbo S: modelo con texturas originales; ruedas independientes que giran y se orientan
 import * as THREE from 'three';
 import { parseGlb } from './glbload.js';
-import hiGz from './assets/porsche_hi.glb.gz';
-import loGz from './assets/porsche_lo.glb.gz';
-
 const cache = { ready: false };
-export const porscheReady = () => cache.ready;
+const src = { hi: './assets/porsche_hi.glb.gz', lo: './assets/porsche_lo.glb.gz' };
+export const porscheReady = (lod) => lod ? !!cache[lod] : cache.ready;
 export async function loadPorsche(lods = ['hi', 'lo']) {
-  const src = { hi: hiGz, lo: loGz };
   for (const l of lods) cache[l] = (await parseGlb(src[l])).scene;
   cache.ready = true;
 }
