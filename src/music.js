@@ -21,22 +21,55 @@ export const SONGS = [
 
 export class Music {
   constructor(ctx, dest, noise) {
-    this.ctx = ctx; this.noise = noise; this.playing = false; this.timer = 0; this.vol = 0.55; this.songIdx = Math.floor(Math.random() * SONGS.length); this.song = SONGS[this.songIdx]; this.stepDur = 60 / this.song.bpm / 4;
+    this.ctx = ctx; this.noise = noise; this.playing = false; this.timer = 0; this.bufs = {}; this.pend = {}; this.src = null; this.vol = 0.55; this.songIdx = Math.floor(Math.random() * SONGS.length); this.song = SONGS[this.songIdx]; this.stepDur = 60 / this.song.bpm / 4;
     this.out = ctx.createGain(); this.out.gain.value = 0; this.out.connect(dest);
     this.delay = ctx.createDelay(1); this.delay.delayTime.value = 0.4;
     const fb = ctx.createGain(); fb.gain.value = 0.36; const wet = ctx.createGain(); wet.gain.value = 0.3;
     this.send = ctx.createGain(); this.send.gain.value = 1; this.send.connect(this.delay); this.delay.connect(fb); fb.connect(this.delay); this.delay.connect(wet); wet.connect(this.out);
   }
   setVolume(v) { this.vol = v; if (this.playing) this.out.gain.setTargetAtTime(v, this.ctx.currentTime, 0.1); }
+  // La música se pre-renderiza: cada tema se genera una vez en un OfflineAudioContext y se reproduce como un buffer.
+  // Antes se programaban las notas en vivo desde el hilo principal; cuando el juego iba justo, las notas llegaban tarde (música lenta) y luego de golpe (rápida).
+  render(idx) {
+    if (this.bufs[idx]) return Promise.resolve(this.bufs[idx]);
+    if (this.pend[idx]) return this.pend[idx];
+    const OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!OC) return Promise.reject(new Error('sin OfflineAudioContext'));
+    const S = SONGS[idx], ST = 60 / S.bpm / 4, steps = 256, sr = this.ctx.sampleRate, loopN = Math.round(steps * ST * sr), tailN = Math.round(2.6 * sr);
+    const oc = new OC(2, loopN + tailN, sr), m = new Music(oc, oc.destination, this.noise);
+    m.song = S; m.stepDur = ST; m.out.gain.value = 1; m.delay.delayTime.value = (60 / S.bpm) * 0.75;
+    for (let st = 0; st < steps; st++) m.play(st, 0.02 + st * ST);
+    this.pend[idx] = oc.startRendering().then((buf) => {
+      const out = this.ctx.createBuffer(2, loopN, sr);
+      for (let ch = 0; ch < 2; ch++) { const src = buf.getChannelData(Math.min(ch, buf.numberOfChannels - 1)), dst = out.getChannelData(ch); dst.set(src.subarray(0, loopN)); for (let k = 0; k < tailN && k < loopN; k++) dst[k] += src[loopN + k]; } // la cola del eco se pliega al principio: bucle sin cortes
+      this.bufs[idx] = out; return out;
+    });
+    return this.pend[idx];
+  }
   start() {
-    if (this.playing) return; this.playing = true; this.step = 0; this.songIdx = (this.songIdx + 1) % SONGS.length; this.next = this.ctx.currentTime + 0.12;
-    this.out.gain.cancelScheduledValues(this.ctx.currentTime); this.out.gain.setTargetAtTime(this.vol, this.ctx.currentTime, 0.6);
+    if (this.playing) return; this.playing = true; const c = this.ctx;
+    this.out.gain.cancelScheduledValues(c.currentTime); this.out.gain.setTargetAtTime(this.vol, c.currentTime, 0.6);
+    this.songIdx = (this.songIdx + 1) % SONGS.length; this.playNext();
+  }
+  playNext() {
+    if (!this.playing) return; const idx = this.songIdx, c = this.ctx;
+    const live = setTimeout(() => { if (this.playing && !this.src && !this.bufs[idx]) this.startLive(); }, 2500); // mientras se prepara el tema, suena en vivo
+    this.render(idx).then((buf) => {
+      clearTimeout(live); if (this.timer) { clearInterval(this.timer); this.timer = 0; }
+      if (!this.playing || this.songIdx !== idx) return;
+      const src = c.createBufferSource(); src.buffer = buf; src.connect(this.out); src.start(); this.src = src;
+      src.onended = () => { if (this.src === src && this.playing) { this.songIdx = (idx + 1) % SONGS.length; this.playNext(); } };
+      setTimeout(() => this.render((idx + 1) % SONGS.length).catch(() => {}), 2000); // el siguiente tema se prepara con calma
+    }).catch(() => this.startLive());
+  }
+  startLive() { // respaldo si el navegador no puede pre-renderizar
+    if (this.timer || !this.playing) return; this.step = 0; this.next = this.ctx.currentTime + 0.12;
     this.timer = setInterval(() => this.tick(), 50); this.tick();
   }
   stop() {
     if (!this.playing) return; this.playing = false; const t = this.ctx.currentTime;
     this.out.gain.cancelScheduledValues(t); this.out.gain.setTargetAtTime(0, t, 0.18);
     clearInterval(this.timer); this.timer = 0;
+    if (this.src) { const s = this.src; this.src = null; s.onended = null; try { s.stop(t + 0.5); } catch (_) {} }
   }
   tick() {
     const ctx = this.ctx;

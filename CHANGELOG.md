@@ -63,3 +63,6 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Tracción por coche: delantera (subvira al acelerar en curva), trasera (se descoloca) y total (el S4; pierde menos tracción en nieve, hielo y tierra).
 - Frenada por grupo: los F1 y la competición frenan mucho más fuerte.
 - Peraltes: el coche se inclina con la superficie, la IA los tiene en cuenta y empujan hacia dentro.
+
+## 0.0.11
+- Música estable: cada tema se pre-renderiza fuera del hilo principal y se reproduce como un buffer, así no se ralentiza ni se acelera cuando el juego va justo de rendimiento.
