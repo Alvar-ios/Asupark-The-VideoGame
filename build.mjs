@@ -1,7 +1,8 @@
 import { build } from 'esbuild';
 import fs from 'node:fs';
 const r = await build({ entryPoints: ['src/main.js'], bundle: true, minify: true, format: 'iife', write: false, target: 'es2020', legalComments: 'none' });
-const tpl = fs.readFileSync('index.template.html', 'utf8');
+const VERSION = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+const tpl = fs.readFileSync('index.template.html', 'utf8').replaceAll('{{VERSION}}', VERSION);
 fs.mkdirSync('dist', { recursive: true });
 fs.writeFileSync('dist/game.js', r.outputFiles[0].text);
 fs.writeFileSync('dist/index.html', tpl.replace('<script>/*BUNDLE*/</script>', '<script src="./game.js" defer></script>'));
@@ -14,4 +15,5 @@ fs.mkdirSync('dist/lab', { recursive: true });
 fs.copyFileSync('tools/lab/engine-lab.html', 'dist/lab/index.html');
 fs.copyFileSync('src/engine-dsp.js', 'dist/lab/engine-dsp.js');
 fs.cpSync('src/assets/audio', 'dist/assets/audio', { recursive: true });
-console.log('dist/index.html', (fs.statSync('dist/index.html').size / 1024).toFixed(0) + ' KB', '| game.js', (fs.statSync('dist/game.js').size / 1024).toFixed(0) + ' KB', '| modelos bajo demanda');
+if (fs.existsSync('src/assets/thumbs')) fs.cpSync('src/assets/thumbs', 'dist/assets/thumbs', { recursive: true });
+console.log('v' + VERSION, 'dist/index.html', (fs.statSync('dist/index.html').size / 1024).toFixed(0) + ' KB', '| game.js', (fs.statSync('dist/game.js').size / 1024).toFixed(0) + ' KB', '| modelos bajo demanda');

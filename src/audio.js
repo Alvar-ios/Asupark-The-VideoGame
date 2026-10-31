@@ -26,7 +26,7 @@ function seamlessLoop(ctx, source, fadeSeconds = 0.12) {
   return loop;
 }
 export class Sound {
-  constructor() { this.ctx = null; this.muted = false; this.ok = false; this.engineSource = null; this.engineCar = null; this.engineToken = 0; this.vol = { master: 1, music: 0.7, engine: 1 }; this.engineOn = true; this.music = null; this.requestedCar = null; this.engineRpm = 0.22; this.lastAudioTime = 0; this.lastMsg = null; this.lastMsgT = 0; }
+  constructor() { this.ctx = null; this.muted = false; this.ok = false; this.engineSource = null; this.engineCar = null; this.engineToken = 0; this.vol = { master: 1, music: 0.7, engine: 0.65 }; this.engineOn = true; this.music = null; this.requestedCar = null; this.engineRpm = 0.22; this.lastAudioTime = 0; this.lastMsg = null; this.lastMsgT = 0; }
   init(carId) {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); if (carId) this.startSynth(carId); return; }
     try {
@@ -66,7 +66,7 @@ export class Sound {
     try {
       await this.ctx.audioWorklet.addModule(new URL('engine-worklet.js', document.baseURI).href);
       const node = new AudioWorkletNode(this.ctx, 'drift-engine', { outputChannelCount: [2] });
-      this.engineGain = this.ctx.createGain(); this.engineGain.gain.value = this.engineOn ? 0.9 * this.vol.engine : 0; node.connect(this.engineGain); this.engineGain.connect(this.master);
+      this.engineGain = this.ctx.createGain(); this.engineGain.gain.value = this.engineOn ? 0.6 * this.vol.engine : 0; node.connect(this.engineGain); this.engineGain.connect(this.master);
       this.synth = node; this.synthCar = this.requestedSynth || carId; node.port.postMessage({ profile: SYNTH_ID[this.synthCar] || 'porsche' }); this.synthTried = 'ok';
     } catch (e) { this.synthTried = 'failed'; console.warn('Motor sintético no disponible; uso grabaciones', e); this.ensureEngine(carId); }
   }
@@ -101,13 +101,13 @@ export class Sound {
     const t = this.ctx ? this.ctx.currentTime : 0, ramp = (param, v) => { try { param.cancelScheduledValues(t); param.setTargetAtTime(v, t, 0.02); } catch (_) { param.value = v; } };
     if (this.master) ramp(this.master.gain, this.muted ? 0 : 0.58 * this.vol.master);
     if (this.music) this.music.setVolume(0.55 * this.vol.music * (this.duck ? 0.6 : 1));
-    if (this.engineGain && this.engineOn) ramp(this.engineGain.gain, 0.9 * this.vol.engine);
+    if (this.engineGain && this.engineOn) ramp(this.engineGain.gain, 0.6 * this.vol.engine);
   }
   // El motor y los ruidos de rodadura solo suenan durante la carrera (no en menú ni en pausa)
   setEngineActive(on) {
     if (this.engineOn === on || !this.ok) { this.engineOn = on; return; }
     this.engineOn = on; const t = this.ctx.currentTime;
-    if (this.engineGain) this.engineGain.gain.setTargetAtTime(on ? 0.9 * this.vol.engine : 0, t, on ? 0.08 : 0.04);
+    if (this.engineGain) this.engineGain.gain.setTargetAtTime(on ? 0.6 * this.vol.engine : 0, t, on ? 0.08 : 0.04);
     if (!on) {
       if (this.engineSource) this.engineSource.gain.gain.setTargetAtTime(0, t, 0.04);
       for (const n of [this.wind, this.rain, this.spray, this.gravel, this.skid]) if (n) n.g.gain.setTargetAtTime(0, t, 0.05);

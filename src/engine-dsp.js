@@ -57,11 +57,11 @@ export class EngineDSP {
     this.sr = sr; this.setProfile(profile); this.seed = seed >>> 0 || 1;
     this.phase = 0; this.cyl = 0; this.env = 0; this.hp = 0; this.hpIn = 0;
     this.limPh = 0; this.limHz = 9; this.limDepth = 0.05; this.limMix = 0; this.lastRpm = 0; this.rpmS = 900; this.thrS = 0; this.boostS = 0; this.pend = 0; this.pendEnv = 0; this.limT = 0; this.t = 0;
-    this.subLP = 0; this.rumLP = 0; this.wob = 0; this.wobT = 0; this.evS = 0;
+    this.subLP = 0; this.rumLP = 0; this.lpS = 0; this.lpA = 1 - Math.exp(-6.2832 * 6000 / sr); this.wob = 0; this.wobT = 0; this.evS = 0;
     this.nF = new SVF(); this.fanF = new SVF(); this.turF = new SVF(); this.crkF = new SVF(); this.crkF2 = new SVF(); this.thF = new SVF();
     this.turPh = 0; this.scPh = 0; this.evPh = 0; this.crk = 0; this.thump = 0; this.popsLeft = 0; this.popT = 0; this.popAmp = 0;
   }
-  resetState() { for (const f of this.f) { f.l = 0; f.b = 0; } for (const f of [this.nF, this.fanF, this.turF, this.crkF, this.crkF2, this.thF]) { f.l = 0; f.b = 0; } this.env = 0; this.hp = 0; this.hpIn = 0; this.subLP = 0; this.rumLP = 0; this.crk = 0; this.thump = 0; this.popsLeft = 0; }
+  resetState() { for (const f of this.f) { f.l = 0; f.b = 0; } for (const f of [this.nF, this.fanF, this.turF, this.crkF, this.crkF2, this.thF]) { f.l = 0; f.b = 0; } this.env = 0; this.hp = 0; this.hpIn = 0; this.subLP = 0; this.rumLP = 0; this.lpS = 0; this.crk = 0; this.thump = 0; this.popsLeft = 0; }
   setProfile(name) { this.P = PROFILES[name] || PROFILES.porsche; this.f = this.P.formants.map(() => new SVF()); }
   rnd() { this.seed ^= this.seed << 13; this.seed >>>= 0; this.seed ^= this.seed >>> 17; this.seed ^= this.seed << 5; this.seed >>>= 0; return this.seed / 4294967296; }
   pop(amp) { this.crk = Math.max(this.crk, amp); this.thump = Math.max(this.thump, amp * this.P.thump); }
@@ -109,8 +109,8 @@ export class EngineDSP {
       const nz = this.rnd() * 2 - 1;
       // rugido: ruido grave modulado por la carga
       this.rumLP += (nz - this.rumLP) * (1 - Math.exp(-6.283 * 110 / sr));
-      const rumble = this.rumLP * P.rumble * (0.35 + 0.9 * load) * 2.2;
-      const intake = this.nF.bp(nz, 500 + rpm * 0.35, 0.9, sr) * (0.01 + 0.04 * load) * (rpm / P.redline);
+      const rumble = this.rumLP * P.rumble * (0.35 + 0.9 * load) * 1.3;
+      const intake = this.nF.bp(nz, 500 + rpm * 0.35, 0.9, sr) * (0.007 + 0.028 * load) * (rpm / P.redline);
       const fan = P.fan ? this.fanF.bp(nz, 1500 + rpm * 0.5, 3, sr) * P.fan * 0.035 * (rpm / P.redline) : 0;
       // turbo: sobre todo soplido (ruido) y un silbido muy tenue de fondo
       let tur = 0;
@@ -135,11 +135,12 @@ export class EngineDSP {
       else if (!overrun && thr > 0.25 && P.burble && this.popsLeft <= 0 && this.rnd() < (P.burble * 7 / sr) * (rpm / P.redline)) { this.popsLeft = 1; this.popT = 0; this.popAmp = 0.3 + this.rnd() * 0.25; }
       if (this.popsLeft > 0 && --this.popT <= 0) { this.pop(this.popAmp); this.popAmp *= 0.8; this.popsLeft--; this.popT = sr * (0.022 + this.rnd() * 0.05); }
       let crack = 0;
-      if (this.crk > 0.004) { crack = (this.crkF.bp(nz, 1300 + 1200 * this.rnd(), 1.2, sr) + this.crkF2.bp(nz, 420, 1.6, sr) * 0.7) * this.crk * 0.6; this.crk *= 0.9984; } else this.crk = 0;
-      if (this.thump > 0.004) { crack += this.thF.bp(nz, 150, 1.3, sr) * this.thump * 1.7; this.thump *= 0.9993; } else this.thump = 0;
+      if (this.crk > 0.004) { crack = (this.crkF.bp(nz, 1300 + 1200 * this.rnd(), 1.2, sr) + this.crkF2.bp(nz, 420, 1.6, sr) * 0.7) * this.crk * 0.4; this.crk *= 0.9984; } else this.crk = 0;
+      if (this.thump > 0.004) { crack += this.thF.bp(nz, 150, 1.3, sr) * this.thump * 1.2; this.thump *= 0.9993; } else this.thump = 0;
       const engine = (y * 0.5 + rumble + intake + fan) * (1 - 0.88 * ev);
       let s = (engine + tur + evs + crack) * P.gain;
-      s = Math.tanh(1.5 * s + 0.2 * s * s); // saturación suave: calidez
+      s = Math.tanh(1.05 * s); // saturación muy suave (antes más agresiva: sonaba áspero)
+      this.lpS += (s - this.lpS) * this.lpA; s = this.lpS; // paso bajo ~6 kHz: quita el siseo y deja un timbre más redondo y limpio
       if (s !== s || s > 2 || s < -2) { s = 0; this.resetState(); } // red de seguridad: si un filtro se desbocara, se reinicia en vez de chillar
       out[i] = s * 0.62;
     }

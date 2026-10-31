@@ -108,7 +108,7 @@ button.ghost{background:rgba(255,255,255,.08);color:var(--txt);box-shadow:none;f
 #tD{right:max(16px,env(safe-area-inset-right));bottom:144px;width:64px;height:64px;font-size:12px}
 #rotate{display:none;position:fixed;inset:0;z-index:20;background:rgba(6,8,16,.96);align-items:center;justify-content:center;text-align:center;font-size:26px;font-weight:800;line-height:1.5}
 #rotate small{font-size:14px;color:var(--dim);font-weight:500}
-@media (orientation:portrait){body.mobile.racing #rotate{display:flex}}
+#rotate{display:none!important}
 body.mobile #help{display:none}
 body.mobile #h-speed{font-size:50px;bottom:auto;top:auto;right:auto;left:50%;transform:translateX(-50%);bottom:54px}
 body.mobile #gearBox{font-size:28px;padding:2px 10px 4px}
@@ -399,6 +399,112 @@ input,select,textarea{-webkit-user-select:text;user-select:text;touch-action:man
   #menu #flyout #trackList,#menu #flyout #carList{grid-template-columns:1fr 1fr}
 }
 @media (max-height:520px) and (orientation:landscape){#menu #flyout{width:min(460px,50vw);padding:16px 16px}#menu #flyout .vhead{top:-16px;margin:-16px -16px 10px;padding:12px 16px 8px}}
+/* ===== v0.0.1: versión, circuitos suaves con bandera, miniaturas, récords en el HUD ===== */
+#menu .wmrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 22px}
+#menu .wmrow .wm{margin:0}
+#menu .ver{font-size:11px;letter-spacing:.1em;color:#8e98a8;background:rgba(255,255,255,.07);padding:3px 8px;border-radius:999px;font-variant-numeric:tabular-nums}
+#menu .pick{padding-right:128px;min-height:64px}#menu .pick>i{position:absolute;right:14px;top:50%;transform:translateY(-50%)}#menu .pick.on>i{transform:translateY(-50%) rotate(180deg)}
+#menu .pick .pk-flag{position:absolute;right:46px;top:50%;width:34px;height:23px;transform:translateY(-50%);border-radius:4px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.2),0 4px 10px rgba(0,0,0,.35)}
+#menu .pick .pk-flag svg,#menu .flag svg{display:block;width:100%;height:100%}
+#menu .pick .pk-img{position:absolute;right:38px;top:50%;width:80px;height:50px;transform:translateY(-50%);object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}
+#menu .pick .pk-img[src=""],#menu .pick .pk-img:not([src]){display:none}
+#menu #flyout #trackList .card{display:flex;flex-direction:column;gap:6px;padding:12px 12px 11px;border-radius:18px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(165deg,rgba(255,255,255,.075),rgba(255,255,255,.02));box-shadow:0 8px 22px rgba(0,0,0,.28);transition:transform .15s,border-color .15s,background .15s}
+#menu #flyout #trackList .card:hover{transform:translateY(-2px);background:linear-gradient(165deg,rgba(255,255,255,.11),rgba(255,255,255,.035))}
+#menu #flyout #trackList .card.on{border-color:rgba(255,201,40,.75);background:linear-gradient(165deg,rgba(255,201,40,.16),rgba(255,201,40,.03));box-shadow:0 8px 26px rgba(255,190,40,.12)}
+#menu .tc-head{display:flex;align-items:center;gap:8px}
+#menu .tc-head .flag{width:26px;height:17px;border-radius:4px;overflow:hidden;flex:none;box-shadow:0 0 0 1px rgba(255,255,255,.2)}
+#menu .tc-head .cty{font-size:11px;letter-spacing:.06em;color:#b8c2d3;text-transform:uppercase}
+#menu .tc-head .tc-len{margin-left:auto;font-size:11px;color:#8e98a8;font-variant-numeric:tabular-nums}
+#menu #flyout #trackList .card canvas{height:62px;border-radius:12px;background:radial-gradient(120% 100% at 30% 20%,rgba(70,96,138,.32),rgba(6,10,18,.55))}
+#menu #flyout #trackList .card b{margin:2px 0 0;font-size:14px;font-weight:700}
+#menu #flyout #trackList .card .track-sub{font-size:11px;line-height:1.35;color:#9aa6b8;display:block;min-height:30px}
+#menu .tc-foot{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#menu .track-env{border:0;border-radius:999px;padding:3px 9px;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:none;background:rgba(255,255,255,.08);color:#cfd7e4}
+#menu .track-env.rain{background:rgba(90,150,230,.2);color:#a9cdff}#menu .track-env.snow{background:rgba(200,228,255,.18);color:#dff0ff}#menu .track-env.dirt{background:rgba(220,140,70,.2);color:#ffc08a}#menu .track-env.dry{background:rgba(120,210,150,.16);color:#a8ecc2}
+#menu .tag-daily{font-size:10px;font-weight:700;color:#111;background:#ffc928;border-radius:999px;padding:3px 9px}
+#menu .card .rec{font-size:11px;color:#9fe3ff;min-height:14px}
+.medal{display:inline-block;margin-right:6px;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:800;letter-spacing:.08em;vertical-align:1px;color:#1b1405}
+.medal.oro{background:#f2c14e}.medal.plata{background:#cfd6df}.medal.bronce{background:#d08c5b}
+#menu #flyout #carList .card{padding:8px 12px 11px;border-radius:16px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(165deg,rgba(255,255,255,.07),rgba(255,255,255,.02));box-shadow:0 8px 22px rgba(0,0,0,.25)}
+#menu #flyout #carList .card.on{border-color:rgba(255,201,40,.75);background:linear-gradient(165deg,rgba(255,201,40,.15),rgba(255,201,40,.03))}
+#menu .cthumb{display:block;width:100%;height:78px;object-fit:contain;margin:0 0 2px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.45))}
+#menu #flyout #carList .card b{font-size:14px}
+#hud #h-rec{position:absolute;left:0;top:116px;min-width:178px;padding:5px 22px 7px 14px;background:rgba(11,13,19,.9);border-left:7px solid #b44bff;clip-path:polygon(0 0,100% 0,calc(100% - 12px) 100%,0 100%);font-style:italic;text-transform:uppercase;pointer-events:none;line-height:1.15}
+#hud #h-rec small{display:block;color:#aeb7c4;font-size:10px;letter-spacing:.14em;font-weight:700}
+#hud #h-rec b{color:#fff;font-size:24px;font-weight:800;letter-spacing:.01em}
+#hud #h-rec>span{margin-left:8px;color:#8e98a8;font-size:10px;letter-spacing:.1em}
+#hud #h-rec .rs{display:flex;gap:10px;margin-top:3px}
+#hud #h-rec .rs i{font-style:normal;white-space:nowrap}
+#hud #h-rec .rs small{display:inline;font-size:9px;margin-right:3px;color:#8e98a8}
+#hud #h-rec .rs b{font-size:12px;color:#d9b8ff;font-weight:700}
+#raceBanner{width:min(310px,64vw);padding:13px 16px 15px}
+#raceBanner small{font-size:11px}#raceBanner strong{font-size:34px;margin:5px 0 4px}#raceBanner span{font-size:12px}
+#raceBanner.purple span{color:#e0b4ff}#raceBanner.green span{color:#86f0ad}#raceBanner.orange span{color:#ffc27a}
+@media (max-width:760px),(max-height:520px){
+  #menu .pick{padding-right:112px}#menu .pick .pk-img{width:76px;height:46px}
+  #hud #h-rec{top:84px;min-width:132px;padding:3px 16px 4px 10px;border-left-width:5px}
+  #hud #h-rec small{font-size:8px}#hud #h-rec b{font-size:16px}#hud #h-rec .rs{gap:6px}#hud #h-rec .rs b{font-size:10px}#hud #h-rec>span{display:none}
+  #raceBanner{width:min(220px,52vw);padding:8px 11px 10px}#raceBanner strong{font-size:24px}#raceBanner small{font-size:9px}#raceBanner span{font-size:10px}
+}
+/* ===== Móvil: HUD y controles tanto en horizontal como en vertical ===== */
+#menu #menuLeft.panel{width:min(430px,100%)}
+body.tt #hud #weatherBadge{top:188px}
+body.mobile.tt #hud #weatherBadge{top:160px}
+body.mobile #hud #weatherBadge{padding:3px 8px;font-size:9px;letter-spacing:.08em}
+@media (orientation:portrait){
+  body.mobile{--b:min(92px,22vw)}
+  body.mobile #tL{left:10px;bottom:calc(18px + env(safe-area-inset-bottom));width:var(--b);height:var(--b);font-size:30px}
+  body.mobile #tR{left:calc(10px + var(--b) + 8px);bottom:calc(18px + env(safe-area-inset-bottom));width:var(--b);height:var(--b);font-size:30px}
+  body.mobile #tG{right:10px;bottom:calc(18px + env(safe-area-inset-bottom));width:calc(var(--b)*1.1);height:calc(var(--b)*1.1);font-size:17px}
+  body.mobile #tB{right:calc(10px + var(--b)*1.1 + 8px);bottom:calc(18px + env(safe-area-inset-bottom));width:calc(var(--b)*.82);height:calc(var(--b)*.82);font-size:12px}
+  body.mobile #tD{right:10px;bottom:calc(30px + var(--b)*1.1 + env(safe-area-inset-bottom));width:56px;height:56px;font-size:11px}
+  body.mobile #h-speed{bottom:calc(var(--b) + 78px);font-size:46px}
+  body.mobile #rpmBar{bottom:calc(var(--b) + 64px);width:min(300px,72vw)}
+  body.mobile #bars{bottom:calc(var(--b) + 44px);width:min(300px,72vw)}
+  body.mobile #mini{width:84px;height:84px;top:8px;right:8px}
+  body.mobile #h-pos{top:8px;padding:2px 14px 2px 10px}body.mobile #h-pos b{font-size:34px}body.mobile #h-pos span{font-size:12px}
+  body.mobile #h-lap{top:58px;font-size:11px;padding:3px 14px 3px 10px}body.mobile #h-lap b{font-size:13px}
+  body.mobile #h-time{top:0;min-width:136px;padding:3px 12px 5px}body.mobile #time{font-size:22px}body.mobile #best{font-size:10px}
+  body.mobile .sec{min-width:44px;font-size:11px;padding:2px 5px}
+  body.mobile #hud #h-rec{top:88px}
+  body.mobile #hud #weatherBadge{top:92px}body.mobile.tt #hud #weatherBadge{top:150px}
+  body.mobile #pbtn{top:100px;right:10px;width:38px;height:38px}body.mobile #rbtn{top:146px;right:10px;width:38px;height:38px}
+  body.mobile #raceBanner{top:27%;left:50%;transform:translateX(-50%);width:min(250px,70vw)}
+  body.mobile #raceBanner.show{transform:translateX(-50%)}
+  body.mobile #msg{top:22%}
+  body.mobile #lights{top:30%}
+}
+@media (max-height:520px) and (orientation:landscape){
+  #menu #menuLeft .menu-scroll{padding:10px 18px 8px}
+  #menu .wmrow{margin:0 0 6px}#menu .wm{font-size:22px;margin:0}
+  #menu #startBtn.big,#menu button.big#startBtn{padding:9px!important;font-size:16px!important;margin:0 0 6px!important}
+  #menu .pick{padding:5px 118px 5px 12px;min-height:0;margin:0 0 5px}#menu .pick b{font-size:15px}#menu .pick span{display:none}#menu .pick small{font-size:9px}
+  #menu .pick .pk-img{height:38px;width:62px}#menu .pick .pk-flag{width:28px;height:19px}
+  #menu .modes{margin:6px 0}#menu .modes .seg button{padding:7px 6px;font-size:12px}#menu #diffWrap{margin-top:5px}
+  #menu .links{gap:2px}#menu .link{padding:4px 8px 4px 0;font-size:12px}
+}
+/* HUD móvil (se declara con #hud para ganar a los estilos de retransmisión de escritorio) */
+body.mobile #hud #h-time{min-width:190px;padding:3px 16px 5px}
+body.mobile #hud #time{font-size:28px}
+body.mobile #hud #best{font-size:10px;letter-spacing:.1em}
+body.mobile #hud #delta{font-size:15px;min-height:17px}
+body.mobile #hud .sec{min-width:54px;font-size:12px;padding:1px 5px;border-bottom-width:3px}
+body.mobile #hud .sec b{font-size:8px}
+body.mobile #hud #secs{gap:2px;margin-top:3px}
+body.mobile #hud #h-pos{top:6px;padding:2px 18px 2px 10px;border-left-width:5px}
+body.mobile #hud #h-pos b{font-size:32px}body.mobile #hud #h-pos span{font-size:12px}
+body.mobile #hud #h-lap{top:54px;font-size:11px;padding:3px 16px 3px 10px;border-left-width:5px}body.mobile #hud #h-lap b{font-size:13px}
+@media (orientation:portrait){
+  body.mobile #hud #h-time{min-width:0;padding:3px 10px 5px}
+  body.mobile #hud #time{font-size:24px}
+  body.mobile #hud .sec{min-width:46px;font-size:11px;padding:1px 3px}
+  body.mobile #hud #h-pos{top:6px}body.mobile #hud #h-pos b{font-size:26px}
+  body.mobile #hud #h-lap{top:44px}
+  body.mobile #hud #h-rec{top:112px}
+  body.mobile #hud #weatherBadge{top:98px;left:auto;right:8px}
+  body.mobile.tt #hud #weatherBadge{top:98px}
+  body.mobile #pbtn{top:128px}body.mobile #rbtn{top:174px}
+}
 </style>
 </head>
 <body>
@@ -407,6 +513,7 @@ input,select,textarea{-webkit-user-select:text;user-select:text;touch-action:man
 <div id="hud" class="hidden">
   <div id="h-pos"><b id="pos">1</b><span>/4</span></div>
   <div id="h-lap">VUELTA <b id="lap">1/3</b></div>
+  <div id="h-rec"><small id="recLabel">RÉCORD</small><b id="recLap">--</b><span id="recWho"></span><div class="rs"><i><small>S1</small><b id="rs0">--</b></i><i><small>S2</small><b id="rs1">--</b></i><i><small>S3</small><b id="rs2">--</b></i></div></div>
   <div id="h-time"><div id="time">0:00.00</div><div id="best">MEJOR --</div><div id="delta"></div>
     <div id="secs"><div class="sec" id="s0"><b>S1</b><span>--</span></div><div class="sec" id="s1"><b>S2</b><span>--</span></div><div class="sec" id="s2"><b>S3</b><span>--</span></div></div>
   </div>
@@ -429,11 +536,11 @@ input,select,textarea{-webkit-user-select:text;user-select:text;touch-action:man
   <div class="panel" id="menuLeft">
     <div class="menu-scroll">
       <div id="viewHome">
-        <h1 class="wm">Drift Rush</h1>
+        <div class="wmrow"><h1 class="wm">Drift Rush</h1><span id="ver" class="ver">v{{VERSION}}</span></div>
         <button id="startBtn" class="big">JUGAR</button>
         <p id="modelStatus" role="status" hidden></p>
-        <button id="pickTrack" class="pick" type="button"><small>Circuito</small><b id="pickTrackName">—</b><span id="pickTrackSub"></span><i>›</i></button>
-        <button id="pickCar" class="pick" type="button"><small>Coche</small><b id="pickCarName">—</b><span id="pickCarSub"></span><i>›</i></button>
+        <button id="pickTrack" class="pick" type="button"><small>Circuito</small><b id="pickTrackName">—</b><span id="pickTrackSub"></span><em id="pickTrackFlag" class="pk-flag"></em><i>›</i></button>
+        <button id="pickCar" class="pick" type="button"><small>Coche</small><b id="pickCarName">—</b><span id="pickCarSub"></span><img id="pickCarImg" class="pk-img" alt=""><i>›</i></button>
         <div class="modes"><div id="modeSel" class="seg"><button data-v="tt">Contrarreloj</button><button data-v="race">Carrera</button></div>
           <div id="diffWrap"><div id="diffSel" class="seg"><button data-v="0">Fácil</button><button data-v="1" class="on">Normal</button><button data-v="2">Difícil</button></div></div></div>
         <div class="links"><button id="dailyBtn" class="link" type="button">Reto del día</button><button id="boardBtn" class="link" type="button">Clasificación</button><button id="setBtn" class="link" type="button">Ajustes</button></div>
@@ -468,7 +575,7 @@ input,select,textarea{-webkit-user-select:text;user-select:text;touch-action:man
   <div id="gfxSel" class="seg"><button data-v="auto">Auto</button><button data-v="high">Alta</button><button data-v="medium">Media</button><button data-v="low">Baja</button></div>
   <p class="keys" style="display:block">Auto baja la calidad solo si el juego va lento. «Baja» quita las sombras y reduce la resolución: úsala si va a tirones en el móvil.</p>
   <button id="setClose" class="big">LISTO</button></div></div>
-<div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar carrera</button><button id="setBtn2" class="big ghost">Ajustes</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
+<div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar</button><button id="endBtn" class="big ghost">Terminar y ver tiempos</button><button id="setBtn2" class="big ghost">Ajustes</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
 <div id="results" class="overlay hidden"><div class="panel rbox"><h1 id="rTitle">META</h1><div class="big-n" id="rBig">1º</div><div id="rNew"></div><table id="rTable"></table><button id="againBtn" class="big">OTRA VEZ</button><button id="boardBtn2" class="big ghost">Clasificación completa</button><button id="menuBtn2" class="big ghost">Menú principal</button></div></div>
 <script src="./config.js"></script>
 <script>/*BUNDLE*/</script>

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { THEMES, THEME_LIST, dailyInfo } from './themes.js';
-import { buildTrack, ROAD_HALF, WALL, wrapPi } from './track.js';
+import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo } from './car.js';
 import { hashStr } from './rng.js';
 import { buildSpeedProfile, aiInput, benchmark } from './ai.js';
@@ -66,12 +66,25 @@ addTrack('daily', daily.name, daily.sub, daily.seed, daily.style, daily.theme);
 for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco' && k !== 'spa') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
 
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
-const sel = { track: 0, mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, colors: {}, vol: { master: 1, music: 0.7, engine: 1 }, gfx: 'auto' };
-const PAINTS = [['Verde botella', '#0b4d2c'], ['Rojo', '#d32a22'], ['Azul', '#1f6fff'], ['Amarillo', '#f7b32b'], ['Naranja', '#ff7a1a'], ['Blanco', '#f2f2f2'], ['Negro', '#16181d'], ['Plata', '#b9bec6'], ['Morado', '#8a4bff']];
-const paintOf = (c) => sel.colors[c.id] || '#' + new THREE.Color(c.color).getHexString();
+const sel = { track: Math.max(0, tracks.findIndex((t) => t.key === 'daily')), mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, colors: {}, vol: { master: 1, music: 0.7, engine: 0.65 }, gfx: 'auto' };
+const paintOf = (c) => { const v = sel.colors[c.id]; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
 const saved = store.get('sel'); if (saved) { const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
 if (saved) { sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
 
+// ----- banderas (SVG propio: los emojis de bandera no se ven en Windows) -----
+const starPts = (cx, cy, R, r) => Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI / 5, k = i % 2 ? r : R; return (cx + k * Math.cos(a)).toFixed(2) + ',' + (cy + k * Math.sin(a)).toFixed(2); }).join(' ');
+const FLAGS = {
+  es: '<rect width="30" height="20" fill="#c60b1e"/><rect y="5" width="30" height="10" fill="#ffc400"/>',
+  mc: '<rect width="30" height="10" fill="#ce1126"/><rect y="10" width="30" height="10" fill="#f4f4f4"/>',
+  be: '<rect width="10" height="20" fill="#1b1b1b"/><rect x="10" width="10" height="20" fill="#fdda24"/><rect x="20" width="10" height="20" fill="#ef3340"/>',
+  at: '<rect width="30" height="20" fill="#ed2939"/><rect y="6.67" width="30" height="6.67" fill="#f4f4f4"/>',
+  ma: '<rect width="30" height="20" fill="#c1272d"/><polygon points="' + starPts(15, 10.4, 5.6, 2.2) + '" fill="none" stroke="#006233" stroke-width="1.1"/>',
+  jp: '<rect width="30" height="20" fill="#f4f4f4"/><circle cx="15" cy="10" r="5.6" fill="#bc002d"/>',
+  ch: '<rect width="30" height="20" fill="#da291c"/><rect x="13" y="4" width="4" height="12" fill="#f4f4f4"/><rect x="9" y="8" width="12" height="4" fill="#f4f4f4"/>',
+};
+const flagSvg = (c) => `<svg viewBox="0 0 30 20" aria-hidden="true">${FLAGS[c] || FLAGS.es}</svg>`;
+const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['at', 'Austria'], desierto: ['ma', 'Marruecos'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'] };
+const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
 function drawPreview(cv, tr, th) {
   const w = 300, h = 130, dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
   cv.width = w * dpr; cv.height = h * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -104,15 +117,16 @@ $('flyClose').onclick = () => setView('home');
 window.addEventListener('keydown', (e) => { if (e.code === 'Escape' && S.state === 'menu' && $('menu').dataset.view !== 'home') { setView('home'); e.stopPropagation(); } }, true);
 function buildMenu() {
   { const t0 = tracks[sel.track], c0 = CARS[sel.car]; if (!sel.group) sel.group = groupOf(c0).id;
-    $('pickTrackName').textContent = t0.key === 'daily' ? 'Pista del día' : t0.name; $('pickTrackSub').textContent = `${(t0.tr.len / 1000).toFixed(1)} km · ${envLabel(t0)}`;
-    $('pickCarName').textContent = c0.name; $('pickCarSub').textContent = groupOf(c0).name; }
+    $('pickTrackName').textContent = t0.key === 'daily' ? 'Pista del día' : t0.name; $('pickTrackSub').textContent = `${countryOf(t0)[1]} · ${(t0.tr.len / 1000).toFixed(1)} km · ${envLabel(t0)}`; $('pickTrackFlag').innerHTML = flagSvg(countryOf(t0)[0]);
+    $('pickCarName').textContent = c0.name; $('pickCarSub').textContent = groupOf(c0).name; $('pickCarImg').src = `./assets/thumbs/${c0.id}.webp`; }
   const tl = $('trackList'); tl.innerHTML = '';
   const dailyTrack = tracks.find((t) => t.key === 'daily');
   tracks.forEach((t, i) => {
     const d = document.createElement('div'); d.className = 'card track-card' + (i === sel.track ? ' on' : '');
-    const environment = t.th.weather === 'rain' ? ['rain', 'LLUVIA · PISTA MOJADA'] : t.th.surface === 'snow' ? ['snow', 'NIEVE · BAJA ADHERENCIA'] : t.th.surface === 'dirt' ? ['dirt', 'TIERRA · POLVO'] : ['dry', 'ASFALTO · SECO'];
+    const environment = t.th.weather === 'rain' ? ['rain', 'Lluvia'] : t.th.surface === 'snow' ? ['snow', 'Nieve'] : t.th.surface === 'dirt' ? ['dirt', 'Tierra'] : ['dry', 'Asfalto seco'];
     let best = null; for (const cc of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = { ...r, car: cc }; }
-    d.innerHTML = `<canvas></canvas><b>${t.key === 'daily' ? '★ ' : ''}${t.name}</b><small class="track-sub">${t.sub}</small><span class="track-env ${environment[0]}">${environment[1]}</span><small class="track-meta">${(t.tr.len / 1000).toFixed(1)} km · ${t.tr.ramps.length} curvas/rampas</small><div class="rec">${best ? medalFor(best.lap, (benchFor(t, best.car) || {}).lap) + ' Mejor ' + fmt(best.lap) + ' · ' + best.car.name.split(' ')[0] : '&nbsp;'}${t.key === 'daily' ? (streakInfo().done ? ' ✓ hecho hoy' : streakInfo().n ? ' 🔥 ' + streakInfo().n + ' días' : ' Reto de hoy') : ''}</div>`;
+    const [cc, cname] = countryOf(t), st = streakInfo();
+    d.innerHTML = `<div class="tc-head"><span class="flag">${flagSvg(cc)}</span><span class="cty">${cname}</span><span class="tc-len">${(t.tr.len / 1000).toFixed(1)} km</span></div><canvas></canvas><b>${t.name}</b><small class="track-sub">${t.sub}</small><div class="tc-foot"><span class="track-env ${environment[0]}">${environment[1]}</span>${t.key === 'daily' ? `<span class="tag-daily">${st.done ? 'Hecho hoy' : st.n ? 'Racha ' + st.n + ' d' : 'Reto de hoy'}</span>` : ''}</div><div class="rec">${best ? medalTag(best.lap, (benchFor(t, best.car) || {}).lap) + 'Mejor ' + fmt(best.lap) + ' · ' + best.car.name.split(' ')[0] : '&nbsp;'}</div>`;
     drawPreview(d.querySelector('canvas'), t.tr, t.th);
     d.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); if (narrowMenu()) setView('home'); };
     tl.appendChild(d);
@@ -124,7 +138,8 @@ function buildMenu() {
     if (c.group !== sel.group) return;
     const d = document.createElement('div'); d.className = 'card car-card' + (i === sel.car ? ' on' : '');
     const hex = new THREE.Color(paintOf(c)).lerp(new THREE.Color(0xffffff), 0.32).getStyle();
-    d.innerHTML = `<b style="color:${hex}">${c.name}</b><small>${c.desc}</small>` + [['VEL', (c.vmax - 44) / 32], ['ACEL', (c.accel - 11) / 11], ['GIRO', (c.yaw - 1.9) / 1.3], ['DESLIZ.', (15 - c.grip) / 5]].map(([n, v]) => `<div class="stat">${n}<i><s style="width:${clamp(v, 0.1, 1) * 100}%;background:${hex}"></s></i></div>`).join('');
+    d.innerHTML = `<img class="cthumb" src="./assets/thumbs/${c.id}.webp" alt=""><b style="color:${hex}">${c.name}</b><small>${c.desc}</small>` + [['VEL', (c.vmax - 44) / 32], ['ACEL', (c.accel - 11) / 11], ['GIRO', (c.yaw - 1.9) / 1.3], ['DESLIZ.', (15 - c.grip) / 5]].map(([n, v]) => `<div class="stat">${n}<i><s style="width:${clamp(v, 0.1, 1) * 100}%;background:${hex}"></s></i></div>`).join('');
+    d.querySelector('img').onerror = (e) => { e.target.style.display = 'none'; };
     d.onclick = () => { sel.car = i; sel.carId = c.id; store.set('sel', sel); buildMenu(); };
     cl.appendChild(d);
   });
@@ -141,13 +156,9 @@ $('sndBtn').onclick = () => { sel.mute = !sel.mute; store.set('sel', sel); build
 function buildPaints() {
   const box = $('paints'); box.innerHTML = '';
   const car = CARS[sel.car], cur = paintOf(car).toLowerCase();
-  if (car.nopaint) { $('paintName').textContent = 'Librea original'; return; }
-  PAINTS.forEach(([n, hex]) => { const b = document.createElement('button'); b.className = 'sw' + (hex.toLowerCase() === cur ? ' on' : ''); b.style.background = hex; b.title = n; b.onclick = () => { sel.colors[car.id] = hex; store.set('sel', sel); buildMenu(); }; box.appendChild(b); });
-  const inp = document.createElement('input'); inp.type = 'color'; inp.value = cur; inp.title = 'Color personalizado'; inp.className = 'sw custom';
-  inp.oninput = () => { sel.colors[car.id] = inp.value; store.set('sel', sel); };
-  inp.onchange = () => { buildMenu(); };
-  box.appendChild(inp);
-  $('paintName').textContent = (PAINTS.find((p) => p[1].toLowerCase() === cur) || ['Personalizado'])[0];
+  if (car.nopaint || !car.paints) { $('paintName').textContent = 'Librea original'; return; }
+  car.paints.forEach(([n, hex]) => { const b = document.createElement('button'); b.className = 'sw' + (hex.toLowerCase() === cur ? ' on' : ''); b.style.background = hex; b.title = n; b.setAttribute('aria-label', n); b.onclick = () => { sel.colors[car.id] = hex; store.set('sel', sel); buildMenu(); }; box.appendChild(b); });
+  $('paintName').textContent = (car.paints.find((p) => p[1].toLowerCase() === cur) || car.paints[0])[0];
 }
 $('autoGas').onclick = () => { sel.autoGas = !sel.autoGas; buildMenu(); };
 $('fsBtn').onclick = () => { try { const e = document.documentElement; (e.requestFullscreen || e.webkitRequestFullscreen).call(e); } catch (_) {} try { screen.orientation.lock('landscape').catch(() => {}); } catch (_) {} };
@@ -169,6 +180,19 @@ function buildCarMesh(color, kind, lod = 'lo') {
   } else throw new Error(`No existe un modelo real para ${kind}`);
   b.root.scale.setScalar(CS * (kind === 'bora' ? 0.97 : 0.98));
   return b;
+}
+
+// fantasma: una sola silueta translúcida. Un pase previo escribe la profundidad sin pintar y el pase de color solo pinta la superficie más cercana,
+// así no se transparenta el interior (asientos, motor, cristales) de ningún modelo.
+function makeGhost(root) {
+  const color = new THREE.MeshLambertMaterial({ color: 0xbfe4ff, emissive: 0x2a4a66, transparent: true, opacity: 0.4, depthWrite: false });
+  const pre = new THREE.MeshBasicMaterial({ colorWrite: false });
+  const meshes = []; root.traverse((o) => { if (o.isMesh) meshes.push(o); });
+  for (const o of meshes) {
+    o.castShadow = false; o.receiveShadow = false;
+    const d = new THREE.Mesh(o.geometry, pre); d.renderOrder = 1; d.castShadow = false; d.position.copy(o.position); d.quaternion.copy(o.quaternion); d.scale.copy(o.scale); o.parent.add(d);
+    o.material = color; o.renderOrder = 2;
+  }
 }
 
 // ---------- partículas ----------
@@ -232,14 +256,15 @@ function followSun(world, x, y, z) {
 // ----- medallas, racha diaria y clasificación (local; preparado para sustituir por servidor) -----
 const todayKey = () => { const d = new Date(); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`; };
 const yesterdayKey = () => { const d = new Date(Date.now() - 864e5); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`; };
-function medalFor(t, bench) { if (t == null || !bench) return ''; const r = t / bench; return r <= 1.05 ? '🥇' : r <= 1.12 ? '🥈' : r <= 1.25 ? '🥉' : ''; }
+function medalFor(t, bench) { if (t == null || !bench) return ''; const r = t / bench; return r <= 1.05 ? 'ORO' : r <= 1.12 ? 'PLATA' : r <= 1.25 ? 'BRONCE' : ''; }
+const medalTag = (t, bench) => { const m = medalFor(t, bench); return m ? `<span class="medal ${m.toLowerCase()}">${m}</span>` : ''; };
 function streakInfo() { const st = store.get('streak') || { last: null, n: 0 }; if (st.last !== todayKey() && st.last !== yesterdayKey()) return { n: 0, done: false }; return { n: st.n, done: st.last === todayKey() }; }
 function markDaily() {
   if (S.trackInfo.key !== 'daily') return;
   const st = store.get('streak') || { last: null, n: 0 }, t = todayKey();
   if (st.last === t) return;
   store.set('streak', { last: t, n: st.last === yesterdayKey() ? st.n + 1 : 1 });
-  showMsg('🔥 Reto diario completado', 1800, 'cy');
+  showMsg('Reto diario completado', 1800, 'cy');
 }
 const lb = new Leaderboard();
 const trackIdOf = (ti) => (ti.key === 'daily' ? 'daily:' + ti.tr.seed : ti.key);
@@ -303,6 +328,7 @@ async function startRace(restart = false) {
     status.hidden = false; button.disabled = false; button.textContent = previousLabel; return;
   }
   button.disabled = false; button.textContent = previousLabel;
+  menuWorldFree();
   const ti = tracks[sel.track], tr = ti.tr, type = CARS[sel.car];
   const sig = [sel.track, sel.car, sel.mode, sel.diff].join('|');
   const reuse = !!(restart && S.raceScene && S.sig === sig && S.scene);
@@ -348,8 +374,7 @@ async function startRace(restart = false) {
       const base = [0.955, 0.94, 0.925], diff = [0.88, 0.95, 1.01][sel.diff], names = ['Nova', 'Rayo', 'Duna'];
       rivals.forEach((rt, i) => { const c = mkCar(rt, AI_COLORS[i], names[i], false); c.ai = { lane: [-3, 3, -1.5][i], skill: base[i] * diff, base: base[i] * diff }; S.cars.push(c); });
     } else {
-      S.ghostMesh = buildCarMesh(0xffffff, type.kind, 'lo');
-      S.ghostMesh.root.traverse((o) => { o.castShadow = false; if (o.material) { o.material.transparent = true; o.material.opacity = 0.38; o.material.depthWrite = false; } });
+      S.ghostMesh = buildCarMesh(0xffffff, type.kind, 'lo'); makeGhost(S.ghostMesh.root);
       S.ghostMesh.root.visible = false; scene.add(S.ghostMesh.root);
     }
     // minimapa
@@ -387,13 +412,13 @@ async function startRace(restart = false) {
   S.pbRec = pb && Array.isArray(pb.sec) ? pb : { lap: null, sec: [null, null, null], prof: null };
   S.lapPB = S.pbRec.lap; S.secPB = S.pbRec.sec.slice();
   S.bestLap = sel.mode === 'tt' ? S.lapPB : null;
-  S.lapRec = Math.min(bench ? bench.lap : 1e9, S.lapPB != null ? S.lapPB : 1e9);
-  S.secRec = [0, 1, 2].map((i) => Math.min(bench ? bench.sec[i] : 1e9, S.secPB[i] != null ? S.secPB[i] : 1e9));
+  computeRecords(ti, type, bench);
   S.refProf = S.pbRec.prof && S.pbRec.prof.length ? S.pbRec.prof : bench ? bench.prof : null; S.refFill = fillProf(S.refProf); S.deltaS = null;
   S.refName = S.pbRec.prof && S.pbRec.prof.length ? 'PB' : 'RÉCORD';
   S.curProf = new Float32Array(Math.ceil(tr.len / 10) + 2).fill(-1);
   S.secIdx = -1; S.secStart = 0; S.secInvalid = false;
   for (let k = 0; k < 3; k++) { const e = $('s' + k); e.className = 'sec'; e.lastElementChild.textContent = '--'; }
+  document.body.classList.toggle('tt', sel.mode === 'tt'); $('h-rec').style.display = sel.mode === 'tt' ? '' : 'none'; $('endBtn').style.display = sel.mode === 'tt' ? '' : 'none';
   for (const c of S.cars) { c.lapStart = 0; c.lapsDone = 0; c.finished = false; c.bestLap = null; c.bounce = 0; c.bounceV = 0; c.visPitch = 0; c.visRoll = 0; c.impact = 0; c.impactSide = 0; }
   S.camYaw = player.psi; S.camY = player.y + 3; S.fovT = 0;
   S.cd = 3.6; S.state = 'countdown'; S.raceNo++;
@@ -461,7 +486,8 @@ function togglePause(force) {
   if (S.state === 'racing' || S.state === 'countdown') { S.state = S.state === 'countdown' ? 'pausedcd' : 'paused'; $('pause').classList.remove('hidden'); }
   else if (S.state === 'paused' || S.state === 'pausedcd') { S.state = S.state === 'pausedcd' ? 'countdown' : 'racing'; $('pause').classList.add('hidden'); }
 }
-$('pbtn').onclick = () => togglePause(); $('resumeBtn').onclick = () => togglePause();
+$('pbtn').onclick = () => togglePause(); $('endBtn').onclick = () => { $('pause').classList.add('hidden'); if (S.state === 'paused' || S.state === 'racing') { S.state = 'finished'; showResults(); } };
+$('resumeBtn').onclick = () => togglePause();
 $('restartBtn').onclick = () => { $('pause').classList.add('hidden'); startRace(true); };
 $('rbtn').onclick = () => { if (S.raceScene) startRace(true); };
 $('startBtn').onclick = () => { sound.init(CARS[sel.car].id); startRace(false); };
@@ -528,7 +554,7 @@ function stepAll() {
     if (done > c.lapsDone && !c.finished) {
       const lt = S.t - c.lapStart; c.lapStart = S.t; c.lapsDone = done;
       if (c.isPlayer) onPlayerLap(c, lt, done);
-      if (done >= LAPS) { c.finished = true; c.finishTime = S.t; S.finishOrder.push(c); if (c.isPlayer) onPlayerFinish(); }
+      if (sel.mode === 'race' && done >= LAPS) { c.finished = true; c.finishTime = S.t; S.finishOrder.push(c); if (c.isPlayer) onPlayerFinish(); }
     }
   }
   trackSectors(p);
@@ -570,16 +596,45 @@ function trackSectors(p) {
   S.secIdx = idx; S.secStart = S.t;
   if (idx >= 0) { for (let k = 0; k < 3; k++) $('s' + k).classList.toggle('cur', k === idx); }
 }
+// récord de la pista del grupo del coche (tus tiempos en este dispositivo + clasificación online); si aún no hay, la referencia de la IA
+function computeRecords(ti, type, bench) {
+  const g = type.group; let lap = null; const sec = [null, null, null];
+  for (const c of CARS) {
+    if (c.group !== g) continue;
+    const r = store.get('pb.' + ti.key + '.' + ti.tr.seed + '.' + c.id); if (!r) continue;
+    if (r.lap != null && (lap == null || r.lap < lap)) lap = r.lap;
+    if (Array.isArray(r.sec)) r.sec.forEach((v, i) => { if (v != null && (sec[i] == null || v < sec[i])) sec[i] = v; });
+  }
+  S.recReal = lap != null; S.recWho = lap != null ? 'Tú' : '';
+  S.lapRec = lap != null ? lap : bench ? bench.lap : 1e9;
+  S.secRec = sec.map((v, i) => (v != null ? v : bench ? bench.sec[i] : 1e9));
+  updateRecPanel();
+  const no = S.raceNo + 1;
+  getRows(ti).then((res) => {
+    if (!res.online || S.raceNo !== no) return;
+    const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === g); if (!list.length) return;
+    const t = list[0].ms / 1000;
+    if (!S.recReal || t < S.lapRec) { S.lapRec = t; S.recReal = true; S.recWho = list[0].you ? 'Tú' : list[0].name; updateRecPanel(); }
+  }).catch(() => {});
+}
+function updateRecPanel() {
+  const g = groupName((S.player ? S.player.type : CARS[sel.car]).group).toUpperCase();
+  setText('recLabel', 'RÉCORD · ' + g); setText('recLap', S.lapRec < 1e8 ? fmt(S.lapRec) : '--'); setText('recWho', S.recReal ? S.recWho : 'REFERENCIA');
+  for (let k = 0; k < 3; k++) setText('rs' + k, S.secRec && S.secRec[k] < 1e8 ? fmtS(S.secRec[k]) : '--');
+}
 function sectorDone(i, t) {
   if (S.secInvalid) { S.secInvalid = false; return; }
-  const cls = classify(t, S.secPB[i], S.secRec[i]);
-  const ref = cls === 'purple' || S.secPB[i] == null ? S.secRec[i] : S.secPB[i];
-  const delta = ref != null && ref < 1e8 ? (t - ref >= 0 ? '+' : '−') + Math.abs(t - ref).toFixed(3) : '';
-  if (cls === 'purple') { S.secRec[i] = t; sound.play('purple'); } else sound.play('sector');
+  const pbB = S.secPB[i], recB = S.secRec[i], cls = classify(t, pbB, recB), sg = (v) => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(3) + ' s';
+  let head, detail;
+  if (cls === 'purple') { head = 'Récord de sector'; detail = recB < 1e8 ? sg(t - recB) + ' sobre el récord' : 'Primer tiempo'; }
+  else if (cls === 'green') { head = 'Mejor marca personal'; detail = sg(t - pbB) + ' sobre tu mejor'; }
+  else if (cls === 'orange') { head = 'Sector más lento'; detail = sg(t - pbB) + ' sobre tu mejor'; }
+  else { head = 'Primer tiempo'; detail = 'Ya tienes referencia'; }
+  if (cls === 'purple') { S.secRec[i] = t; sound.play('purple'); updateRecPanel(); } else sound.play('sector');
   if (S.secPB[i] == null || t < S.secPB[i]) { S.secPB[i] = t; S.pbRec.sec[i] = t; store.set('pb.' + S.skey, S.pbRec); }
   const el = $('s' + i); el.className = 'sec ' + cls + (S.secIdx === i ? ' cur' : '');
   el.lastElementChild.textContent = fmtS(t);
-  showRaceBanner(`SECTOR ${i + 1}`, fmtS(t), delta ? `${delta} vs. referencia` : 'Tiempo registrado', cls);
+  showRaceBanner(`SECTOR ${i + 1} · ${head.toUpperCase()}`, fmtS(t), detail, cls);
 }
 
 function onPlayerLap(c, lt, done) {
@@ -602,12 +657,12 @@ function onPlayerLap(c, lt, done) {
       }
       markDaily();
     }
-    if (lt < S.lapRec) S.lapRec = lt;
+    if (lt < S.lapRec) { S.lapRec = lt; S.recReal = true; S.recWho = 'Tú'; updateRecPanel(); }
   }
   S.curProf.fill(-1);
   if (sel.mode === 'tt') S.ghostRec = [];
   c.bestLap = c.bestLap == null ? lt : Math.min(c.bestLap, lt);
-  if (done < LAPS) {
+  if (sel.mode === 'tt' || done < LAPS) {
     sound.play(cls === 'purple' ? 'purple' : 'lap');
     const md = newPB ? medalFor(lt, S.bench && S.bench.lap) : '';
     const gap = previousPB != null && previousPB < 1e8 ? `${newPB ? 'NUEVO RÉCORD' : `${lt - previousPB >= 0 ? '+' : '−'}${Math.abs(lt - previousPB).toFixed(3)} s vs. mejor`}` : 'Primera vuelta registrada';
@@ -630,7 +685,7 @@ async function fillResultsBoard() {
   shown.forEach((r, i) => { if (i && r.rank - shown[i - 1].rank > 1) out.push('<tr class="gap"><td colspan="4">···</td></tr>'); out.push(boardRow(r)); });
   $('rTable').innerHTML = out.join('') || '<tr class="gap"><td colspan="4">Aún no hay tiempos</td></tr>';
   const md = medalFor(S.lapPB, S.bench && S.bench.lap);
-  $('rTitle').textContent = res.online && me ? `${md} PUESTO ${me.rank} DE ${list.length} · ${groupName(car.group).toUpperCase()}` : `${md} TU MEJOR VUELTA${res.online ? '' : ' · SOLO LOCAL'}`;
+  $('rTitle').textContent = (md ? md + ' · ' : '') + (res.online && me ? `PUESTO ${me.rank} DE ${list.length} · ${groupName(car.group).toUpperCase()}` : `TU MEJOR VUELTA${res.online ? '' : ' · SOLO LOCAL'}`);
 }
 // rellena los huecos (-1) del perfil de tiempos para poder interpolar sin saltos
 function fillProf(prof) {
@@ -655,10 +710,10 @@ function showResults() {
     $('rBig').textContent = rank + 'º'; $('rTitle').textContent = rank === 1 ? '¡VICTORIA!' : rank <= 3 ? '¡PODIO!' : 'META';
   } else {
     const md = medalFor(S.lapPB, benchLap);
-    $('rBig').textContent = fmt(S.lapPB); $('rTitle').textContent = `${md} TU MEJOR VUELTA`;
+    $('rBig').textContent = S.lapPB != null ? fmt(S.lapPB) : '—'; $('rTitle').textContent = S.lapPB != null ? (md ? md + ' · ' : '') + 'TU MEJOR VUELTA' : 'SESIÓN TERMINADA';
     rows.push('<tr class="gap"><td colspan="4">Cargando clasificación…</td></tr>'); fillResultsBoard();
     const st = streakInfo();
-    if (S.trackInfo.key === 'daily') extra = `<div class="streak">🔥 Racha: ${st.n} día${st.n === 1 ? '' : 's'}</div>`;
+    if (S.trackInfo.key === 'daily') extra = `<div class="streak">Racha: ${st.n} día${st.n === 1 ? '' : 's'}</div>`;
   }
   $('rTable').innerHTML = rows.join('');
   const isRec = S.lapPB != null && S.bench && S.lapPB < S.bench.lap - 1e-6;
@@ -748,7 +803,7 @@ function updateCamera(dt, snap) {
   S.fovT = (S.fovT == null ? 0 : S.fovT); S.fovT += (0 - S.fovT) * (snap ? 1 : 1 - Math.exp(-5 * dt));
   const sn = Math.sin(S.camYaw), cs = Math.cos(S.camYaw);
   const speed = c.speed;
-  let fov = 66 + clamp(speed / 62, 0, 1) * 12;
+  let fov = 66 + clamp(speed / 62, 0, 1) * 12; if (camera.aspect < 1) fov += (1 - camera.aspect) * 38; // en vertical, más campo de visión
   S.camY += (y - S.camY) * (snap ? 1 : 1 - Math.exp(-9 * dt));
   const sh = S.shake, rx = Math.sin(S.t * 47 + 0.7) * sh * 0.42, ry = Math.sin(S.t * 61 + 2.1) * sh * 0.34;
   const far = S.camMode === 1 ? 1.38 : 1;
@@ -800,9 +855,9 @@ function updateHud(dt) {
   const lit = Math.round(gi.rpm * rpmSegs.length);
   if (lit !== lastRpm) { lastRpm = lit; rpmSegs.forEach((e, i) => e.classList.toggle('on', i < lit)); }
   const done = Math.max(0, Math.floor(p.D / tr.len));
-  setText('lap', Math.min(LAPS, done + 1) + '/' + LAPS);
+  setText('lap', sel.mode === 'tt' ? String(done + 1) : Math.min(LAPS, done + 1) + '/' + LAPS);
   setText('time', S.state === 'countdown' ? fmt(0) : fmt(p.finished ? p.finishTime - p.lapStart : S.t - p.lapStart));
-  setText('best', (S.lapPB != null ? 'MEJOR ' + fmt(S.lapPB) + ' ' + medalFor(S.lapPB, S.bench && S.bench.lap) : 'RÉCORD ' + fmt(S.lapRec)));
+  setText('best', (S.lapPB != null ? 'MEJOR ' + fmt(S.lapPB) : 'SIN TIEMPO'));
   if (S.refFill && S.state === 'racing' && !p.finished && p.D >= 0) {
     // diferencia con la vuelta de referencia: perfil interpolado y suavizado en el tiempo (como en la tele de F1)
     const F = S.refFill, dist = (p.D % tr.len) / 10, k = Math.min(F.length - 2, Math.floor(dist)), ref = F[k] + (F[k + 1] - F[k]) * (dist - k);
@@ -873,7 +928,7 @@ const openSettings = () => { buildSettings(); $('settings').classList.remove('hi
 $('setBtn').onclick = openSettings; $('setBtn2').onclick = openSettings; $('setClose').onclick = () => $('settings').classList.add('hidden');
 
 // ---------- coche de fondo en el menú ----------
-const MP = { scene: null, car: null, key: '', ang: 0.6, loading: '' };
+const MP = { scene: null, car: null, key: '', ang: 0.6, loading: '', t: 0 };
 function menuPreviewInit() {
   const sc = new THREE.Scene();
   sc.add(new THREE.HemisphereLight(0xffffff, 0x1a2030, 0.8));
@@ -885,26 +940,58 @@ function menuPreviewInit() {
   const pad = new THREE.Mesh(new THREE.PlaneGeometry(9, 9).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
   pad.position.y = 0.01; sc.add(pad); MP.scene = sc;
 }
+// la pista elegida (o la del día) de fondo, con el coche en la línea de salida y la cámara girando alrededor
+const MW = { sig: '', world: null, scene: null, pos: null, psi: 0, blob: null };
+function menuWorldFree() {
+  if (MP.car) MP.car.root.removeFromParent();
+  if (MW.scene) { try { disposeScene(MW.scene); } catch (_) {} }
+  MW.scene = null; MW.world = null; MW.sig = '';
+}
+function menuWorldEnsure() {
+  if (sel.gfx === 'low' || /[?&]bg=0/.test(location.search)) { if (MW.scene) menuWorldFree(); return false; } // gráficos bajos: coche suelto sin pista de fondo
+  const ti = tracks[sel.track], sig = ti.key + '|' + ti.tr.seed;
+  if (MW.scene && MW.sig === sig) return true;
+  menuWorldFree();
+  try {
+    const world = buildWorld(ti.tr, ti.th, { mobile: MOBILE, shadows: false, renderer });
+    const P = { x: 0, y: 0, z: 0, tx: 0, tz: 1 }; pointAt(ti.tr, 4, 0, P);
+    const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    const blob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    blob.scale.set(3.6, 1, 5.6); blob.position.set(P.x, P.y + 0.03, P.z); blob.rotation.y = Math.atan2(P.tx, P.tz); world.scene.add(blob);
+    MW.world = world; MW.scene = world.scene; MW.sig = sig; MW.pos = P; MW.psi = Math.atan2(P.tx, P.tz); return true;
+  } catch (e) { console.warn('Fondo del menú no disponible', e); MW.scene = null; MW.sig = sig; return false; }
+}
 function menuPreviewFrame(dt) {
   if (!MP.scene) menuPreviewInit();
+  MP.sk = !MP.sk; if (MP.sk && MP.car) return; // el menú se dibuja a 30 fps: menos batería y calor en el móvil
+  const mpr = Math.min(pixelRatio, MOBILE ? 1.25 : 1.75); if (renderer.getPixelRatio() !== mpr) { renderer.setPixelRatio(mpr); renderer.setSize(window.innerWidth, window.innerHeight, false); }
+  const hasWorld = menuWorldEnsure(), scn = hasWorld ? MW.scene : MP.scene;
   const type = CARS[sel.car], color = paintOf(type), lod = MOBILE ? 'lo' : 'hi', key = type.id + color + lod;
   if (MP.key !== key) {
     if (!carAssetReady(type, lod)) { if (MP.loading !== type.id) { MP.loading = type.id; loadCarAsset(type, true).then(() => { MP.loading = ''; }).catch(() => { MP.loading = ''; }); } }
-    else { try { if (MP.car) MP.scene.remove(MP.car.root); MP.car = buildCarMesh(color, type.kind, lod); MP.scene.add(MP.car.root); MP.key = key; } catch (e) { MP.key = key; } }
+    else { try { if (MP.car) MP.car.root.removeFromParent(); MP.car = buildCarMesh(color, type.kind, lod); MP.key = key; } catch (e) { MP.key = key; } }
   }
-  MP.ang += dt * 0.35;
-  if (MP.car) { MP.car.root.rotation.y = MP.ang; for (const w of MP.car.wheels) w.spin.rotation.x += dt * 1.5; }
+  if (MP.car && MP.car.root.parent !== scn) scn.add(MP.car.root);
+  MP.ang += dt * 0.35; MP.t = (MP.t || 0) + dt;
   const W = window.innerWidth, H = window.innerHeight, open = $('menu').dataset.view !== 'home', fly = $('flyout');
   const left = narrowMenu() ? 0 : $('menuLeft').getBoundingClientRect().right;
   let r = W, t = 0, bt = H;
   if (open) { if (narrowMenu()) bt = fly.getBoundingClientRect().top; else r = fly.getBoundingClientRect().left; }
   else if (narrowMenu()) t = H * 0.42;
   const fw = Math.max(240, r - left), fh = Math.max(160, bt - t), cx = (left + r) / 2, cy = (t + bt) / 2;
-  camera.fov = 34; camera.aspect = W / H;
-  const dzC = Math.min(26, Math.max(7.4, 8.4 * Math.max(H / fw, 0.62 * H / fh)));
+  camera.aspect = W / H;
+  let target = { x: 0, y: 0, z: 0 }, ang = MP.ang;
+  if (hasWorld && MW.pos) {
+    const P = MW.pos; target = { x: P.x, y: P.y, z: P.z };
+    if (MP.car) { MP.car.root.position.set(P.x, P.y, P.z); MP.car.root.rotation.set(0, MW.psi, 0); for (const w of MP.car.wheels) w.spin.rotation.x += dt * 0.0; }
+    ang = MW.psi + 1.2 + 0.75 * Math.sin(MP.t * 0.15);
+  } else if (MP.car) { MP.car.root.rotation.y = MP.ang; for (const w of MP.car.wheels) w.spin.rotation.x += dt * 1.5; }
+  const R = 10.5, aspect = W / H, need = 8.2 * W / fw;
+  camera.fov = clamp(2 * Math.atan(need / (2 * R * aspect)) * 180 / Math.PI, 30, 62);
   camera.setViewOffset(W, H, -(cx - W / 2), -(cy - H / 2), W, H);
-  camera.position.set(0, 1.5 + (dzC - 7.4) * 0.1, dzC); camera.lookAt(0, 0.55, 0);
-  renderer.setClearColor(0x0b111c, 1); renderer.render(MP.scene, camera);
+  camera.position.set(target.x + R * Math.sin(ang), target.y + 2.9, target.z + R * Math.cos(ang)); camera.lookAt(target.x, target.y + 0.55, target.z);
+  if (hasWorld) { MW.world.sky.position.copy(camera.position); try { MW.world.updateWind(dt); MW.world.updateWeather(dt, target.x, target.y, target.z); } catch (_) {} }
+  renderer.setClearColor(0x0b111c, 1); renderer.render(scn, camera);
 }
 
 // ---------- bucle principal ----------
@@ -924,6 +1011,7 @@ function frame(now) {
   }
   { const driving = S.state === 'racing' || S.state === 'countdown' || S.state === 'finished'; sound.setEngineActive(driving); const wantMusic = !sel.mute && sel.vol.music > 0.001 && (S.state === 'menu' || (!!sel.raceMusic && !!S.scene)); sound.setMusicDuck(S.state !== 'menu'); if (wantMusic !== S.musicOn) { S.musicOn = wantMusic; sound.setMusic(wantMusic); } }
   if (S.state === 'menu') { menuPreviewFrame(dt); return; }
+  if (renderer.getPixelRatio() !== pixelRatio) resize();
   if (camera.view && camera.view.enabled) camera.clearViewOffset();
   if (!S.scene) { renderer.setClearColor(0x0a0d16); renderer.clear(); return; }
   const running = S.state === 'racing' || S.state === 'finished';
@@ -980,4 +1068,23 @@ requestAnimationFrame(frame);
 
 buildMenu();
 applyGfx(); sound.setVolumes(sel.vol); sound.setMuted(!!sel.mute);
-window.__dr = { lb, S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };
+// miniaturas de los coches para el selector (se generan con tools/thumbs.cjs y se guardan en assets/thumbs)
+async function renderThumb(id, w = 420, h = 250) {
+  const type = CARS.find((c) => c.id === id); await loadCarAsset(type, true);
+  const b = buildCarMesh(paintOf(type), type.kind, 'hi'), sc = new THREE.Scene();
+  sc.add(new THREE.HemisphereLight(0xffffff, 0x303844, 0.9));
+  const k = new THREE.DirectionalLight(0xfff2dd, 2.2); k.position.set(4, 6, 5); sc.add(k);
+  const f = new THREE.DirectionalLight(0x9db8ff, 0.9); f.position.set(-6, 3, -3); sc.add(f);
+  const pm = new THREE.PMREMGenerator(renderer); sc.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose();
+  sc.add(b.root); b.root.rotation.y = 0.0;
+  const rt = new THREE.WebGLRenderTarget(w, h, { samples: 4 }); rt.texture.colorSpace = THREE.SRGBColorSpace;
+  const cam = new THREE.PerspectiveCamera(24, w / h, 0.1, 100); cam.position.set(6.4, 2.4, 7.6); cam.lookAt(0, 0.62, 0);
+  const prevT = renderer.getRenderTarget(), pc = new THREE.Color(); renderer.getClearColor(pc); const pa = renderer.getClearAlpha();
+  renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, cam);
+  const px = new Uint8Array(w * h * 4); renderer.readRenderTargetPixels(rt, 0, 0, w, h, px);
+  renderer.setRenderTarget(prevT); renderer.setClearColor(pc, pa); rt.dispose();
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const x = cv.getContext('2d'), img = x.createImageData(w, h);
+  for (let y = 0; y < h; y++) img.data.set(px.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4);
+  x.putImageData(img, 0, 0); return cv.toDataURL('image/png');
+}
+window.__dr = { renderThumb, showRaceBanner, pointAt, makeGhost, lb, S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };

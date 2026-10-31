@@ -48,9 +48,13 @@ export function buildModelCar(id, color, lod = 'hi') {
   model.traverse((o) => {
     if (!o.isMesh) return;
     const m = o.material.clone(); o.material = m;
-    m.envMapIntensity = 1.15; m.side = m.transparent ? THREE.DoubleSide : THREE.FrontSide;
+    const isPaint = cfg.paint.test(m.name);
+    m.side = m.transparent ? THREE.DoubleSide : THREE.FrontSide;
     o.castShadow = !m.transparent;
-    if (cfg.paint.test(m.name)) { m.color = new THREE.Color(color); m.metalness = Math.max(m.metalness, 0.35); m.roughness = Math.min(m.roughness, 0.3); m.envMapIntensity = 1.3; paints.add(m); }
+    // brillos contenidos: los cromados y plásticos no deben deslumbrar; la pintura lleva laca suave
+    m.envMapIntensity = isPaint ? 1.0 : 0.62;
+    if (!isPaint && m.isMeshStandardMaterial) { m.metalness = Math.min(m.metalness, 0.8); m.roughness = Math.max(m.roughness, m.metalness > 0.5 ? 0.28 : 0.4); }
+    if (isPaint) { m.color = new THREE.Color(color); if (m.map) m.map = null; m.metalness = 0.32; m.roughness = 0.34; if ('clearcoat' in m) { m.clearcoat = 0.7; m.clearcoatRoughness = 0.12; } paints.add(m); }
   });
   const found = {};
   model.traverse((o) => { const k = /^wheel_(FL|FR|RL|RR)$/.exec(o.name); if (k) found[k[1]] = o; });
