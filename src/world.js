@@ -130,12 +130,14 @@ function urbanMesh(tr, th) {
     const i = Math.floor(s / tr.ds) % N;
     if ((tr.tunnels || []).some((t) => s > t.s0 - 4 && s < t.s1 + 4)) continue;
     for (const side of [-1, 1]) {
-      const hsh = Math.abs(Math.sin(s * 12.9898 + side * 78.233) * 43758.5453) % 1, d = 9 + hsh * 6, off = WALL + 0.5 + d / 2;
+      const hsh = Math.abs(Math.sin(s * 12.9898 + side * 78.233) * 43758.5453) % 1, h2 = Math.abs(Math.sin(s * 4.1414 + side * 9.77) * 24634.6345) % 1;
+      if (h2 < 0.16) continue; // huecos: plazas y calles laterales
+      const d = 8 + hsh * 6, off = WALL + 0.4 + (h2 > 0.55 ? (h2 - 0.55) * 14 : 0) + d / 2;
       const x = tr.X[i] + -tr.TZ[i] * side * off, z = tr.Z[i] + tr.TX[i] * side * off;
       let clash = false;
       for (let j = 0; j < N; j += 5) { const gap = Math.min(Math.abs(j - i), N - Math.abs(j - i)); if (gap < 40) continue; if ((tr.X[j] - x) ** 2 + (tr.Z[j] - z) ** 2 < (WALL + d * 0.6 + 2) ** 2) { clash = true; break; } }
       if (clash) continue;
-      items.push({ x, z, ry: Math.atan2(tr.TX[i], tr.TZ[i]), d, w: step + 0.6, h: tr.Y[i] + 14 + hsh * 30 + (Math.floor(s / step) % 3) * 6, c: pal[Math.floor(hsh * 997) % pal.length] });
+      items.push({ x, z, ry: Math.atan2(tr.TX[i], tr.TZ[i]), d, w: step + 0.6, h: tr.Y[i] + 6 + hsh * 9 + (Math.floor(s / step) % 3) * 2.5, c: pal[Math.floor(hsh * 997) % pal.length] });
     }
   }
   const m = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), items.length), D = new THREE.Object3D();
@@ -144,19 +146,24 @@ function urbanMesh(tr, th) {
 }
 // túnel: carcasa elíptica oscura sobre la pista, con aros de luz en el techo y bocas más claras
 function tunnelMesh(tr, t, th) {
-  const g = new THREE.Group(), N = tr.N, Lh = WALL + 0.5, steps = Math.max(2, Math.round((t.s1 - t.s0) / 2)), ring = 14;
+  // carcasa cerrada: paredes verticales desde el suelo + bóveda elíptica (cima a ~9 m), bocas con marco y luces a ambos lados y en el techo
+  const g = new THREE.Group(), N = tr.N, Lh = WALL + 0.6, steps = Math.max(2, Math.round((t.s1 - t.s0) / 2)), ring = 16, wallH = 3.6, rv = 5.4;
   const pos = [], idx = [], lights = [];
+  const ringPts = (h) => { const pts = [[-Lh, h - 1.2], [-Lh, h + wallH]]; for (let r = 1; r < ring; r++) { const a = Math.PI * (1 - r / ring); pts.push([Lh * Math.cos(a), h + wallH + rv * Math.sin(a)]); } pts.push([Lh, h + wallH], [Lh, h - 1.2]); return pts; };
+  const rn = ringPts(0).length;
   for (let k = 0; k <= steps; k++) {
     const i = Math.floor((t.s0 + (t.s1 - t.s0) * k / steps) / tr.ds) % N, h = tr.Y[i];
-    for (let r = 0; r <= ring; r++) { const a = Math.PI * r / ring, l = Lh * Math.cos(a), y = h + 0.2 + 2.6 + 4.4 * Math.sin(a); pos.push(tr.X[i] + -tr.TZ[i] * l, y, tr.Z[i] + tr.TX[i] * l); }
-    if (k % 4 === 0) { const l = 0; lights.push([tr.X[i] + -tr.TZ[i] * l, h + 7.1, tr.Z[i] + tr.TX[i] * l, Math.atan2(tr.TX[i], tr.TZ[i])]); }
+    for (const [l, y] of ringPts(h)) pos.push(tr.X[i] + -tr.TZ[i] * l, y, tr.Z[i] + tr.TX[i] * l);
+    if (k % 3 === 0) { const ry = Math.atan2(tr.TX[i], tr.TZ[i]); for (const [l, y, w] of [[0, h + wallH + rv - 0.25, 3.2], [-Lh + 1.4, h + wallH + 1.2, 0.5], [Lh - 1.4, h + wallH + 1.2, 0.5]]) lights.push([tr.X[i] + -tr.TZ[i] * l, y, tr.Z[i] + tr.TX[i] * l, ry, w]); }
   }
-  for (let k = 0; k < steps; k++) for (let r = 0; r < ring; r++) { const a = k * (ring + 1) + r, b = a + 1, c = a + ring + 1, d = c + 1; idx.push(a, b, c, b, d, c); }
+  for (let k = 0; k < steps; k++) for (let r = 0; r < rn - 1; r++) { const a = k * rn + r, b = a + 1, c = a + rn, d = c + 1; idx.push(a, b, c, b, d, c); }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
-  g.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x4a4e55, side: THREE.DoubleSide })));
-  const lm = new THREE.InstancedMesh(new THREE.BoxGeometry(5, 0.18, 0.7), new THREE.MeshBasicMaterial({ color: 0xfff0b8 }), lights.length), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
-  lights.forEach((L, n) => { e.set(0, L[3], 0); q.setFromEuler(e); m.compose(new THREE.Vector3(L[0], L[1], L[2]), q, new THREE.Vector3(1, 1, 1)); lm.setMatrixAt(n, m); });
-  g.add(lm); return g;
+  g.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: 0x6b7078, emissive: 0x1d2026, side: THREE.DoubleSide })));
+  const lm = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.22, 1.3), new THREE.MeshBasicMaterial({ color: 0xfff3c4 }), lights.length), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+  lights.forEach((L, n) => { e.set(0, L[3], 0); q.setFromEuler(e); m.compose(new THREE.Vector3(L[0], L[1], L[2]), q, new THREE.Vector3(L[4], 1, 1)); lm.setMatrixAt(n, m); });
+  g.add(lm);
+  for (const sEnd of [t.s0, t.s1]) { const i = Math.floor(sEnd / tr.ds) % N, h = tr.Y[i], fr = new THREE.Mesh(new THREE.TorusGeometry(Lh, 0.55, 6, 24, Math.PI), new THREE.MeshLambertMaterial({ color: 0xcfd3d8 })); fr.position.set(tr.X[i], h + wallH, tr.Z[i]); fr.rotation.y = Math.atan2(tr.TX[i], tr.TZ[i]); fr.scale.y = rv / Lh; g.add(fr); }
+  return g;
 }
 function roadMesh(tr, th, stride = 1) {
   const N = tr.N, hw = ROAD_HALF, L = WALL;

@@ -32,3 +32,8 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Mónaco rehecho: calles estrechísimas, edificios pegados a las vallas, casi sin pianos y mucho más revirado.
 - Carrera: arreglado el «cargando coches» que no dejaba empezar (se cargaban unos rivales y se creaban otros).
 - Sectores estilo F1: barra fina de colores bajo el cronómetro y aviso compacto que no tapa la carretera.
+
+## 0.0.6
+- Mónaco: trazado inspirado en el real (Santa Devota, subida de Beau Rivage, Massenet, Casino, horquilla, túnel, chicane, Tabac, piscina y Rascasse) con sus subidas y bajadas.
+- Edificios más bajos, con huecos y no siempre pegados a la valla.
+- Túnel cerrado desde el suelo, más alto, con marcos en las bocas y luces dentro.
