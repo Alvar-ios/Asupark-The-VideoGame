@@ -677,7 +677,7 @@ function updateCamera(dt, snap) {
   const x = lerp(c.px, c.x, a), y = lerp(c.py, c.y, a), z = lerp(c.pz, c.z, a);
   // Camera follows the car heading in yaw only, with global up kept level.
   const psi = c.ppsi + wrapPi(c.psi - c.ppsi) * a;
-  S.camYaw = psi;
+  S.camYaw += wrapPi(psi - S.camYaw) * (snap ? 1 : 1 - Math.exp(-14 * dt));
   S.fovT = (S.fovT == null ? 0 : S.fovT); S.fovT += (0 - S.fovT) * (snap ? 1 : 1 - Math.exp(-5 * dt));
   const sn = Math.sin(S.camYaw), cs = Math.cos(S.camYaw);
   const speed = c.speed;
