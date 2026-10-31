@@ -18,6 +18,15 @@ export const THEMES = {
     wall1: 0xf3f3f3, wall2: 0xdf2f2a, mount: 0xb9c7d6, sun: 0xfff1cf, sunDir: [-0.35, 0.65, 0.5],
     hemiSky: 0xe6f1ff, hemiGround: 0x8a8f96, hemiI: 1.05, sunI: 1.15, deco: 'toy', harbor: true, palette: [0xf3e9d8, 0xe8c9a0, 0xd9a47a, 0xf6f2ea, 0xcf8f6b, 0xe9dcc2], treeCol: 0x3d7a3c, night: false, gripMul: 1, offroad: 0.6, slope: 1.5, weather: 'rain', wetGrip: 0.76, brakeForce: 22,
   },
+  spa: {
+    id: 'spa', name: 'Ardenas · estilo Spa', sub: 'Corto y estrecho: horquilla, Eau Rouge y cambios de rasante', seed: 'spa-1',
+    style: {"ramps": 0, "rollers": 0, "pads": 0, "chicanes": 0, "hill": 0, "fixedNodes": [[-150, 240], [-60, 246], [40, 246], [92, 246], [122, 238], [136, 218], [124, 198], [96, 190], [66, 166], [60, 128], [38, 96], [30, 62], [44, 32], [26, 4], [-30, -14], [-120, -22], [-210, -22], [-248, -16], [-268, 2], [-292, 6], [-326, 22], [-352, 56], [-336, 94], [-296, 108], [-250, 110], [-214, 122], [-196, 152], [-206, 184], [-226, 206], [-212, 228], [-190, 236], [-170, 242]], "scale": 1.3, "minR": 8, "sep": 22, "half": 5, "wall": 7.8, "startNear": [-60, 246], "hillPts": [[0, 3], [0.1, 5], [0.2, 0], [0.3, 9], [0.45, 12], [0.55, 7], [0.68, 3], [0.8, 2], [0.92, 2], [1, 3]]},
+    skyTop: 0x6f7f8c, skyHor: 0xc9d0d2, fog: 0xaab4b6, fogNear: 140, fogFar: 1000,
+    ground: 0x35552f, grass: 0x44703a, dirt: 0x5b4a33, road: 0x30343a, kerb1: 0xd8473d, kerb2: 0xeeeeea,
+    wall1: 0xc9cbc9, wall2: 0xb23a32, mount: 0x4d6a52, sun: 0xe9eef2, sunDir: [-0.3, 0.55, 0.45],
+    hemiSky: 0xcfd9e0, hemiGround: 0x4c5a3c, hemiI: 0.95, sunI: 0.75, deco: 'pine', treeCol: 0x1f4d2b, night: false, gripMul: 0.98, offroad: 0.6, slope: 1.4,
+    weather: 'rain', wetGrip: 0.78, brakeForce: 22, mud: true,
+  },
   valle: {
     id: 'valle', name: 'Valle Verde', sub: 'Rápida y fluida', seed: 'valle-11',
     style: { nodes: 11, wobble: 0.3, pinch: 0.15, angJit: 0.5, length: 2300, hill: 5.5, chicanes: 2, ramps: 2, pads: 6, rollers: 1 },
@@ -51,7 +60,7 @@ export const THEMES = {
     hemiSky: 0xe6f1ff, hemiGround: 0x9fb2c4, hemiI: 1.05, sunI: 1.0, deco: 'snowpine', treeCol: 0x2d6a55, night: false, gripMul: 0.78, offroad: 0.75, surface: 'snow', offroadGrip: 0.38, brakeGrip: 0.62, rollingDrag: 1.05, steerOffroad: 0.52, dust: 0xdbeafa, brakeForce: 20, traction: 0.86,
   },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'valle', 'desierto', 'neon', 'nieve'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

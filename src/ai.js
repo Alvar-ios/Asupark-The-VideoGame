@@ -1,6 +1,6 @@
 // Piloto automático para los rivales
 const T_VMAX_FRAC = (c) => c.type.vmax * 0.9;
-import { ROAD_HALF } from './track.js';
+import { ROAD_HALF, setRoad } from './track.js';
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 // Velocidad máxima admisible en cada punto según curvatura + frenada anticipada
@@ -24,6 +24,7 @@ export function buildSpeedProfile(tr, T) {
 }
 
 export function aiInput(c, tr, prof, ai, out) {
+  setRoad(tr);
   const N = tr.N, speed = c.speed, loc = c.loc;
   const li = (c.hint + Math.floor((7 + 0.42 * speed) / tr.ds)) % N;
   const kAhead = tr.kap[(c.hint + Math.floor((18 + speed * 0.6) / tr.ds)) % N];

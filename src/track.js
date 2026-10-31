@@ -1,8 +1,9 @@
 // Generación y consulta de pistas (sin dependencias de three)
 import { rngFromSeed, shuffle } from './rng.js';
 
-export const ROAD_HALF = 7.5;   // semianchura del asfalto
-export const WALL = 11.5;       // distancia lateral de las vallas
+export let ROAD_HALF = 7.5;   // semianchura del asfalto (cada circuito puede fijar la suya: tr.half)
+export let WALL = 11.5;       // distancia lateral de las vallas
+export function setRoad(tr) { if (tr && tr.half && (tr.half !== ROAD_HALF || tr.wall !== WALL)) { ROAD_HALF = tr.half; WALL = tr.wall; } }
 export const DS = 1;            // metros entre muestras
 const TAU = Math.PI * 2;
 export const wrapPi = (a) => { a %= TAU; if (a > Math.PI) a -= TAU; else if (a < -Math.PI) a += TAU; return a; };
@@ -142,6 +143,7 @@ export function buildTrack(seed, style) {
     for (let d = -60; d <= 150; d += 5) m = Math.max(m, Math.abs(kap[(i + d + N) % N]));
     if (m < bestV) { bestV = m; bestI = i; }
   }
+  if (style.startNear) { const sx = style.startNear[0] * (style.scale || 1), sz = style.startNear[1] * (style.scale || 1); let bd = 1e18; for (let i = 0; i < N; i++) { const d = (P[i][0] - sx) ** 2 + (P[i][1] - sz) ** 2; if (d < bd) { bd = d; bestI = i; } } }
   P = P.slice(bestI).concat(P.slice(0, bestI));
   kap = Float64Array.from({ length: N }, (_, i) => kap[(i + bestI) % N]);
 
@@ -154,7 +156,7 @@ export function buildTrack(seed, style) {
     TX[i] = tx / tl; TZ[i] = tz / tl;
     absK[i] = Math.abs(kap[i]);
   }
-  const tr = { seed, N, ds, len, X, Z, Y, TX, TZ, kap, absK, ramps: [], pads: [], rollers: [] };
+  const tr = { seed, N, ds, len, X, Z, Y, TX, TZ, kap, absK, ramps: [], pads: [], rollers: [], half: style.half || 7.5, wall: style.wall || 11.5 };
 
   // --- elementos divertidos ---
   const straight = (s0, s1, thr) => {
@@ -170,7 +172,7 @@ export function buildTrack(seed, style) {
   for (const sep of [300, 200, 120, 80]) {
     for (const s of cands) {
       if (tr.ramps.length >= style.ramps) break;
-      if (tr.ramps.every((r) => Math.abs(r.s0 - s) > sep)) tr.ramps.push({ s0: s, len: 12, h: 2.4 });
+      if (tr.ramps.every((r) => Math.abs(r.s0 - s) > sep)) tr.ramps.push({ s0: s, len: 12, h: 1.6 });
     }
   }
   const rn = style.rollerN || 5, rl = rn * 32 + 15;

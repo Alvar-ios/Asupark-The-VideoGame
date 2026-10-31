@@ -1,6 +1,7 @@
 // Construcción de la escena 3D de una pista (three.js)
 import * as THREE from 'three';
-import { ROAD_HALF, WALL } from './track.js';
+import { ROAD_HALF, WALL, setRoad } from './track.js';
+import { mudParams, MUD_START, MUD_STEP } from './surface.js';
 import { rngFromSeed } from './rng.js';
 
 const col = (hex) => new THREE.Color(hex);
@@ -137,19 +138,22 @@ function roadMesh(tr, th, stride = 1) {
     const j = (i + stride) % N, s = i * tr.ds;
     const hi = tr.Y[i], hj = tr.Y[j];
     const eoI = L + 2.5 + hi * 1.1, eoJ = L + 2.5 + hj * 1.1;
-    const lat = (k, h, eo) => [[-eo, 0], [-L, h - 0.05], [-(hw + 1), h + 0.055], [-hw, h + 0.055], [-0.22, h], [0.22, h], [hw, h + 0.055], [hw + 1, h + 0.055], [L, h - 0.05], [eo, 0]][k];
+    // perfil lateral: hierba | pianos en relieve (rampa, cresta, escalón) | asfalto | escalón, cresta, rampa | hierba
+    const lat = (k, h, eo, kr) => [[-eo, 0], [-L, h - 0.05], [-(hw + 1), h + 0.02], [-(hw + 0.35), h + kr], [-hw, h + kr], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw, h + kr], [hw + 0.35, h + kr], [hw + 1, h + 0.02], [L, h - 0.05], [eo, 0]][k];
+    const sLen = tr.absK[i] > 0.012 ? 2.2 : 5, s2k = (i + stride) * tr.ds;
+    const krI = 0.06 + 0.035 * Math.sin(Math.PI * s / sLen), krJ = 0.06 + 0.035 * Math.sin(Math.PI * s2k / sLen);
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
     const stripe = Math.floor(s / (tr.absK[i] > 0.012 ? 2.2 : 5)) % 2 === 0;
-    for (let b = 0; b < 9; b++) {
-      const [l0, y0i] = lat(b, hi, eoI), [l1, y1i] = lat(b + 1, hi, eoI);
-      const [l0j, y0j] = lat(b, hj, eoJ), [l1j, y1j] = lat(b + 1, hj, eoJ);
+    for (let b = 0; b < 13; b++) {
+      const [l0, y0i] = lat(b, hi, eoI, krI), [l1, y1i] = lat(b + 1, hi, eoI, krI);
+      const [l0j, y0j] = lat(b, hj, eoJ, krJ), [l1j, y1j] = lat(b + 1, hj, eoJ, krJ);
       const P = (idx, l, y) => [tr.X[idx] + -tr.TZ[idx] * l, y, tr.Z[idx] + tr.TX[idx] * l];
       const a = P(i, l0, y0i), bb = P(i, l1, y1i), c = P(j, l0j, y0j), d = P(j, l1j, y1j);
       let color;
       let outerColor = null;
-      if (b === 0 || b === 8) { color = cGrass; outerColor = cDirt; }
-      else if (b === 1 || b === 7) color = cGrass;
-      else if (b === 2 || b === 6) color = stripe ? k1 : k2;
+      if (b === 0 || b === 12) { color = cGrass; outerColor = cDirt; }
+      else if (b === 1 || b === 11) color = cGrass;
+      else if (b === 2 || b === 3 || b === 4 || b === 8 || b === 9 || b === 10) color = stripe ? k1 : k2;
       else {
         color = Math.floor(s / 24) % 2 ? cRoad : cRoad2;
         if (inRamp) color = Math.floor(s / 1.5) % 2 ? yel : blk;
@@ -423,6 +427,7 @@ function scenery(tr, th, scene, rng, q) {
 }
 
 export function buildWorld(tr, th, opt = {}) {
+  setRoad(tr);
   const q = opt.mobile ? { stride: 2, density: 0.5, mountains: 22, shadows: !!opt.shadows } : { stride: 1, density: 1, mountains: 46, shadows: !!opt.shadows };
   const scene = new THREE.Scene();
   const rng = rngFromSeed('scenery:' + tr.seed);
@@ -481,6 +486,10 @@ export function buildWorld(tr, th, opt = {}) {
       const puddle = new THREE.Mesh(puddleGeom(tr, s, halfLength * 2, lane, half), water);
       puddle.frustumCulled = false; scene.add(puddle);
     }
+  }
+  if (th.mud) { // manchas de barro sobre la trazada: frenan y quitan agarre
+    const mudMat = new THREE.MeshStandardMaterial({ color: 0x4a3721, roughness: 0.96, metalness: 0, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, side: THREE.DoubleSide });
+    for (let s = MUD_START, i = 0; s < tr.len - 60; s += MUD_STEP, i++) { const m = mudParams(i), mesh = new THREE.Mesh(puddleGeom(tr, s, m.halfLength * 2, m.lane, m.halfWidth), mudMat); mesh.frustumCulled = false; mesh.receiveShadow = true; scene.add(mesh); }
   }
   scene.add(archMesh(tr, th));
   { // línea de meta a cuadros

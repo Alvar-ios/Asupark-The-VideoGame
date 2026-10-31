@@ -1,6 +1,6 @@
 // Física arcade del coche (sin dependencias de three)
-import { ROAD_HALF, WALL, locate, pointAt, wrapPi } from './track.js';
-import { puddleAt, smoothstep } from './surface.js';
+import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi } from './track.js';
+import { puddleAt, mudAt, smoothstep } from './surface.js';
 
 export const YAW_SCALE = 0.8, YAW_SPEED = 42; // sensibilidad de giro global
 export const G = 14; // gravedad "flotante" arcade
@@ -8,8 +8,8 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 export const CARS = [
   { id: 'bora', name: 'VW Bora VR6', desc: 'Berlina 2005 · estable y noble', color: 0x0b4d2c, vmax: 56, accel: 14, yaw: 2.25, grip: 13, driftGrip: 2.7, radius: 1.2, kind: 'bora', custom: true },
-  { id: 'porsche', name: 'Porsche 911 Turbo S', desc: 'Rapidísimo, motor trasero: cuidado al frenar', color: 0x0a1a28, vmax: 60, accel: 15.5, yaw: 2.35, grip: 11.8, driftGrip: 2.9, radius: 1.2, kind: 'porsche', custom: true },
-  { id: 'm3', name: 'BMW M3 E46', desc: 'Tracción trasera, ágil y rabioso', color: 0x0070ed, vmax: 58, accel: 15, yaw: 2.45, grip: 12.4, driftGrip: 2.7, radius: 1.2, kind: 'm3', custom: true },
+  { id: 'porsche', drive: 'rwd', name: 'Porsche 911 Turbo S', desc: 'Rapidísimo, motor trasero: cuidado al frenar', color: 0x0a1a28, vmax: 60, accel: 15.5, yaw: 2.85, grip: 12.6, driftGrip: 2.9, radius: 1.2, kind: 'porsche', custom: true },
+  { id: 'm3', drive: 'rwd', name: 'BMW M3 E46', desc: 'Tracción trasera, ágil y rabioso', color: 0x0070ed, vmax: 58, accel: 15, yaw: 2.45, grip: 12.4, driftGrip: 2.7, radius: 1.2, kind: 'm3', custom: true },
   { id: 'cupra', name: 'Cupra León', desc: 'Compacto deportivo: mucho agarre', color: 0x193078, vmax: 56, accel: 14.5, yaw: 2.5, grip: 13.4, driftGrip: 2.6, radius: 1.2, kind: 'cupra', custom: true },
   { id: 'mini', name: 'Mini Cooper S Clubman', desc: 'Pequeño y nervioso: gira como un kart', color: 0xf7f7f7, vmax: 53, accel: 14, yaw: 2.8, grip: 13.6, driftGrip: 3.0, radius: 1.1, kind: 'mini', custom: true },
   { id: 'qashqai', name: 'Nissan Qashqai', desc: 'SUV pesado y estable', color: 0xf7f7f7, vmax: 54, accel: 12.5, yaw: 2.05, grip: 14, driftGrip: 2.3, radius: 1.3, kind: 'qashqai', custom: true },
@@ -23,7 +23,7 @@ export function makeCar(type, name, isPlayer) {
     x: 0, y: 0, z: 0, vx: 0, vz: 0, vy: 0, psi: 0,
     px: 0, py: 0, pz: 0, ppsi: 0,
     steer: 0, yawRate: 0, air: false, grad: 0, drifting: false, driftDir: 0, driftT: 0,
-    grip: type.grip, hint: -1, loc: { i: 0, t: 0, s: 0, h: 0, tx: 0, tz: 1, lat: 0 },
+    tireTemp: 0.5, demand: 0, mud: 0, grip: type.grip, hint: -1, loc: { i: 0, t: 0, s: 0, h: 0, tx: 0, tz: 1, lat: 0 },
     lap: 0, lastS: 0, D: 0, safeD: 0, safeT: 0, events: [], stuckT: 0,
     finished: false, finishTime: 0, brake: 0, throttle: 0, speed: 0, vf: 0, vl: 0, offroad: false,
     visPitch: 0, visRoll: 0, impact: 0, impactSide: 0, onKerb: false, wheelSpin: 0, lapStart: 0, airTime: 0,
@@ -54,7 +54,9 @@ export function resetToTrack(c, tr) {
 }
 
 export function stepCar(c, inp, dt, tr, env) {
-  const T = c.type, loc = c.loc;
+  setRoad(tr);
+  const T = c.type, loc = c.loc, mf = clamp(c.mass / 1480, 0.92, 1.22); // peso: más inercia
+
   c.px = c.x; c.py = c.y; c.pz = c.z; c.ppsi = c.psi;
   const sn = Math.sin(c.psi), cs = Math.cos(c.psi);
   const fx = sn, fz = cs, rx = -cs, rz = sn;
@@ -87,7 +89,7 @@ export function stepCar(c, inp, dt, tr, env) {
   const auth = Math.min(1, Math.abs(vf) / 5) * (ground ? 1 : 0.22);
   const sgn = vf >= -0.3 ? 1 : -1;
   const yawT = eff * maxYaw * auth * sgn * (c.drifting ? 1.12 : 1);
-  c.yawRate += (yawT - c.yawRate) * Math.min(1, (ground ? 8 : 2) * dt);
+  c.yawRate += (yawT * (c.oversteer || 1) - c.yawRate) * Math.min(1, (ground ? 6.4 / mf : 2) * dt);
   const yaw = c.yawRate;
 
   // motor y freno
@@ -96,7 +98,7 @@ export function stepCar(c, inp, dt, tr, env) {
   if (ground) {
     if (inp.brake > 0.05) {
       if (vf > 1) {
-        const dv = Math.min(vf, (env.brakeForce || 28) * inp.brake * dt);
+        const dv = Math.min(vf, (env.brakeForce || 24) * inp.brake * dt);
         vf -= dv;
       } else vf = Math.max(-16, vf - 14 * inp.brake * dt);
     } else if (inp.throttle > 0.01) {
@@ -114,8 +116,23 @@ export function stepCar(c, inp, dt, tr, env) {
     const puddleWater = env.weather === 'rain' ? puddleAt(loc.s, loc.lat) : 0;
     c.puddleWater = puddleWater;
     c.inPuddle = puddleWater > 0.12;
-    const gT = (c.drifting ? T.driftGrip : T.grip) * env.gripMul * surfaceGrip * (1 - puddleWater * 0.34) * (inp.brake > 0.5 && speed > 20 ? (env.brakeGrip || 0.85) : 1);
-    c.grip += (gT - c.grip) * Math.min(1, (c.drifting ? 9 : 4) * dt);
+    const mud = env.mud ? mudAt(loc.s, loc.lat) : 0; c.mud = mud;
+    if (mud > 0.02) vf *= Math.exp(-mud * 1.25 * dt);          // el barro frena
+    if (puddleWater > 0.05) vf *= Math.exp(-puddleWater * 0.45 * dt);
+    // ----- lógica de agarre: el neumático tiene un límite; si se le pide más, el coche se va un poco -----
+    const wet = surfaceGrip * (1 - puddleWater * 0.5) * (1 - mud * 0.5);
+    const limitG = 9.5 * (T.grip / 12.5) * env.gripMul * wet * (0.88 + 0.24 * c.tireTemp);
+    const demand = (Math.abs(c.yawRate) * speed) / Math.max(3, limitG); c.demand = demand;
+    const overload = smoothstep(0.78, 1.3, demand);
+    // neumáticos: recto y acelerando se calientan y agarran más; al forzar en curva o deslizar se enfrían
+    const straightGas = Math.abs(c.steer) < 0.18 && inp.throttle > 0.4 && inp.brake < 0.1;
+    const tTarget = straightGas ? 1 : demand > 1 ? 0 : 0.5, tRate = straightGas ? 0.55 : demand > 1 ? 0.9 : 0.16;
+    c.tireTemp += (tTarget - c.tireTemp) * Math.min(1, tRate * dt);
+    // tracción trasera: acelerar a fondo con el volante girado descoloca la zaga
+    c.oversteer = 1;
+    if (T.drive === 'rwd' && inp.throttle > 0.7 && Math.abs(c.steer) > 0.35 && speed > 12) { c.oversteer = 1.07; }
+    const gT = (c.drifting ? T.driftGrip : T.grip) * env.gripMul * wet * (0.9 + 0.2 * c.tireTemp) * (1 - 0.36 * overload) * (c.oversteer > 1 ? 0.9 : 1) * (inp.brake > 0.5 && speed > 20 ? (env.brakeGrip || 0.85) : 1);
+    c.grip += (gT - c.grip) * Math.min(1, (c.drifting ? 7 : 3.2) * dt);
     vl *= Math.exp(-c.grip * dt);
     if (c.drifting) vf *= Math.exp(-0.08 * dt);
   } else {

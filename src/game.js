@@ -59,8 +59,9 @@ function addTrack(key, name, sub, seed, style, th) { const tr = buildTrack(seed,
 const daily = dailyInfo();
 addTrack('pruebas', THEMES.pruebas.name, THEMES.pruebas.sub, THEMES.pruebas.seed, THEMES.pruebas.style, THEMES.pruebas);
 addTrack('monaco', THEMES.monaco.name, THEMES.monaco.sub, THEMES.monaco.seed, THEMES.monaco.style, THEMES.monaco);
+addTrack('spa', THEMES.spa.name, THEMES.spa.sub, THEMES.spa.seed, THEMES.spa.style, THEMES.spa);
 addTrack('daily', daily.name, daily.sub, daily.seed, daily.style, daily.theme);
-for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
+for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco' && k !== 'spa') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
 
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
 const sel = { track: 0, mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, colors: {}, vol: { master: 1, music: 0.7, engine: 1 }, gfx: 'auto' };
@@ -226,7 +227,7 @@ function leaderboard(skey, benchLap, pbLap) {
   rows.sort((a, b) => a.time - b.time);
   return rows.map((r, i) => ({ ...r, rank: i + 1 }));
 }
-const benchFor = (ti, type) => benchmark(ti.tr, type, { gripMul: ti.th.gripMul, offroad: ti.th.offroad, slope: ti.th.slope }, ti.key + '.' + ti.tr.seed + '.' + type.id);
+const benchFor = (ti, type) => benchmark(ti.tr, type, ti.th, ti.key + '.' + ti.tr.seed + '.' + type.id);
 
 // Cargar modelos reales antes de empezar; un error de red nunca se convierte en un coche genérico.
 function loadCarAsset(type, player) {
@@ -462,7 +463,7 @@ function carCollide(a, b) {
 }
 
 function stepAll() {
-  const tr = S.tr, env = { gripMul: S.th.gripMul, offroad: S.th.offroad, slope: S.th.slope, surface: S.th.surface, weather: S.th.weather, wetGrip: S.th.wetGrip, traction: S.th.traction, brakeForce: S.th.brakeForce, offroadGrip: S.th.offroadGrip, brakeGrip: S.th.brakeGrip, rollingDrag: S.th.rollingDrag, steerOffroad: S.th.steerOffroad };
+  const tr = S.tr, env = S.th;
   const p = S.player;
   if (p.finished) { inp.throttle = 0.4; inp.brake = 0; inp.steer = 0;  }
   // los rivales
