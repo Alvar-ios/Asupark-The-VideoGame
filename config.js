@@ -1,3 +1,3 @@
-// Configuración pública del juego. Para activar las clasificaciones online, rellena estos dos valores
-// (URL del proyecto de Supabase y su clave publicable) y ejecuta supabase/leaderboard.sql en ese proyecto.
-window.DRIFT_CONFIG = { supabaseUrl: '', supabaseKey: '' };
+// Configuración pública del juego (la clave "publishable" de Supabase está pensada para ir en el navegador:
+// solo permite leer las clasificaciones y enviar tiempos mediante submit_lap; ver supabase/leaderboard.sql).
+window.DRIFT_CONFIG = { supabaseUrl: 'https://ejneuibfdtawgaykxbko.supabase.co', supabaseKey: 'sb_publishable_HnIctPA8vUvZyukY4v1DJQ_omyFyVjr' };
