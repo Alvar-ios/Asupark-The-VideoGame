@@ -687,7 +687,7 @@ function updateCamera(dt, snap) {
   camera.position.set(x - sn * dist + rx, S.camY + hgt + ry, z - cs * dist);
   camera.lookAt(x + sn * 4.2, y + 0.35, z + cs * 4.2);
   if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
-  S.camKick *= Math.exp(-8 * dt); camera.rotation.z = 0;
+  S.camKick *= Math.exp(-8 * dt);
   S.shake = Math.max(0, S.shake - dt * 2.6);
   if (S.world) S.world.sky.position.copy(camera.position);
 }
