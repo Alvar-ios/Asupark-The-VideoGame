@@ -36,12 +36,12 @@ export function mudAt(s, lat) {
 export const SURF = {
   asphalt: { g: 1, b: 1, d: 0, s: 1, a: 1, col: null, name: 'ASFALTO' },
   wet: { g: 0.78, b: 0.8, d: 0.04, s: 0.96, a: 0.95, col: 0x2d3138, name: 'MOJADO' },
-  dirt: { g: 0.7, b: 0.78, d: 0.28, s: 0.9, a: 0.9, col: 0x7a5a3a, name: 'TIERRA' },
-  gravel: { g: 0.6, b: 0.68, d: 0.5, s: 0.84, a: 0.82, col: 0x8d877a, name: 'GRAVA' },
-  grass: { g: 0.52, b: 0.55, d: 0.8, s: 0.78, a: 0.7, col: 0x4f8a3e, name: 'HIERBA' },
-  sand: { g: 0.5, b: 0.6, d: 1.1, s: 0.78, a: 0.68, col: 0xd9b985, name: 'ARENA' },
+  dirt: { g: 0.74, b: 0.82, d: 0.22, s: 0.92, a: 0.92, col: 0x7a5a3a, name: 'TIERRA' },
+  gravel: { g: 0.66, b: 0.74, d: 0.4, s: 0.88, a: 0.86, col: 0x8d877a, name: 'GRAVA' },
+  grass: { g: 0.58, b: 0.62, d: 0.6, s: 0.82, a: 0.76, col: 0x4f8a3e, name: 'HIERBA' },
+  sand: { g: 0.56, b: 0.66, d: 0.8, s: 0.82, a: 0.74, col: 0xd9b985, name: 'ARENA' },
   snow: { g: 0.46, b: 0.55, d: 0.45, s: 0.82, a: 0.78, col: 0xe8f0f6, name: 'NIEVE' },
-  ice: { g: 0.2, b: 0.28, d: 0.04, s: 0.68, a: 0.5, col: 0xbfe6ff, name: 'HIELO' },
+  ice: { g: 0.3, b: 0.38, d: 0.04, s: 0.76, a: 0.6, col: 0xbfe6ff, name: 'HIELO' },
 };
 const ALIAS = { dry: 'asphalt' };
 export const baseSurfKey = (env) => (env.weather === 'rain' ? 'wet' : env.surface === 'snow' ? 'snow' : env.surface === 'dirt' ? 'dirt' : 'asphalt');
@@ -50,7 +50,7 @@ export function zoneAt(tr, s) {
   const Z = tr.zones; if (!Z) return null;
   for (const z of Z) {
     const e = Math.min(s - z.s0, z.s1 - s); if (e < -0.01) continue;
-    return { key: ALIAS[z.type] || z.type, w: smoothstep(0, 5, e + 0.0) };
+    return { key: ALIAS[z.type] || z.type, w: smoothstep(0, 16, e) };
   }
   return null;
 }

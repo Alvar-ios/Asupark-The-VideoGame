@@ -66,3 +66,9 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 ## 0.0.11
 - Música estable: cada tema se pre-renderiza fuera del hilo principal y se reproduce como un buffer, así no se ralentiza ni se acelera cuando el juego va justo de rendimiento.
+
+## 0.0.12
+- Peraltes integrados: vallas, bordillos, líneas, charcos y carteles siguen la inclinación de la pista (antes quedaban rectos).
+- Peraltes, rampas, rodillos y zonas de superficie más suaves (entrada y salida graduales, menos altura y menos extremos).
+- Reto del día en grande en el menú: mismo circuito y mismo coche para todos los jugadores cada día.
+- Casillas de sector bajo el diferencial: color y diferencial propio, en vivo mientras corres y fijo al cerrar el sector.

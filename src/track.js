@@ -172,7 +172,7 @@ export function buildTrack(seed, style) {
   for (const sep of [300, 200, 120, 80]) {
     for (const s of cands) {
       if (tr.ramps.length >= style.ramps) break;
-      if (tr.ramps.every((r) => Math.abs(r.s0 - s) > sep)) tr.ramps.push({ s0: s, len: 12, h: 1.6 });
+      if (tr.ramps.every((r) => Math.abs(r.s0 - s) > sep)) tr.ramps.push({ s0: s, len: 17, h: 1.15 });
     }
   }
   const rn = style.rollerN || 5, rl = rn * 32 + 15;
@@ -181,7 +181,7 @@ export function buildTrack(seed, style) {
       if (tr.rollers.length >= style.rollers) break;
       if (!straight(s, s + rl, thr)) continue;
       if (tr.ramps.some((r) => s < r.s0 + 70 && s + rl > r.s0 - 40)) continue;
-      if (tr.rollers.every((r) => Math.abs(r.s0 - s) > 200)) tr.rollers.push({ s0: s, n: rn, wl: 32, amp: 0.45 });
+      if (tr.rollers.every((r) => Math.abs(r.s0 - s) > 200)) tr.rollers.push({ s0: s, n: rn, wl: 32, amp: 0.32 });
     }
   }
   const blocked = (s) => tr.ramps.some((r) => s > r.s0 - 40 && s < r.s0 + 60) || tr.rollers.some((r) => s > r.s0 - 30 && s < r.s0 + r.n * r.wl + 30) || s < 60 || s > len - 60;
@@ -201,7 +201,7 @@ export function buildTrack(seed, style) {
   tr.pads.sort((a, b) => a.s - b.s);
 
   // --- rasgos propios de cada circuito: rampas a medida, túneles y curvas peraltadas ---
-  if (style.rampList) tr.ramps = style.rampList.map((r) => ({ s0: r.u * len, len: r.len || 12, h: r.h || 1.6 }));
+  if (style.rampList) tr.ramps = style.rampList.map((r) => ({ s0: r.u * len, len: (r.len || 12) * 1.5, h: (r.h || 1.6) * 0.7 }));
   tr.zones = (style.zones || []).map(([u0, u1, type]) => ({ s0: u0 * len, s1: u1 * len, type }));
   if (style.autoZones && !tr.zones.length) { // circuitos del día: dos tramos de otra superficie en puntos al azar
     const k = style.autoZones; let u = 0.12 + rng() * 0.15;
@@ -211,7 +211,7 @@ export function buildTrack(seed, style) {
   tr.bank = new Float32Array(N); // ángulo de peralte (rad) en cada muestra; positivo = sube el lado derecho
   for (const [u0, u1, deg] of style.banks || []) {
     const a = Math.floor(u0 * N), b = Math.floor(u1 * N); let km = 0; for (let i = a; i < b; i++) km += kap[i % N]; const sg = km >= 0 ? 1 : -1;
-    for (let i = a; i < b; i++) { const u = (i - a) / (b - a); tr.bank[i % N] = Math.sin(Math.PI * u) ** 0.6 * (deg * Math.PI / 180) * sg; }
+    for (let i = a; i < b; i++) { const u = (i - a) / (b - a); tr.bank[i % N] = Math.sin(Math.PI * u) ** 2 * (deg * 0.72 * Math.PI / 180) * sg; } // entrada y salida graduales
   }
   // --- perfil de altura ---
   const A1 = style.hill || 0, ph = [rng() * TAU, rng() * TAU, rng() * TAU];

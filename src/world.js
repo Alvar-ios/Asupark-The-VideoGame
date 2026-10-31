@@ -107,13 +107,14 @@ function gantry(tr, s, label, color) {
   return g;
 }
 // montones de neumáticos en el exterior de las curvas cerradas
+const bankOff = (tr, i, l) => { const b = tr.bank ? tr.bank[i % tr.N] : 0; return b ? Math.tan(b) * Math.max(-WALL, Math.min(WALL, l)) : 0; }; // altura extra del peralte a distancia lateral l
 function tyreStacks(tr, th, scene) {
   const spots = [];
   for (let i = 0; i < tr.N; i += 5) {
     const k = tr.kap[i];
     if (Math.abs(k) < 0.018) continue;
     const side = k > 0 ? 1 : -1, l = (WALL + 1.25) * side;
-    spots.push([tr.X[i] + -tr.TZ[i] * l, tr.Y[i], tr.Z[i] + tr.TX[i] * l, i]);
+    spots.push([tr.X[i] + -tr.TZ[i] * l, tr.Y[i] + bankOff(tr, i, l), tr.Z[i] + tr.TX[i] * l, i]);
   }
   if (!spots.length) return;
   const m = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.55, 0.55, 0.5, 14), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), spots.length * 3);
@@ -229,7 +230,7 @@ function wallMesh(tr, th, stride = 1) {
   for (const side of [-1, 1]) {
     for (let i = 0; i < N; i += stride) {
       const j = (i + stride) % N, s = i * tr.ds, c = Math.floor(s / 6) % 2 ? c1 : c2;
-      const P = (idx, l, y) => [tr.X[idx] + -tr.TZ[idx] * l * side, y, tr.Z[idx] + tr.TX[idx] * l * side];
+      const P = (idx, l, y) => [tr.X[idx] + -tr.TZ[idx] * l * side, y + bankOff(tr, idx, l * side), tr.Z[idx] + tr.TX[idx] * l * side];
       const a0 = P(i, L, tr.Y[i] - 0.05), a1 = P(i, L, tr.Y[i] + H), b0 = P(j, L, tr.Y[j] - 0.05), b1 = P(j, L, tr.Y[j] + H);
       const t0 = P(i, L + T, tr.Y[i] + H), t1 = P(j, L + T, tr.Y[j] + H);
       const quad = (p, q, r, s2) => { pos.push(...p, ...r, ...q, ...q, ...r, ...s2); for (let k = 0; k < 6; k++) colors.push(c.r, c.g, c.b); };
@@ -252,7 +253,7 @@ function stripGeom(tr, s0, s1, l0, l1, lift) {
     const s = s0 + (k / n) * (s1 - s0), f = (((s / tr.ds) % tr.N) + tr.N) % tr.N, i = Math.floor(f), j = (i + 1) % tr.N, t = f - i;
     const tx = tr.TX[i] + (tr.TX[j] - tr.TX[i]) * t, tz = tr.TZ[i] + (tr.TZ[j] - tr.TZ[i]) * t, tl = Math.hypot(tx, tz);
     const nx = -tz / tl, nz = tx / tl, x = tr.X[i] + (tr.X[j] - tr.X[i]) * t, z = tr.Z[i] + (tr.Z[j] - tr.Z[i]) * t, y = tr.Y[i] + (tr.Y[j] - tr.Y[i]) * t + lift;
-    pos.push(x + nx * l0, y, z + nz * l0, x + nx * l1, y, z + nz * l1);
+    pos.push(x + nx * l0, y + bankOff(tr, i, l0), z + nz * l0, x + nx * l1, y + bankOff(tr, i, l1), z + nz * l1);
   }
   const uv = [];
   for (let k = 0; k <= n; k++) uv.push(0, k / n, 1, k / n);
@@ -272,7 +273,7 @@ function puddleGeom(tr, s0, length, lane, halfWidth) {
     const tx = tr.TX[i] + (tr.TX[j] - tr.TX[i]) * t, tz = tr.TZ[i] + (tr.TZ[j] - tr.TZ[i]) * t, tl = Math.hypot(tx, tz);
     const nx = -tz / tl, nz = tx / tl, x = tr.X[i] + (tr.X[j] - tr.X[i]) * t, z = tr.Z[i] + (tr.Z[j] - tr.Z[i]) * t;
     const width = halfWidth * Math.sqrt(Math.max(0.025, 1 - u * u));
-    pos.push(x + nx * (lane - width), tr.Y[i] + 0.085, z + nz * (lane - width), x + nx * (lane + width), tr.Y[i] + 0.085, z + nz * (lane + width));
+    pos.push(x + nx * (lane - width), tr.Y[i] + 0.085 + bankOff(tr, i, lane - width), z + nz * (lane - width), x + nx * (lane + width), tr.Y[i] + 0.085 + bankOff(tr, i, lane + width), z + nz * (lane + width));
     if (k < steps) { const a = k * 2; indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
   }
   const g = new THREE.BufferGeometry();
@@ -327,7 +328,7 @@ function turnSigns(tr, th, scene, mobile) {
   picks.forEach(({ i, dir }, n) => {
     const tx = tr.TX[i], tz = tr.TZ[i], side = dir;
     const nx = -tz * side, nz = tx * side;
-    const x = tr.X[i] + nx * (WALL + 2.1), z = tr.Z[i] + nz * (WALL + 2.1), y = tr.Y[i];
+    const x = tr.X[i] + nx * (WALL + 2.1), z = tr.Z[i] + nz * (WALL + 2.1), y = tr.Y[i] + bankOff(tr, i, side * (WALL + 2.1));
     const heading = Math.atan2(tx, tz);
     d.position.set(x, y + 3.15, z); d.rotation.set(0, heading, 0); d.scale.set(1, 1, 1); d.updateMatrix(); back.setMatrixAt(n, d.matrix);
     d.position.set(x + tx * 2.1, y + 1.55, z + tz * 2.1); d.scale.set(1, 1, 1); d.updateMatrix(); posts.setMatrixAt(n * 2, d.matrix);
