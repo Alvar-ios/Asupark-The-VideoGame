@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laboratorio de motor · Porsche 911</title>
+<style>
+body{margin:0;background:#0b0e16;color:#eef2ff;font-family:system-ui,sans-serif;padding:18px;max-width:640px;margin:auto}
+h1{font-size:22px;margin:0 0 4px}p{color:#8f9ab8;font-size:14px;margin:4px 0 14px}
+.row{margin:14px 0}.row label{display:flex;justify-content:space-between;font-size:14px}
+input[type=range]{width:100%;height:36px}
+button{background:#ffc928;color:#111;border:0;border-radius:12px;padding:14px 16px;font-size:16px;font-weight:800;margin:4px 4px 4px 0;touch-action:manipulation}
+button.g{background:#222a3d;color:#eef2ff}
+#st{font-size:34px;font-weight:900;margin:10px 0}
+.pill{display:inline-block;background:#222a3d;border-radius:8px;padding:4px 10px;font-size:13px;margin-right:6px}
+</style></head><body>
+<h1>Motor del Porsche 911 (964) Turbo S</h1>
+<p>Sintetizado en tiempo real (bóxer de 6 cilindros, turbo y ventilador). Pulsa <b>Activar sonido</b> y prueba.</p>
+<button id="on">Activar sonido</button><button id="off" class="g">Silencio</button>
+<div id="st">0 rpm · marcha N</div>
+<div class="row"><button id="full">🏁 A fondo (con cambios)</button><button id="lift" class="g">Soltar gas</button><button id="idle" class="g">Ralentí</button><button id="lim" class="g">Limitador</button></div>
+<div class="row"><label><span>Revoluciones (manual)</span><b id="rv">900</b></label><input id="rpm" type="range" min="800" max="7200" value="900"></div>
+<div class="row"><label><span>Acelerador</span><b id="tv">0.05</b></label><input id="thr" type="range" min="0" max="100" value="5"></div>
+<div class="row"><label><span>Soplado del turbo</span><b id="bv">0</b></label><input id="bst" type="range" min="0" max="100" value="0"></div>
+<div class="row"><label><span>Volumen</span><b id="vv">60</b></label><input id="vol" type="range" min="0" max="100" value="60"></div>
+<script type="module">
+import { EngineDSP } from './engine-dsp.js';
+// AudioWorklet con el mismo DSP (se incrusta como texto para no depender de otro archivo)
+const src = await (await fetch('./engine-dsp.js')).text();
+const code = src.replace(/export /g, '') + `
+class EngProc extends AudioWorkletProcessor {
+  constructor(){ super(); this.d = new EngineDSP(sampleRate); this.p = { rpm: 900, throttle: 0.05, boost: 0, limiter: false }; this.port.onmessage = (e) => { Object.assign(this.p, e.data); }; }
+  process(_, outs){ this.d.process(outs[0][0], this.p); const o = outs[0]; for (let c = 1; c < o.length; c++) o[c].set(o[0]); return true; }
+}
+registerProcessor('eng', EngProc);`;
+let ctx, node, gain; const P = { rpm: 900, throttle: 0.05, boost: 0, limiter: false };
+const $ = (id) => document.getElementById(id);
+const send = () => node && node.port.postMessage(P);
+async function start() {
+  if (ctx) { await ctx.resume(); return; }
+  ctx = new AudioContext();
+  await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+  node = new AudioWorkletNode(ctx, 'eng', { outputChannelCount: [2] }); gain = ctx.createGain(); gain.gain.value = 0.6;
+  node.connect(gain); gain.connect(ctx.destination); send();
+}
+$('on').onclick = start; $('off').onclick = () => ctx && ctx.suspend();
+let mode = 'manual', gear = 0, speed = 0, T = 0;
+const RATIOS = [0, 3.15, 2.0, 1.45, 1.1, 0.9], FINAL = 3.4, WHEEL = 0.33;
+const rpmOf = (v, g) => Math.max(900, Math.min(7200, v / WHEEL * 60 / 6.283 * RATIOS[g] * FINAL / 3.4 * 3.4 * 0.46));
+function setUI() { $('st').textContent = Math.round(P.rpm) + ' rpm · marcha ' + (gear || 'N'); $('rpm').value = P.rpm; $('rv').textContent = Math.round(P.rpm); $('thr').value = P.throttle * 100; $('tv').textContent = P.throttle.toFixed(2); $('bst').value = P.boost * 100; $('bv').textContent = P.boost.toFixed(2); }
+$('rpm').oninput = (e) => { mode = 'manual'; P.rpm = +e.target.value; setUI(); send(); };
+$('thr').oninput = (e) => { mode = 'manual'; P.throttle = e.target.value / 100; setUI(); send(); };
+$('bst').oninput = (e) => { mode = 'manual'; P.boost = e.target.value / 100; setUI(); send(); };
+$('vol').oninput = (e) => { $('vv').textContent = e.target.value; if (gain) gain.gain.value = e.target.value / 100; };
+$('full').onclick = async () => { await start(); mode = 'full'; gear = 1; speed = 4; P.limiter = false; shiftT = 0; };
+$('lift').onclick = () => { mode = 'lift'; };
+$('idle').onclick = () => { mode = 'manual'; gear = 0; P.rpm = 900; P.throttle = 0.04; P.boost = 0; P.limiter = false; setUI(); send(); };
+$('lim').onclick = async () => { await start(); mode = 'manual'; P.rpm = 7100; P.throttle = 1; P.boost = 1; P.limiter = true; setUI(); send(); };
+let shiftT = 0, last = performance.now();
+setInterval(() => {
+  const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (mode === 'full') {
+    if (shiftT > 0) { shiftT -= dt; P.throttle = 0.05; P.boost *= 0.9; P.rpm += (rpmOf(speed, gear) - P.rpm) * 0.3; if (shiftT <= 0) P.throttle = 1; }
+    else { P.throttle = 1; P.boost = Math.min(1, P.boost + dt * 0.9); speed += dt * (34 / (1 + speed / 42)) * (gear === 1 ? 1.15 : 1); P.rpm = rpmOf(speed, gear);
+      if (P.rpm > 6900 && gear < 5) { gear++; shiftT = 0.2; } else if (P.rpm >= 7150 && gear === 5) { P.limiter = true; } }
+  } else if (mode === 'lift') { P.throttle = 0; P.boost = Math.max(0, P.boost - dt * 2); speed = Math.max(0, speed - dt * 12); P.rpm += (rpmOf(speed, gear || 1) - P.rpm) * 0.04; P.limiter = false; if (P.rpm < 1100) mode = 'manual'; }
+  setUI(); send();
+}, 33);
+setUI();
+</script></body></html>
