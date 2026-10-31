@@ -338,6 +338,43 @@ body:not(.mobile) #hud #help{left:0;bottom:0;font-size:11px;padding:6px 14px;col
 .lbt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.lbt td,.lbt th{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;font-size:14px}
 .lbt th{color:#8e98a8;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}.lbt td:last-child,.lbt th:last-child{text-align:right}
 .lbt tr.me td{color:#ffc928;font-weight:800;background:rgba(255,201,40,.07)}.lbt td.car{color:#9db0cc;font-size:12px}
+
+/* escribir en los campos de texto: el resto de la página bloquea la selección y el toque */
+input,select,textarea{-webkit-user-select:text;user-select:text;touch-action:manipulation}
+/* ===== Menú de inicio: sencillo ===== */
+[hidden]{display:none!important}
+#menu{align-items:stretch;justify-content:flex-start;padding:0;background:linear-gradient(90deg,rgba(8,10,15,.96) 0,rgba(8,10,15,.9) 30%,rgba(8,10,15,0) 62%)}
+#menu .panel{width:min(480px,100%);max-width:none;height:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;backdrop-filter:none;display:block}
+#menu .menu-scroll{height:100%;overflow-y:auto;padding:48px 36px 32px;max-height:none;display:block}
+#menu .wm{margin:0 0 22px;font-size:40px;font-weight:800;font-style:italic;letter-spacing:-.01em;color:#fff;text-transform:none}
+#menu #startBtn.big{position:static;width:100%;margin:0 0 14px;padding:17px;border-radius:6px;font-size:20px;letter-spacing:.14em;font-style:normal;background:#ffc928;color:#111;box-shadow:none;border:0}
+#menu .pick{display:grid;grid-template-columns:1fr auto;grid-template-areas:"l i" "n i" "s i";width:100%;text-align:left;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:11px 16px;margin:0 0 8px;color:#fff;font:inherit;cursor:pointer;touch-action:manipulation}
+#menu .pick:hover{background:rgba(255,255,255,.1)}
+#menu .pick small{grid-area:l;color:#8e98a8;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+#menu .pick b{grid-area:n;font-size:19px;font-weight:700;margin-top:1px}
+#menu .pick span{grid-area:s;color:#aab3c2;font-size:13px;margin-top:1px}
+#menu .pick i{grid-area:i;align-self:center;font-style:normal;font-size:26px;color:#8e98a8}
+#menu .modes{margin:14px 0 18px}#menu .modes .seg{width:100%;display:flex}#menu .modes .seg button{flex:1;padding:11px 8px;font-size:14px}#menu #diffWrap{margin-top:8px}
+#menu .links{display:flex;gap:6px;flex-wrap:wrap}
+#menu .link{background:none;border:0;color:#c8d0dc;font:inherit;font-size:14px;padding:8px 10px 8px 0;cursor:pointer;text-decoration:underline;text-underline-offset:4px;text-decoration-color:rgba(255,255,255,.25);touch-action:manipulation}
+#menu .link:hover{color:#fff}
+#menu .vhead{display:flex;align-items:center;gap:12px;margin:0 0 14px}#menu .vhead h2{margin:0;font-size:22px;font-weight:700;color:#fff}
+#menu .back{background:none;border:0;color:#ffc928;font:inherit;font-size:15px;cursor:pointer;padding:6px 0;touch-action:manipulation}
+#menu #trackList,#menu #carList{display:grid;grid-template-columns:1fr;gap:8px;overflow:visible}
+#menu .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+#menu .tabs button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#c8d0dc;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer;touch-action:manipulation}
+#menu .tabs button.on{background:#ffc928;border-color:#ffc928;color:#111;font-weight:700}
+#menu .soon{color:#8e98a8;font-size:14px;padding:18px 4px}
+#menu .pt{margin:18px 0 8px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#8e98a8;font-weight:600}
+@media (max-width:760px){#menu{background:rgba(8,10,15,.94)}#menu .panel{width:100%}#menu .menu-scroll{padding:22px 18px 22px}#menu .wm{font-size:32px;margin-bottom:14px}}
+@media (max-height:520px) and (orientation:landscape){#menu .menu-scroll{padding:14px 18px}#menu .wm{font-size:26px;margin-bottom:10px}#menu #startBtn{padding:11px;margin-bottom:8px}#menu .pick{padding:7px 14px;margin-bottom:6px}#menu .modes{margin:8px 0 8px}}
+.lbt tr.gh td{color:#ffc928;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;padding-top:14px;border-bottom:1px solid rgba(255,201,40,.35)}
+#hud #delta{transition:color .25s;min-width:5.5ch;text-align:center}
+#menu,#menu.overlay{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#menu button.big#startBtn,body.mobile #menu button.big#startBtn{background:#ffc928!important;color:#111!important;border:0!important;border-radius:6px!important;box-shadow:none!important;padding:17px!important;font-size:20px!important;letter-spacing:.14em!important;margin:0 0 14px!important}
+#menu .car-card .stat{display:flex!important}
+#menu .car-card{padding:11px 14px}#menu .car-card b{font-size:16px}
+@media (max-width:760px){#menu{background:linear-gradient(180deg,rgba(8,10,15,.97) 0,rgba(8,10,15,.93) 52%,rgba(8,10,15,.2) 78%,rgba(8,10,15,0) 100%)!important}#menu[data-view="garage"],#menu[data-view="tracks"]{background:rgba(8,10,15,.95)!important}}
 </style>
 </head>
 <body>
@@ -364,30 +401,24 @@ body:not(.mobile) #hud #help{left:0;bottom:0;font-size:11px;padding:6px 14px;col
 <div id="touch" class="hidden"><div class="t" id="tL">◀</div><div class="t" id="tR">▶</div><div class="t" id="tG">ACEL</div><div class="t" id="tB">FRENO</div><div class="t" id="tD">F.M.</div></div>
 <div id="rotate"><div>↻<br>Gira el móvil<br><small>El juego se disfruta en horizontal</small></div></div>
 
-<div id="menu" class="overlay">
+<div id="menu" class="overlay" data-view="home">
   <div class="panel">
     <div class="menu-scroll">
-    <div class="menu-brand"><span class="brand-mark">DR</span><span>ASUPARK <i>RACING CLUB</i></span><span class="brand-status"><i></i> ARCADE MODE</span></div>
-    <h1>DRIFT <span>RUSH</span></h1>
-    <p class="tag">Encuentra tu trazada. Domina el derrape. Vuelve mañana.</p>
-    <section class="daily-feature" aria-labelledby="dailyTitle">
-      <div class="daily-copy"><span class="eyebrow"><i></i> RETO DEL DÍA <b id="dailyDate"></b></span><h2 id="dailyTitle">Una pista nueva. Tu mejor vuelta.</h2><p id="dailyMeta">Carga el circuito diario y marca tu tiempo.</p><div class="daily-proof"><span>CONTRARRELOJ</span><span>INTENTOS ILIMITADOS</span><span id="dailyBest">SIN MARCA</span></div></div>
-      <button id="dailyBtn" class="daily-cta" type="button"><span>JUGAR RETO</span><b aria-hidden="true">↗</b></button>
-    </section>
-    <div class="section-heading"><div><span class="eyebrow">ELIGE TU PLAN</span><h3>Pistas</h3></div><span class="section-note">Una vuelta más siempre cuenta</span></div>
-    <div id="trackList" class="grid"></div>
-    <div class="row">
-      <div><h3>Modo</h3><div id="modeSel" class="seg"><button data-v="race" class="on">Carrera vs 3 rivales</button><button data-v="tt">Contrarreloj + fantasma</button></div></div>
-      <div id="diffWrap"><h3>Rivales</h3><div id="diffSel" class="seg"><button data-v="0">Fácil</button><button data-v="1" class="on">Normal</button><button data-v="2">Difícil</button></div></div>
-    </div>
-    <div class="section-heading garage-heading"><div><span class="eyebrow">TU GARAJE</span><h3>Elige coche</h3></div><span class="section-note">Cada coche tiene su carácter</span></div><div id="carList" class="grid"></div>
-    <h3>Pintura · <span id="paintName" style="color:var(--txt);letter-spacing:.06em">—</span></h3><div id="paints"></div>
-    <div class="row" style="margin-top:12px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="setBtn" class="tog">⚙ Ajustes</button><button id="boardBtn" class="tog">🏆 Clasificación</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
-    </div>
-    <div class="menu-footer">
-    <button id="startBtn" class="big">JUGAR MODO SELECCIONADO</button>
-    <p id="modelStatus" role="status" hidden></p>
-    <p class="keys"><b>WASD</b> conducir · <b>ESPACIO</b> derrapar · <b>R</b> recolocar · También con mando</p>
+      <div id="viewHome">
+        <h1 class="wm">Drift Rush</h1>
+        <button id="startBtn" class="big">JUGAR</button>
+        <p id="modelStatus" role="status" hidden></p>
+        <button id="pickTrack" class="pick" type="button"><small>Circuito</small><b id="pickTrackName">—</b><span id="pickTrackSub"></span><i>›</i></button>
+        <button id="pickCar" class="pick" type="button"><small>Coche</small><b id="pickCarName">—</b><span id="pickCarSub"></span><i>›</i></button>
+        <div class="modes"><div id="modeSel" class="seg"><button data-v="tt">Contrarreloj</button><button data-v="race">Carrera</button></div>
+          <div id="diffWrap"><div id="diffSel" class="seg"><button data-v="0">Fácil</button><button data-v="1" class="on">Normal</button><button data-v="2">Difícil</button></div></div></div>
+        <div class="links"><button id="dailyBtn" class="link" type="button">Reto del día</button><button id="boardBtn" class="link" type="button">Clasificación</button><button id="setBtn" class="link" type="button">Ajustes</button></div>
+      </div>
+      <div id="viewTracks" hidden><div class="vhead"><button class="back" type="button" data-back>‹ Volver</button><h2>Circuito</h2></div><div id="trackList" class="grid"></div></div>
+      <div id="viewGarage" hidden><div class="vhead"><button class="back" type="button" data-back>‹ Volver</button><h2>Coche</h2></div>
+        <div id="groupTabs" class="tabs"></div><div id="carList" class="grid"></div>
+        <h3 class="pt">Pintura · <span id="paintName">—</span></h3><div id="paints"></div>
+        <button class="big" type="button" data-back style="margin-top:16px">LISTO</button></div>
     </div>
   </div>
 </div>
@@ -401,6 +432,9 @@ body:not(.mobile) #hud #help{left:0;bottom:0;font-size:11px;padding:6px 14px;col
   <div class="row"><label style="flex:1">Volumen general <b id="vt_master"></b><input id="v_master" type="range" min="0" max="100" style="width:100%"></label></div>
   <div class="row"><label style="flex:1">Música del menú <b id="vt_music"></b><input id="v_music" type="range" min="0" max="100" style="width:100%"></label></div>
   <div class="row"><label style="flex:1">Motor <b id="vt_engine"></b><input id="v_engine" type="range" min="0" max="100" style="width:100%"></label></div>
+  <h3>Opciones</h3>
+  <div class="row" style="gap:8px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="raceMusicBtn" class="tog">Música al conducir: NO</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
+  <p class="keys" style="display:block;margin-top:8px"><b>WASD</b> o flechas para conducir · <b>ESPACIO</b> freno de mano · <b>R</b> recolocar · <b>T</b> reiniciar · <b>C</b> cámara · <b>ESC</b> pausa · también con mando</p>
   <h3>Piloto</h3>
   <div class="row"><label style="flex:1">Nombre en la clasificación<input id="pname" maxlength="20" class="sel" style="width:100%;margin-top:4px"></label></div>
   <h3>Gráficos</h3>

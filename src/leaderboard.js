@@ -43,16 +43,13 @@ export class Leaderboard {
       return true;
     } catch (e) { return false; } finally { this.sending = false; }
   }
-  // Clasificación de un circuito: mejor tiempo de cada piloto (opcionalmente con un coche concreto)
-  async top(trackId, carId = null) {
+  // Todas las filas de un circuito (mejor tiempo de cada piloto con cada coche); el juego las agrupa por categoría
+  async all(trackId) {
     if (!this.remote) return { remote: false, rows: [] };
     try {
       await this.flush();
-      const rows = await this.call(`lap_times?select=player_id,name,car_id,lap_ms&track_id=eq.${encodeURIComponent(trackId)}${carId ? '&car_id=eq.' + encodeURIComponent(carId) : ''}&order=lap_ms.asc&limit=400`);
-      const seen = new Set(), best = [];
-      for (const r of rows || []) { if (seen.has(r.player_id)) continue; seen.add(r.player_id); best.push({ name: r.name, carId: r.car_id, ms: r.lap_ms, you: r.player_id === this.player.id }); }
-      best.forEach((r, i) => { r.rank = i + 1; });
-      return { remote: true, rows: best };
+      const rows = await this.call(`lap_times?select=player_id,name,car_id,lap_ms&track_id=eq.${encodeURIComponent(trackId)}&order=lap_ms.asc&limit=1000`);
+      return { remote: true, rows: (rows || []).map((r) => ({ key: r.player_id, name: r.name, carId: r.car_id, ms: r.lap_ms, you: r.player_id === this.player.id })) };
     } catch (e) { return { remote: true, error: true, rows: [] }; }
   }
 }

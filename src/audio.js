@@ -92,7 +92,7 @@ export class Sound {
   setVolumes(v) { Object.assign(this.vol, v); this.applyVolumes(); }
   applyVolumes() {
     if (this.master) this.master.gain.value = this.muted ? 0 : 0.58 * this.vol.master;
-    if (this.music) this.music.setVolume(0.55 * this.vol.music);
+    if (this.music) this.music.setVolume(0.55 * this.vol.music * (this.duck ? 0.6 : 1));
     if (this.engineGain && this.engineOn) this.engineGain.gain.value = 0.9 * this.vol.engine;
   }
   // El motor y los ruidos de rodadura solo suenan durante la carrera (no en menú ni en pausa)
@@ -105,6 +105,7 @@ export class Sound {
       for (const n of [this.wind, this.rain, this.spray, this.gravel, this.skid]) if (n) n.g.gain.setTargetAtTime(0, t, 0.05);
     }
   }
+  setMusicDuck(d) { if (this.duck !== d) { this.duck = d; this.applyVolumes(); } }
   setMusic(on) { if (!this.music) return; if (on) this.music.start(); else this.music.stop(); }
   update(p) {
     if (!this.ok) return;

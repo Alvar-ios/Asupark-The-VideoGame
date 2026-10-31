@@ -3,16 +3,23 @@ import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi } from './track.js';
 import { puddleAt, mudAt, smoothstep } from './surface.js';
 
 export const YAW_SCALE = 0.8, YAW_SPEED = 42; // sensibilidad de giro global
+export const GROUPS = [
+  { id: 'cartoon', name: 'Cartoon', desc: 'Coches de dibujos: pura diversión' },
+  { id: 'cv100', name: '100 CV', desc: 'Utilitarios y familiares' },
+  { id: 'cv150', name: '150 CV', desc: 'Deportivos compactos' },
+  { id: 'competicion', name: 'Competición', desc: 'Deportivos de altas prestaciones' },
+  { id: 'f1', name: 'F1', desc: 'Monoplazas' },
+];
 export const G = 14; // gravedad "flotante" arcade
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 export const CARS = [
-  { id: 'bora', name: 'VW Bora VR6', desc: 'Berlina 2005 · estable y noble', color: 0x0b4d2c, vmax: 56, accel: 14, yaw: 2.25, grip: 13, driftGrip: 2.7, radius: 1.2, kind: 'bora', custom: true },
-  { id: 'porsche', drive: 'rwd', name: 'Porsche 911 Turbo S', desc: 'Rapidísimo, motor trasero: cuidado al frenar', color: 0x0a1a28, vmax: 60, accel: 15.5, yaw: 2.85, grip: 12.6, driftGrip: 2.9, radius: 1.2, kind: 'porsche', custom: true },
-  { id: 'm3', drive: 'rwd', name: 'BMW M3 E46', desc: 'Tracción trasera, ágil y rabioso', color: 0x0070ed, vmax: 58, accel: 15, yaw: 2.45, grip: 12.4, driftGrip: 2.7, radius: 1.2, kind: 'm3', custom: true },
-  { id: 'cupra', name: 'Cupra León', desc: 'Compacto deportivo: mucho agarre', color: 0x193078, vmax: 56, accel: 14.5, yaw: 2.5, grip: 13.4, driftGrip: 2.6, radius: 1.2, kind: 'cupra', custom: true },
-  { id: 'mini', name: 'Mini Cooper S Clubman', desc: 'Pequeño y nervioso: gira como un kart', color: 0xf7f7f7, vmax: 53, accel: 14, yaw: 2.8, grip: 13.6, driftGrip: 3.0, radius: 1.1, kind: 'mini', custom: true },
-  { id: 'qashqai', name: 'Nissan Qashqai', desc: 'SUV pesado y estable', color: 0xf7f7f7, vmax: 54, accel: 12.5, yaw: 2.05, grip: 14, driftGrip: 2.3, radius: 1.3, kind: 'qashqai', custom: true },
+  { id: 'bora', group: 'cv150', name: 'VW Bora VR6', desc: 'Berlina 2005 · estable y noble', color: 0x0b4d2c, vmax: 56, accel: 14, yaw: 2.25, grip: 13, driftGrip: 2.7, radius: 1.2, kind: 'bora', custom: true },
+  { id: 'porsche', group: 'competicion', drive: 'rwd', name: 'Porsche 911 Turbo S', desc: 'Rapidísimo, motor trasero: cuidado al frenar', color: 0x0a1a28, vmax: 60, accel: 15.5, yaw: 2.85, grip: 12.6, driftGrip: 2.9, radius: 1.2, kind: 'porsche', custom: true },
+  { id: 'm3', group: 'competicion', drive: 'rwd', name: 'BMW M3 E46', desc: 'Tracción trasera, ágil y rabioso', color: 0x0070ed, vmax: 58, accel: 15, yaw: 2.45, grip: 12.4, driftGrip: 2.7, radius: 1.2, kind: 'm3', custom: true },
+  { id: 'cupra', group: 'cv150', name: 'Cupra León', desc: 'Compacto deportivo: mucho agarre', color: 0x193078, vmax: 56, accel: 14.5, yaw: 2.5, grip: 13.4, driftGrip: 2.6, radius: 1.2, kind: 'cupra', custom: true },
+  { id: 'mini', group: 'cv150', name: 'Mini Cooper S Clubman', desc: 'Pequeño y nervioso: gira como un kart', color: 0xf7f7f7, vmax: 53, accel: 14, yaw: 2.8, grip: 13.6, driftGrip: 3.0, radius: 1.1, kind: 'mini', custom: true },
+  { id: 'qashqai', group: 'cv100', name: 'Nissan Qashqai', desc: 'SUV pesado y estable', color: 0xf7f7f7, vmax: 54, accel: 12.5, yaw: 2.05, grip: 14, driftGrip: 2.3, radius: 1.3, kind: 'qashqai', custom: true },
 ];
 export const AI_COLORS = [0x37d67a, 0xb06bff, 0xff7a3d, 0xeaeaea, 0x19c3d6];
 

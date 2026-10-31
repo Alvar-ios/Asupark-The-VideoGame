@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { THEMES, THEME_LIST, dailyInfo } from './themes.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi } from './track.js';
-import { CARS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo } from './car.js';
+import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo } from './car.js';
 import { hashStr } from './rng.js';
 import { buildSpeedProfile, aiInput, benchmark } from './ai.js';
 import { buildWorld, disposeScene } from './world.js';
@@ -69,7 +70,7 @@ const sel = { track: 0, mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, c
 const PAINTS = [['Verde botella', '#0b4d2c'], ['Rojo', '#d32a22'], ['Azul', '#1f6fff'], ['Amarillo', '#f7b32b'], ['Naranja', '#ff7a1a'], ['Blanco', '#f2f2f2'], ['Negro', '#16181d'], ['Plata', '#b9bec6'], ['Morado', '#8a4bff']];
 const paintOf = (c) => sel.colors[c.id] || '#' + new THREE.Color(c.color).getHexString();
 const saved = store.get('sel'); if (saved) { const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
-if (saved) { if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
+if (saved) { sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
 
 function drawPreview(cv, tr, th) {
   const w = 300, h = 130, dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
@@ -86,37 +87,51 @@ function drawPreview(cv, tr, th) {
   for (const r of tr.ramps) { const i = Math.floor(r.s0) % tr.N; x.fillStyle = '#ff8a00'; x.fillRect(tr.X[i] * sc + ox - 3, tr.Z[i] * sc + oz - 3, 6, 6); }
 }
 
+const groupOf = (c) => GROUPS.find((g) => g.id === c.group) || GROUPS[1];
+const envLabel = (t) => (t.th.weather === 'rain' ? 'lluvia' : t.th.surface === 'snow' ? 'nieve' : t.th.surface === 'dirt' ? 'tierra' : 'asfalto seco');
+function setView(v) {
+  $('menu').dataset.view = v;
+  for (const k of ['Home', 'Tracks', 'Garage']) $('view' + k).hidden = k.toLowerCase() !== v;
+  $('menu').querySelector('.menu-scroll').scrollTop = 0;
+}
+$('pickTrack').onclick = () => setView('tracks');
+$('pickCar').onclick = () => { sel.group = groupOf(CARS[sel.car]).id; buildMenu(); setView('garage'); };
+document.querySelectorAll('[data-back]').forEach((b) => { b.onclick = () => setView('home'); });
 function buildMenu() {
+  { const t0 = tracks[sel.track], c0 = CARS[sel.car]; if (!sel.group) sel.group = groupOf(c0).id;
+    $('pickTrackName').textContent = t0.key === 'daily' ? 'Pista del día' : t0.name; $('pickTrackSub').textContent = `${(t0.tr.len / 1000).toFixed(1)} km · ${envLabel(t0)}`;
+    $('pickCarName').textContent = c0.name; $('pickCarSub').textContent = groupOf(c0).name; }
   const tl = $('trackList'); tl.innerHTML = '';
   const dailyTrack = tracks.find((t) => t.key === 'daily');
-  $('dailyDate').textContent = daily.key;
-  $('dailyTitle').textContent = dailyTrack ? dailyTrack.th.name : 'Una pista nueva. Tu mejor vuelta.';
-  $('dailyMeta').textContent = dailyTrack ? `${(dailyTrack.tr.len / 1000).toFixed(1)} km · superficie seca, mojada o nevada · Fantasma y récord personal` : 'Carga el circuito diario y marca tu tiempo.';
-  const dailyPb = store.get('pb.daily.' + daily.seed + '.' + CARS[sel.car].id);
-  $('dailyBest').textContent = dailyPb && dailyPb.lap != null ? 'TU MEJOR ' + fmt(dailyPb.lap) : 'PRIMERA VUELTA';
   tracks.forEach((t, i) => {
     const d = document.createElement('div'); d.className = 'card track-card' + (i === sel.track ? ' on' : '');
     const environment = t.th.weather === 'rain' ? ['rain', 'LLUVIA · PISTA MOJADA'] : t.th.surface === 'snow' ? ['snow', 'NIEVE · BAJA ADHERENCIA'] : t.th.surface === 'dirt' ? ['dirt', 'TIERRA · POLVO'] : ['dry', 'ASFALTO · SECO'];
     let best = null; for (const cc of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = { ...r, car: cc }; }
     d.innerHTML = `<canvas></canvas><b>${t.key === 'daily' ? '★ ' : ''}${t.name}</b><small class="track-sub">${t.sub}</small><span class="track-env ${environment[0]}">${environment[1]}</span><small class="track-meta">${(t.tr.len / 1000).toFixed(1)} km · ${t.tr.ramps.length} curvas/rampas</small><div class="rec">${best ? medalFor(best.lap, (benchFor(t, best.car) || {}).lap) + ' Mejor ' + fmt(best.lap) + ' · ' + best.car.name.split(' ')[0] : '&nbsp;'}${t.key === 'daily' ? (streakInfo().done ? ' ✓ hecho hoy' : streakInfo().n ? ' 🔥 ' + streakInfo().n + ' días' : ' Reto de hoy') : ''}</div>`;
     drawPreview(d.querySelector('canvas'), t.tr, t.th);
-    d.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
+    d.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); setView('home'); };
     tl.appendChild(d);
   });
+  const gt = $('groupTabs'); gt.innerHTML = '';
+  for (const g of GROUPS) { const b = document.createElement('button'); b.type = 'button'; b.textContent = g.name; b.className = g.id === sel.group ? 'on' : ''; b.onclick = () => { sel.group = g.id; buildMenu(); }; gt.appendChild(b); }
   const cl = $('carList'); cl.innerHTML = '';
   CARS.forEach((c, i) => {
+    if (c.group !== sel.group) return;
     const d = document.createElement('div'); d.className = 'card car-card' + (i === sel.car ? ' on' : '');
     const hex = new THREE.Color(paintOf(c)).lerp(new THREE.Color(0xffffff), 0.32).getStyle();
     d.innerHTML = `<b style="color:${hex}">${c.name}</b><small>${c.desc}</small>` + [['VEL', (c.vmax - 50) / 12], ['ACEL', (c.accel - 11) / 6], ['GIRO', (c.yaw - 1.9) / 0.9], ['DESLIZ.', (14 - c.grip) / 5]].map(([n, v]) => `<div class="stat">${n}<i><s style="width:${clamp(v, 0.1, 1) * 100}%;background:${hex}"></s></i></div>`).join('');
     d.onclick = () => { sel.car = i; sel.carId = c.id; store.set('sel', sel); buildMenu(); };
     cl.appendChild(d);
   });
+  if (!cl.children.length) cl.innerHTML = '<p class="soon">Próximamente: nuevos coches en este grupo.</p>';
   $('diffWrap').style.display = sel.mode === 'race' ? '' : 'none';
   for (const b of $('modeSel').children) b.classList.toggle('on', b.dataset.v === sel.mode);
   for (const b of $('diffSel').children) b.classList.toggle('on', +b.dataset.v === sel.diff);
   buildPaints(); sound.setMuted(!!sel.mute); $('sndBtn').classList.toggle('on', !sel.mute); $('sndBtn').textContent = 'Sonido: ' + (sel.mute ? 'NO' : 'SÍ');
+  $('raceMusicBtn').classList.toggle('on', !!sel.raceMusic); $('raceMusicBtn').textContent = 'Música al conducir: ' + (sel.raceMusic ? 'SÍ' : 'NO');
   $('autoGas').classList.toggle('on', sel.autoGas); $('autoGas').textContent = 'Acelerador automático: ' + (sel.autoGas ? 'SÍ' : 'NO');
 }
+$('raceMusicBtn').onclick = () => { sel.raceMusic = !sel.raceMusic; store.set('sel', sel); buildMenu(); };
 $('sndBtn').onclick = () => { sel.mute = !sel.mute; store.set('sel', sel); buildMenu(); };
 function buildPaints() {
   const box = $('paints'); box.innerHTML = '';
@@ -224,13 +239,27 @@ const lb = new Leaderboard();
 const trackIdOf = (ti) => (ti.key === 'daily' ? 'daily:' + ti.tr.seed : ti.key);
 const carName = (id) => (CARS.find((c) => c.id === id) || { name: id }).name;
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const groupIdOfCar = (id) => { const c = CARS.find((x) => x.id === id); return c ? c.group : 'otros'; };
+const groupName = (id) => (GROUPS.find((g) => g.id === id) || { name: 'Otros' }).name;
 // tus mejores tiempos guardados en este dispositivo, por coche
-function localRows(ti, carId) {
+function localRows(ti) {
   const rows = [];
-  for (const c of CARS) { if (carId && c.id !== carId) continue; const r = store.get('pb.' + ti.key + '.' + ti.tr.seed + '.' + c.id); if (r && r.lap != null) rows.push({ name: lb.name, carId: c.id, ms: Math.round(r.lap * 1000), you: true }); }
-  rows.sort((a, b) => a.ms - b.ms); rows.forEach((r, i) => { r.rank = i + 1; }); return rows;
+  for (const c of CARS) { const r = store.get('pb.' + ti.key + '.' + ti.tr.seed + '.' + c.id); if (r && r.lap != null) rows.push({ key: 'yo', name: lb.name, carId: c.id, ms: Math.round(r.lap * 1000), you: true }); }
+  return rows;
+}
+// mejor tiempo de cada piloto dentro del conjunto filtrado
+function rankRows(rows, pred) {
+  const seen = new Set(), out = [];
+  for (const r of rows.filter(pred).sort((a, b) => a.ms - b.ms)) { if (seen.has(r.key)) continue; seen.add(r.key); out.push({ ...r }); }
+  out.forEach((r, i) => { r.rank = i + 1; }); return out;
 }
 const boardRow = (r) => `<tr class="${r.you ? 'me' : ''}"><td>${r.rank}º</td><td>${esc(r.name)}</td><td class="car">${esc(carName(r.carId))}</td><td>${fmt(r.ms / 1000)}</td></tr>`;
+async function getRows(ti) {
+  const res = await lb.all(trackIdOf(ti));
+  if (!res.remote || res.error) return { rows: localRows(ti), online: false, error: !!res.error };
+  return { rows: res.rows, online: true };
+}
+const topWithMe = (list, n) => list.filter((r) => r.rank <= n || r.you);
 const benchFor = (ti, type) => benchmark(ti.tr, type, ti.th, ti.key + '.' + ti.tr.seed + '.' + type.id);
 
 // Cargar modelos reales antes de empezar; un error de red nunca se convierte en un coche genérico.
@@ -309,7 +338,7 @@ async function startRace(restart = false) {
     const player = mkCar(type, paintOf(type), 'TÚ', true);
     S.player = player; S.cars = [player];
     if (sel.mode === 'race') {
-      const pool = CARS.filter((_, i) => i !== sel.car), rivals = [pool[0], pool[1], pool[2]];
+      const gi = (c) => GROUPS.findIndex((g) => g.id === c.group), pg = gi(CARS[sel.car]), pool = CARS.filter((_, i) => i !== sel.car).sort((a, b) => Math.abs(gi(a) - pg) - Math.abs(gi(b) - pg)), rivals = [pool[0], pool[1], pool[2]];
       const base = [0.955, 0.94, 0.925], diff = [0.88, 0.95, 1.01][sel.diff], names = ['Nova', 'Rayo', 'Duna'];
       rivals.forEach((rt, i) => { const c = mkCar(rt, AI_COLORS[i], names[i], false); c.ai = { lane: [-3, 3, -1.5][i], skill: base[i] * diff, base: base[i] * diff }; S.cars.push(c); });
     } else {
@@ -354,7 +383,7 @@ async function startRace(restart = false) {
   S.bestLap = sel.mode === 'tt' ? S.lapPB : null;
   S.lapRec = Math.min(bench ? bench.lap : 1e9, S.lapPB != null ? S.lapPB : 1e9);
   S.secRec = [0, 1, 2].map((i) => Math.min(bench ? bench.sec[i] : 1e9, S.secPB[i] != null ? S.secPB[i] : 1e9));
-  S.refProf = S.pbRec.prof && S.pbRec.prof.length ? S.pbRec.prof : bench ? bench.prof : null;
+  S.refProf = S.pbRec.prof && S.pbRec.prof.length ? S.pbRec.prof : bench ? bench.prof : null; S.refFill = fillProf(S.refProf); S.deltaS = null;
   S.refName = S.pbRec.prof && S.pbRec.prof.length ? 'PB' : 'RÉCORD';
   S.curProf = new Float32Array(Math.ceil(tr.len / 10) + 2).fill(-1);
   S.secIdx = -1; S.secStart = 0; S.secInvalid = false;
@@ -376,6 +405,7 @@ function setLights(n) { const l = $('lights').children; for (let i = 0; i < l.le
 // ---------- entrada ----------
 const KEYMAP = { ArrowLeft: 1, KeyA: 1, ArrowRight: 1, KeyD: 1, ArrowUp: 1, KeyW: 1, ArrowDown: 1, KeyS: 1, Space: 1 };
 window.addEventListener('keydown', (e) => {
+  if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) { if (e.code === 'Enter') e.target.blur(); return; }
   if (KEYMAP[e.code] || e.code === 'Escape' || e.code === 'KeyR' || e.code === 'KeyC') e.preventDefault();
   if (e.repeat) return;
   input.keys.add(e.code);
@@ -387,7 +417,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Enter' && S.state === 'menu') $('startBtn').click();
   sound.init(CARS[sel.car].id);
 });
-window.addEventListener('keyup', (e) => input.keys.delete(e.code));
+window.addEventListener('keyup', (e) => { if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return; input.keys.delete(e.code); });
 window.addEventListener('blur', () => { input.keys.clear(); if (S.state === 'racing') togglePause(true); });
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 // botones táctiles
@@ -431,7 +461,7 @@ $('rbtn').onclick = () => { if (S.raceScene) startRace(true); };
 $('startBtn').onclick = () => { sound.init(CARS[sel.car].id); startRace(false); };
 $('dailyBtn').onclick = () => { sel.track = tracks.findIndex((t) => t.key === 'daily'); sel.mode = 'tt'; buildMenu(); sound.init(CARS[sel.car].id); startRace(false); };
 $('againBtn').onclick = () => startRace(true);
-const toMenu = () => { S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; };
+const toMenu = () => { setView('home'); S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; };
 $('menuBtn').onclick = toMenu; $('menuBtn2').onclick = toMenu;
 
 function doReset() { const p = S.player; if (!p || p.finished) return; resetToTrack(p, S.tr); S.secInvalid = true; S.lapInvalid = true; S.flash = 0.4; sound.play('land', 2); }
@@ -547,6 +577,7 @@ function sectorDone(i, t) {
 }
 
 function onPlayerLap(c, lt, done) {
+  S.deltaS = null;
   const key = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.' + c.type.id;
   const valid = !S.lapInvalid && (sel.mode === 'tt' || done > 1) && (!S.bench || lt > S.bench.lap * 0.6);
   S.lapInvalid = false;
@@ -558,7 +589,7 @@ function onPlayerLap(c, lt, done) {
       lb.submit(trackIdOf(S.trackInfo), c.type.id, Math.round(lt * 1000)).catch(() => {});
       S.pbRec.lap = lt; S.pbRec.prof = Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000));
       store.set('pb.' + S.skey, S.pbRec);
-      S.refProf = S.pbRec.prof; S.refName = 'PB';
+      S.refProf = S.pbRec.prof; S.refName = 'PB'; S.refFill = fillProf(S.refProf);
       if (sel.mode === 'tt') {
         S.ghostBest = Float32Array.from(S.ghostRec);
         store.set(key, { time: lt, ghost: Array.from(S.ghostBest, (v) => Math.round(v * 100) / 100) });
@@ -586,14 +617,23 @@ function onPlayerFinish() {
 }
 
 async function fillResultsBoard() {
-  const ti = S.trackInfo, res = await lb.top(trackIdOf(ti), null);
+  const ti = S.trackInfo, car = CARS[sel.car], res = await getRows(ti);
   if (S.state !== 'finished') return;
-  const list = res.remote && !res.error ? res.rows : localRows(ti, null), me = list.find((r) => r.you);
-  const shown = list.filter((r) => r.rank <= 5 || r.you), out = [];
+  const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === car.group), me = list.find((r) => r.you);
+  const shown = topWithMe(list, 5), out = [];
   shown.forEach((r, i) => { if (i && r.rank - shown[i - 1].rank > 1) out.push('<tr class="gap"><td colspan="4">···</td></tr>'); out.push(boardRow(r)); });
   $('rTable').innerHTML = out.join('') || '<tr class="gap"><td colspan="4">Aún no hay tiempos</td></tr>';
-  if (res.remote && !res.error && me) $('rTitle').textContent = `${medalFor(S.lapPB, S.bench && S.bench.lap)} PUESTO ${me.rank} DE ${list.length}`;
-  else if (!res.remote) $('rTitle').textContent = $('rTitle').textContent + ' · SOLO LOCAL';
+  const md = medalFor(S.lapPB, S.bench && S.bench.lap);
+  $('rTitle').textContent = res.online && me ? `${md} PUESTO ${me.rank} DE ${list.length} · ${groupName(car.group).toUpperCase()}` : `${md} TU MEJOR VUELTA${res.online ? '' : ' · SOLO LOCAL'}`;
+}
+// rellena los huecos (-1) del perfil de tiempos para poder interpolar sin saltos
+function fillProf(prof) {
+  if (!prof || !prof.length) return null;
+  const a = Float32Array.from(prof, (v) => (v >= 0 ? v : NaN)); let last = -1;
+  for (let i = 0; i < a.length; i++) { if (!Number.isNaN(a[i])) { if (last >= 0 && i - last > 1) for (let k = last + 1; k < i; k++) a[k] = a[last] + (a[i] - a[last]) * ((k - last) / (i - last)); last = i; } }
+  const first = a.findIndex((v) => !Number.isNaN(v)); if (first < 0) return null;
+  for (let i = 0; i < first; i++) a[i] = a[first] * (i / first); for (let i = last + 1; i < a.length; i++) a[i] = a[last] + (i - last) * 0.1 * 0 + 0;
+  return a;
 }
 function showResults() {
   S.state = 'finished';
@@ -757,9 +797,13 @@ function updateHud(dt) {
   setText('lap', Math.min(LAPS, done + 1) + '/' + LAPS);
   setText('time', S.state === 'countdown' ? fmt(0) : fmt(p.finished ? p.finishTime - p.lapStart : S.t - p.lapStart));
   setText('best', (S.lapPB != null ? 'MEJOR ' + fmt(S.lapPB) + ' ' + medalFor(S.lapPB, S.bench && S.bench.lap) : 'RÉCORD ' + fmt(S.lapRec)));
-  if (S.refProf && S.state === 'racing' && !p.finished && p.D >= 0) {
-    const k = Math.floor((p.D % tr.len) / 10), ref = S.refProf[k];
-    if (ref >= 0) { const d = (S.t - p.lapStart) - ref; const dq = Math.round(d * 20) / 20; if (dq !== hudCache.dq) { hudCache.dq = dq; const el = $('delta'); el.textContent = (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(2) + ' ' + S.refName; el.className = d > 0.005 ? 'bad' : 'good'; } }
+  if (S.refFill && S.state === 'racing' && !p.finished && p.D >= 0) {
+    // diferencia con la vuelta de referencia: perfil interpolado y suavizado en el tiempo (como en la tele de F1)
+    const F = S.refFill, dist = (p.D % tr.len) / 10, k = Math.min(F.length - 2, Math.floor(dist)), ref = F[k] + (F[k + 1] - F[k]) * (dist - k);
+    const raw = (S.t - p.lapStart) - ref;
+    S.deltaS = S.deltaS == null ? raw : S.deltaS + (raw - S.deltaS) * (1 - Math.exp(-dt * 3.5));
+    const q = Math.round(S.deltaS * 100) / 100;
+    if (q !== hudCache.dq) { hudCache.dq = q; const el = $('delta'); el.textContent = (q > 0 ? '+' : q < 0 ? '−' : '') + Math.abs(q).toFixed(2); el.className = q > 0.02 ? 'bad' : q < -0.02 ? 'good' : ''; }
   }
   if (sel.mode === 'race') { const rank = S.cars.slice().sort((a, b) => (b.finished - a.finished) || (a.finished && b.finished ? a.finishTime - b.finishTime : b.D - a.D)).indexOf(p) + 1; setText('pos', String(rank)); }
   const sp = clamp((p.speed - 52) / 45, 0, 1) * 0.28;
@@ -782,25 +826,33 @@ window.addEventListener('pointerdown', firstGesture); window.addEventListener('k
 
 // ---------- clasificación ----------
 async function renderBoard() {
-  const ti = tracks[+$('boardTrack').value], carId = $('boardCar').value || null, st = $('boardStatus');
+  const ti = tracks[+$('boardTrack').value], f = $('boardCar').value, st = $('boardStatus');
   $('boardTable').innerHTML = '<tr><td>Cargando…</td></tr>'; st.textContent = '';
-  const res = await lb.top(trackIdOf(ti), carId);
-  let rows = res.rows;
-  if (!res.remote) { rows = localRows(ti, carId); st.textContent = 'Clasificación online desactivada: aquí solo ves tus tiempos de este dispositivo.'; }
-  else if (res.error) { rows = localRows(ti, carId); st.textContent = 'No se pudo conectar con la clasificación. Mostrando tus tiempos locales.'; }
-  else st.textContent = rows.length ? `Mejor tiempo de cada piloto · ${rows.length} piloto${rows.length === 1 ? '' : 's'}` : 'Aún no hay tiempos en este circuito. ¡Pon el primero!';
-  $('boardTable').innerHTML = '<tr><th>#</th><th>Piloto</th><th>Coche</th><th>Tiempo</th></tr>' + (rows.map(boardRow).join('') || '');
+  const res = await getRows(ti);
+  if (!res.online) st.textContent = res.error ? 'No se pudo conectar con la clasificación. Mostrando tus tiempos de este dispositivo.' : 'Clasificación online desactivada: aquí solo ves tus tiempos de este dispositivo.';
+  const head = '<tr><th>#</th><th>Piloto</th><th>Coche</th><th>Tiempo</th></tr>';
+  let html = '';
+  if (!f) { // por categorías: el mejor tiempo de cada piloto dentro de cada grupo
+    for (const g of GROUPS) { const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === g.id); if (!list.length) continue; html += `<tr class="gh"><td colspan="4">${esc(g.name)}</td></tr>` + topWithMe(list, 8).map(boardRow).join(''); }
+    if (res.online && html) st.textContent = 'Mejor tiempo de cada piloto en cada categoría';
+  } else {
+    const pred = f.startsWith('g:') ? (r) => groupIdOfCar(r.carId) === f.slice(2) : (r) => r.carId === f.slice(2);
+    html = rankRows(res.rows, pred).map(boardRow).join('');
+  }
+  if (res.online && !html) st.textContent = 'Aún no hay tiempos en este circuito. ¡Pon el primero!';
+  $('boardTable').innerHTML = head + html;
 }
 function openBoard(trackKey) {
   const bt = $('boardTrack'), bc = $('boardCar');
   bt.innerHTML = tracks.map((t, i) => `<option value="${i}">${esc(t.name)}</option>`).join('');
-  bc.innerHTML = '<option value="">Todos los coches</option>' + CARS.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  bc.innerHTML = '<option value="">Por categorías</option><optgroup label="Una categoría">' + GROUPS.map((g) => `<option value="g:${g.id}">${esc(g.name)}</option>`).join('') + '</optgroup><optgroup label="Un coche">' + CARS.map((c) => `<option value="c:${c.id}">${esc(c.name)}</option>`).join('') + '</optgroup>';
   bt.value = String(Math.max(0, tracks.findIndex((t) => t.key === (trackKey || tracks[sel.track].key)))); bc.value = '';
   $('board').classList.remove('hidden'); renderBoard();
 }
 $('boardTrack').onchange = renderBoard; $('boardCar').onchange = renderBoard;
 $('boardBtn').onclick = () => openBoard(); $('boardBtn2').onclick = () => openBoard(S.trackInfo && S.trackInfo.key); $('boardClose').onclick = () => $('board').classList.add('hidden');
 $('pname').onchange = (e) => { e.target.value = lb.setName(e.target.value); };
+$('pname').onkeydown = (e) => e.stopPropagation();
 lb.flush();
 
 // ---------- ajustes ----------
@@ -813,6 +865,35 @@ for (const k of ['master', 'music', 'engine']) $('v_' + k).oninput = (e) => { se
 $('gfxSel').onclick = (e) => { if (e.target.dataset.v) { sel.gfx = e.target.dataset.v; store.set('sel', sel); applyGfx(); buildSettings(); } };
 const openSettings = () => { buildSettings(); $('settings').classList.remove('hidden'); };
 $('setBtn').onclick = openSettings; $('setBtn2').onclick = openSettings; $('setClose').onclick = () => $('settings').classList.add('hidden');
+
+// ---------- coche de fondo en el menú ----------
+const MP = { scene: null, car: null, key: '', ang: 0.6, loading: '' };
+function menuPreviewInit() {
+  const sc = new THREE.Scene();
+  sc.add(new THREE.HemisphereLight(0xffffff, 0x1a2030, 0.8));
+  const key = new THREE.DirectionalLight(0xfff2dd, 2.0); key.position.set(4, 6, 3); sc.add(key);
+  const rim = new THREE.DirectionalLight(0x7aa7ff, 1.1); rim.position.set(-5, 2, -4); sc.add(rim);
+  const pm = new THREE.PMREMGenerator(renderer); sc.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose();
+  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 4, 64, 64, 62);
+  g.addColorStop(0, 'rgba(255,255,255,.18)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  const pad = new THREE.Mesh(new THREE.PlaneGeometry(9, 9).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  pad.position.y = 0.01; sc.add(pad); MP.scene = sc;
+}
+function menuPreviewFrame(dt) {
+  if (!MP.scene) menuPreviewInit();
+  const type = CARS[sel.car], color = paintOf(type), lod = MOBILE ? 'lo' : 'hi', key = type.id + color + lod;
+  if (MP.key !== key) {
+    if (!carAssetReady(type, lod)) { if (MP.loading !== type.id) { MP.loading = type.id; loadCarAsset(type, true).then(() => { MP.loading = ''; }).catch(() => { MP.loading = ''; }); } }
+    else { try { if (MP.car) MP.scene.remove(MP.car.root); MP.car = buildCarMesh(color, type.kind, lod); MP.scene.add(MP.car.root); MP.key = key; } catch (e) { MP.key = key; } }
+  }
+  MP.ang += dt * 0.35;
+  if (MP.car) { MP.car.root.rotation.y = MP.ang; for (const w of MP.car.wheels) w.spin.rotation.x += dt * 1.5; }
+  const wide = window.innerWidth > 900;
+  camera.fov = 34; camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+  const dz = Math.max(7.4, 2.7 / (Math.tan(17 * Math.PI / 180) * camera.aspect));
+  camera.position.set(0, 1.7 + (dz - 7.4) * 0.12, dz); if (wide) camera.lookAt(-1.9, 0.55, 0); else camera.lookAt(0, window.innerHeight > window.innerWidth ? 1.6 + (dz - 7.4) * 0.16 : 0.55, 0);
+  renderer.setClearColor(0x0b111c, 1); renderer.render(MP.scene, camera);
+}
 
 // ---------- bucle principal ----------
 let last = performance.now(), slowAcc = 0, slowN = 0;
@@ -829,11 +910,8 @@ function frame(now) {
     }
     slowAcc = 0; slowN = 0;
   }
-  { const driving = S.state === 'racing' || S.state === 'countdown' || S.state === 'finished'; sound.setEngineActive(driving); const wantMusic = S.state === 'menu' && !sel.mute && sel.vol.music > 0.001; if (wantMusic !== S.musicOn) { S.musicOn = wantMusic; sound.setMusic(wantMusic); } }
-  if (S.state === 'menu') {
-    renderer.setClearColor(0x0b111c, 1); renderer.clear();
-    return;
-  }
+  { const driving = S.state === 'racing' || S.state === 'countdown' || S.state === 'finished'; sound.setEngineActive(driving); const wantMusic = !sel.mute && sel.vol.music > 0.001 && (S.state === 'menu' || (!!sel.raceMusic && !!S.scene)); sound.setMusicDuck(S.state !== 'menu'); if (wantMusic !== S.musicOn) { S.musicOn = wantMusic; sound.setMusic(wantMusic); } }
+  if (S.state === 'menu') { menuPreviewFrame(dt); return; }
   if (!S.scene) { renderer.setClearColor(0x0a0d16); renderer.clear(); return; }
   const running = S.state === 'racing' || S.state === 'finished';
   if (S.state === 'countdown') {
