@@ -259,7 +259,7 @@ async function startRace(restart = false) {
   const sig = [sel.track, sel.car, sel.mode, sel.diff].join('|');
   const reuse = !!(restart && S.raceScene && S.sig === sig && S.scene);
   S.trackInfo = ti; S.tr = tr; S.th = ti.th;
-  const weatherName = { rain: 'LLUVIA · PISTA MOJADA', snow: 'NIEVE · BAJA ADHERENCIA', dust: 'TIERRA · POLVO', clear: 'ASFALTO · SECO' };
+  const weatherName = { rain: 'LLUVIA · PISTA MOJADA', snow: 'NIEVE · BAJA ADHERENCIA', dust: 'TIERRA · POLVO', dirt: 'TIERRA · POLVO', clear: 'ASFALTO · SECO' };
   $('weatherLabel').textContent = weatherName[ti.th.weather || ti.th.surface] || 'ASFALTO · SECO';
   $('weatherBadge').className = ti.th.weather || ti.th.surface || '';
   store.set('sel', sel);
@@ -269,19 +269,18 @@ async function startRace(restart = false) {
     const scene = S.scene;
     S.prof = {}; for (const c of CARS) S.prof[c.id] = buildSpeedProfile(tr, c);
     S.particles = new Particles(scene);
-    const sg = new THREE.PlaneGeometry(0.44, 1.15, 1, 6).rotateX(-Math.PI / 2);
+    const sg = new THREE.PlaneGeometry(0.34, 1.45, 1, 1).rotateX(-Math.PI / 2);
     S.skidN = MOBILE ? 300 : 900;
     const markColor = ti.th.weather === 'rain' ? 0x202d39 : ti.th.surface === 'snow' ? 0x71859a : ti.th.surface === 'dirt' ? 0x765238 : 0x14171b;
     const tread = document.createElement('canvas'); tread.width = 64; tread.height = 128;
-    const tx = tread.getContext('2d'); tx.fillStyle = '#fff';
-    for (let y = 3; y < 128; y += 12) { tx.fillRect(14, y, 10, 5); tx.fillRect(28, y + 5, 12, 4); }
-    tx.globalCompositeOperation = 'destination-in';
-    const edge = tx.createLinearGradient(0, 0, 64, 0); edge.addColorStop(0, 'rgba(255,255,255,0)'); edge.addColorStop(0.19, '#fff'); edge.addColorStop(0.81, '#fff'); edge.addColorStop(1, 'rgba(255,255,255,0)');
-    tx.fillStyle = edge; tx.fillRect(0, 0, 64, 128);
-    const end = tx.createLinearGradient(0, 0, 0, 128); end.addColorStop(0, 'rgba(255,255,255,0)'); end.addColorStop(0.1, '#fff'); end.addColorStop(0.84, '#fff'); end.addColorStop(1, 'rgba(255,255,255,0)');
-    tx.fillStyle = end; tx.fillRect(0, 0, 64, 128);
+    const tx = tread.getContext('2d');
+    const fade = tx.createLinearGradient(0, 0, 64, 0);
+    fade.addColorStop(0, 'rgba(255,255,255,0)'); fade.addColorStop(0.16, 'rgba(255,255,255,.42)'); fade.addColorStop(0.5, 'rgba(255,255,255,.72)'); fade.addColorStop(0.84, 'rgba(255,255,255,.42)'); fade.addColorStop(1, 'rgba(255,255,255,0)');
+    const ends = tx.createLinearGradient(0, 0, 0, 128);
+    ends.addColorStop(0, 'rgba(255,255,255,0)'); ends.addColorStop(0.12, '#fff'); ends.addColorStop(0.88, '#fff'); ends.addColorStop(1, 'rgba(255,255,255,0)');
+    tx.fillStyle = ends; tx.fillRect(0, 0, 64, 128); tx.globalCompositeOperation = 'destination-in'; tx.fillStyle = fade; tx.fillRect(0, 0, 64, 128);
     const treadTex = new THREE.CanvasTexture(tread); treadTex.colorSpace = THREE.SRGBColorSpace;
-    S.skid = new THREE.InstancedMesh(sg, new THREE.MeshBasicMaterial({ map: treadTex, color: markColor, transparent: true, opacity: ti.th.weather === 'rain' ? 0.28 : 0.5, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), S.skidN);
+    S.skid = new THREE.InstancedMesh(sg, new THREE.MeshBasicMaterial({ map: treadTex, color: markColor, transparent: true, opacity: ti.th.weather === 'rain' ? 0.54 : 0.4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), S.skidN);
     const z = new THREE.Matrix4().makeScale(0, 0, 0); for (let i = 0; i < S.skidN; i++) S.skid.setMatrixAt(i, z);
     S.skid.frustumCulled = false; scene.add(S.skid); S.skidI = 0;
     const bc = document.createElement('canvas'); bc.width = bc.height = 64; const bx = bc.getContext('2d');
@@ -369,7 +368,7 @@ window.addEventListener('keydown', (e) => {
   input.keys.add(e.code);
   if (e.code === 'Escape' || e.code === 'KeyP') togglePause();
   if (e.code === 'KeyR' && (S.state === 'racing')) doReset();
-  if (e.code === 'KeyC') S.camMode = (S.camMode + 1) % 3;
+  if (e.code === 'KeyC') S.camMode = (S.camMode + 1) % 2;
   if (e.code === 'KeyT' && S.raceScene && S.state !== 'menu') startRace(true);
   if (e.code === 'KeyM') { sel.mute = !sel.mute; sound.setMuted(sel.mute); store.set('sel', sel); showMsg(sel.mute ? 'Sonido desactivado' : 'Sonido activado', 900, 'cy'); }
   if (e.code === 'Enter' && S.state === 'menu') $('startBtn').click();
@@ -635,6 +634,9 @@ function emitFx(dt) {
         markTire(c, 0.09);
       }
     }
+    if (!c.air && c.brake > 0.68 && c.speed > 18) {
+      for (const side of [-1, 1]) { wheelPos(c, side, -1, wp); markTire(c, th.surface === 'snow' ? 0.035 : 0.075); }
+    }
     if (c.offroad && c.speed > 10 && !c.air) {
       const dustCol = new THREE.Color(th.dust || th.dirt), snow = th.surface === 'snow';
       for (const sx of [-1, 1]) { wheelPos(c, sx, -1, wp); markTire(c, snow ? 0.035 : 0.06); if (Math.random() < 0.6) P.emit(wp.x, wp.y + 0.2, wp.z, (Math.random() - 0.5) * 3, 1 + Math.random() * 2, (Math.random() - 0.5) * 3, snow ? 0.9 : 0.7, 0.6, snow ? 3.4 : 2.4, dustCol.r + 0.04, dustCol.g + 0.04, dustCol.b + 0.04, 0.5, 2); }
@@ -650,7 +652,7 @@ function emitFx(dt) {
     }
   }
   if (th.weather === 'rain' || th.surface === 'snow') {
-    const rain = th.weather === 'rain', count = MOBILE ? 3 : 7, tint = rain ? [0.68, 0.8, 0.96] : [0.88, 0.94, 1];
+    const rain = th.weather === 'rain', count = rain ? (MOBILE ? 4 : 7) : (MOBILE ? 5 : 9), tint = rain ? [0.68, 0.8, 0.96] : [0.88, 0.94, 1];
     for (let i = 0; i < count; i++) {
       const x = pl.x + (Math.random() - 0.5) * 34, z = pl.z + (Math.random() - 0.5) * 34;
       P.emit(x, pl.y + 7 + Math.random() * 11, z, rain ? -pl.vx * 0.1 : 0.1, rain ? -18 : -1.5 - Math.random() * 2.5, rain ? -pl.vz * 0.1 : 0.1, rain ? 0.36 : 1.8, rain ? 0.035 : 0.09, rain ? 0.022 : 0.045, tint[0], tint[1], tint[2], rain ? 0.25 : 0.52, rain ? 0.15 : 0.35, 0);
@@ -671,30 +673,19 @@ function markTire(c, lift = 0.07) {
 function updateCamera(dt, snap) {
   const c = S.player; if (!c) return;
   const a = S.alpha == null ? 1 : S.alpha;
-  const x = lerp(c.px, c.x, a), y = lerp(c.py, c.y, a), z = lerp(c.pz, c.z, a), psi = c.ppsi + wrapPi(c.psi - c.ppsi) * a;
-  const k = snap ? 1 : 1 - Math.exp(-3.8 * dt);
-  // La cámara trasera conserva el rumbo de salida: el coche y el circuito giran en pantalla,
-  // pero el horizonte no da una vuelta completa con cada curva. La cámara interior sí acompaña al coche.
-  if (S.camMode === 2) S.camYaw += wrapPi(psi - S.camYaw) * k;
-  else S.camYaw = S.camFixedYaw;
+  const x = lerp(c.px, c.x, a), y = lerp(c.py, c.y, a), z = lerp(c.pz, c.z, a);
+  // El horizonte permanece fijo al rumbo inicial, aunque el coche derrape o cambie de orientación.
+  S.camYaw = S.camFixedYaw;
   S.fovT = (S.fovT == null ? 0 : S.fovT); S.fovT += (0 - S.fovT) * (snap ? 1 : 1 - Math.exp(-5 * dt));
   const sn = Math.sin(S.camYaw), cs = Math.cos(S.camYaw);
   const speed = c.speed;
   let fov = 66 + clamp(speed / 62, 0, 1) * 12;
   S.camY += (y - S.camY) * (snap ? 1 : 1 - Math.exp(-9 * dt));
   const sh = S.shake, rx = Math.sin(S.t * 47 + 0.7) * sh * 0.42, ry = Math.sin(S.t * 61 + 2.1) * sh * 0.34;
-  if (S.camMode === 2) {
-    const fx = Math.sin(psi), fz = Math.cos(psi);
-    camera.position.set(x + fx * 0.3 + rx * 0.3, y + 0.8 + ry * 0.3, z + fz * 0.3);
-    const ly = S.camYaw;
-    camera.lookAt(x + Math.sin(ly) * 30, y + 0.75 + c.grad * 12, z + Math.cos(ly) * 30);
-    fov += 8;
-  } else {
-    const far = S.camMode === 1 ? 1.45 : 1;
-    const dist = (5.3 + speed * 0.02 + S.fovT * 0.7) * far, hgt = (3.6 + speed * 0.005) * far;
-    camera.position.set(x - sn * dist + rx, S.camY + hgt + ry, z - cs * dist);
-    camera.lookAt(x + sn * 4.2, y + 0.35, z + cs * 4.2);
-  }
+  const far = S.camMode === 1 ? 1.38 : 1;
+  const dist = (5.3 + speed * 0.02 + S.fovT * 0.7) * far, hgt = (3.6 + speed * 0.005) * far;
+  camera.position.set(x - sn * dist + rx, S.camY + hgt + ry, z - cs * dist);
+  camera.lookAt(x + sn * 4.2, y + 0.35, z + cs * 4.2);
   if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
   S.camKick *= Math.exp(-8 * dt); camera.rotation.z = 0;
   S.shake = Math.max(0, S.shake - dt * 2.6);
@@ -802,6 +793,7 @@ function frame(now) {
     updateCamera(dt, false);
     S.world.sky.rotation.y += dt * 0.004;
     S.world.updateWind(dt);
+    S.world.updateWeather(dt, p.x, p.y, p.z);
     if (p.onKerb && p.speed > 10) S.shake = Math.max(S.shake, 0.09);
     followSun(S.world, lerp(p.px, p.x, S.alpha), lerp(p.py, p.y, S.alpha), lerp(p.pz, p.z, S.alpha));
     // fantasma

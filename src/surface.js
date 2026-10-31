@@ -1,11 +1,11 @@
 // Shared road-water layout so the visual puddles and grip model line up.
 export function puddleAt(s, lat) {
-  const index = Math.floor((s - 48) / 91);
+  const index = Math.floor((s - 38) / 64);
   if (index < 0) return 0;
-  const start = 48 + index * 91;
-  const lane = Math.sin(index * 12.989) * 3.8;
-  const halfLength = 2.3 + (index % 4) * 0.24;
-  const halfWidth = 0.55 + (index % 3) * 0.16;
+  const start = 38 + index * 64;
+  const lane = Math.sin(index * 12.989) * 3.25;
+  const halfLength = 3.7 + (index % 4) * 0.32;
+  const halfWidth = 1.05 + (index % 3) * 0.22;
   const ds = Math.abs(s - (start + halfLength));
   const dl = Math.abs(lat - lane);
   const edge = Math.max(ds / halfLength, dl / halfWidth);

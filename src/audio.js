@@ -23,7 +23,7 @@ function seamlessLoop(ctx, source, fadeSeconds = 0.12) {
   return loop;
 }
 export class Sound {
-  constructor() { this.ctx = null; this.muted = false; this.ok = false; this.engineSource = null; this.engineCar = null; this.engineToken = 0; this.requestedCar = null; }
+  constructor() { this.ctx = null; this.muted = false; this.ok = false; this.engineSource = null; this.engineCar = null; this.engineToken = 0; this.requestedCar = null; this.engineRpm = 0.22; this.lastAudioTime = 0; }
   init(carId) {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); if (carId) this.ensureEngine(carId); return; }
     try {
@@ -31,7 +31,7 @@ export class Sound {
       if (!AC) return;
       const ctx = (this.ctx = new AC());
       const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 4; comp.connect(ctx.destination);
-      this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 0.72; this.master.connect(comp);
+      this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 0.58; this.master.connect(comp);
       // ruidos
       const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = buf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -71,18 +71,22 @@ export class Sound {
       if (token === this.engineToken) { this.requestedCar = null; console.warn('No se pudo cargar la grabación del motor', e); }
     }
   }
-  setMuted(m) { this.muted = m; if (this.master) this.master.gain.value = m ? 0 : 0.72; }
+  setMuted(m) { this.muted = m; if (this.master) this.master.gain.value = m ? 0 : 0.58; }
   update(p) {
     if (!this.ok) return;
     if (p.carId && p.carId !== this.engineCar) this.ensureEngine(p.carId);
-    const t = this.ctx.currentTime, rpm = p.rpm;
+    const t = this.ctx.currentTime, dt = this.lastAudioTime ? Math.min(0.1, Math.max(0, t - this.lastAudioTime)) : 1 / 60;
+    this.lastAudioTime = t;
+    const throttle = Math.max(0, Math.min(1, p.throttle || 0)), brake = Math.max(0, Math.min(1, p.brake || 0));
+    const targetRpm = Math.max(0.16, Math.min(1, p.rpm * 0.72 + throttle * 0.34 - brake * 0.2));
+    this.engineRpm += (targetRpm - this.engineRpm) * (1 - Math.exp(-dt / (throttle > 0.12 ? 0.075 : 0.2)));
     if (this.engineSource) {
       const profile = this.engineSource.profile;
-      const rate = Math.max(0.68, Math.min(1.62, profile[1] + rpm * 0.5 + p.throttle * 0.1 - (p.brake || 0) * 0.035));
-      this.engineSource.source.playbackRate.setTargetAtTime(rate, t, 0.14);
-      this.engineSource.filter.frequency.setTargetAtTime(Math.min(profile[3], 950 + rpm * 4200 + p.throttle * 900), t, 0.18);
-      const load = 0.26 + rpm * 0.47 + p.throttle * 0.4;
-      this.engineSource.gain.gain.setTargetAtTime(profile[2] * load * (p.air ? 0.72 : 1), t, 0.16);
+      const rate = Math.max(0.68, Math.min(1.62, profile[1] + this.engineRpm * 0.55 + throttle * 0.24 - brake * 0.11));
+      this.engineSource.source.playbackRate.setTargetAtTime(rate, t, throttle > 0.12 ? 0.07 : 0.18);
+      this.engineSource.filter.frequency.setTargetAtTime(Math.max(750, Math.min(profile[3], 820 + this.engineRpm * 4200 + throttle * 1500 - brake * 520)), t, throttle > 0.12 ? 0.08 : 0.18);
+      const load = Math.max(0.12, Math.min(1, 0.16 + this.engineRpm * 0.38 + throttle * 0.55 - brake * 0.16));
+      this.engineSource.gain.gain.setTargetAtTime(profile[2] * load * (p.air ? 0.72 : 1), t, 0.1);
     }
     const r = Math.min(1, p.speed / p.vmax);
     this.wind.g.gain.setTargetAtTime(r * r * 0.09, t, 0.15);

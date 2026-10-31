@@ -438,10 +438,10 @@ export function buildWorld(tr, th, opt = {}) {
     const c = sun.shadow.camera; c.left = -24; c.right = 24; c.top = 24; c.bottom = -24; c.near = 1; c.far = 260;
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05; sun.shadow.radius = 2;
   }
-  const ambientRain = !!opt.preview && th.weather === 'rain', ambientSnow = !!opt.preview && th.surface === 'snow';
+  const ambientRain = th.weather === 'rain', ambientSnow = th.surface === 'snow';
   let weatherMesh = null, weatherDrops = [];
   if (ambientRain || ambientSnow) {
-    const count = Math.round((opt.mobile ? 72 : 150) * (ambientSnow ? 0.82 : 1));
+    const count = Math.round((opt.mobile ? 110 : 230) * (ambientSnow ? 0.82 : 1));
     const geo = ambientRain ? new THREE.CylinderGeometry(0.012, 0.012, 0.72, 4).rotateX(0.2) : new THREE.SphereGeometry(0.065, 5, 4);
     const mat = new THREE.MeshBasicMaterial({ color: ambientRain ? 0xb5d5eb : 0xf0f7ff, transparent: true, opacity: ambientRain ? 0.55 : 0.78, depthWrite: false });
     weatherMesh = new THREE.InstancedMesh(geo, mat, count); weatherMesh.frustumCulled = false;
@@ -467,7 +467,7 @@ export function buildWorld(tr, th, opt = {}) {
 
   const road = roadMesh(tr, th, q.stride); scene.add(road);
   // Marcas tenues de goma en la trazada: dos huellas de rueda, sin línea central de carretera.
-  const rubber = new THREE.MeshStandardMaterial({ color: th.weather === 'rain' ? 0x35404a : 0x25292d, roughness: 0.96, metalness: 0.01, transparent: true, opacity: th.weather === 'rain' ? 0.2 : 0.12, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide });
+  const rubber = new THREE.MeshStandardMaterial({ color: th.weather === 'rain' ? 0x35404a : 0x25292d, roughness: 0.94, metalness: 0.02, transparent: true, opacity: th.weather === 'rain' ? 0.36 : 0.24, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide });
   for (const side of [-1, 1]) {
     const line = new THREE.Mesh(stripGeom(tr, 0, tr.len - 1, side * 0.66 - 0.085, side * 0.66 + 0.085, 0.026), rubber);
     line.frustumCulled = false; scene.add(line);
@@ -475,9 +475,9 @@ export function buildWorld(tr, th, opt = {}) {
   const walls = wallMesh(tr, th, q.stride); walls.receiveShadow = true; scene.add(walls);
   if (th.weather === 'rain') {
     // Charcos estilizados sobre el asfalto: el mapa de entorno crea reflejos baratos en cualquier GPU.
-    const water = new THREE.MeshStandardMaterial({ color: 0x718899, roughness: 0.1, metalness: 0.22, transparent: true, opacity: 0.43, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
-    for (let s = 48, i = 0; s < tr.len - 36; s += 91, i++) {
-      const lane = Math.sin(i * 12.989) * 3.8, half = 0.55 + (i % 3) * 0.16, halfLength = 2.3 + (i % 4) * 0.24;
+    const water = new THREE.MeshStandardMaterial({ color: 0x91a9b8, roughness: 0.14, metalness: 0.28, transparent: true, opacity: 0.58, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+    for (let s = 38, i = 0; s < tr.len - 36; s += 64, i++) {
+      const lane = Math.sin(i * 12.989) * 3.25, half = 1.05 + (i % 3) * 0.22, halfLength = 3.7 + (i % 4) * 0.32;
       const puddle = new THREE.Mesh(puddleGeom(tr, s, halfLength * 2, lane, half), water);
       puddle.frustumCulled = false; scene.add(puddle);
     }
