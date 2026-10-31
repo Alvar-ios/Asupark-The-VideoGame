@@ -7,5 +7,8 @@ fs.writeFileSync('dist/game.js', r.outputFiles[0].text);
 fs.writeFileSync('dist/index.html', tpl.replace('<script>/*BUNDLE*/</script>', '<script src="./game.js" defer></script>'));
 fs.mkdirSync('dist/assets', { recursive: true });
 for (const name of fs.readdirSync('src/assets')) if (name.endsWith('.glb.gz')) fs.copyFileSync(`src/assets/${name}`, `dist/assets/${name}`);
+fs.mkdirSync('dist/lab', { recursive: true });
+fs.copyFileSync('tools/lab/engine-lab.html', 'dist/lab/index.html');
+fs.copyFileSync('src/engine-dsp.js', 'dist/lab/engine-dsp.js');
 fs.cpSync('src/assets/audio', 'dist/assets/audio', { recursive: true });
 console.log('dist/index.html', (fs.statSync('dist/index.html').size / 1024).toFixed(0) + ' KB', '| game.js', (fs.statSync('dist/game.js').size / 1024).toFixed(0) + ' KB', '| modelos bajo demanda');
