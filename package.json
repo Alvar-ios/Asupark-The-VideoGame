@@ -12,6 +12,7 @@
     "serve": "npm run build && node serve.mjs",
     "sim": "node test/sim.mjs",
     "optimize-glb": "node tools/optimize-glb.mjs",
-    "test:engine": "node test/engine-test.mjs"
+    "test:engine": "node test/engine-test.mjs",
+    "test:audio": "node test/audio-stress.mjs"
   }
 }

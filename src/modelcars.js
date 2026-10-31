@@ -7,6 +7,20 @@ export const MODEL = {
   qashqai: { hi: './assets/car_qashqai_hi.glb.gz', lo: './assets/car_qashqai_lo.glb.gz', paint: /carpaint/i },
   mini: { hi: './assets/car_mini_hi.glb.gz', lo: './assets/car_mini_lo.glb.gz', paint: /carpaint/i },
   cupra: { hi: './assets/car_cupra_hi.glb.gz', lo: './assets/car_cupra_lo.glb.gz', paint: /^body$/i },
+  golf: { hi: './assets/car_golf_hi.glb.gz', lo: './assets/car_golf_lo.glb.gz', paint: /^vM_CarPaint_Max1$/ },
+  mx5: { hi: './assets/car_mx5_hi.glb.gz', lo: './assets/car_mx5_lo.glb.gz', paint: /^Material\.002$/ },
+  z240: { hi: './assets/car_z240_hi.glb.gz', lo: './assets/car_z240_lo.glb.gz', paint: /^Material\.001$/ },
+  mustang: { hi: './assets/car_mustang_hi.glb.gz', lo: './assets/car_mustang_lo.glb.gz', paint: /^Color_04$/ },
+  s4: { hi: './assets/car_s4_hi.glb.gz', lo: './assets/car_s4_lo.glb.gz', paint: /^CarPaint$/ },
+  cobra: { hi: './assets/car_cobra_hi.glb.gz', lo: './assets/car_cobra_lo.glb.gz', paint: /^Color_M01$/ },
+  stradale: { hi: './assets/car_stradale_hi.glb.gz', lo: './assets/car_stradale_lo.glb.gz', paint: /mi_car_paint_phen2/ },
+  slr: { hi: './assets/car_slr_hi.glb.gz', lo: './assets/car_slr_lo.glb.gz', paint: /^1[12]Mtl$/ },
+  minitoon: { hi: './assets/car_minitoon_hi.glb.gz', lo: './assets/car_minitoon_lo.glb.gz', paint: /Bodymat/ },
+  gtr: { hi: './assets/car_gtr_hi.glb.gz', lo: './assets/car_gtr_lo.glb.gz', paint: /^bayside_blue$/ },
+  f360: { hi: './assets/car_f360_hi.glb.gz', lo: './assets/car_f360_lo.glb.gz', paint: /^AMH7852-CARPAINT$/ },
+  aston: { hi: './assets/car_aston_hi.glb.gz', lo: './assets/car_aston_lo.glb.gz', paint: /(?!)/ },
+  lotus: { hi: './assets/car_lotus_hi.glb.gz', lo: './assets/car_lotus_lo.glb.gz', paint: /(?!)/ },
+  mclaren: { hi: './assets/car_mclaren_hi.glb.gz', lo: './assets/car_mclaren_lo.glb.gz', paint: /(?!)/ },
 };
 const cache = {}, pending = {};
 export const modelCarReady = (id, lod = 'hi') => !!(cache[id] && cache[id][lod]);

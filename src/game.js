@@ -89,14 +89,19 @@ function drawPreview(cv, tr, th) {
 
 const groupOf = (c) => GROUPS.find((g) => g.id === c.group) || GROUPS[1];
 const envLabel = (t) => (t.th.weather === 'rain' ? 'lluvia' : t.th.surface === 'snow' ? 'nieve' : t.th.surface === 'dirt' ? 'tierra' : 'asfalto seco');
+const narrowMenu = () => window.innerWidth <= 760;
 function setView(v) {
   $('menu').dataset.view = v;
-  for (const k of ['Home', 'Tracks', 'Garage']) $('view' + k).hidden = k.toLowerCase() !== v;
-  $('menu').querySelector('.menu-scroll').scrollTop = 0;
+  $('flyout').hidden = v === 'home';
+  $('viewTracks').hidden = v !== 'tracks'; $('viewGarage').hidden = v !== 'garage';
+  $('flyTitle').textContent = v === 'garage' ? 'Coche' : 'Circuito';
+  $('pickTrack').classList.toggle('on', v === 'tracks'); $('pickCar').classList.toggle('on', v === 'garage');
+  $('flyout').scrollTop = 0; $('menu').querySelector('.menu-scroll').scrollTop = 0;
 }
-$('pickTrack').onclick = () => setView('tracks');
-$('pickCar').onclick = () => { sel.group = groupOf(CARS[sel.car]).id; buildMenu(); setView('garage'); };
-document.querySelectorAll('[data-back]').forEach((b) => { b.onclick = () => setView('home'); });
+$('pickTrack').onclick = () => setView($('menu').dataset.view === 'tracks' ? 'home' : 'tracks');
+$('pickCar').onclick = () => { if ($('menu').dataset.view === 'garage') { setView('home'); return; } sel.group = groupOf(CARS[sel.car]).id; buildMenu(); setView('garage'); };
+$('flyClose').onclick = () => setView('home');
+window.addEventListener('keydown', (e) => { if (e.code === 'Escape' && S.state === 'menu' && $('menu').dataset.view !== 'home') { setView('home'); e.stopPropagation(); } }, true);
 function buildMenu() {
   { const t0 = tracks[sel.track], c0 = CARS[sel.car]; if (!sel.group) sel.group = groupOf(c0).id;
     $('pickTrackName').textContent = t0.key === 'daily' ? 'Pista del día' : t0.name; $('pickTrackSub').textContent = `${(t0.tr.len / 1000).toFixed(1)} km · ${envLabel(t0)}`;
@@ -109,7 +114,7 @@ function buildMenu() {
     let best = null; for (const cc of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = { ...r, car: cc }; }
     d.innerHTML = `<canvas></canvas><b>${t.key === 'daily' ? '★ ' : ''}${t.name}</b><small class="track-sub">${t.sub}</small><span class="track-env ${environment[0]}">${environment[1]}</span><small class="track-meta">${(t.tr.len / 1000).toFixed(1)} km · ${t.tr.ramps.length} curvas/rampas</small><div class="rec">${best ? medalFor(best.lap, (benchFor(t, best.car) || {}).lap) + ' Mejor ' + fmt(best.lap) + ' · ' + best.car.name.split(' ')[0] : '&nbsp;'}${t.key === 'daily' ? (streakInfo().done ? ' ✓ hecho hoy' : streakInfo().n ? ' 🔥 ' + streakInfo().n + ' días' : ' Reto de hoy') : ''}</div>`;
     drawPreview(d.querySelector('canvas'), t.tr, t.th);
-    d.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); setView('home'); };
+    d.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); if (narrowMenu()) setView('home'); };
     tl.appendChild(d);
   });
   const gt = $('groupTabs'); gt.innerHTML = '';
@@ -119,7 +124,7 @@ function buildMenu() {
     if (c.group !== sel.group) return;
     const d = document.createElement('div'); d.className = 'card car-card' + (i === sel.car ? ' on' : '');
     const hex = new THREE.Color(paintOf(c)).lerp(new THREE.Color(0xffffff), 0.32).getStyle();
-    d.innerHTML = `<b style="color:${hex}">${c.name}</b><small>${c.desc}</small>` + [['VEL', (c.vmax - 50) / 12], ['ACEL', (c.accel - 11) / 6], ['GIRO', (c.yaw - 1.9) / 0.9], ['DESLIZ.', (14 - c.grip) / 5]].map(([n, v]) => `<div class="stat">${n}<i><s style="width:${clamp(v, 0.1, 1) * 100}%;background:${hex}"></s></i></div>`).join('');
+    d.innerHTML = `<b style="color:${hex}">${c.name}</b><small>${c.desc}</small>` + [['VEL', (c.vmax - 44) / 32], ['ACEL', (c.accel - 11) / 11], ['GIRO', (c.yaw - 1.9) / 1.3], ['DESLIZ.', (15 - c.grip) / 5]].map(([n, v]) => `<div class="stat">${n}<i><s style="width:${clamp(v, 0.1, 1) * 100}%;background:${hex}"></s></i></div>`).join('');
     d.onclick = () => { sel.car = i; sel.carId = c.id; store.set('sel', sel); buildMenu(); };
     cl.appendChild(d);
   });
@@ -136,6 +141,7 @@ $('sndBtn').onclick = () => { sel.mute = !sel.mute; store.set('sel', sel); build
 function buildPaints() {
   const box = $('paints'); box.innerHTML = '';
   const car = CARS[sel.car], cur = paintOf(car).toLowerCase();
+  if (car.nopaint) { $('paintName').textContent = 'Librea original'; return; }
   PAINTS.forEach(([n, hex]) => { const b = document.createElement('button'); b.className = 'sw' + (hex.toLowerCase() === cur ? ' on' : ''); b.style.background = hex; b.title = n; b.onclick = () => { sel.colors[car.id] = hex; store.set('sel', sel); buildMenu(); }; box.appendChild(b); });
   const inp = document.createElement('input'); inp.type = 'color'; inp.value = cur; inp.title = 'Color personalizado'; inp.className = 'sw custom';
   inp.oninput = () => { sel.colors[car.id] = inp.value; store.set('sel', sel); };
@@ -888,10 +894,16 @@ function menuPreviewFrame(dt) {
   }
   MP.ang += dt * 0.35;
   if (MP.car) { MP.car.root.rotation.y = MP.ang; for (const w of MP.car.wheels) w.spin.rotation.x += dt * 1.5; }
-  const wide = window.innerWidth > 900;
-  camera.fov = 34; camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
-  const dz = Math.max(7.4, 2.7 / (Math.tan(17 * Math.PI / 180) * camera.aspect));
-  camera.position.set(0, 1.7 + (dz - 7.4) * 0.12, dz); if (wide) camera.lookAt(-1.9, 0.55, 0); else camera.lookAt(0, window.innerHeight > window.innerWidth ? 1.6 + (dz - 7.4) * 0.16 : 0.55, 0);
+  const W = window.innerWidth, H = window.innerHeight, open = $('menu').dataset.view !== 'home', fly = $('flyout');
+  const left = narrowMenu() ? 0 : $('menuLeft').getBoundingClientRect().right;
+  let r = W, t = 0, bt = H;
+  if (open) { if (narrowMenu()) bt = fly.getBoundingClientRect().top; else r = fly.getBoundingClientRect().left; }
+  else if (narrowMenu()) t = H * 0.42;
+  const fw = Math.max(240, r - left), fh = Math.max(160, bt - t), cx = (left + r) / 2, cy = (t + bt) / 2;
+  camera.fov = 34; camera.aspect = W / H;
+  const dzC = Math.min(26, Math.max(7.4, 8.4 * Math.max(H / fw, 0.62 * H / fh)));
+  camera.setViewOffset(W, H, -(cx - W / 2), -(cy - H / 2), W, H);
+  camera.position.set(0, 1.5 + (dzC - 7.4) * 0.1, dzC); camera.lookAt(0, 0.55, 0);
   renderer.setClearColor(0x0b111c, 1); renderer.render(MP.scene, camera);
 }
 
@@ -912,6 +924,7 @@ function frame(now) {
   }
   { const driving = S.state === 'racing' || S.state === 'countdown' || S.state === 'finished'; sound.setEngineActive(driving); const wantMusic = !sel.mute && sel.vol.music > 0.001 && (S.state === 'menu' || (!!sel.raceMusic && !!S.scene)); sound.setMusicDuck(S.state !== 'menu'); if (wantMusic !== S.musicOn) { S.musicOn = wantMusic; sound.setMusic(wantMusic); } }
   if (S.state === 'menu') { menuPreviewFrame(dt); return; }
+  if (camera.view && camera.view.enabled) camera.clearViewOffset();
   if (!S.scene) { renderer.setClearColor(0x0a0d16); renderer.clear(); return; }
   const running = S.state === 'racing' || S.state === 'finished';
   if (S.state === 'countdown') {

@@ -31,7 +31,7 @@ export class Music {
   start() {
     if (this.playing) return; this.playing = true; this.step = 0; this.songIdx = (this.songIdx + 1) % SONGS.length; this.next = this.ctx.currentTime + 0.12;
     this.out.gain.cancelScheduledValues(this.ctx.currentTime); this.out.gain.setTargetAtTime(this.vol, this.ctx.currentTime, 0.6);
-    this.timer = setInterval(() => this.tick(), 60); this.tick();
+    this.timer = setInterval(() => this.tick(), 50); this.tick();
   }
   stop() {
     if (!this.playing) return; this.playing = false; const t = this.ctx.currentTime;
@@ -41,7 +41,9 @@ export class Music {
   tick() {
     const ctx = this.ctx;
     if (ctx.state !== 'running') { this.next = ctx.currentTime + 0.1; return; }
-    while (this.next < ctx.currentTime + 0.3) {
+    // si el hilo principal se atasca (frame largo) y nos pasamos, no soltamos de golpe las notas atrasadas: eso sonaba a chasquido
+    if (this.next < ctx.currentTime - 0.04) { this.next = ctx.currentTime + 0.06; this.step = Math.ceil(this.step / 2) * 2; }
+    while (this.next < ctx.currentTime + 0.5) {
       if (this.step === 0) { this.song = SONGS[this.songIdx]; this.stepDur = 60 / this.song.bpm / 4; this.delay.delayTime.setValueAtTime((60 / this.song.bpm) * 0.75, this.next); }
       this.play(this.step, this.next); this.next += this.stepDur; this.step++;
       if (this.step >= 256) { this.step = 0; this.songIdx = (this.songIdx + 1) % SONGS.length; } // al acabar un tema, pasa al siguiente

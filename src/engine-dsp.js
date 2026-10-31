@@ -28,9 +28,29 @@ export const PROFILES = {
     tau: 0.44, rough: 0.14, miss: 0.05, sub: 0.5, rumble: 0.3, fan: 0, turboNoise: 0, turboWhine: 0, crackle: 0.25, crkMin: 2500, thump: 0.6, burble: 0.15,
     formants: F([[64, 3, 0.95, 0], [100, 3, 0.95, 0.05], [170, 2.8, 0.75, 0.1], [310, 2.6, 0.5, 0.2], [620, 2.4, 0.3, 0.4], [1250, 2.2, 0.16, 0.6], [2400, 2, 0.07, 0.8]]) },
 };
+// Perfiles derivados: parten de uno base y se ajustan (más grave/agudo, cilindros, sobrealimentación…)
+const shiftF = (fm, k) => fm.map((f) => [f[0] * k, f[1], f[2], f[3]]);
+const amps = (n) => Array.from({ length: n }, (_, i) => 1 + 0.06 * Math.sin(i * 2.3 + 0.7));
+const derive = (base, k, o) => { const P = Object.assign({}, PROFILES[base], o); P.formants = shiftF((o && o.formants) || PROFILES[base].formants, k); if (o && o.cyl) P.amp = amps(o.cyl); return P; };
+Object.assign(PROFILES, {
+  minitoon: derive('mini', 1.1, { name: 'Mini Toon (compresor agudo)', gain: 0.9, redline: 6800 }),
+  gtr: derive('porsche', 1.0, { name: 'Skyline GT-R (RB26 biturbo)', redline: 8000, gain: 1.05, turboNoise: 0.8, turboWhine: 0.7, crackle: 2, burble: 0.5, sub: 0.8 }),
+  f360: derive('m3', 1.25, { name: 'Ferrari 360 (V8 que grita)', cyl: 8, idle: 1000, redline: 8600, gain: 1.05, sub: 0.7, rumble: 0.5, crackle: 1.3, crkMin: 2800, thump: 0.9, burble: 0.3, rough: 0.08 }),
+  golf: derive('bora', 1.15, { name: 'Golf GTI Mk1 (4 cil. carburado)', redline: 6800, gain: 0.9, crackle: 0.9, burble: 0.4, rough: 0.3, sub: 0.4, rumble: 0.25 }),
+  mx5: derive('bora', 1.1, { name: 'MX-5 NA (4 cil. limpio)', redline: 7200, gain: 0.85, crackle: 0.35, burble: 0.1, rough: 0.12, miss: 0.04, sub: 0.45 }),
+  z240: derive('m3', 0.95, { name: 'Datsun 240Z (6 en línea clásico)', redline: 6800, gain: 1.05, sub: 1.0, rumble: 0.6, crackle: 1.3, burble: 0.6, rough: 0.2, miss: 0.08, tau: 0.5 }),
+  mustang: derive('m3', 0.78, { name: 'Mustang 65 (V8 grave)', cyl: 8, idle: 700, redline: 5800, gain: 1.3, sub: 1.6, rumble: 1.0, crackle: 1.6, crkMin: 2200, thump: 1.7, burble: 1.3, rough: 0.28, miss: 0.1, tau: 0.58 }),
+  s4: derive('m3', 1.0, { name: 'Audi S4 (V6 compresor)', redline: 7000, gain: 1.05, supercharger: 0.8, sub: 0.9, rumble: 0.5, crackle: 0.7, burble: 0.2 }),
+  cobra: derive('m3', 0.7, { name: 'Cobra 427 (V8 7.0)', cyl: 8, idle: 700, redline: 6500, gain: 1.45, sub: 1.8, rumble: 1.2, crackle: 2.2, crkMin: 2000, thump: 2, burble: 1.7, rough: 0.3, miss: 0.12, tau: 0.6 }),
+  stradale: derive('m3', 1.3, { name: 'Alfa 33 Stradale (V8 agudo)', cyl: 8, idle: 1100, redline: 9500, gain: 1.0, sub: 0.5, rumble: 0.4, crackle: 1.1, crkMin: 3500, thump: 0.8, burble: 0.3, rough: 0.1, tau: 0.34 }),
+  slr: derive('m3', 0.85, { name: 'SLR (V8 sobrealimentado)', cyl: 8, idle: 750, redline: 6600, gain: 1.4, supercharger: 1, sub: 1.5, rumble: 1.0, crackle: 1.8, crkMin: 2300, thump: 1.5, burble: 1.0, rough: 0.2 }),
+  aston: derive('porsche', 1.8, { name: 'F1 híbrido (V6 turbo)', cyl: 6, idle: 3500, redline: 13500, gain: 0.95, electric: 0.4, turboWhine: 0.8, turboNoise: 0.6, sub: 0.25, rumble: 0.15, crackle: 0.5, crkMin: 6000, thump: 0.3, burble: 0, rough: 0.04, miss: 0.02, tau: 0.25 }),
+  lotus: derive('m3', 1.45, { name: 'Lotus 72 (Cosworth V8)', cyl: 8, idle: 2000, redline: 10500, gain: 1.05, sub: 0.5, rumble: 0.35, crackle: 0.9, crkMin: 4000, thump: 0.6, burble: 0.2, rough: 0.2, miss: 0.08, tau: 0.3 }),
+  mclaren: derive('m3', 1.6, { name: 'McLaren MP4-25 (V8 18000)', cyl: 8, idle: 3500, redline: 14500, gain: 0.95, sub: 0.2, rumble: 0.15, crackle: 0.6, crkMin: 6000, thump: 0.3, burble: 0, rough: 0.04, miss: 0.02, tau: 0.25 }),
+});
 class SVF { // filtro de estado variable (paso banda)
   constructor() { this.l = 0; this.b = 0; }
-  bp(x, f, q, sr) { const g = 2 * Math.sin(Math.PI * Math.min(f, sr * 0.45) / sr), k = 1 / q; this.l += g * this.b; const h = x - this.l - k * this.b; this.b += g * h; return this.b; }
+  bp(x, f, q, sr) { const g = 2 * Math.sin(Math.PI * Math.min(f, sr * 0.25) / sr), k = 1 / q; this.l += g * this.b; const h = x - this.l - k * this.b; this.b += g * h; return this.b; }
 }
 export class EngineDSP {
   constructor(sr, profile = 'porsche', seed = 1) {
@@ -41,6 +61,7 @@ export class EngineDSP {
     this.nF = new SVF(); this.fanF = new SVF(); this.turF = new SVF(); this.crkF = new SVF(); this.crkF2 = new SVF(); this.thF = new SVF();
     this.turPh = 0; this.scPh = 0; this.evPh = 0; this.crk = 0; this.thump = 0; this.popsLeft = 0; this.popT = 0; this.popAmp = 0;
   }
+  resetState() { for (const f of this.f) { f.l = 0; f.b = 0; } for (const f of [this.nF, this.fanF, this.turF, this.crkF, this.crkF2, this.thF]) { f.l = 0; f.b = 0; } this.env = 0; this.hp = 0; this.hpIn = 0; this.subLP = 0; this.rumLP = 0; this.crk = 0; this.thump = 0; this.popsLeft = 0; }
   setProfile(name) { this.P = PROFILES[name] || PROFILES.porsche; this.f = this.P.formants.map(() => new SVF()); }
   rnd() { this.seed ^= this.seed << 13; this.seed >>>= 0; this.seed ^= this.seed >>> 17; this.seed ^= this.seed << 5; this.seed >>>= 0; return this.seed / 4294967296; }
   pop(amp) { this.crk = Math.max(this.crk, amp); this.thump = Math.max(this.thump, amp * this.P.thump); }
@@ -119,6 +140,7 @@ export class EngineDSP {
       const engine = (y * 0.5 + rumble + intake + fan) * (1 - 0.88 * ev);
       let s = (engine + tur + evs + crack) * P.gain;
       s = Math.tanh(1.5 * s + 0.2 * s * s); // saturación suave: calidez
+      if (s !== s || s > 2 || s < -2) { s = 0; this.resetState(); } // red de seguridad: si un filtro se desbocara, se reinicia en vez de chillar
       out[i] = s * 0.62;
     }
   }

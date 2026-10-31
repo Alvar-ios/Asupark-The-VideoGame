@@ -1,7 +1,7 @@
 // El motor es sintético (src/engine-dsp.js, en un AudioWorklet). Las grabaciones CC0 quedan solo como respaldo si el worklet no carga.
 import { PROFILES } from './engine-dsp.js';
 import { Music } from './music.js';
-const SYNTH_ID = { bora: 'bora', porsche: 'porsche', m3: 'm3', cupra: 'cupra', mini: 'mini', qashqai: 'qashqai' };
+const SYNTH_ID = new Proxy({}, { get: (_, id) => (PROFILES[id] ? id : 'porsche') });
 const RECORDED_ENGINES = {
   bora: ['./assets/audio/engine_bora.wav', 0.72, 0.28, 3900],
   porsche: ['./assets/audio/engine_porsche.wav', 0.86, 0.32, 5200],
@@ -26,14 +26,21 @@ function seamlessLoop(ctx, source, fadeSeconds = 0.12) {
   return loop;
 }
 export class Sound {
-  constructor() { this.ctx = null; this.muted = false; this.ok = false; this.engineSource = null; this.engineCar = null; this.engineToken = 0; this.vol = { master: 1, music: 0.7, engine: 1 }; this.engineOn = true; this.music = null; this.requestedCar = null; this.engineRpm = 0.22; this.lastAudioTime = 0; }
+  constructor() { this.ctx = null; this.muted = false; this.ok = false; this.engineSource = null; this.engineCar = null; this.engineToken = 0; this.vol = { master: 1, music: 0.7, engine: 1 }; this.engineOn = true; this.music = null; this.requestedCar = null; this.engineRpm = 0.22; this.lastAudioTime = 0; this.lastMsg = null; this.lastMsgT = 0; }
   init(carId) {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); if (carId) this.startSynth(carId); return; }
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
-      const ctx = (this.ctx = new AC());
-      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 4; comp.connect(ctx.destination);
+      const ctx = (this.ctx = new AC({ latencyHint: 'balanced' }));
+      // si el navegador pausa el audio (cambio de pestaña, llamada, bloqueo en móvil) lo reanudamos solos
+      const wake = () => { if (this.ctx && this.ctx.state !== 'running' && this.ctx.state !== 'closed') this.ctx.resume().catch(() => {}); };
+      ctx.onstatechange = () => { if (ctx.state === 'interrupted' || ctx.state === 'suspended') setTimeout(wake, 250); };
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
+      for (const ev of ['pointerdown', 'keydown', 'touchend']) window.addEventListener(ev, wake, { passive: true });
+      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 4; comp.knee.value = 24; comp.attack.value = 0.004; comp.release.value = 0.2;
+      // limitador final: los picos de golpes + motor + música no llegan nunca a saturar (eso sonaba a chasquido)
+      const lim = ctx.createDynamicsCompressor(); lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.001; lim.release.value = 0.08; comp.connect(lim); lim.connect(ctx.destination);
       this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 0.58; this.master.connect(comp);
       // ruidos
       const buf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = buf.getChannelData(0);
@@ -91,9 +98,10 @@ export class Sound {
   setMuted(m) { this.muted = m; this.applyVolumes(); }
   setVolumes(v) { Object.assign(this.vol, v); this.applyVolumes(); }
   applyVolumes() {
-    if (this.master) this.master.gain.value = this.muted ? 0 : 0.58 * this.vol.master;
+    const t = this.ctx ? this.ctx.currentTime : 0, ramp = (param, v) => { try { param.cancelScheduledValues(t); param.setTargetAtTime(v, t, 0.02); } catch (_) { param.value = v; } };
+    if (this.master) ramp(this.master.gain, this.muted ? 0 : 0.58 * this.vol.master);
     if (this.music) this.music.setVolume(0.55 * this.vol.music * (this.duck ? 0.6 : 1));
-    if (this.engineGain && this.engineOn) this.engineGain.gain.value = 0.9 * this.vol.engine;
+    if (this.engineGain && this.engineOn) ramp(this.engineGain.gain, 0.9 * this.vol.engine);
   }
   // El motor y los ruidos de rodadura solo suenan durante la carrera (no en menú ni en pausa)
   setEngineActive(on) {
@@ -119,7 +127,10 @@ export class Sound {
     if (this.synth) {
       const pr = PROFILES[SYNTH_ID[p.carId] || 'porsche'], norm = Math.max(0, Math.min(1, (p.rpm - 0.22) / 0.78));
       const rpm = pr.idle + (pr.redline * 0.97 - pr.idle) * norm, hiRev = rpm / pr.redline;
-      this.synth.port.postMessage({ rpm, throttle, boost: throttle * Math.min(1, Math.max(0.15, (hiRev - 0.25) * 1.8)), limiter: p.rpm > 0.985 && throttle > 0.5 });
+      const msg = { rpm, throttle, boost: throttle * Math.min(1, Math.max(0.15, (hiRev - 0.25) * 1.8)), limiter: p.rpm > 0.985 && throttle > 0.5 }, L = this.lastMsg;
+      if (!L || msg.limiter !== L.limiter || Math.abs(msg.rpm - L.rpm) > pr.redline * 0.004 || Math.abs(msg.throttle - L.throttle) > 0.02 || t - this.lastMsgT > 0.12) {
+        if (!L || t - this.lastMsgT > 0.022 || msg.limiter !== L.limiter) { this.synth.port.postMessage(msg); this.lastMsg = msg; this.lastMsgT = t; }
+      }
     } else if (this.engineSource) {
       const profile = this.engineSource.profile;
       const rate = Math.max(0.68, Math.min(1.62, profile[1] + this.engineRpm * 0.55 + throttle * 0.24 - brake * 0.11));

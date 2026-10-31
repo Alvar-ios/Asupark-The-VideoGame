@@ -20,13 +20,32 @@ export const CARS = [
   { id: 'cupra', group: 'cv150', name: 'Cupra León', desc: 'Compacto deportivo: mucho agarre', color: 0x193078, vmax: 56, accel: 14.5, yaw: 2.5, grip: 13.4, driftGrip: 2.6, radius: 1.2, kind: 'cupra', custom: true },
   { id: 'mini', group: 'cv150', name: 'Mini Cooper S Clubman', desc: 'Pequeño y nervioso: gira como un kart', color: 0xf7f7f7, vmax: 53, accel: 14, yaw: 2.8, grip: 13.6, driftGrip: 3.0, radius: 1.1, kind: 'mini', custom: true },
   { id: 'qashqai', group: 'cv100', name: 'Nissan Qashqai', desc: 'SUV pesado y estable', color: 0xf7f7f7, vmax: 54, accel: 12.5, yaw: 2.05, grip: 14, driftGrip: 2.3, radius: 1.3, kind: 'qashqai', custom: true },
+  // —— Cartoon: coches de dibujos, ágiles y divertidos
+  { id: 'minitoon', group: 'cartoon', name: 'Mini Clásico Toon', desc: 'Minúsculo y juguetón: gira como un kart', color: 0xd32a22, vmax: 49, accel: 13.2, yaw: 3.05, grip: 14, driftGrip: 3.1, radius: 1.0, mass: 780, kind: 'minitoon', custom: true },
+  { id: 'gtr', group: 'cartoon', drive: 'rwd', name: 'Nissan Skyline GT-R Toon', desc: 'Turbo con cabeza grande: derrapa con ganas', color: 0x1f4fd0, vmax: 55, accel: 14.8, yaw: 2.75, grip: 13, driftGrip: 3.0, radius: 1.2, mass: 1100, kind: 'gtr', custom: true },
+  { id: 'f360', group: 'cartoon', drive: 'rwd', name: 'Ferrari 360 Toon', desc: 'Rojo y gordito: V8 que grita', color: 0xd32a22, vmax: 57, accel: 15.2, yaw: 2.8, grip: 12.8, driftGrip: 2.9, radius: 1.2, mass: 1000, kind: 'f360', custom: true },
+  // —— 100 CV
+  { id: 'golf', group: 'cv100', name: 'VW Golf GTI Mk1', desc: 'Ligero y noble: 110 CV de pura escuela', color: 0xf2f2f2, vmax: 50, accel: 12.8, yaw: 2.7, grip: 13.6, driftGrip: 2.8, radius: 1.1, mass: 820, kind: 'golf', custom: true },
+  { id: 'mx5', group: 'cv100', drive: 'rwd', name: 'Mazda MX-5 NA', desc: 'Roadster ligero de tracción trasera', color: 0xd32a22, vmax: 52, accel: 13, yaw: 2.9, grip: 13.8, driftGrip: 3.0, radius: 1.1, mass: 960, kind: 'mx5', custom: true },
+  // —— 150 CV
+  { id: 'z240', group: 'cv150', drive: 'rwd', name: 'Nissan Fairlady Z 240Z', desc: 'Clásico japonés: 6 en línea y tracción trasera', color: 0xa11d1d, vmax: 55, accel: 14, yaw: 2.6, grip: 12.8, driftGrip: 2.8, radius: 1.2, mass: 1070, kind: 'z240', custom: true },
+  { id: 'mustang', group: 'cv150', drive: 'rwd', name: 'Ford Mustang 1965', desc: 'Muscle car con V8: mucho par, poco agarre', color: 0x14206a, vmax: 57, accel: 14.6, yaw: 2.2, grip: 11.8, driftGrip: 2.6, radius: 1.3, mass: 1250, kind: 'mustang', custom: true },
+  // —— Competición
+  { id: 's4', group: 'competicion', name: 'Audi S4 2013', desc: 'Tracción total y compresor: sale como un tiro', color: 0xd32a22, vmax: 59, accel: 15.2, yaw: 2.5, grip: 14, driftGrip: 2.5, radius: 1.3, mass: 1700, kind: 's4', custom: true },
+  { id: 'cobra', group: 'competicion', drive: 'rwd', name: 'AC Cobra 427', desc: 'V8 de 7 litros en un coche diminuto: brutal', color: 0x9a1b1b, vmax: 61, accel: 16.5, yaw: 2.7, grip: 11.8, driftGrip: 2.7, radius: 1.2, mass: 1150, kind: 'cobra', custom: true },
+  { id: 'stradale', group: 'competicion', drive: 'rwd', name: 'Alfa Romeo 33 Stradale', desc: 'Motor central, 700 kg y un grito de V8', color: 0xb3171d, vmax: 58, accel: 15, yaw: 3.0, grip: 13, driftGrip: 3.0, radius: 1.1, mass: 700, kind: 'stradale', custom: true },
+  { id: 'slr', group: 'competicion', drive: 'rwd', name: 'Mercedes SLR Stirling Moss', desc: 'V8 sobrealimentado y sin parabrisas', color: 0xc4c8cf, vmax: 63, accel: 16, yaw: 2.4, grip: 12.8, driftGrip: 2.6, radius: 1.3, mass: 1550, kind: 'slr', custom: true },
+  // —— F1
+  { id: 'aston', group: 'f1', name: 'Aston Martin AMR23', desc: 'Monoplaza actual: apoyo aerodinámico enorme', color: 0x0e7a6b, vmax: 74, accel: 21, yaw: 3.1, grip: 17, driftGrip: 2.8, radius: 1.2, mass: 800, kind: 'aston', nopaint: true },
+  { id: 'lotus', group: 'f1', drive: 'rwd', name: 'Lotus 72D (1972)', desc: 'Clásico negro y oro: ligero pero nervioso', color: 0x16181d, vmax: 64, accel: 17, yaw: 3.0, grip: 13.5, driftGrip: 3.0, radius: 1.1, mass: 650, kind: 'lotus', nopaint: true },
+  { id: 'mclaren', group: 'f1', name: 'McLaren MP4-25 Toon', desc: 'Monoplaza de dibujos: ruedas enormes y mucho agarre', color: 0xc8202c, vmax: 70, accel: 19, yaw: 3.0, grip: 16, driftGrip: 2.8, radius: 1.2, mass: 700, kind: 'mclaren', nopaint: true },
 ];
 export const AI_COLORS = [0x37d67a, 0xb06bff, 0xff7a3d, 0xeaeaea, 0x19c3d6];
 
 export function makeCar(type, name, isPlayer) {
   return {
     type, name, isPlayer,
-    mass: ({ porsche: 1510, m3: 1570, qashqai: 1780, mini: 1390 }[type.id] || 1460),
+    mass: type.mass || ({ porsche: 1510, m3: 1570, qashqai: 1780, mini: 1390 }[type.id] || 1460),
     x: 0, y: 0, z: 0, vx: 0, vz: 0, vy: 0, psi: 0,
     px: 0, py: 0, pz: 0, ppsi: 0,
     steer: 0, yawRate: 0, air: false, grad: 0, drifting: false, driftDir: 0, driftT: 0,
