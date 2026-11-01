@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.34
+- Corregida la orientación del Ford GT Heritage: ya no aparece circulando marcha atrás.
+- Cañón Prisma sustituido por un trazado compacto original, con una vuelta exterior y una sección interior de curvas enlazadas; asfalto más neutro.
+
 ## 0.0.33
 - Jersey 10 aplicada a toda la interfaz, el HUD y las rotulaciones del circuito.
 - Cañón Prisma rediseñado como kartódromo original compacto, con horquillas, eses y escapatorias de arena.

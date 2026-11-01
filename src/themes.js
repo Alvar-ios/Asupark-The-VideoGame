@@ -64,10 +64,10 @@ export const THEMES = {
     hemiSky: 0xe6f1ff, hemiGround: 0x9fb2c4, hemiI: 1.05, sunI: 1.0, deco: 'snowpine', treeCol: 0x2d6a55, night: false, temp: -6, humidity: 0.6, wind: [9, 2.4], gripMul: 0.78, offroad: 0.75, surface: 'snow', offroadGrip: 0.38, brakeGrip: 0.62, rollingDrag: 1.05, steerOffroad: 0.52, dust: 0xdbeafa, brakeForce: 20, traction: 0.86,
   },
   prisma: {
-    id: 'prisma', name: 'Cañón Prisma', sub: 'Kartódromo técnico · horquillas y eses', seed: 'prisma-kart-v2',
-    style: { zones: [], fixedNodes: [[-80,-72],[-30,-72],[20,-72],[55,-72],[69,-68],[79,-58],[80,-46],[72,-36],[58,-33],[30,-33],[-5,-33],[-40,-33],[-57,-33],[-70,-29],[-76,-19],[-73,-8],[-62,-1],[-48,1],[-22,1],[5,1],[32,1],[52,1],[66,4],[73,14],[69,25],[58,32],[44,34],[15,34],[-15,34],[-40,34],[-55,34],[-68,38],[-74,48],[-69,59],[-57,65],[-43,66],[-15,66],[15,66],[42,66],[55,66],[68,70],[74,79],[71,90],[62,97],[48,99],[22,99],[-8,99],[-37,99],[-56,99],[-73,100],[-86,93],[-92,82],[-92,60],[-92,30],[-92,0],[-92,-30],[-92,-52],[-88,-66]], scale: 1, half: 5.8, wall: 9, minR: 8, sep: 16, chicanes: 0, hill: 0, ramps: 0, pads: 0, rollers: 0, banks: [], hillPts: [[0,0],[0.12,3],[0.25,1],[0.4,7],[0.54,11],[0.68,4],[0.8,1],[0.9,5],[1,0]] },
+    id: 'prisma', name: 'Cañón Prisma', sub: 'Kartódromo técnico · curvas enlazadas y horquillas', seed: 'prisma-kart-v3',
+    style: { zones: [], fixedNodes: [[0,-82],[38,-76],[66,-59],[82,-34],[86,-6],[78,20],[60,43],[34,61],[7,72],[-22,70],[-49,58],[-67,38],[-75,15],[-72,-5],[-60,-18],[-41,-20],[-22,-13],[-4,-3],[14,2],[31,-4],[38,-18],[32,-33],[16,-42],[-3,-43],[-22,-40],[-38,-47],[-43,-62],[-33,-75],[-13,-82]], scale: 1, half: 4.8, wall: 8.5, minR: 8, sep: 18, chicanes: 0, hill: 0, ramps: 0, pads: 0, rollers: 0, banks: [], hillPts: [[0,0],[0.12,2],[0.24,0],[0.36,5],[0.48,8],[0.6,3],[0.72,0],[0.84,4],[1,0]] },
     skyTop: 0xffe969, skyHor: 0xfff3a5, fog: 0xd8ec89, fogNear: 420, fogFar: 1800,
-    ground: 0x50ba32, grass: 0x73d635, dirt: 0xe5c34b, road: 0x4b5553, kerb1: 0xf24f4c, kerb2: 0xf7f1d2,
+    ground: 0x50ba32, grass: 0x73d635, dirt: 0xe5c34b, road: 0x424852, kerb1: 0xf24f4c, kerb2: 0xf7f1d2,
     wall1: 0x38a9f5, wall2: 0xf4f0dc, mount: 0x3eaf39, sun: 0xfff1a0, sunDir: [-0.48, 0.72, 0.38],
     hemiSky: 0xffedbb, hemiGround: 0x54763b, hemiI: 1.25, sunI: 1.35, deco: 'kart', treeCol: 0x3b9d35, treeCount: 620, treeNear: 8, toy: true, palette: [0xf04c4d, 0xffd642, 0x2e9df4, 0x39c94f, 0x963de3, 0xff8a30], night: false, temp: 24, humidity: 0.3, wind: [2, 0.6], gripMul: 1, offroad: 0.58,
   },

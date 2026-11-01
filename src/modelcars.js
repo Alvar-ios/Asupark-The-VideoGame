@@ -21,7 +21,7 @@ export const MODEL = {
   aston: { hi: './assets/car_aston_hi.glb.gz', lo: './assets/car_aston_lo.glb.gz', paint: /(?!)/ },
   lotus: { hi: './assets/car_lotus_hi.glb.gz', lo: './assets/car_lotus_lo.glb.gz', paint: /(?!)/ },
   mclaren: { hi: './assets/car_mclaren_hi.glb.gz', lo: './assets/car_mclaren_lo.glb.gz', paint: /(?!)/ },
-  fordgt: { hi: './assets/car_fordgt_hi.glb.gz', lo: './assets/car_fordgt_lo.glb.gz', paint: /(?!)/, length: 4.7, rotation: [0, Math.PI, 0] },
+  fordgt: { hi: './assets/car_fordgt_hi.glb.gz', lo: './assets/car_fordgt_lo.glb.gz', paint: /(?!)/, length: 4.7 },
   z8: { hi: './assets/car_z8_hi.glb.gz', lo: './assets/car_z8_lo.glb.gz', paint: /(?!)/, length: 4.4 },
   f312t: { hi: './assets/car_f312t_hi.glb.gz', lo: './assets/car_f312t_lo.glb.gz', paint: /(?!)/, length: 4.4 },
   f550: { hi: './assets/car_f550_hi.glb.gz', lo: './assets/car_f550_lo.glb.gz', paint: /(?!)/, length: 4.5 },
