@@ -203,6 +203,16 @@ export function buildTrack(seed, style) {
   // --- rasgos propios de cada circuito: rampas a medida, túneles y curvas peraltadas ---
   if (style.rampList) tr.ramps = style.rampList.map((r) => ({ s0: r.u * len, len: (r.len || 12) * 1.5, h: (r.h || 1.6) * 0.85 }));
   tr.zones = (style.zones || []).map(([u0, u1, type]) => ({ s0: u0 * len, s1: u1 * len, type }));
+  // escapatorias: ancho de grava junto al asfalto (más ancho en las zonas «abiertas», donde además no hay árboles); más allá, hierba hasta la valla
+  if (style.runoff) {
+    tr.rg = new Float32Array(N); tr.open = new Uint8Array(N);
+    const sm = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+    for (let i = 0; i < N; i++) {
+      const u = i / N; let extra = 0;
+      for (const [u0, u1, ex] of style.runoff.open || []) { const k = sm((u - u0) / 0.012) * sm((u1 - u) / 0.012); if (k > 0.02) tr.open[i] = 1; extra = Math.max(extra, ex * k); }
+      tr.rg[i] = style.runoff.gravel + extra;
+    }
+  }
   if (style.autoZones && !tr.zones.length) { // circuitos del día: dos tramos de otra superficie en puntos al azar
     const k = style.autoZones; let u = 0.12 + rng() * 0.15;
     for (let n = 0; n < 2; n++) { const w = 0.05 + rng() * 0.04; tr.zones.push({ s0: u * len, s1: (u + w) * len, type: k[Math.floor(rng() * k.length)] }); u += 0.38 + rng() * 0.2; if (u + w > 0.95) break; }

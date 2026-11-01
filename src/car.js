@@ -1,6 +1,6 @@
 // Física arcade del coche (sin dependencias de three)
 import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi } from './track.js';
-import { puddleAt, mudAt, smoothstep, surfaceAt } from './surface.js';
+import { puddleAt, mudAt, smoothstep, surfaceAt, applyRunoff } from './surface.js';
 const SP = { key: 'asphalt', g: 1, b: 1, d: 0, s: 1, a: 1 };
 
 export const YAW_SCALE = 0.8, YAW_SPEED = 42; // sensibilidad de giro global
@@ -100,7 +100,7 @@ export function stepCar(c, inp, dt, tr, env) {
   const speed = Math.hypot(c.vx, c.vz);
   const ground = !c.air;
   const offroadBlend = smoothstep(ROAD_HALF - 0.7, ROAD_HALF + 2.4, Math.abs(loc.lat));
-  surfaceAt(tr, env, loc.s, SP); c.surf = SP.key; // superficie bajo el coche (zonas mixtas + temperatura y humedad)
+  surfaceAt(tr, env, loc.s, SP); applyRunoff(tr, env, loc.i, loc.lat, ROAD_HALF, offroadBlend, SP); c.surf = SP.key; // superficie bajo el coche (zonas mixtas + temperatura y humedad)
   const off = offroadBlend > 0.5;
   c.offroadFactor = ground ? offroadBlend : 0;
   c.offroad = off && ground;

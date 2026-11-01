@@ -73,3 +73,13 @@ export function surfaceAt(tr, env, s, out) {
   out.key = key; out.g = g * cg; out.b = b * (0.6 + 0.4 * cg); out.d = d; out.s = st; out.a = a;
   return out;
 }
+
+// escapatorias: más allá del arcén, primero grava y después hierba (solo en circuitos con tr.rg)
+export function applyRunoff(tr, env, i, lat, roadHalf, blend, out) {
+  if (!tr.rg || blend < 0.02) return;
+  const e = Math.abs(lat) - roadHalf; if (e <= 0) return;
+  const key = e < tr.rg[i] ? 'gravel' : 'grass', Z = SURF[key], B = SURF[baseSurfKey(env)];
+  out.g *= lerp(1, cl(Z.g / B.g, 0.2, 2.4), blend); out.b *= lerp(1, cl(Z.b / B.b, 0.2, 2.4), blend); out.d += lerp(0, Z.d - B.d, blend);
+  out.s *= lerp(1, cl(Z.s / B.s, 0.6, 1.3), blend); out.a *= lerp(1, cl(Z.a / B.a, 0.4, 1.6), blend);
+  if (blend > 0.5) out.key = key;
+}

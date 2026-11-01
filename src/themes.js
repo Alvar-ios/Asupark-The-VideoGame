@@ -19,12 +19,14 @@ export const THEMES = {
     hemiSky: 0xe6f1ff, hemiGround: 0x8a8f96, hemiI: 1.05, sunI: 1.15, deco: 'toy', harbor: true, urban: true, noKerbs: true, palette: [0xf3e9d8, 0xe8c9a0, 0xd9a47a, 0xf6f2ea, 0xcf8f6b, 0xe9dcc2], treeCol: 0x3d7a3c, night: false, temp: 19, humidity: 0.85, wind: [5, 2.2], gripMul: 1, offroad: 0.6, slope: 1.5, weather: 'rain', wetGrip: 0.76, brakeForce: 22,
   },
   spa: {
-    id: 'spa', name: 'Ardenas · estilo Spa', sub: 'Corto y estrecho: horquilla, Eau Rouge y cambios de rasante', seed: 'spa-1',
-    style: {zones: [[0.18,0.23,'gravel'],[0.62,0.68,'ice']], "ramps": 0, "rollers": 0, "pads": 0, "chicanes": 0, "hill": 0, "banks": [[0.86,0.94,12]], "rampList": [{"u":0.5,"len":10,"h":1.1}], "fixedNodes": [[-150, 240], [-60, 246], [40, 246], [92, 246], [122, 238], [136, 218], [124, 198], [96, 190], [66, 166], [60, 128], [38, 96], [30, 62], [44, 32], [26, 4], [-30, -14], [-120, -22], [-210, -22], [-248, -16], [-268, 2], [-292, 6], [-326, 22], [-352, 56], [-336, 94], [-296, 108], [-250, 110], [-214, 122], [-196, 152], [-206, 184], [-226, 206], [-212, 228], [-190, 236], [-170, 242]], "scale": 1.3, "minR": 8, "sep": 22, "half": 5, "wall": 7.8, "startNear": [-60, 246], "hillPts": [[0, 3], [0.1, 5], [0.2, 0], [0.3, 9], [0.45, 12], [0.55, 7], [0.68, 3], [0.8, 2], [0.92, 2], [1, 3]]},
+    id: 'spa', name: 'Ardenas · estilo Spa', sub: 'La Source, Eau Rouge, Kemmel y Pouhon · escapatorias de grava', seed: 'spa-1',
+    style: {zones: [], ramps: 0, rollers: 0, pads: 0, chicanes: 0, hill: 0, banks: [[0.78, 0.86, 9]], rampList: [], fixedNodes: [[160,0],[60,0],[-30,0],[-100,2],[-130,8],[-156,30],[-152,62],[-122,82],[-60,94],[0,102],[55,110],[96,128],[118,146],[124,172],[142,198],[170,218],[200,300],[240,420],[280,540],[310,640],[324,668],[352,684],[374,676],[386,652],[404,628],[434,598],[452,560],[454,520],[438,490],[408,470],[378,446],[358,408],[360,364],[386,332],[420,312],[455,298],[485,302],[506,286],[522,258],[546,226],[566,190],[560,150],[540,120],[520,96],[498,60],[468,22],[420,-4],[360,-10],[300,-8],[268,-2],[246,-12],[222,-4],[190,2]], scale: 0.95, minR: 8, sep: 22, half: 5, wall: 22, startNear: [60, 0],
+      hillPts: [[0,8],[0.06,9],[0.12,8],[0.21,0],[0.26,13],[0.32,17],[0.44,24],[0.48,22],[0.56,14],[0.62,4],[0.68,3],[0.76,8],[0.82,12],[0.9,12],[0.96,9],[1,8]],
+      runoff: { gravel: 8, open: [[0.1, 0.2, 5], [0.4, 0.47, 5], [0.55, 0.64, 6], [0.76, 0.84, 5]] } },
     skyTop: 0x6f7f8c, skyHor: 0xc9d0d2, fog: 0xaab4b6, fogNear: 140, fogFar: 1000,
-    ground: 0x35552f, grass: 0x44703a, dirt: 0x5b4a33, road: 0x30343a, kerb1: 0xd8473d, kerb2: 0xeeeeea,
+    ground: 0x35552f, grass: 0x44703a, dirt: 0x5b4a33, road: 0x30343a, kerb1: 0xd8473d, kerb2: 0xeeeeea, kerbs3: [0x191919, 0xfdda24, 0xef3340],
     wall1: 0xc9cbc9, wall2: 0xb23a32, mount: 0x4d6a52, sun: 0xe9eef2, sunDir: [-0.3, 0.55, 0.45],
-    hemiSky: 0xcfd9e0, hemiGround: 0x4c5a3c, hemiI: 0.95, sunI: 0.75, deco: 'pine', treeCol: 0x1f4d2b, night: false, temp: 11, humidity: 0.9, wind: [6, 1.0], gripMul: 0.98, offroad: 0.6, slope: 1.4,
+    hemiSky: 0xcfd9e0, hemiGround: 0x4c5a3c, hemiI: 0.95, sunI: 0.75, deco: 'pine', treeNear: 4, treeCount: 1150, treeCol: 0x1f4d2b, night: false, temp: 11, humidity: 0.9, wind: [6, 1.0], gripMul: 0.98, offroad: 0.6, slope: 1.4,
     weather: 'rain', wetGrip: 0.78, brakeForce: 22, mud: true,
   },
   valle: {

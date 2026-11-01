@@ -172,6 +172,7 @@ function roadMesh(tr, th, stride = 1) {
   const pos = [], colors = [], uvs = [];
   const cRoad = col(th.road), cRoad2 = col(th.road).multiplyScalar(0.93), cGrass = col(th.grass), cDirt = col(th.dirt);
   const k1 = col(th.kerb1).multiplyScalar(0.86), k2 = col(th.kerb2).multiplyScalar(0.88), yel = col(0xffc400), blk = col(0x222222);
+  const kset = th.kerbs3 ? th.kerbs3.map((c) => col(c).multiplyScalar(0.92)) : null, cGravel = col(0xe2cf9c);
   // los pianos nacen y mueren poco a poco (altura y color se funden con el asfalto) y cada franja tiene un desgaste distinto
   const kEnv = new Float32Array(N);
   for (let i = 0; i < N; i++) {
@@ -193,22 +194,24 @@ function roadMesh(tr, th, stride = 1) {
     const eoI = L + 2.5 + hi * 1.1, eoJ = L + 2.5 + hj * 1.1;
     // perfil lateral: hierba | pianos en relieve (rampa, cresta, escalón) | asfalto | escalón, cresta, rampa | hierba
     const KW = Math.min(1.9, L - hw - 0.2); // pianos más anchos
-    const lat = (k, h, eo, krL, krR) => [[-eo, 0], [-L, h - 0.05], [-(hw + KW), h + 0.02], [-(hw + KW * 0.42), h + krL], [-hw, h + krL], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw, h + krR], [hw + KW * 0.42, h + krR], [hw + KW, h + 0.02], [L, h - 0.05], [eo, 0]][k];
+    const GW = tr.rg ? hw + tr.rg[i] : hw + KW + 0.02, GWj = tr.rg ? hw + tr.rg[j] : hw + KW + 0.02;
+    const lat = (k, h, eo, krL, krR, gw) => [[-eo, 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h + 0.02], [-(hw + KW * 0.42), h + krL], [-hw, h + krL], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw, h + krR], [hw + KW * 0.42, h + krR], [hw + KW, h + 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, 0]][k];
     const sLen = 3, s2k = (i + stride) * tr.ds;
     const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x, e) => (0.03 + 0.018 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen)) * e;
     const krLi = kv === -1 ? wave(s, kEnv[i]) : 0, krRi = kv === 1 ? wave(s, kEnv[i]) : 0, krLj = kvj === -1 ? wave(s2k, kEnv[j]) : 0, krRj = kvj === 1 ? wave(s2k, kEnv[j]) : 0;
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
     const stripeN = Math.floor(s / sLen), stripe = stripeN % 2 === 0;
-    for (let b = 0; b < 13; b++) {
-      const [l0, y0i] = lat(b, hi, eoI, krLi, krRi), [l1, y1i] = lat(b + 1, hi, eoI, krLi, krRi);
-      const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj);
+    for (let b = 0; b < 15; b++) {
+      const [l0, y0i] = lat(b, hi, eoI, krLi, krRi, GW), [l1, y1i] = lat(b + 1, hi, eoI, krLi, krRi, GW);
+      const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj, GWj), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj, GWj);
       const P = (idx, l, y) => [tr.X[idx] + -tr.TZ[idx] * l, y + (Math.abs(l) <= L ? l * Math.tan(tr.bank[idx]) : (l > 0 ? 1 : -1) * L * Math.tan(tr.bank[idx])), tr.Z[idx] + tr.TX[idx] * l];
       const a = P(i, l0, y0i), bb = P(i, l1, y1i), c = P(j, l0j, y0j), d = P(j, l1j, y1j);
       let color;
       let outerColor = null;
-      if (b === 0 || b === 12) { color = cGrass; outerColor = cDirt; }
-      else if (b === 1 || b === 11) color = cGrass;
-      else if (b === 2 || b === 3 || b === 4 || b === 8 || b === 9 || b === 10) color = th.noKerbs ? cGrass : (b < 5 ? kv === -1 : kv === 1) ? wornC(stripe ? k1 : k2, stripeN).lerp(cRoad2, 1 - kEnv[i]) : cRoad2; // sin piano: arcén de asfalto
+      if (b === 0 || b === 14) { color = cGrass; outerColor = cDirt; }
+      else if (b === 1 || b === 13) color = tr.rg ? cGrass.clone().multiplyScalar(Math.floor(s / 14) % 2 ? 1 : 0.93) : cGrass; // hierba segada a franjas
+      else if (b === 2 || b === 12) color = tr.rg ? cGravel.clone().multiplyScalar(0.92 + 0.08 * (((Math.sin(Math.floor(s / 3) * 5.31 + b) * 4375.5) % 1 + 1) % 1)) : cGrass; // grava
+      else if (b === 3 || b === 4 || b === 5 || b === 9 || b === 10 || b === 11) color = th.noKerbs ? cGrass : (b < 6 ? kv === -1 : kv === 1) ? wornC(kset ? kset[stripeN % 3] : (stripe ? k1 : k2), stripeN).lerp(cRoad2, 1 - kEnv[i]) : cRoad2; // sin piano: arcén de asfalto
       else {
         color = Math.floor(s / 24) % 2 ? cRoad : cRoad2;
         const zn = zoneAt(tr, s); if (zn && zn.w > 0.5 && zn.key !== 'asphalt') { const zc = SURF[zn.key].col; if (zc != null) color = col(zc).multiplyScalar(Math.floor(s / 6) % 2 ? 1 : 0.93); }
@@ -371,13 +374,15 @@ function scenery(tr, th, scene, rng, q) {
   };
   const cxm = (minX + maxX) / 2, czm = (minZ + maxZ) / 2, R = Math.hypot(maxX - minX, maxZ - minZ) / 2;
   const spots = [];
-  const want = Math.round((th.deco === 'city' ? 260 : 520) * q.density);
+  const want = Math.round((th.deco === 'city' ? 260 : th.treeCount || 520) * q.density);
   let guard = 0;
   while (spots.length < want && guard++ < want * 25) {
     const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1;
-    const l = (WALL + 14 + tr.Y[i] * 1.2) + Math.pow(rng(), 1.6) * 140;
+    const near = th.treeNear != null, base = near ? WALL + 2.5 + tr.Y[i] * 1.15 + th.treeNear : WALL + 14 + tr.Y[i] * 1.2;
+    const l = base + Math.pow(rng(), near ? 1.4 : 1.6) * (near ? 120 : 140);
+    if (near && tr.open && tr.open[i] && l - base < 55) continue; // zonas abiertas: sin árboles junto a la pista
     const x = tr.X[i] + -tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side;
-    if (clearance(x, z, WALL + 12 + 8 + tr.Y[i] * 1.2 + 4)) spots.push([x, z, 0.7 + rng() * 0.9, rng() * 6.28]);
+    if (clearance(x, z, near ? WALL + 2.5 + tr.Y[i] * 1.15 + 2.5 : WALL + 12 + 8 + tr.Y[i] * 1.2 + 4)) spots.push([x, z, 0.7 + rng() * 0.9, rng() * 6.28]);
   }
   const dummy = new THREE.Object3D();
   const windMeshes = [];

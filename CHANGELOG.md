@@ -107,3 +107,9 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 ## 0.0.20
 - El control por mitades de pantalla es ahora el predeterminado en móvil (se puede volver a los botones en Ajustes).
 - Sin sombreado amarillo al tocar: solo un punto tenue abajo, donde pulsas.
+
+## 0.0.21
+- Circuito de Bélgica rehecho copiando el trazado de Spa-Francorchamps: La Source, bajada a Eau Rouge y Raidillon en subida, recta de Kemmel, Les Combes, Rivage, Pouhon, Fagnes, Stavelot, Blanchimont y chicane final, con sus desniveles (2,3 km).
+- Escapatorias anchas: grava junto al asfalto y hierba segada hasta las vallas, que ahora están mucho más lejos. En la grava el coche pierde agarre y velocidad. En cuatro zonas la escapatoria es aún más ancha y sin árboles.
+- Muchos más árboles alrededor de la pista.
+- Pianos con los colores de la bandera de Bélgica (negro, amarillo y rojo).
