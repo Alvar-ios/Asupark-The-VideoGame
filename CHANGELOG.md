@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.30
+- Menú principal más directo, compacto y arcade; se retiraron el acceso duplicado al reto y varios textos redundantes.
+- Asfalto de lluvia con reflejo más visible; árboles de bosque variados, montañas lejanas más orgánicas y edificios urbanos con ventanas y balcones.
+- Manchas de barro un 20 % más pequeñas; los grupos hasta 200 CV reciben menos frenada, sin cambios para Competición ni F1.
+- Siete coches nuevos con LOD comprimidos: E30, E-Type, Z8, 550 Barchetta, Ford GT Heritage, XJ13 y Ferrari 312 T.
+
 ## 0.0.29
 - Charcos y barro con contornos orgánicos, bordes difuminados y textura; la forma visual coincide con la zona que afecta al agarre.
 - La textura brillante de lluvia se limita al asfalto; hierba, grava y tierra conservan sus propios colores y materiales.

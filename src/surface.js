@@ -39,8 +39,8 @@ export function mudParams(i) {
   return {
     start: MUD_START + i * MUD_STEP,
     lane: Math.sin(i * 7.31 + 1.3) * 2.5,
-    halfLength: 6 + (i % 3) * 1.6,
-    halfWidth: 1.7 + (i % 2) * 0.55,
+    halfLength: (6 + (i % 3) * 1.6) * 0.8,
+    halfWidth: (1.7 + (i % 2) * 0.55) * 0.8,
     seed: i + 31,
   };
 }

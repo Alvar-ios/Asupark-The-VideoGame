@@ -4,6 +4,9 @@ import { buildTrack, ROAD_HALF, setRoad } from '../src/track.js';
 import { CARS, makeCar, placeCar, stepCar } from '../src/car.js';
 import { mudAt, mudParams, patchBoundary, puddleAt, puddleParams } from '../src/surface.js';
 
+assert.ok(Math.abs(mudParams(0).halfLength - 4.8) < 1e-9, 'Mud patches should be 20% shorter');
+assert.ok(Math.abs(mudParams(1).halfWidth - 1.8) < 1e-9, 'Mud patches should be 20% narrower');
+
 for (const [at, params] of [[puddleAt, puddleParams(0)], [mudAt, mudParams(0)]]) {
   const center = params.start + params.halfLength;
   assert.equal(at(center, params.lane), 1);
@@ -15,12 +18,25 @@ assert.notEqual(patchBoundary(0, 3), patchBoundary(Math.PI / 2, 3));
 const theme = THEMES.spa;
 const track = buildTrack(theme.seed, theme.style);
 setRoad(track);
+const input = { steer: 0, throttle: 0, brake: 0, drift: false };
+const patch = mudParams(0);
+const mudLoss = (car, enabled) => {
+  const instance = makeCar(car, 'mud-test', false);
+  placeCar(instance, track, patch.start + patch.halfLength, patch.lane, 18);
+  const surface = { ...theme, mud: enabled };
+  for (let i = 0; i < 24; i++) stepCar(instance, input, 1 / 120, track, surface);
+  return instance.speed;
+};
+const reducedMudBrake = (id) => mudLoss(CARS.find((car) => car.id === id), false) - mudLoss(CARS.find((car) => car.id === id), true);
+assert.ok(reducedMudBrake('m3') < reducedMudBrake('slr'), 'Cars up to 200 CV should lose less speed in mud than competition cars');
+assert.ok(reducedMudBrake('slr') > 0, 'Competition cars should retain mud braking');
+assert.ok(reducedMudBrake('aston') > 0, 'F1 cars should retain mud braking');
+
 const kerbIndex = track.kerb.findIndex((side) => side !== 0);
 assert.notEqual(kerbIndex, -1, 'Spa should have driveable kerbs');
 
 const kerbSide = track.kerb[kerbIndex];
 const kerbS = kerbIndex * track.ds;
-const input = { steer: 0, throttle: 0, brake: 0, drift: false };
 const kerbCar = makeCar(CARS.find((car) => car.id === 'porsche'), 'kerb-test', false);
 placeCar(kerbCar, track, kerbS, kerbSide * (ROAD_HALF + 0.8), 18);
 stepCar(kerbCar, input, 1 / 120, track, theme);

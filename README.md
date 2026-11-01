@@ -31,7 +31,7 @@ Abre la URL que imprime el servidor (normalmente `http://localhost:4173`). Si es
 
 ## Coches 3D
 
-Los modelos se preparan desde archivos `.glb` optimizados con varios niveles de detalle para reducir la descarga inicial y mostrar primero una versión ligera. `tools/optimize-glb.mjs` y `tools/prep-car.mjs` contienen utilidades para preparar modelos; algunas requieren dependencias adicionales descritas en sus cabeceras.
+Los modelos se preparan desde archivos `.glb` optimizados con varios niveles de detalle para reducir la descarga inicial y mostrar primero una versión ligera. `tools/optimize-glb.mjs` y `tools/prep-car.mjs` contienen utilidades para preparar modelos. Para reprocesar los siete coches de `Carmodels/`, ejecuta `npm run prep:extra-cars`; puedes pasar IDs concretos con `npm run prep:extra-cars -- z8 e30`. El proceso crea LOD de escritorio y móvil en `src/assets/` y no modifica los GLB originales.
 
 ## Verificación
 

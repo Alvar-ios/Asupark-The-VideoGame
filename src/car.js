@@ -31,22 +31,30 @@ export const CARS = [
   { id: 'mx5', brand: 'Mazda', group: 'cv150', drive: 'rwd', name: 'Mazda MX-5 NA', desc: 'Roadster ligero de tracción trasera', color: 0xd32a22, vmax: 54, accel: 13.9, yaw: 2.9, grip: 13.6, driftGrip: 3.0, radius: 1.1, mass: 960, kind: 'mx5', paints: [['Rojo', '#d32a22'], ['Azul', '#1f4fd0'], ['Blanco', '#f2f2f2']], custom: true },
   { id: 'z240', brand: 'Nissan', group: 'cv150', drive: 'rwd', name: 'Nissan Fairlady Z 240Z', desc: 'Clásico japonés: 6 en línea y tracción trasera', color: 0xa11d1d, vmax: 55, accel: 14.2, yaw: 2.6, grip: 12.9, driftGrip: 2.8, radius: 1.2, mass: 1070, kind: 'z240', paints: [['Rojo', '#a11d1d'], ['Naranja', '#e07b17'], ['Blanco', '#f2f2f2']], custom: true },
   { id: 'mustang', brand: 'Ford', group: 'cv150', drive: 'rwd', name: 'Ford Mustang 1965', desc: 'Muscle car con V8: mucho par, poco agarre', color: 0x14206a, vmax: 56, accel: 14.6, yaw: 2.25, grip: 11.9, driftGrip: 2.6, radius: 1.3, mass: 1250, kind: 'mustang', paints: [['Azul', '#14206a'], ['Rojo', '#b3171d'], ['Blanco', '#f2f2f2']], custom: true },
+  { id: 'e30', brand: 'BMW', group: 'cv150', drive: 'rwd', name: 'BMW Serie 3 E30', desc: 'Clásico ligero de tracción trasera', color: 0xf2f2f2, vmax: 55, accel: 14.6, yaw: 2.65, grip: 12.5, driftGrip: 2.9, radius: 1.1, mass: 1200, kind: 'e30', nopaint: true, custom: true },
   // —— 200 CV
   { id: 's4', brand: 'Audi', group: 'cv200', name: 'Audi S4 2013', desc: 'Tracción total y compresor: sale como un tiro', color: 0xd32a22, vmax: 58, accel: 15.3, yaw: 2.5, grip: 14, driftGrip: 2.5, radius: 1.3, mass: 1700, kind: 's4', paints: [['Rojo', '#d32a22'], ['Gris', '#6b7280'], ['Negro', '#16181d']], custom: true },
   { id: 'm3', brand: 'BMW', group: 'cv200', drive: 'rwd', name: 'BMW M3 E46', desc: 'Tracción trasera, ágil y rabioso', color: 0x0070ed, vmax: 58, accel: 15.2, yaw: 2.5, grip: 12.5, driftGrip: 2.7, radius: 1.2, mass: 1570, kind: 'm3', paints: [['Azul', '#0070ed'], ['Negro', '#16181d'], ['Plata', '#b9bec6']], custom: true },
   { id: 'porsche', brand: 'Porsche', group: 'cv200', drive: 'rwd', name: 'Porsche 911 Turbo S', desc: 'Rapidísimo, motor trasero: cuidado al frenar', color: 0x0a1a28, vmax: 59, accel: 15.6, yaw: 2.85, grip: 12.6, driftGrip: 2.9, radius: 1.2, mass: 1510, kind: 'porsche', paints: [['Azul noche', '#0a1a28'], ['Plata', '#b9bec6'], ['Rojo', '#b3171d']], custom: true },
   { id: 'cobra', brand: 'AC', group: 'cv200', drive: 'rwd', name: 'AC Cobra 427', desc: 'V8 de 7 litros en un coche diminuto: brutal', color: 0x9a1b1b, vmax: 59, accel: 16, yaw: 2.7, grip: 11.9, driftGrip: 2.7, radius: 1.2, mass: 1150, kind: 'cobra', paints: [['Rojo', '#9a1b1b'], ['Azul', '#1f4fd0'], ['Verde', '#0b4d2c']], custom: true },
+  { id: 'etype', brand: 'Jaguar', group: 'cv200', drive: 'rwd', name: 'Jaguar E-Type 1961', desc: 'Gran turismo británico, elegante y ligero', color: 0xc3b987, vmax: 58, accel: 15.1, yaw: 2.55, grip: 12.6, driftGrip: 2.75, radius: 1.1, mass: 1230, kind: 'etype', nopaint: true, custom: true },
+  { id: 'z8', brand: 'BMW', group: 'cv200', drive: 'rwd', name: 'BMW Z8', desc: 'Roadster V8: potencia y equilibrio', color: 0xc4c8cf, vmax: 61, accel: 16.3, yaw: 2.7, grip: 13, driftGrip: 2.8, radius: 1.2, mass: 1590, kind: 'z8', nopaint: true, custom: true },
+  { id: 'f550', brand: 'Ferrari', group: 'cv200', drive: 'rwd', name: 'Ferrari 550 Barchetta', desc: 'V12 abierto, gran turismo de altas prestaciones', color: 0x6a9bc0, vmax: 63, accel: 16.8, yaw: 2.75, grip: 13.2, driftGrip: 2.8, radius: 1.2, mass: 1690, kind: 'f550', nopaint: true, custom: true },
   // —— Competición
   { id: 'stradale', brand: 'Alfa Romeo', group: 'competicion', drive: 'rwd', name: 'Alfa Romeo 33 Stradale', desc: 'Motor central, 700 kg y un grito de V8', color: 0xb3171d, vmax: 63, accel: 16.5, yaw: 3.0, grip: 13.5, driftGrip: 3.0, radius: 1.1, mass: 700, kind: 'stradale', paints: [['Rojo', '#b3171d'], ['Plata', '#b9bec6'], ['Azul', '#1f4fd0']], custom: true },
   { id: 'slr', brand: 'Mercedes-Benz', group: 'competicion', drive: 'rwd', name: 'Mercedes SLR Stirling Moss', desc: 'V8 sobrealimentado y sin parabrisas', color: 0xc4c8cf, vmax: 64, accel: 16.8, yaw: 2.5, grip: 13.2, driftGrip: 2.6, radius: 1.3, mass: 1550, kind: 'slr', nopaint: true, custom: true },
+  { id: 'fordgt', brand: 'Ford', group: 'competicion', drive: 'rwd', name: 'Ford GT Heritage', desc: 'Superdeportivo de competición con motor central', color: 0x1d63a6, vmax: 68, accel: 18, yaw: 2.8, grip: 14, driftGrip: 2.8, radius: 1.2, mass: 1385, kind: 'fordgt', nopaint: true, custom: true },
+  { id: 'xj13', brand: 'Jaguar', group: 'competicion', drive: 'rwd', name: 'Jaguar XJ13', desc: 'Prototipo de carreras británico de los años 60', color: 0x1c634b, vmax: 65, accel: 17.6, yaw: 2.9, grip: 14, driftGrip: 2.9, radius: 1.1, mass: 950, kind: 'xj13', nopaint: true, custom: true },
   // —— F1
   { id: 'lotus', brand: 'Lotus', group: 'f1', drive: 'rwd', name: 'Lotus 72D (1972)', desc: 'Clásico negro y oro: ligero pero nervioso', color: 0x16181d, vmax: 66, accel: 17.8, yaw: 3.0, grip: 14, driftGrip: 3.0, radius: 1.1, mass: 650, kind: 'lotus', nopaint: true, custom: true },
   { id: 'aston', brand: 'Aston Martin', group: 'f1', name: 'Aston Martin AMR23', desc: 'Monoplaza actual: apoyo aerodinámico enorme', color: 0x0e7a6b, vmax: 74, accel: 21, yaw: 3.1, grip: 17, driftGrip: 2.8, radius: 1.2, mass: 800, kind: 'aston', nopaint: true, custom: true },
+  { id: 'f312t', brand: 'Ferrari', group: 'f1', drive: 'rwd', name: 'Ferrari 312 T (1975)', desc: 'Monoplaza histórico campeón del mundo', color: 0xc91623, vmax: 70, accel: 19, yaw: 3.1, grip: 15, driftGrip: 2.9, radius: 1.05, mass: 620, kind: 'f312t', nopaint: true, custom: true },
 ];
 // efecto suelo / aerodinámica (apoyo que crece con el cuadrado de la velocidad), tracción y potencia de frenada
 const AERO = { aston: 1.0, mclaren: 0.55, lotus: 0.4, stradale: 0.12, slr: 0.08, gtr: 0.06, f360: 0.05, cobra: 0.03 };
 const DRIVE = { s4: 'awd', porsche: 'rwd' };
 const BRAKE = { cartoon: 1, cv100: 0.95, cv150: 1, cv200: 1.1, competicion: 1.2, f1: 1.5 };
+const MUD_BRAKE = { cartoon: 0.45, cv100: 0.45, cv150: 0.55, cv200: 0.68, competicion: 1, f1: 1 };
 for (const c of CARS) { c.aero = AERO[c.id] || 0; c.drive = c.drive || DRIVE[c.id] || 'fwd'; c.brakeMul = BRAKE[c.group] || 1; }
 // el apoyo aerodinámico sustituye al agarre base de los monoplazas: en curvas lentas agarran como un coche normal, a alta velocidad se pegan al suelo
 for (const [id, g] of [['aston', 13.8], ['mclaren', 13.4], ['lotus', 13.6]]) CARS.find((c) => c.id === id).grip = g;
@@ -165,7 +173,7 @@ export function stepCar(c, inp, dt, tr, env) {
     c.puddleWater = puddleWater;
     c.inPuddle = puddleWater > 0.12;
     const mud = env.mud ? mudAt(loc.s, loc.lat) : 0; c.mud = mud;
-    if (mud > 0.02) vf *= Math.exp(-mud * 1.25 * dt);          // el barro frena
+    if (mud > 0.02) vf *= Math.exp(-mud * 1.25 * (MUD_BRAKE[T.group] ?? 1) * dt);
     if (puddleWater > 0.05) vf *= Math.exp(-puddleWater * 0.45 * dt);
     // ----- lógica de agarre: el neumático tiene un límite; si se le pide más, el coche se va un poco -----
     const wet = surfaceGrip * (1 - puddleWater * 0.5) * (1 - mud * 0.5);

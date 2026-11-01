@@ -64,6 +64,8 @@ Pulir el juego antes de añadir online:
 
 **Segunda entrega:** se afinó la autoridad de giro a alta velocidad y la corrección de dirección con freno de mano; se suavizaron la inclinación, la vibración de cámara, la reacción a impactos y el rebote sobre pianos. Se añadieron mensajes y sonidos para iniciar un derrape, saltar y cambiar de marcha, y se reforzaron humo y chispas. Los escenarios ahora incluyen señales de curva, nubes agrupadas de bajo coste, un cielo con más profundidad y textura sutil en el terreno; también se renovaron los paneles del HUD y de resultados. Estos cambios necesitan validación de conducción y ajuste con pruebas manuales en distintos circuitos y coches.
 
+**Tercera entrega:** el menú principal se simplificó con jerarquía más clara, tipografía arcade y menos microtexto redundante. La lluvia ahora da más brillo al asfalto y los charcos de barro ocupan un 20 % menos; coches de hasta 200 CV pierden menos velocidad en ellos, mientras Competición y F1 conservan la frenada anterior. Spa y los demás circuitos de bosque ganan árboles de siluetas variadas y montañas lejanas suavizadas por la niebla. Mónaco incorpora ventanas, cornisas y balcones instanciados en sus edificios. Se sumaron siete coches de `Carmodels/`, clasificados por tipo, con modelos optimizados para escritorio y móvil. La escenografía es procedural y no depende de imágenes externas.
+
 ### 2. Contenido y ritmo de juego
 
 - Definir el formato de los eventos diarios y la puntuación semanal.

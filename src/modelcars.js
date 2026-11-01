@@ -21,6 +21,13 @@ export const MODEL = {
   aston: { hi: './assets/car_aston_hi.glb.gz', lo: './assets/car_aston_lo.glb.gz', paint: /(?!)/ },
   lotus: { hi: './assets/car_lotus_hi.glb.gz', lo: './assets/car_lotus_lo.glb.gz', paint: /(?!)/ },
   mclaren: { hi: './assets/car_mclaren_hi.glb.gz', lo: './assets/car_mclaren_lo.glb.gz', paint: /(?!)/ },
+  fordgt: { hi: './assets/car_fordgt_hi.glb.gz', lo: './assets/car_fordgt_lo.glb.gz', paint: /(?!)/, length: 4.7, rotation: [0, Math.PI, 0] },
+  z8: { hi: './assets/car_z8_hi.glb.gz', lo: './assets/car_z8_lo.glb.gz', paint: /(?!)/, length: 4.4 },
+  f312t: { hi: './assets/car_f312t_hi.glb.gz', lo: './assets/car_f312t_lo.glb.gz', paint: /(?!)/, length: 4.4 },
+  f550: { hi: './assets/car_f550_hi.glb.gz', lo: './assets/car_f550_lo.glb.gz', paint: /(?!)/, length: 4.5 },
+  etype: { hi: './assets/car_etype_hi.glb.gz', lo: './assets/car_etype_lo.glb.gz', paint: /(?!)/, length: 4.5, rotation: [0, -Math.PI / 2, 0] },
+  xj13: { hi: './assets/car_xj13_hi.glb.gz', lo: './assets/car_xj13_lo.glb.gz', paint: /(?!)/, length: 4.8, rotation: [0, Math.PI, 0] },
+  e30: { hi: './assets/car_e30_hi.glb.gz', lo: './assets/car_e30_lo.glb.gz', paint: /(?!)/, length: 4.3, rotation: [0, -Math.PI / 2, 0] },
 };
 const cache = {}, pending = {};
 export const modelCarReady = (id, lod = 'hi') => !!(cache[id] && cache[id][lod]);
@@ -43,7 +50,16 @@ export function buildModelCar(id, color, lod = 'hi') {
   const src = cache[id][lod] || cache[id].lo || cache[id].hi, cfg = MODEL[id];
   const model = src.clone(true);
   const root = new THREE.Group(), tilt = new THREE.Group(); root.add(tilt); tilt.add(model);
+  if (cfg.rotation) tilt.rotation.set(...cfg.rotation);
   root.updateMatrixWorld(true);
+  if (cfg.length) {
+    const bounds = new THREE.Box3().setFromObject(tilt), size = bounds.getSize(new THREE.Vector3());
+    if (!Number.isFinite(size.z) || size.z <= 0) throw new Error(`El modelo ${id} no tiene una longitud válida`);
+    const fit = cfg.length / size.z, center = bounds.getCenter(new THREE.Vector3());
+    tilt.scale.setScalar(fit);
+    tilt.position.set(-center.x * fit, -bounds.min.y * fit, -center.z * fit);
+    root.updateMatrixWorld(true);
+  }
   const paints = new Set(), tail = new THREE.MeshBasicMaterial({ color: 0x8a0f0f });
   model.traverse((o) => {
     if (!o.isMesh) return;
