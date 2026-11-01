@@ -1,7 +1,7 @@
 // Construcción de la escena 3D de una pista (three.js)
 import * as THREE from 'three';
 import { ROAD_HALF, WALL, setRoad } from './track.js';
-import { SURF, zoneAt, smoothstep, patchBoundary, puddleParams, mudParams } from './surface.js';
+import { SURF, zoneAt, smoothstep, patchBoundary, puddleParams, mudParams, MARIO_OIL_PATCHES } from './surface.js';
 import { rngFromSeed } from './rng.js';
 
 const col = (hex) => new THREE.Color(hex);
@@ -19,16 +19,59 @@ function skyMesh(th) {
   return m;
 }
 
+let asphaltTexCache = null;
+let asphaltRoughnessCache = null;
 function asphaltTex() {
-  const c = document.createElement('canvas'); c.width = c.height = 128;
-  const x = c.getContext('2d'), im = x.createImageData(128, 128);
-  for (let i = 0; i < 128 * 128; i++) {
-    const n = 240 + (Math.random() - 0.5) * 18 - (Math.random() < 0.03 ? 22 : 0);
-    im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = n; im.data[i * 4 + 3] = 255;
+  if (asphaltTexCache) return asphaltTexCache;
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d'), im = x.createImageData(size, size);
+  for (let y = 0; y < size; y++) {
+    for (let xp = 0; xp < size; xp++) {
+      const idx = (y * size + xp) * 4;
+      let val = 210;
+      val += (Math.random() - 0.5) * 36;
+      const p1 = Math.sin(xp * 0.45 + Math.cos(y * 0.42) * 3.2);
+      const p2 = Math.cos(y * 0.52 + Math.sin(xp * 0.38) * 2.7);
+      if (p1 * p2 > 0.42) val += 24;
+      else if (p1 * p2 < -0.40) val -= 26;
+      val += Math.sin(xp * 1.6) * 4.0;
+      if (Math.random() < 0.016) val += 36;
+      val = Math.max(130, Math.min(255, val));
+      im.data[idx] = im.data[idx + 1] = im.data[idx + 2] = val;
+      im.data[idx + 3] = 255;
+    }
   }
   x.putImageData(im, 0, 0);
-  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-  return t;
+  asphaltTexCache = new THREE.CanvasTexture(c);
+  asphaltTexCache.wrapS = asphaltTexCache.wrapT = THREE.RepeatWrapping;
+  asphaltTexCache.repeat.set(16, 32);
+  asphaltTexCache.colorSpace = THREE.SRGBColorSpace;
+  asphaltTexCache.anisotropy = 8;
+  return asphaltTexCache;
+}
+
+function asphaltRoughnessTex() {
+  if (asphaltRoughnessCache) return asphaltRoughnessCache;
+  const size = 256;
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d'), im = x.createImageData(size, size);
+  for (let y = 0; y < size; y++) {
+    for (let xp = 0; xp < size; xp++) {
+      const idx = (y * size + xp) * 4;
+      const n = (Math.random() - 0.5) * 28;
+      const grain = Math.sin(xp * 0.32 + y * 0.28) * 14;
+      const val = Math.max(140, Math.min(245, 192 + n + grain));
+      im.data[idx] = im.data[idx + 1] = im.data[idx + 2] = val;
+      im.data[idx + 3] = 255;
+    }
+  }
+  x.putImageData(im, 0, 0);
+  asphaltRoughnessCache = new THREE.CanvasTexture(c);
+  asphaltRoughnessCache.wrapS = asphaltRoughnessCache.wrapT = THREE.RepeatWrapping;
+  asphaltRoughnessCache.repeat.set(16, 32);
+  asphaltRoughnessCache.anisotropy = 4;
+  return asphaltRoughnessCache;
 }
 function groundTex() {
   const c = document.createElement('canvas'); c.width = c.height = 128;
@@ -233,7 +276,7 @@ function roadMesh(tr, th, stride = 1) {
     // piano: a ras del asfalto en el borde de la pista y cada vez más alto hacia fuera; escalón en el lado exterior
     const lat = (k, h, eo, krL, krR, gw) => [[-eo, 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + KW * 0.45), h + krL * 0.75], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw + KW * 0.45, h + krR * 0.75], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, 0]][k];
     const sLen = 3, s2k = (i + stride) * tr.ds;
-    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x, e) => (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) + ((Math.floor(x * 1.7) & 1) ? 0.05 : 0) : 0.03 + 0.018 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen)) * e;
+    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x, e) => (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) + ((Math.floor(x * 1.7) & 1) ? 0.05 : 0) : (th.deco === 'kart' ? 0.065 + 0.03 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) : 0.045 + 0.024 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen))) * e;
     const krLi = kv === -1 ? wave(s, kEnv[i]) : 0, krRi = kv === 1 ? wave(s, kEnv[i]) : 0, krLj = kvj === -1 ? wave(s2k, kEnv[j]) : 0, krRj = kvj === 1 ? wave(s2k, kEnv[j]) : 0;
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
     const stripeN = Math.floor(s / sLen), stripe = stripeN % 2 === 0;
@@ -275,8 +318,8 @@ function roadMesh(tr, th, stride = 1) {
   };
   const wet = th.weather === 'rain', snow = th.surface === 'snow', dirt = th.surface === 'dirt';
   const roadMaterial = wet
-    ? new THREE.MeshPhysicalMaterial({ vertexColors: true, side: THREE.DoubleSide, map: th.toy ? null : asphaltTex(), roughnessMap: wetRoughnessTexture(), color: 0xffffff, roughness: 0.82, metalness: 0.025, clearcoat: 0.68, clearcoatRoughness: 0.16, envMapIntensity: 0.8 })
-    : new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, map: th.toy ? null : asphaltTex(), roughness: snow ? 0.74 : dirt ? 0.78 : 0.86, metalness: 0.02 });
+    ? new THREE.MeshPhysicalMaterial({ vertexColors: true, side: THREE.DoubleSide, map: asphaltTex(), roughnessMap: wetRoughnessTexture(), color: 0xffffff, roughness: 0.82, metalness: 0.025, clearcoat: 0.68, clearcoatRoughness: 0.16, envMapIntensity: 0.8 })
+    : new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, map: asphaltTex(), roughnessMap: asphaltRoughnessTex(), roughness: snow ? 0.74 : dirt ? 0.78 : 0.84, metalness: 0.03, envMapIntensity: 0.45 });
   const edgeMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.92, metalness: 0.01 });
   const group = new THREE.Group();
   for (const [data, material] of [[roadData, roadMaterial], [edgeData, edgeMaterial]]) {
@@ -312,9 +355,9 @@ function wallMesh(tr, th, stride = 1) {
 }
 
 function kartBarriers(tr, th, scene, mobile, shadows) {
-  const step = mobile ? 4.2 : 3.2, count = Math.ceil(tr.len / step) * 2;
-  const geometry = new THREE.BoxGeometry(1.65, 1.2, step + 0.08);
-  const blocks = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), count);
+  const step = mobile ? 4.2 : 3.0, count = Math.ceil(tr.len / step) * 2;
+  const geometry = new THREE.BoxGeometry(1.6, 1.15, step - 0.08);
+  const blocks = new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42, metalness: 0.05, flatShading: true }), count);
   const d = new THREE.Object3D(), palette = th.palette.map(col);
   let k = 0;
   for (let s = 0; s < tr.len; s += step) {
@@ -324,14 +367,67 @@ function kartBarriers(tr, th, scene, mobile, shadows) {
     const x = tr.X[i] + (tr.X[j] - tr.X[i]) * t, z = tr.Z[i] + (tr.Z[j] - tr.Z[i]) * t, y = tr.Y[i] + (tr.Y[j] - tr.Y[i]) * t;
     const heading = Math.atan2(tx, tz), color = palette[Math.floor(s / step) % palette.length];
     for (const side of [-1, 1]) {
-      const lat = side * (WALL + 2.1);
-      d.position.set(x + nx * lat, y + 0.64, z + nz * lat);
+      const lat = side * (WALL + 2.0);
+      d.position.set(x + nx * lat, y + 0.58, z + nz * lat);
       d.rotation.set(0, heading, 0); d.scale.set(1, 1, 1); d.updateMatrix();
       blocks.setMatrixAt(k, d.matrix); blocks.setColorAt(k, color); k++;
     }
   }
   if (blocks.instanceColor) blocks.instanceColor.needsUpdate = true;
   blocks.castShadow = shadows; blocks.receiveShadow = shadows; blocks.frustumCulled = false; scene.add(blocks);
+}
+
+function marioPipes(tr, th, scene, shadows) {
+  const pipeSpots = [
+    { s: 50, lat: -13.0 },
+    { s: 135, lat: 10.5 },
+    { s: 215, lat: -12.0 },
+    { s: 285, lat: 11.0 },
+    { s: 365, lat: -11.5 },
+    { s: 440, lat: 10.5 },
+    { s: 535, lat: -12.0 },
+    { s: 645, lat: 11.0 },
+    { s: 755, lat: -11.5 },
+    { s: 865, lat: 11.5 },
+    { s: 985, lat: -12.5 },
+    { s: 1065, lat: 12.0 },
+  ];
+  const count = pipeSpots.length;
+  const pipeMat = new THREE.MeshStandardMaterial({ color: 0x1db82a, roughness: 0.38, metalness: 0.08 });
+  const darkRimMat = new THREE.MeshStandardMaterial({ color: 0x07280d, roughness: 0.8, metalness: 0.02 });
+
+  const baseGeo = new THREE.CylinderGeometry(0.9, 0.9, 2.2, 18).translate(0, 1.1, 0);
+  const lipGeo = new THREE.CylinderGeometry(1.15, 1.15, 0.58, 18).translate(0, 2.15, 0);
+  const capGeo = new THREE.CircleGeometry(0.92, 18).rotateX(-Math.PI / 2).translate(0, 2.42, 0);
+
+  const baseMesh = new THREE.InstancedMesh(baseGeo, pipeMat, count);
+  const lipMesh = new THREE.InstancedMesh(lipGeo, pipeMat, count);
+  const capMesh = new THREE.InstancedMesh(capGeo, darkRimMat, count);
+
+  const d = new THREE.Object3D();
+  pipeSpots.forEach((sp, idx) => {
+    const f = (((sp.s / tr.ds) % tr.N) + tr.N) % tr.N;
+    const i = Math.floor(f) % tr.N, j = (i + 1) % tr.N, t = f - i;
+    const tx = tr.TX[i] + (tr.TX[j] - tr.TX[i]) * t, tz = tr.TZ[i] + (tr.TZ[j] - tr.TZ[i]) * t;
+    const tl = Math.hypot(tx, tz) || 1, nx = -tz / tl, nz = tx / tl;
+    const x = tr.X[i] + (tr.X[j] - tr.X[i]) * t + nx * sp.lat;
+    const z = tr.Z[i] + (tr.Z[j] - tr.Z[i]) * t + nz * sp.lat;
+    const y = tr.Y[i] + (tr.Y[j] - tr.Y[i]) * t + bankOff(tr, i, sp.lat);
+
+    d.position.set(x, y - 0.05, z);
+    d.rotation.set(0, 0, 0);
+    d.scale.set(1, 1, 1);
+    d.updateMatrix();
+
+    baseMesh.setMatrixAt(idx, d.matrix);
+    lipMesh.setMatrixAt(idx, d.matrix);
+    capMesh.setMatrixAt(idx, d.matrix);
+  });
+
+  baseMesh.castShadow = lipMesh.castShadow = shadows;
+  baseMesh.receiveShadow = lipMesh.receiveShadow = shadows;
+  baseMesh.frustumCulled = lipMesh.frustumCulled = capMesh.frustumCulled = false;
+  scene.add(baseMesh); scene.add(lipMesh); scene.add(capMesh);
 }
 
 // tira que sigue la carretera (turbos y luces de neón)
@@ -445,17 +541,83 @@ function mudTexture() {
   return mudTextureCache;
 }
 
-function archMesh(tr, th) {
-  const g = new THREE.Group(), post = new THREE.MeshLambertMaterial({ color: 0x2a2f3a, flatShading: true });
-  const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+let oilTextureCache = null;
+function oilTexture() {
+  if (oilTextureCache) return oilTextureCache;
+  const size = 128, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createRadialGradient(64, 64, 4, 64, 64, 62);
+  grad.addColorStop(0, 'rgba(12, 14, 18, 0.98)');
+  grad.addColorStop(0.48, 'rgba(18, 22, 28, 0.95)');
+  grad.addColorStop(0.76, 'rgba(28, 25, 38, 0.92)');
+  grad.addColorStop(0.88, 'rgba(20, 35, 30, 0.86)');
+  grad.addColorStop(1, 'rgba(10, 10, 12, 0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  oilTextureCache = new THREE.CanvasTexture(canvas);
+  oilTextureCache.colorSpace = THREE.SRGBColorSpace;
+  return oilTextureCache;
+}
+
+function marioBannerTex() {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
   const x = c.getContext('2d');
-  for (let i = 0; i < 16; i++) for (let j = 0; j < 4; j++) { x.fillStyle = (i + j) % 2 ? '#fff' : '#111'; x.fillRect(i * 16, j * 16, 16, 16); }
-  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-  const w = (WALL + 1.5) * 2;
-  const beam = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, 1.2), new THREE.MeshBasicMaterial({ map: tex }));
-  beam.position.set(0, 9.2, 0);
-  g.add(beam);
-  for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(1.2, 9.5, 1.2), post); p.position.set(s * (WALL + 0.6), 4.7, 0); g.add(p); }
+  x.fillStyle = '#111215'; x.fillRect(0, 0, 512, 128);
+  const colors = ['#e52521', '#f8d028', '#1b75d0', '#2bb830'];
+  const bw = 16, bh = 14;
+  for (let i = 0; i < 32; i++) {
+    x.fillStyle = colors[i % 4]; x.fillRect(i * bw, 0, bw - 1, bh);
+    x.fillStyle = colors[(i + 1) % 4]; x.fillRect(i * bw, bh, bw - 1, bh);
+    x.fillStyle = colors[(i + 2) % 4]; x.fillRect(i * bw, 128 - bh * 2, bw - 1, bh);
+    x.fillStyle = colors[(i + 3) % 4]; x.fillRect(i * bw, 128 - bh, bw - 1, bh);
+  }
+  for (let j = 0; j < 5; j++) {
+    x.fillStyle = colors[j % 4]; x.fillRect(0, 28 + j * bh, bw * 2, bh - 1);
+    x.fillStyle = colors[(j + 2) % 4]; x.fillRect(512 - bw * 2, 28 + j * bh, bw * 2, bh - 1);
+  }
+  x.font = '900 62px "Jersey 10",Impact,"Arial Black",sans-serif';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillStyle = '#b3171d';
+  for (let dx = -4; dx <= 4; dx++) for (let dy = -4; dy <= 4; dy++) {
+    if (dx !== 0 || dy !== 0) x.fillText('MARIO KART', 256 + dx, 65 + dy);
+  }
+  x.fillStyle = '#ffd000';
+  x.fillText('MARIO KART', 256, 64);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function archMesh(tr, th) {
+  const g = new THREE.Group();
+  if (th.deco === 'kart') {
+    const postMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35, metalness: 0.08 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf5c400, roughness: 0.22, metalness: 0.65 });
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x5a2d1d, roughness: 0.72, metalness: 0.04 });
+    const bannerMat = new THREE.MeshBasicMaterial({ map: marioBannerTex() });
+    const w = (WALL + 1.2) * 2;
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(w, 2.8, 0.5), bannerMat);
+    beam.position.set(0, 8.2, 0); g.add(beam);
+    for (const s of [-1, 1]) {
+      const px = s * (WALL + 0.5);
+      const pedestal = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 1.6), baseMat);
+      pedestal.position.set(px, 0.7, 0); g.add(pedestal);
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.38, 8.8, 16), postMat);
+      p.position.set(px, 5.0, 0); g.add(p);
+      const finial = new THREE.Mesh(new THREE.SphereGeometry(0.65, 16, 12), goldMat);
+      finial.position.set(px, 9.7, 0); g.add(finial);
+    }
+  } else {
+    const post = new THREE.MeshLambertMaterial({ color: 0x2a2f3a, flatShading: true });
+    const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+    const x = c.getContext('2d');
+    for (let i = 0; i < 16; i++) for (let j = 0; j < 4; j++) { x.fillStyle = (i + j) % 2 ? '#fff' : '#111'; x.fillRect(i * 16, j * 16, 16, 16); }
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const w = (WALL + 1.5) * 2;
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, 1.2), new THREE.MeshBasicMaterial({ map: tex }));
+    beam.position.set(0, 9.2, 0);
+    g.add(beam);
+    for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(1.2, 9.5, 1.2), post); p.position.set(s * (WALL + 0.6), 4.7, 0); g.add(p); }
+  }
   const h = tr.Y[0], tx = tr.TX[0], tz = tr.TZ[0];
   g.position.set(tr.X[0], h, tr.Z[0]);
   g.rotation.y = Math.atan2(tx, tz);
@@ -766,8 +928,8 @@ export function buildWorld(tr, th, opt = {}) {
   if (opt.shadows) {
     sun.castShadow = true;
     const ms = opt.mobile ? 1024 : 2048; sun.shadow.mapSize.set(ms, ms);
-    const c = sun.shadow.camera; c.left = -42; c.right = 42; c.top = 42; c.bottom = -42; c.near = 1; c.far = 320; c.updateProjectionMatrix();
-    sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05; sun.shadow.radius = 3;
+    const c = sun.shadow.camera; c.left = -38; c.right = 38; c.top = 38; c.bottom = -38; c.near = 1; c.far = 280; c.updateProjectionMatrix();
+    sun.shadow.bias = -0.0002; sun.shadow.normalBias = 0.035; sun.shadow.radius = 2.0;
   }
   const ambientRain = th.weather === 'rain', ambientSnow = th.surface === 'snow';
   let weatherMesh = null, weatherDrops = [];
@@ -813,7 +975,34 @@ export function buildWorld(tr, th, opt = {}) {
     }
   }
   const walls = wallMesh(tr, th, q.stride); walls.receiveShadow = true; walls.castShadow = !!q.shadows; scene.add(walls);
-  if (th.deco === 'kart') kartBarriers(tr, th, scene, !!opt.mobile, !!q.shadows);
+  if (th.deco === 'kart') {
+    kartBarriers(tr, th, scene, !!opt.mobile, !!q.shadows);
+    marioPipes(tr, th, scene, !!q.shadows);
+  }
+  if (th.oil) {
+    const oilMat = new THREE.MeshPhysicalMaterial({
+      color: 0x111317,
+      map: oilTexture(),
+      roughness: 0.08,
+      metalness: 0.18,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.04,
+      transparent: true,
+      opacity: 0.94,
+      vertexColors: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -3,
+      polygonOffsetUnits: -3,
+      side: THREE.DoubleSide
+    });
+    for (const p of MARIO_OIL_PATCHES) {
+      const mesh = new THREE.Mesh(surfacePatchGeom(tr, p.s, p.halfLength * 2, p.lane, p.halfWidth, p.seed, 0.045), oilMat);
+      mesh.frustumCulled = false;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+    }
+  }
   if (th.weather === 'rain') {
     const water = new THREE.MeshPhysicalMaterial({ color: 0xffffff, side: THREE.DoubleSide, map: waterTexture(), roughness: 0.07, metalness: 0.025, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 1.15, transparent: true, opacity: 0.9, vertexColors: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
     for (let i = 0; ; i++) {

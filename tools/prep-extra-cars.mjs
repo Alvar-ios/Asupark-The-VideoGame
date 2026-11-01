@@ -10,6 +10,13 @@ import sharp from 'sharp';
 const sourceDir = path.resolve('Carmodels');
 const outputDir = path.resolve('src/assets');
 const cars = [
+  { id: 'r24', file: '2004_renault_r24.glb', high: 50000, low: 14000 },
+  { id: 'fordgt06', file: '2006_ford_gt_heritage_edition.glb', high: 50000, low: 14000 },
+  { id: 'mp423', file: '2008_mclaren_mp423.glb', high: 50000, low: 14000 },
+  { id: 'brawngp', file: '2009_brawn_gp.glb', high: 35000, low: 12000 },
+  { id: 'rx7toon', file: 'mazda_rx7_stylised.glb', high: 6000, low: 4000 },
+  { id: 'mp45', file: 'mclaren_mp45_formula_one.glb', high: 55000, low: 15000 },
+  { id: 'minis', file: 'mini_cooper_s.glb', high: 45000, low: 12000 },
   { id: 'fordgt', file: '2020_ford_gt_heritage_edition.glb', high: 50000, low: 12000 },
   { id: 'z8', file: 'bmw_z8__www.vecarz.com.glb', high: 50000, low: 12000 },
   { id: 'f312t', file: 'ferrari_312t_1976__www.vecarz.com.glb', high: 50000, low: 12000 },
@@ -45,7 +52,8 @@ function removeGroundPlanes(doc) {
 
 for (const car of cars.filter((entry) => requested.size === 0 || requested.has(entry.id))) {
   const source = path.join(sourceDir, car.file);
-  await fs.access(source);
+  const exists = await fs.access(source).then(() => true, () => false);
+  if (!exists) continue;
   const original = await io.read(source);
   removeGroundPlanes(original);
   const originalTriangles = triangleCount(original);

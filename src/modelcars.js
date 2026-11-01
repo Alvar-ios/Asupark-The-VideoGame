@@ -28,6 +28,13 @@ export const MODEL = {
   etype: { hi: './assets/car_etype_hi.glb.gz', lo: './assets/car_etype_lo.glb.gz', paint: /(?!)/, length: 4.5, rotation: [0, Math.PI / 2, 0] },
   xj13: { hi: './assets/car_xj13_hi.glb.gz', lo: './assets/car_xj13_lo.glb.gz', paint: /(?!)/, length: 4.8, rotation: [0, Math.PI, 0] },
   e30: { hi: './assets/car_e30_hi.glb.gz', lo: './assets/car_e30_lo.glb.gz', paint: /(?!)/, length: 4.3, rotation: [0, Math.PI / 2, 0] },
+  r24: { hi: './assets/car_r24_hi.glb.gz', lo: './assets/car_r24_lo.glb.gz', paint: /(?!)/, length: 4.65 },
+  fordgt06: { hi: './assets/car_fordgt06_hi.glb.gz', lo: './assets/car_fordgt06_lo.glb.gz', paint: /(?!)/, length: 4.64 },
+  mp423: { hi: './assets/car_mp423_hi.glb.gz', lo: './assets/car_mp423_lo.glb.gz', paint: /(?!)/, length: 4.8 },
+  brawngp: { hi: './assets/car_brawngp_hi.glb.gz', lo: './assets/car_brawngp_lo.glb.gz', paint: /(?!)/, length: 4.7 },
+  rx7toon: { hi: './assets/car_rx7toon_hi.glb.gz', lo: './assets/car_rx7toon_lo.glb.gz', paint: /(?!)/, length: 4.2, rotation: [0, -Math.PI / 2, 0] },
+  mp45: { hi: './assets/car_mp45_hi.glb.gz', lo: './assets/car_mp45_lo.glb.gz', paint: /(?!)/, length: 4.5 },
+  minis: { hi: './assets/car_minis_hi.glb.gz', lo: './assets/car_minis_lo.glb.gz', paint: /(?!)/, length: 3.7, rotation: [0, Math.PI, 0] },
 };
 const cache = {}, pending = {};
 export const modelCarReady = (id, lod = 'hi') => !!(cache[id] && cache[id][lod]);
@@ -53,13 +60,30 @@ export function buildModelCar(id, color, lod = 'hi') {
   root.add(tilt); tilt.add(orientation); orientation.add(model);
   if (cfg.rotation) orientation.rotation.set(...cfg.rotation);
   root.updateMatrixWorld(true);
+  let W = 1.8, H = 1.2, L = cfg.length || 4.5;
+  let flameX = 0.45, flameY = 0.42, flameZ = -L * 0.5 - 0.7;
   if (cfg.length) {
     const bounds = new THREE.Box3().setFromObject(orientation), size = bounds.getSize(new THREE.Vector3());
     if (!Number.isFinite(size.z) || size.z <= 0) throw new Error(`El modelo ${id} no tiene una longitud válida`);
     const fit = cfg.length / size.z, center = bounds.getCenter(new THREE.Vector3());
-    tilt.scale.setScalar(fit);
-    tilt.position.set(-center.x * fit, -bounds.min.y * fit, -center.z * fit);
+    orientation.scale.setScalar(fit);
+    orientation.position.set(-center.x * fit, -bounds.min.y * fit, -center.z * fit);
     root.updateMatrixWorld(true);
+    W = size.x * fit;
+    H = size.y * fit;
+    flameX = Math.min(0.48, W * 0.23);
+    flameY = Math.max(0.24, Math.min(0.48, H * 0.32));
+    flameZ = -cfg.length * 0.5 - 0.7;
+  } else {
+    const bounds = new THREE.Box3().setFromObject(orientation), size = bounds.getSize(new THREE.Vector3());
+    if (Number.isFinite(size.z) && size.z > 0) {
+      W = size.x;
+      H = size.y;
+      L = size.z;
+      flameX = Math.min(0.48, W * 0.23);
+      flameY = Math.max(0.24, Math.min(0.48, H * 0.32));
+      flameZ = -L * 0.5 - 0.7;
+    }
   }
   const paints = new Set(), tail = new THREE.MeshBasicMaterial({ color: 0x8a0f0f });
   model.traverse((o) => {
@@ -84,7 +108,7 @@ export function buildModelCar(id, color, lod = 'hi') {
   }
   const flames = new THREE.Group();
   const fm = new THREE.MeshBasicMaterial({ color: 0x5ad0ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
-  for (const s of [-1, 1]) flames.add(new THREE.Mesh(new THREE.ConeGeometry(0.17, 1.4, 8).rotateX(-Math.PI / 2).translate(s * 0.5, 0.45, -3.0), fm));
-  flames.visible = false; orientation.add(flames);
-  return { root, tilt, wheels, tail, flames, W: 1.8, paint: [...paints][0] || { color: new THREE.Color() }, paints };
+  for (const s of [-1, 1]) flames.add(new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.4, 8).rotateX(-Math.PI / 2).translate(s * flameX, flameY, flameZ), fm));
+  flames.visible = false; tilt.add(flames);
+  return { root, tilt, wheels, tail, flames, W, paint: [...paints][0] || { color: new THREE.Color() }, paints };
 }

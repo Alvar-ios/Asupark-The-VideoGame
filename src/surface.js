@@ -52,6 +52,29 @@ export function mudAt(s, lat) {
   return patchValue(s - (p.start + p.halfLength), lat - p.lane, p.halfLength, p.halfWidth, p.seed);
 }
 
+// Manchas de aceite (oil slicks) para circuitos arcade tipo Mario
+export const MARIO_OIL_PATCHES = [
+  { s: 160, lane: 1.2, halfLength: 2.2, halfWidth: 1.8, seed: 101 },
+  { s: 240, lane: -1.5, halfLength: 2.4, halfWidth: 1.9, seed: 102 },
+  { s: 390, lane: 0.8, halfLength: 2.2, halfWidth: 1.7, seed: 103 },
+  { s: 480, lane: -1.2, halfLength: 2.3, halfWidth: 1.8, seed: 104 },
+  { s: 610, lane: 1.6, halfLength: 2.5, halfWidth: 2.0, seed: 105 },
+  { s: 740, lane: -1.0, halfLength: 2.2, halfWidth: 1.7, seed: 106 },
+  { s: 880, lane: 1.4, halfLength: 2.4, halfWidth: 1.9, seed: 107 },
+  { s: 1000, lane: -1.5, halfLength: 2.3, halfWidth: 1.8, seed: 108 },
+];
+export function oilAt(s, lat) {
+  for (let i = 0; i < MARIO_OIL_PATCHES.length; i++) {
+    const p = MARIO_OIL_PATCHES[i];
+    const ds = s - (p.s + p.halfLength), dl = lat - p.lane;
+    if (Math.abs(ds) < p.halfLength * 1.5 && Math.abs(dl) < p.halfWidth * 1.5) {
+      const v = patchValue(ds, dl, p.halfLength, p.halfWidth, p.seed);
+      if (v > 0) return v;
+    }
+  }
+  return 0;
+}
+
 // ===== Superficies: cada tipo cambia agarre, frenada, resistencia, dirección y tracción =====
 // g agarre lateral, b frenada, d resistencia al avance, s autoridad de la dirección, a tracción al acelerar
 export const SURF = {

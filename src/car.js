@@ -1,6 +1,6 @@
 // Física arcade del coche (sin dependencias de three)
 import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi } from './track.js';
-import { puddleAt, mudAt, smoothstep, surfaceAt, applyRunoff } from './surface.js';
+import { puddleAt, mudAt, oilAt, smoothstep, surfaceAt, applyRunoff } from './surface.js';
 const SP = { key: 'asphalt', g: 1, b: 1, d: 0, s: 1, a: 1 };
 
 export const YAW_SCALE = 0.8, YAW_SPEED = 42; // sensibilidad de giro global
@@ -20,6 +20,7 @@ export const CARS = [
   { id: 'minitoon', brand: 'Mini', group: 'cartoon', name: 'Mini Clásico Toon', desc: 'Minúsculo y juguetón: gira como un kart', color: 0xd32a22, vmax: 51, accel: 13.6, yaw: 3.1, grip: 14, driftGrip: 3.1, radius: 1.0, mass: 780, kind: 'minitoon', paints: [['Rojo', '#d32a22'], ['Amarillo', '#f3c026'], ['Azul', '#2d5fd0']], custom: true },
   { id: 'gtr', brand: 'Nissan', group: 'cartoon', drive: 'rwd', name: 'Nissan Skyline GT-R Toon', desc: 'Turbo con cabeza grande: derrapa con ganas', color: 0x1f4fd0, vmax: 54, accel: 14.2, yaw: 2.8, grip: 13.2, driftGrip: 3.0, radius: 1.2, mass: 1100, kind: 'gtr', paints: [['Azul', '#1f4fd0'], ['Plata', '#b9bec6'], ['Negro', '#16181d']], custom: true },
   { id: 'f360', brand: 'Ferrari', group: 'cartoon', drive: 'rwd', name: 'Ferrari 360 Toon', desc: 'Rojo y gordito: V8 que grita', color: 0xd32a22, vmax: 55, accel: 14.5, yaw: 2.8, grip: 13, driftGrip: 2.9, radius: 1.2, mass: 1000, kind: 'f360', paints: [['Rojo', '#d32a22'], ['Amarillo', '#f3c026'], ['Negro', '#16181d']], custom: true },
+  { id: 'rx7toon', brand: 'Mazda', group: 'cartoon', drive: 'rwd', name: 'Mazda RX-7 Toon', desc: 'Rotativo biturbo de dibujos: derrape puro y ágil', color: 0xf5b700, vmax: 55, accel: 14.3, yaw: 2.9, grip: 13.3, driftGrip: 3.1, radius: 1.1, mass: 980, kind: 'rx7toon', nopaint: true, custom: true },
   { id: 'mclaren', brand: 'McLaren', group: 'cartoon', name: 'McLaren MP4-25 Toon', desc: 'Monoplaza de dibujos: ruedas enormes y mucho agarre', color: 0xc8202c, vmax: 56, accel: 14.7, yaw: 2.85, grip: 13.5, driftGrip: 2.9, radius: 1.2, mass: 700, kind: 'mclaren', nopaint: true, custom: true },
   // —— 100 CV
   { id: 'qashqai', brand: 'Nissan', group: 'cv100', name: 'Nissan Qashqai', desc: 'SUV pesado y estable', color: 0xf7f7f7, vmax: 51, accel: 12.4, yaw: 2.1, grip: 14, driftGrip: 2.3, radius: 1.3, mass: 1780, kind: 'qashqai', paints: [['Blanco', '#f7f7f7'], ['Gris', '#6b7280'], ['Rojo', '#b3171d']], custom: true },
@@ -28,6 +29,7 @@ export const CARS = [
   // —— 150 CV
   { id: 'golf', brand: 'Volkswagen', group: 'cv150', name: 'VW Golf GTI Mk1', desc: 'Ligero y noble: 110 CV de pura escuela', color: 0xf2f2f2, vmax: 53, accel: 13.6, yaw: 2.75, grip: 13.6, driftGrip: 2.8, radius: 1.1, mass: 820, kind: 'golf', paints: [['Blanco', '#f2f2f2'], ['Rojo', '#b3171d'], ['Azul', '#1f4fd0']], custom: true },
   { id: 'mini', brand: 'Mini', group: 'cv150', name: 'Mini Cooper S Clubman', desc: 'Pequeño y nervioso: gira como un kart', color: 0xf7f7f7, vmax: 54, accel: 14, yaw: 2.8, grip: 13.6, driftGrip: 3.0, radius: 1.1, mass: 1390, kind: 'mini', paints: [['Blanco', '#f7f7f7'], ['Rojo', '#b3171d'], ['Azul', '#2d5fd0']], custom: true },
+  { id: 'minis', brand: 'Mini', group: 'cv150', name: 'Mini Cooper S Hatch', desc: 'Compacto británico sobrealimentado: ágil y reactivo', color: 0x1f4fd0, vmax: 54, accel: 14.1, yaw: 2.8, grip: 13.6, driftGrip: 2.95, radius: 1.1, mass: 1210, kind: 'minis', nopaint: true, custom: true },
   { id: 'mx5', brand: 'Mazda', group: 'cv150', drive: 'rwd', name: 'Mazda MX-5 NA', desc: 'Roadster ligero de tracción trasera', color: 0xd32a22, vmax: 54, accel: 13.9, yaw: 2.9, grip: 13.6, driftGrip: 3.0, radius: 1.1, mass: 960, kind: 'mx5', paints: [['Rojo', '#d32a22'], ['Azul', '#1f4fd0'], ['Blanco', '#f2f2f2']], custom: true },
   { id: 'z240', brand: 'Nissan', group: 'cv150', drive: 'rwd', name: 'Nissan Fairlady Z 240Z', desc: 'Clásico japonés: 6 en línea y tracción trasera', color: 0xa11d1d, vmax: 55, accel: 14.2, yaw: 2.6, grip: 12.9, driftGrip: 2.8, radius: 1.2, mass: 1070, kind: 'z240', paints: [['Rojo', '#a11d1d'], ['Naranja', '#e07b17'], ['Blanco', '#f2f2f2']], custom: true },
   { id: 'mustang', brand: 'Ford', group: 'cv150', drive: 'rwd', name: 'Ford Mustang 1965', desc: 'Muscle car con V8: mucho par, poco agarre', color: 0x14206a, vmax: 56, accel: 14.6, yaw: 2.25, grip: 11.9, driftGrip: 2.6, radius: 1.3, mass: 1250, kind: 'mustang', paints: [['Azul', '#14206a'], ['Rojo', '#b3171d'], ['Blanco', '#f2f2f2']], custom: true },
@@ -44,20 +46,28 @@ export const CARS = [
   { id: 'stradale', brand: 'Alfa Romeo', group: 'competicion', drive: 'rwd', name: 'Alfa Romeo 33 Stradale', desc: 'Motor central, 700 kg y un grito de V8', color: 0xb3171d, vmax: 63, accel: 16.5, yaw: 3.0, grip: 13.5, driftGrip: 3.0, radius: 1.1, mass: 700, kind: 'stradale', paints: [['Rojo', '#b3171d'], ['Plata', '#b9bec6'], ['Azul', '#1f4fd0']], custom: true },
   { id: 'slr', brand: 'Mercedes-Benz', group: 'competicion', drive: 'rwd', name: 'Mercedes SLR Stirling Moss', desc: 'V8 sobrealimentado y sin parabrisas', color: 0xc4c8cf, vmax: 64, accel: 16.8, yaw: 2.5, grip: 13.2, driftGrip: 2.6, radius: 1.3, mass: 1550, kind: 'slr', nopaint: true, custom: true },
   { id: 'fordgt', brand: 'Ford', group: 'competicion', drive: 'rwd', name: 'Ford GT Heritage', desc: 'Superdeportivo de competición con motor central', color: 0x1d63a6, vmax: 68, accel: 18, yaw: 2.8, grip: 14, driftGrip: 2.8, radius: 1.2, mass: 1385, kind: 'fordgt', nopaint: true, custom: true },
+  { id: 'fordgt06', brand: 'Ford', group: 'competicion', drive: 'rwd', name: 'Ford GT 2006 Gulf', desc: 'V8 con compresor y colores míticos de Le Mans', color: 0x2a75d3, vmax: 67, accel: 17.9, yaw: 2.8, grip: 14.0, driftGrip: 2.8, radius: 1.2, mass: 1520, kind: 'fordgt06', nopaint: true, custom: true },
   { id: 'xj13', brand: 'Jaguar', group: 'competicion', drive: 'rwd', name: 'Jaguar XJ13', desc: 'Prototipo de carreras británico de los años 60', color: 0x1c634b, vmax: 65, accel: 17.6, yaw: 2.9, grip: 14, driftGrip: 2.9, radius: 1.1, mass: 950, kind: 'xj13', nopaint: true, custom: true },
   // —— F1
   { id: 'lotus', brand: 'Lotus', group: 'f1', drive: 'rwd', name: 'Lotus 72D (1972)', desc: 'Clásico negro y oro: ligero pero nervioso', color: 0x16181d, vmax: 66, accel: 17.8, yaw: 3.0, grip: 14, driftGrip: 3.0, radius: 1.1, mass: 650, kind: 'lotus', nopaint: true, custom: true },
   { id: 'aston', brand: 'Aston Martin', group: 'f1', name: 'Aston Martin AMR23', desc: 'Monoplaza actual: apoyo aerodinámico enorme', color: 0x0e7a6b, vmax: 74, accel: 21, yaw: 3.1, grip: 17, driftGrip: 2.8, radius: 1.2, mass: 800, kind: 'aston', nopaint: true, custom: true },
   { id: 'f312t', brand: 'Ferrari', group: 'f1', drive: 'rwd', name: 'Ferrari 312 T (1975)', desc: 'Monoplaza histórico campeón del mundo', color: 0xc91623, vmax: 70, accel: 19, yaw: 3.1, grip: 15, driftGrip: 2.9, radius: 1.05, mass: 620, kind: 'f312t', nopaint: true, custom: true },
+  { id: 'r24', brand: 'Renault', group: 'f1', drive: 'rwd', name: 'Renault R24 (2004)', desc: 'V10 de Fernando Alonso: tracción brutal y salida fulgurante', color: 0x0094ff, vmax: 73, accel: 20.8, yaw: 3.1, grip: 16.5, driftGrip: 2.85, radius: 1.15, mass: 605, kind: 'r24', nopaint: true, custom: true },
+  { id: 'brawngp', brand: 'Brawn GP', group: 'f1', drive: 'rwd', name: 'Brawn BGP 001 (2009)', desc: 'Doble difusor revolucionario: campeón del mundo legendario', color: 0xf4f4f4, vmax: 73, accel: 20.9, yaw: 3.1, grip: 16.8, driftGrip: 2.85, radius: 1.15, mass: 605, kind: 'brawngp', nopaint: true, custom: true },
+  { id: 'mp45', brand: 'McLaren', group: 'f1', drive: 'rwd', name: 'McLaren MP4/5 (1989)', desc: 'Honda V10 mítico de Ayrton Senna y Alain Prost', color: 0xe02020, vmax: 72, accel: 20.2, yaw: 3.05, grip: 16.0, driftGrip: 2.9, radius: 1.1, mass: 540, kind: 'mp45', nopaint: true, custom: true },
+  { id: 'mp423', brand: 'McLaren', group: 'f1', drive: 'rwd', name: 'McLaren MP4-23 (2008)', desc: 'Aerodinámica extrema y V8 de Lewis Hamilton', color: 0xd0d5dd, vmax: 74, accel: 21.0, yaw: 3.15, grip: 17.0, driftGrip: 2.8, radius: 1.2, mass: 605, kind: 'mp423', nopaint: true, custom: true },
 ];
 // efecto suelo / aerodinámica (apoyo que crece con el cuadrado de la velocidad), tracción y potencia de frenada
-const AERO = { aston: 1.0, mclaren: 0.55, lotus: 0.4, stradale: 0.12, slr: 0.08, gtr: 0.06, f360: 0.05, cobra: 0.03 };
-const DRIVE = { s4: 'awd', porsche: 'rwd' };
+const AERO = { aston: 1.0, mp423: 1.0, brawngp: 0.96, r24: 0.95, mp45: 0.85, mclaren: 0.55, lotus: 0.4, fordgt06: 0.14, stradale: 0.12, slr: 0.08, gtr: 0.06, f360: 0.05, rx7toon: 0.05, cobra: 0.03 };
+const DRIVE = { s4: 'awd', porsche: 'rwd', minis: 'fwd' };
 const BRAKE = { cartoon: 1, cv100: 0.95, cv150: 1, cv200: 1.1, competicion: 1.2, f1: 1.5 };
 const MUD_BRAKE = { cartoon: 0.45, cv100: 0.45, cv150: 0.55, cv200: 0.68, competicion: 1, f1: 1 };
 for (const c of CARS) { c.aero = AERO[c.id] || 0; c.drive = c.drive || DRIVE[c.id] || 'fwd'; c.brakeMul = BRAKE[c.group] || 1; }
 // el apoyo aerodinámico sustituye al agarre base de los monoplazas: en curvas lentas agarran como un coche normal, a alta velocidad se pegan al suelo
-for (const [id, g] of [['aston', 13.8], ['mclaren', 13.4], ['lotus', 13.6]]) CARS.find((c) => c.id === id).grip = g;
+for (const [id, g] of [['aston', 13.8], ['mp423', 13.8], ['brawngp', 13.9], ['r24', 13.8], ['mp45', 13.5], ['mclaren', 13.4], ['lotus', 13.6]]) {
+  const found = CARS.find((c) => c.id === id);
+  if (found) found.grip = g;
+}
 export const AI_COLORS = [0x37d67a, 0xb06bff, 0xff7a3d, 0xeaeaea, 0x19c3d6];
 
 export function makeCar(type, name, isPlayer) {
@@ -175,8 +185,12 @@ export function stepCar(c, inp, dt, tr, env) {
     const mud = env.mud ? mudAt(loc.s, loc.lat) : 0; c.mud = mud;
     if (mud > 0.02) vf *= Math.exp(-mud * 1.25 * (MUD_BRAKE[T.group] ?? 1) * dt);
     if (puddleWater > 0.05) vf *= Math.exp(-puddleWater * 0.45 * dt);
+    const oil = env.oil ? oilAt(loc.s, loc.lat) : 0; c.oil = oil;
+    if (oil > 0.08) {
+      vl += (Math.sin(loc.s * 0.25) > 0 ? 1 : -1) * oil * 3.6 * dt;
+    }
     // ----- lógica de agarre: el neumático tiene un límite; si se le pide más, el coche se va un poco -----
-    const wet = surfaceGrip * (1 - puddleWater * 0.5) * (1 - mud * 0.5);
+    const wet = surfaceGrip * (1 - puddleWater * 0.5) * (1 - mud * 0.5) * (1 - oil * 0.65);
     const bk = loc.bank || 0, bankG = 1 + 2.2 * Math.abs(bk); // las curvas peraltadas agarran más
     vl -= 9.8 * Math.sin(bk) * 1.1 * dt; // y la pendiente lateral empuja el coche hacia dentro de la curva
     const limitG = 9.5 * (T.grip / 12.5) * env.gripMul * wet * bankG * dfk * (0.88 + 0.24 * c.tireTemp);
