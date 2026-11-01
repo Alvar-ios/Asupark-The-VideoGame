@@ -641,6 +641,25 @@ body.mobile #rTable td:nth-child(2){text-align:left}body.mobile #rTable td:last-
  body.mobile .podium .pd .hel{width:20px;height:20px}body.mobile .podium .pd .flag{width:20px;height:13px}body.mobile .podium .pd small{display:none}
 }
 body.mobile .helEd{align-items:flex-start}body.mobile .hel.big{width:56px;height:56px}body.mobile .sws button{width:22px;height:22px}
+
+.helSel small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8e98a8;margin:6px 0 4px}
+#helGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}#helGrid button{aspect-ratio:1;padding:4px;border-radius:10px;border:2px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);cursor:pointer}#helGrid button.on{border-color:#ffc928;background:rgba(255,201,40,.16)}#helGrid .hel{width:100%;height:100%;display:block;margin:0}
+
+/* ajustes en móvil: compactos, sin textos de ayuda; en horizontal a dos columnas */
+body.mobile #settings .panel{padding:12px 14px;max-height:100dvh}
+body.mobile #settings h1{font-size:24px!important;margin:0 0 4px}
+body.mobile #settings h3{margin:8px 0 3px;font-size:10px}
+body.mobile #settings .keys{display:none!important}
+body.mobile #settings .row{margin:4px 0}body.mobile #settings label{font-size:13px}
+body.mobile #settings #helGrid{grid-template-columns:repeat(6,1fr);gap:5px}
+body.mobile #settings #setClose{margin-top:8px;padding:11px}
+@media (orientation:landscape) and (max-height:540px){
+ body.mobile #settings .panel{max-width:min(96vw,760px)!important;column-count:2;column-gap:22px;overflow-y:auto}
+ body.mobile #settings h1,body.mobile #settings h3,body.mobile #settings .row,body.mobile #settings .helSel,body.mobile #settings #gfxSel{break-inside:avoid}
+ body.mobile #settings h3{break-after:avoid}
+ body.mobile #settings #helGrid{grid-template-columns:repeat(6,1fr)}
+ body.mobile #settings #setClose{break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -714,7 +733,7 @@ body.mobile .helEd{align-items:flex-start}body.mobile .hel.big{width:56px;height
   <h3>Piloto</h3>
   <div class="row"><label style="flex:1">Nombre en la clasificación<input id="pname" maxlength="20" class="sel" style="width:100%;margin-top:4px"></label></div>
   <div class="row"><label style="flex:1">Nacionalidad<select id="pflag" class="sel" style="width:100%;margin-top:4px"></select></label></div>
-  <div class="helEd"><div id="helPrev" class="hel big"></div><div class="helCtl"><small>Casco · base</small><div id="helBase" class="sws"></div><small>Franja</small><div id="helStripe" class="sws"></div><small>Visera</small><div id="helVisor" class="sws"></div><small>Dibujo</small><div id="helPat" class="seg"><button data-v="0">Liso</button><button data-v="1">Central</button><button data-v="2">Bandas</button><button data-v="3">Diagonal</button></div></div></div>
+  <div class="helSel"><small>Casco</small><div id="helGrid"></div></div>
   <h3>Gráficos</h3>
   <div id="gfxSel" class="seg"><button data-v="auto">Auto</button><button data-v="high">Alta</button><button data-v="medium">Media</button><button data-v="low">Baja</button></div>
   <p class="keys" style="display:block">Auto baja la calidad solo si el juego va lento. «Baja» quita las sombras y reduce la resolución: úsala si va a tirones en el móvil.</p>

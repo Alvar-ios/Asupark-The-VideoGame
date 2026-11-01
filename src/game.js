@@ -117,12 +117,12 @@ const HELM_DEF = 'e63946|ffffff|111827|1';
 const helmetSvg = (h) => {
   const m = /^([0-9a-f]{6})\|([0-9a-f]{6})\|([0-9a-f]{6})\|([0-9])$/i.exec(String(h || HELM_DEF)) || /^([0-9a-f]{6})\|([0-9a-f]{6})\|([0-9a-f]{6})\|([0-9])$/i.exec(HELM_DEF);
   const [, b, st, v, pt] = m, id = 'hm' + (helmN++), pat = +pt;
-  const shell = 'M2.5 14.5C2.5 7.5 7 3 12.6 3C18.2 3 21.8 7.4 21.8 13.2L21.8 17.2C21.8 19.2 20.4 20.4 18.4 20.4L8.2 20.4C4.9 20.4 2.5 18.4 2.5 14.5Z';
+  const shell = 'M3.2 17.5C3.2 9 9.2 3.4 16.6 3.4C24.6 3.4 29 9.4 29 17L29 22.4C29 24.2 27.7 25.4 25.9 25.4L10.6 25.4C6.3 25.4 3.2 22.4 3.2 17.5Z';
   let deco = '';
-  if (pat === 1) deco = '<rect x="10.3" y="2" width="4.6" height="19" fill="#' + st + '"/>';
-  else if (pat === 2) deco = '<rect x="2" y="15.4" width="21" height="2.8" fill="#' + st + '"/><rect x="2" y="3" width="21" height="1.7" fill="#' + st + '"/>';
-  else if (pat === 3) deco = '<polygon points="11,2 16,2 19,21 14,21" fill="#' + st + '"/>';
-  return `<svg viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="${id}"><path d="${shell}"/></clipPath></defs><path d="${shell}" fill="#${b}"/><g clip-path="url(#${id})">${deco}</g><path d="${shell}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="1"/><path d="M2.8 10.6C6.3 9.6 11.5 9.7 15.2 10.8L15 15.6C11 16 6.2 15.8 3.4 15.2Z" fill="#${v}" stroke="rgba(0,0,0,.4)" stroke-width=".6"/><path d="M4.5 11.6C7 11 10 11 12.5 11.5" stroke="rgba(255,255,255,.55)" stroke-width=".8" fill="none"/></svg>`;
+  if (pat === 1) deco = '<rect x="14" y="2" width="5" height="24" fill="#' + st + '"/>';
+  else if (pat === 2) deco = '<rect x="2" y="19.6" width="28" height="2.6" fill="#' + st + '"/><rect x="2" y="5.4" width="28" height="1.6" fill="#' + st + '"/>';
+  else if (pat === 3) deco = '<polygon points="13,2 18.5,2 23,26 17.5,26" fill="#' + st + '"/>';
+  return `<svg viewBox="0 0 32 28" aria-hidden="true"><defs><clipPath id="${id}"><path d="${shell}"/></clipPath></defs><path d="${shell}" fill="#${b}"/><g clip-path="url(#${id})">${deco}<ellipse cx="19" cy="7.6" rx="7" ry="2.2" fill="#fff" opacity=".22"/><rect x="2" y="23.2" width="28" height="3" fill="#000" opacity=".28"/></g><path d="${shell}" fill="none" stroke="rgba(0,0,0,.5)" stroke-width=".9"/><path d="M3.4 13.4C8 11.6 15 11.7 20 13.4L19.4 19.6C14 20.4 8 20.1 4.2 19Z" fill="#${v}" stroke="rgba(0,0,0,.5)" stroke-width=".7"/><path d="M5.6 14.6C9 13.6 13.6 13.6 17 14.4" stroke="#fff" stroke-opacity=".5" stroke-width=".9" fill="none" stroke-linecap="round"/></svg>`;
 };
 const playerDrv = () => ({ flag: lb.flag, helm: lb.helmet });
 const drvOf = (c) => (c && c.isPlayer ? playerDrv() : c && c.driver) || null;
@@ -1052,16 +1052,15 @@ $('boardGroups').onclick = (e) => { const b = e.target.closest('button'); if (b)
 $('boardBtn').onclick = () => openBoard(); $('boardBtn2').onclick = () => openBoard(S.trackInfo && S.trackInfo.key); $('boardClose').onclick = () => $('board').classList.add('hidden');
 $('pname').onchange = (e) => { e.target.value = lb.setName(e.target.value); };
 $('pname').onkeydown = (e) => e.stopPropagation();
-// nacionalidad y casco del piloto
-const HEL_COLS = ['e63946', 'ff6a00', 'f4a300', 'f4d000', '22c55e', '2a9d8f', '1d6fd6', '0a2a6b', '8e44ad', 'f9a8d4', 'ffffff', '111827'];
+// nacionalidad y casco del piloto: 12 cascos hechos para elegir con un toque
+const HEL_PRESETS = ['e63946|ffffff|111827|1', 'ff6a00|0a2a6b|111827|2', 'f4d000|1d9a4a|111827|1', 'ffffff|1d6fd6|111827|3', '1d6fd6|f4d000|111827|3', '111827|e63946|e5e7eb|2', '22c55e|ffffff|111827|3', '8e44ad|f9a8d4|111827|2', 'c1121f|ffffff|111827|0', 'f4a300|111827|111827|1', '2a9d8f|ffffff|111827|2', 'f9a8d4|8e44ad|111827|1'];
 $('pflag').innerHTML = Object.keys(FLAG_NAMES).map((k) => `<option value="${k}">${FLAG_NAMES[k]}</option>`).join('');
 $('pflag').onchange = (e) => { lb.setFlag(e.target.value); };
 function buildHelmetEditor() {
-  const h = lb.helmet.split('|'); $('pflag').value = lb.flag;
-  const sw = (id, idx) => { $(id).innerHTML = HEL_COLS.map((c) => `<button type="button" data-c="${c}" style="background:#${c}" class="${c === h[idx] ? 'on' : ''}" aria-label="${c}"></button>`).join(''); $(id).onclick = (e) => { const b = e.target.closest('button'); if (!b) return; h[idx] = b.dataset.c; lb.setHelmet(h.join('|')); buildHelmetEditor(); }; };
-  sw('helBase', 0); sw('helStripe', 1); sw('helVisor', 2);
-  for (const b of $('helPat').children) { b.classList.toggle('on', b.dataset.v === h[3]); b.onclick = () => { h[3] = b.dataset.v; lb.setHelmet(h.join('|')); buildHelmetEditor(); }; }
-  $('helPrev').innerHTML = helmetSvg(h.join('|'));
+  $('pflag').value = lb.flag;
+  const cur = lb.helmet.toLowerCase();
+  $('helGrid').innerHTML = HEL_PRESETS.map((h) => `<button type="button" data-h="${h}" class="${h === cur ? 'on' : ''}" aria-label="casco"><span class="hel">${helmetSvg(h)}</span></button>`).join('');
+  $('helGrid').onclick = (e) => { const b = e.target.closest('button'); if (b) { lb.setHelmet(b.dataset.h); buildHelmetEditor(); } };
 }
 lb.flush();
 

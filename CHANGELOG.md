@@ -88,3 +88,7 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Pantallas finales en móvil: en horizontal se reparten en dos columnas y ya no se cortan los botones.
 - La música elige siempre una canción al azar (distinta de la anterior).
 
+
+## 0.0.16
+- Casco mucho más simple: 12 cascos para elegir con un toque (sin colores sueltos). Dibujo del casco más fino.
+- Ajustes en móvil más compactos.
