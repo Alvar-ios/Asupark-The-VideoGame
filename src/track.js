@@ -172,7 +172,7 @@ export function buildTrack(seed, style) {
   for (const sep of [300, 200, 120, 80]) {
     for (const s of cands) {
       if (tr.ramps.length >= style.ramps) break;
-      if (tr.ramps.every((r) => Math.abs(r.s0 - s) > sep)) tr.ramps.push({ s0: s, len: 17, h: 1.15 });
+      if (tr.ramps.every((r) => Math.abs(r.s0 - s) > sep)) tr.ramps.push({ s0: s, len: 14, h: 1.4 });
     }
   }
   const rn = style.rollerN || 5, rl = rn * 32 + 15;
@@ -201,7 +201,7 @@ export function buildTrack(seed, style) {
   tr.pads.sort((a, b) => a.s - b.s);
 
   // --- rasgos propios de cada circuito: rampas a medida, túneles y curvas peraltadas ---
-  if (style.rampList) tr.ramps = style.rampList.map((r) => ({ s0: r.u * len, len: (r.len || 12) * 1.5, h: (r.h || 1.6) * 0.7 }));
+  if (style.rampList) tr.ramps = style.rampList.map((r) => ({ s0: r.u * len, len: (r.len || 12) * 1.5, h: (r.h || 1.6) * 0.85 }));
   tr.zones = (style.zones || []).map(([u0, u1, type]) => ({ s0: u0 * len, s1: u1 * len, type }));
   if (style.autoZones && !tr.zones.length) { // circuitos del día: dos tramos de otra superficie en puntos al azar
     const k = style.autoZones; let u = 0.12 + rng() * 0.15;
@@ -213,6 +213,10 @@ export function buildTrack(seed, style) {
     const a = Math.floor(u0 * N), b = Math.floor(u1 * N); let km = 0; for (let i = a; i < b; i++) km += kap[i % N]; const sg = km >= 0 ? 1 : -1;
     for (let i = a; i < b; i++) { const u = (i - a) / (b - a); tr.bank[i % N] = Math.sin(Math.PI * u) ** 2 * (deg * 0.72 * Math.PI / 180) * sg; } // entrada y salida graduales
   }
+  // pianos: solo en el interior de las curvas (-1 izquierda, +1 derecha), con un margen antes y después
+  tr.kerb = new Int8Array(N); { const raw = new Int8Array(N);
+    for (let i = 0; i < N; i++) { let km = 0; for (let d = -10; d <= 10; d++) km += kap[(i + d + N) % N]; km /= 21; if (Math.abs(km) > 0.0075) raw[i] = km > 0 ? -1 : 1; }
+    for (let i = 0; i < N; i++) if (raw[i]) for (let d = -14; d <= 14; d++) { const j = (i + d + N) % N; if (!tr.kerb[j]) tr.kerb[j] = raw[i]; } }
   // --- perfil de altura ---
   const A1 = style.hill || 0, ph = [rng() * TAU, rng() * TAU, rng() * TAU];
   const k1 = 1 + Math.floor(rng() * 2), k2 = 3 + Math.floor(rng() * 2), k3 = 6 + Math.floor(rng() * 2);
@@ -238,7 +242,7 @@ export function buildTrack(seed, style) {
     }
     for (const r of tr.ramps) {
       const u = s - r.s0;
-      if (u >= 0 && u < r.len) h += r.h * (u / r.len);
+      if (u >= 0 && u < r.len) h += r.h * Math.pow(u / r.len, 1.5); // empieza suave y acaba con pendiente de despegue
     }
     Y[i] = h;
   }

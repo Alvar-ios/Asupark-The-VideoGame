@@ -184,21 +184,23 @@ function roadMesh(tr, th, stride = 1) {
     const hi = tr.Y[i], hj = tr.Y[j];
     const eoI = L + 2.5 + hi * 1.1, eoJ = L + 2.5 + hj * 1.1;
     // perfil lateral: hierba | pianos en relieve (rampa, cresta, escalón) | asfalto | escalón, cresta, rampa | hierba
-    const lat = (k, h, eo, kr) => [[-eo, 0], [-L, h - 0.05], [-(hw + 1), h + 0.02], [-(hw + 0.35), h + kr], [-hw, h + kr], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw, h + kr], [hw + 0.35, h + kr], [hw + 1, h + 0.02], [L, h - 0.05], [eo, 0]][k];
-    const sLen = tr.absK[i] > 0.012 ? 2.2 : 5, s2k = (i + stride) * tr.ds;
-    const kk = th.noKerbs ? 0 : 1, krI = kk * (0.06 + 0.035 * Math.sin(Math.PI * s / sLen)), krJ = kk * (0.06 + 0.035 * Math.sin(Math.PI * s2k / sLen));
+    const KW = Math.min(1.9, L - hw - 0.2); // pianos más anchos
+    const lat = (k, h, eo, krL, krR) => [[-eo, 0], [-L, h - 0.05], [-(hw + KW), h + 0.02], [-(hw + KW * 0.42), h + krL], [-hw, h + krL], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw, h + krR], [hw + KW * 0.42, h + krR], [hw + KW, h + 0.02], [L, h - 0.05], [eo, 0]][k];
+    const sLen = 2.4, s2k = (i + stride) * tr.ds;
+    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x) => 0.07 + 0.04 * Math.sin(Math.PI * x / sLen);
+    const krLi = kv === -1 ? wave(s) : 0, krRi = kv === 1 ? wave(s) : 0, krLj = kvj === -1 ? wave(s2k) : 0, krRj = kvj === 1 ? wave(s2k) : 0;
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
-    const stripe = Math.floor(s / (tr.absK[i] > 0.012 ? 2.2 : 5)) % 2 === 0;
+    const stripe = Math.floor(s / 2.4) % 2 === 0;
     for (let b = 0; b < 13; b++) {
-      const [l0, y0i] = lat(b, hi, eoI, krI), [l1, y1i] = lat(b + 1, hi, eoI, krI);
-      const [l0j, y0j] = lat(b, hj, eoJ, krJ), [l1j, y1j] = lat(b + 1, hj, eoJ, krJ);
+      const [l0, y0i] = lat(b, hi, eoI, krLi, krRi), [l1, y1i] = lat(b + 1, hi, eoI, krLi, krRi);
+      const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj);
       const P = (idx, l, y) => [tr.X[idx] + -tr.TZ[idx] * l, y + (Math.abs(l) <= L ? l * Math.tan(tr.bank[idx]) : (l > 0 ? 1 : -1) * L * Math.tan(tr.bank[idx])), tr.Z[idx] + tr.TX[idx] * l];
       const a = P(i, l0, y0i), bb = P(i, l1, y1i), c = P(j, l0j, y0j), d = P(j, l1j, y1j);
       let color;
       let outerColor = null;
       if (b === 0 || b === 12) { color = cGrass; outerColor = cDirt; }
       else if (b === 1 || b === 11) color = cGrass;
-      else if (b === 2 || b === 3 || b === 4 || b === 8 || b === 9 || b === 10) color = th.noKerbs ? cGrass : stripe ? k1 : k2;
+      else if (b === 2 || b === 3 || b === 4 || b === 8 || b === 9 || b === 10) color = th.noKerbs ? cGrass : (b < 5 ? kv === -1 : kv === 1) ? (stripe ? k1 : k2) : cRoad2; // sin piano: arcén de asfalto
       else {
         color = Math.floor(s / 24) % 2 ? cRoad : cRoad2;
         const zn = zoneAt(tr, s); if (zn && zn.w > 0.5 && zn.key !== 'asphalt') { const zc = SURF[zn.key].col; if (zc != null) color = col(zc).multiplyScalar(Math.floor(s / 6) % 2 ? 1 : 0.93); }

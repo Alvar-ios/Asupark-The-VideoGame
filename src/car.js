@@ -215,10 +215,14 @@ export function stepCar(c, inp, dt, tr, env) {
     c.drifting = false;
   }
 
-  // pianos (bordillos): frenan un poco y vibran
-  c.onKerb = !c.air && Math.abs(loc.lat) > ROAD_HALF - 0.2 && Math.abs(loc.lat) < ROAD_HALF + 1.15;
+  // pianos (bordillos): solo existen en el interior de las curvas. Al ser más altos por dentro, te lanzan suavemente hacia fuera (hacia el centro de la pista), sin frenar:
+  // ayudan a cerrar la curva si los pisas con ganas y vibran un poco.
+  const KW = Math.min(1.9, WALL - ROAD_HALF - 0.2), side = loc.lat >= 0 ? 1 : -1, over = Math.abs(loc.lat) - (ROAD_HALF - 0.15);
+  c.onKerb = !c.air && over > 0 && over < KW + 0.15 && tr.kerb && tr.kerb[loc.i] === side;
   if (c.onKerb && c.speed > 8) {
-    c.vx *= Math.exp(-0.16 * dt); c.vz *= Math.exp(-0.16 * dt);
+    const depth = clamp(over / 1.2, 0, 1), push = 5.5 * depth * clamp(c.speed / 32, 0.3, 1.3); // m/s² hacia el centro
+    c.vx += loc.tz * side * push * dt; c.vz += -loc.tx * side * push * dt;
+    c.psi += clamp(wrapPi(Math.atan2(loc.tx, loc.tz) - c.psi), -0.4, 0.4) * 0.35 * depth * dt; // y el morro tiende a alinearse con la pista
   }
   // altura y saltos
   const hNew = loc.h;
@@ -228,7 +232,7 @@ export function stepCar(c, inp, dt, tr, env) {
     c.grad += (grad - c.grad) * 0.15;
     const yBall = c.y + c.vy * dt - 0.5 * G * dt * dt;
     if (c.vy > 1.5 && hNew < yBall - 0.05) {
-      c.air = true; c.y = yBall; c.vy -= G * dt; c.airTime = 0;
+      c.air = true; c.y = yBall; c.vy = c.vy * 1.12 - G * dt; c.airTime = 0;
       c.drifting = false;
       c.events.push({ t: 'takeoff', v: c.vy });
     } else {
@@ -236,7 +240,7 @@ export function stepCar(c, inp, dt, tr, env) {
     }
   } else {
     c.airTime += dt;
-    c.vy -= G * dt; c.y += c.vy * dt;
+    c.vy -= G * 0.7 * dt; c.y += c.vy * dt; // en el aire el coche «flota» un poco más
     if (c.y <= hNew && c.vy <= 0) {
       const impact = -c.vy;
       c.y = hNew; c.vy = 0; c.air = false; c.grad = 0;

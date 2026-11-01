@@ -75,3 +75,7 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 ## 0.0.13
 - Arreglado el HUD de sectores en móvil: los colores (morado, verde, amarillo) no se veían por un conflicto de estilos, y ahora además se muestra el diferencial de cada sector.
+
+## 0.0.14
+- Rampas: despegue con pendiente suave pero real y gravedad reducida en el aire; los coches vuelan unos 1,4 s (unos 60 m a 150 km/h) en lugar de caer a plomo.
+- Pianos: solo en el interior de las curvas, más anchos y sin frenar. Al pisarlos te lanzan suavemente hacia el centro de la pista y alinean el morro, lo que ayuda a cerrar la curva. Fuera de las curvas hay arcén de asfalto.
