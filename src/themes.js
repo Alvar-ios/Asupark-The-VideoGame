@@ -28,6 +28,12 @@ export const THEMES = {
     wall1: 0xc9cbc9, wall2: 0xb23a32, mount: 0x4d6a52, sun: 0xe9eef2, sunDir: [-0.3, 0.55, 0.45],
     hemiSky: 0xcfd9e0, hemiGround: 0x4c5a3c, hemiI: 0.95, sunI: 0.75, deco: 'pine', treeNear: 1, treeCount: 1900, kerbRough: true, treeCol: 0x1f4d2b, night: false, temp: 11, humidity: 0.9, wind: [6, 1.0], gripMul: 0.98, offroad: 0.6, slope: 1.4,
     weather: 'rain', wetGrip: 0.78, brakeForce: 22, mud: true,
+    rainPalette: {
+      skyTop: 0x566b7a, skyHor: 0xa7b0ad, fog: 0x839087,
+      ground: 0x405c35, grass: 0x5b8347, dirt: 0x70563b, treeCol: 0x2d5939, mount: 0x53634b,
+      hemiSky: 0x8296a0, hemiGround: 0x43583d, sun: 0xf0dfbb,
+      kerbs3: [0x1d1d1d, 0xe5c52a, 0xd73d3b],
+    },
   },
   valle: {
     id: 'valle', name: 'Valle Verde · estilo Interlagos', sub: 'Descida do Lago, cuesta final y peralte en la Junção', seed: 'valle-v2',

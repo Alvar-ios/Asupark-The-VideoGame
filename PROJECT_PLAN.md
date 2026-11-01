@@ -42,10 +42,10 @@ El proyecto ya es un juego 3D para navegador hecho con Three.js. `npm run build`
 - Física arcade propia, derrape, saltos, colisiones y controles de teclado y táctiles.
 - Coches con estadísticas diferentes y varios modelos 3D.
 - Circuitos generados a partir de semillas, temas visuales y una pista diaria determinista.
-- Contrarreloj, fantasma local, sectores, récords guardados en el navegador, rachas y rivales controlados por IA.
+- Contrarreloj, fantasmas, sectores, récords locales y sincronización remota opcional, rachas y rivales controlados por IA.
 - Una carrera contra rivales simulados.
 
-La competición todavía es local: los récords se guardan en `localStorage`; la clasificación de contrarreloj usa pilotos ficticios. No hay cuentas, tablas online, temporadas compartidas ni servidores de carrera. La pista diaria actual se calcula en el cliente, no se publica desde un flujo editorial.
+La clasificación de tiempos admite Supabase cuando se configura y conserva el almacenamiento local como alternativa. Aún no hay cuentas de jugador, temporadas compartidas ni carreras multijugador; la pista diaria se calcula en el cliente, no se publica desde un flujo editorial.
 
 ## Plan por etapas
 
@@ -109,7 +109,7 @@ Explorar recompensas de temporada, monedas y tienda cuando el bucle principal y 
 - La nieve reduce el agarre en pista y especialmente fuera de ella; tambien reduce autoridad de direccion y capacidad de frenada. La salida a nieve genera una nube fria clara.
 - El desierto tiene respuesta propia al salir del asfalto: traccion, frenada, resistencia y direccion ajustadas, con polvo rojizo.
 - Los pianos tienen una ligera elevacion fisica y el circuito muestra lineas continuas de borde ademas de los pianos y marcas existentes.
-- Los nueve coches usan perfiles de motor procedural diferenciados por tono, regimen, aspereza y silbido de turbo. Al acelerar aparecen emisiones sutiles en el escape; reciben un tono gris discreto.
+- Los coches usan perfiles de motor procedural diferenciados por tono, regimen, aspereza y silbido de turbo. Al acelerar aparecen emisiones sutiles en el escape; reciben un tono gris discreto.
 - La compilacion de produccion (`npm run build`) funciona. Falta validar manualmente el tacto de los coches y ajustar los valores de las superficies segun pruebas de conduccion.
 
 
@@ -123,11 +123,12 @@ Explorar recompensas de temporada, monedas y tienda cuando el bucle principal y 
 
 ### Estado actual: cámara, exteriores, audio y empaquetado
 
-- El garaje ofrece seis coches basados en modelos reales: Bora, Porsche 911, BMW M3, Cupra León, Mini Clubman y Nissan Qashqai. Se quitaron Turbo GT, Drifter y Bruiser.
+- El garaje ofrece 20 vehículos seleccionables en seis grupos, incluidos modelos reales y variantes toon. Los GLB se cargan bajo demanda; el usuario prepara más modelos para incorporarlos en la siguiente tanda.
 - Los motores usan fragmentos de grabaciones de coches deportivos del paquete CC0 de muted.io, remuestreados a mono y con perfiles de pitch/filtro/volumen por coche. Los archivos fuente seleccionados y la atribución están en `src/assets/audio/`.
 - La cámara de carrera se guía principalmente por la tangente del trazado, no por el giro del coche; el plano de presentación del menú ya no orbita sin parar.
 - El Circuito de Pruebas usa asfalto, arcenes, luz y vegetación de pista natural en vez de bloques de juguete. Árboles y hierba se mueven con viento; el menú también muestra precipitación en pistas de lluvia y nieve.
-- La adherencia, velocidad, resistencia y dirección se mezclan gradualmente al pisar el arcén. Los charcos visuales y físicos comparten ubicación; las marcas de neumático usan un borde difuso y textura de huella.
+- La adherencia, velocidad, resistencia y dirección se mezclan gradualmente al pisar el arcén. Charcos y barro tienen contornos orgánicos y bordes difuminados que coinciden con la zona de efecto físico; las marcas de neumático usan una textura de huella.
+- En lluvia, la textura y los reflejos del asfalto no se aplican a los arcenes; Spa conserva verdes de Ardenas, grava diferenciada y colores belgas visibles en los pianos. Los pianos se pueden pisar con agarre de carretera y una sacudida ligera.
 - La salida se divide en `index.html`, `game.js` y activos estáticos cargados bajo demanda. Para desarrollo local: `npm run serve` y abrir `http://localhost:4173`. Vercel publica la versión estática mediante `npm run build` y `dist/`.
-- No hay backend online todavía: récords y tiempos se guardan localmente. Ligas y tablas compartidas necesitarán un servicio de datos/backend en una etapa posterior.
-- Última compilación: `npm run build` correcta. Falta validar conducción, mezcla de audio y apariencia en navegador con pruebas manuales.
+- La clasificación remota de tiempos usa Supabase opcionalmente; si no está configurado, el juego mantiene los récords locales. Cuentas, temporadas y multijugador siguen pendientes.
+- `npm run build`, la simulación de conducción y la prueba específica de superficies/pianos pasan. La apariencia de Spa bajo lluvia se ha revisado en navegador de escritorio; queda ajustar conducción manual y revisar móvil.

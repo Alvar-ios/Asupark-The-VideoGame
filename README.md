@@ -35,7 +35,7 @@ Los modelos se preparan desde archivos `.glb` optimizados con varios niveles de 
 
 ## Verificación
 
-`npm run build` comprueba que el bundle se compile. `npm run sim` ejecuta una simulación sin gráficos.
+`npm run build` comprueba que el bundle se compile. `npm run sim` ejecuta una simulación sin gráficos y `npm run test:surface` comprueba la física de charcos, barro, grava y pianos.
 
 ## Clasificaciones online (Supabase)
 El juego guarda el mejor tiempo de cada piloto por circuito y por coche, y muestra con qué coche se hizo (menú → 🏆 Clasificación y pantalla de resultados).

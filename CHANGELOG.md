@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.29
+- Charcos y barro con contornos orgánicos, bordes difuminados y textura; la forma visual coincide con la zona que afecta al agarre.
+- La textura brillante de lluvia se limita al asfalto; hierba, grava y tierra conservan sus propios colores y materiales.
+- Spa mantiene tonos verdes de Ardenas y los colores belgas de los pianos bajo lluvia; las zonas sin piano junto a la pista son grava, no asfalto.
+- Los pianos de Spa se pueden pisar con agarre de carretera y conservan una sacudida ligera.
+
 ## 0.0.1
 - Versión visible en el menú.
 - Cinco coches nuevos por grupo (Cartoon, 100 CV, 150 CV, 200 CV, Competición y F1) con stats equilibrados por grupo y tres pinturas por coche.

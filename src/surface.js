@@ -1,34 +1,55 @@
-// Shared road-water layout so the visual puddles and grip model line up.
-export function puddleAt(s, lat) {
-  const index = Math.floor((s - 38) / 64);
-  if (index < 0) return 0;
-  const start = 38 + index * 64;
-  const lane = Math.sin(index * 12.989) * 3.25;
-  const halfLength = 3.7 + (index % 4) * 0.32;
-  const halfWidth = 1.05 + (index % 3) * 0.22;
-  const ds = Math.abs(s - (start + halfLength));
-  const dl = Math.abs(lat - lane);
-  const edge = Math.max(ds / halfLength, dl / halfWidth);
-  if (edge >= 1) return 0;
-  const t = 1 - edge;
-  return t * t * (3 - 2 * t);
-}
-
 export function smoothstep(a, b, x) {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 }
 
+export function patchBoundary(angle, seed) {
+  return 0.91
+    + 0.055 * Math.sin(angle * 3 + seed * 0.73)
+    + 0.03 * Math.sin(angle * 7 - seed * 1.17)
+    + 0.02 * Math.cos(angle * 11 + seed * 0.43);
+}
+
+function patchValue(ds, dl, halfLength, halfWidth, seed) {
+  const radius = Math.hypot(ds / halfLength, dl / halfWidth);
+  const edge = patchBoundary(Math.atan2(dl / halfWidth, ds / halfLength), seed);
+  return 1 - smoothstep(0.72, 1.08, radius / edge);
+}
+
+export function puddleParams(index) {
+  const start = 38 + index * 64;
+  return {
+    start,
+    lane: Math.sin(index * 12.989) * 3.25,
+    halfLength: 3.7 + (index % 4) * 0.32,
+    halfWidth: 1.05 + (index % 3) * 0.22,
+    seed: index + 1,
+  };
+}
+
+export function puddleAt(s, lat) {
+  const index = Math.floor((s - 38) / 64);
+  if (index < 0) return 0;
+  const p = puddleParams(index);
+  return patchValue(s - (p.start + p.halfLength), lat - p.lane, p.halfLength, p.halfWidth, p.seed);
+}
+
 // Barro: manchas sobre la trazada (frenan y quitan agarre). Mismo diseño que los charcos, con otra cadencia.
-export function mudParams(i) { return { lane: Math.sin(i * 7.31 + 1.3) * 2.5, halfLength: 6 + (i % 3) * 1.6, halfWidth: 1.7 + (i % 2) * 0.55 }; }
+export function mudParams(i) {
+  return {
+    start: MUD_START + i * MUD_STEP,
+    lane: Math.sin(i * 7.31 + 1.3) * 2.5,
+    halfLength: 6 + (i % 3) * 1.6,
+    halfWidth: 1.7 + (i % 2) * 0.55,
+    seed: i + 31,
+  };
+}
 export const MUD_START = 120, MUD_STEP = 150;
 export function mudAt(s, lat) {
   const index = Math.floor((s - MUD_START) / MUD_STEP);
   if (index < 0) return 0;
-  const { lane, halfLength, halfWidth } = mudParams(index), start = MUD_START + index * MUD_STEP;
-  const edge = Math.max(Math.abs(s - (start + halfLength)) / halfLength, Math.abs(lat - lane) / halfWidth);
-  if (edge >= 1) return 0;
-  const t = 1 - edge; return t * t * (3 - 2 * t);
+  const p = mudParams(index);
+  return patchValue(s - (p.start + p.halfLength), lat - p.lane, p.halfLength, p.halfWidth, p.seed);
 }
 
 // ===== Superficies: cada tipo cambia agarre, frenada, resistencia, dirección y tracción =====

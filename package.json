@@ -1,6 +1,6 @@
 {
   "name": "drift-rush",
-  "version": "0.0.28",
+  "version": "0.0.29",
   "type": "module",
   "private": true,
   "dependencies": {
@@ -11,6 +11,7 @@
     "build": "node build.mjs",
     "serve": "npm run build && node serve.mjs",
     "sim": "node test/sim.mjs",
+    "test:surface": "node test/surface-test.mjs",
     "optimize-glb": "node tools/optimize-glb.mjs",
     "test:engine": "node test/engine-test.mjs",
     "test:audio": "node test/audio-stress.mjs"

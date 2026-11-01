@@ -99,7 +99,11 @@ export function stepCar(c, inp, dt, tr, env) {
   let vf = c.vx * fx + c.vz * fz, vl = c.vx * rx + c.vz * rz;
   const speed = Math.hypot(c.vx, c.vz);
   const ground = !c.air;
-  const offroadBlend = smoothstep(ROAD_HALF - 0.7, ROAD_HALF + 2.4, Math.abs(loc.lat));
+  const curbWidth = Math.min(1.9, WALL - ROAD_HALF - 0.2), curbSide = loc.lat >= 0 ? 1 : -1;
+  const absLat = Math.abs(loc.lat);
+  const onPavedKerb = ground && tr.kerb && tr.kerb[loc.i] === curbSide
+    && absLat > ROAD_HALF - 0.15 && absLat < ROAD_HALF + curbWidth + 0.15;
+  const offroadBlend = onPavedKerb ? 0 : smoothstep(ROAD_HALF - 0.7, ROAD_HALF + 2.4, absLat);
   surfaceAt(tr, env, loc.s, SP); applyRunoff(tr, env, loc.i, loc.lat, ROAD_HALF, offroadBlend, SP); c.surf = SP.key; // superficie bajo el coche (zonas mixtas + temperatura y humedad)
   const off = offroadBlend > 0.5;
   c.offroadFactor = ground ? offroadBlend : 0;
