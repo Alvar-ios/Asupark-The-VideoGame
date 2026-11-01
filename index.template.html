@@ -683,9 +683,9 @@ body.mobile #menu .links{gap:6px;margin-top:6px}body.mobile #menu .link{padding:
 /* control táctil por mitades de pantalla (acelerador automático) */
 #halves{position:fixed;inset:0;z-index:2;display:none;touch-action:none}
 body.racing.halves-mode #halves{display:flex}body.halves-mode #touch{display:none!important}
-#halves>div{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7vh;font-size:34px;font-weight:900;color:rgba(255,255,255,.22);transition:background .08s}
-#halves #hL.on{background:linear-gradient(90deg,rgba(255,201,40,.28),rgba(255,201,40,0))}#halves #hR.on{background:linear-gradient(270deg,rgba(255,201,40,.28),rgba(255,201,40,0))}
-#halves>div.on{color:rgba(255,255,255,.7)}
+#halves>div{position:relative;flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7vh;font-size:30px;font-weight:900;color:rgba(255,255,255,.14)}
+#halves>div::after{content:'';position:absolute;bottom:4vh;left:var(--x,50%);width:58px;height:58px;margin-left:-29px;border-radius:50%;background:rgba(255,255,255,.16);opacity:0;transition:opacity .07s}
+#halves>div.on::after{opacity:1}#halves>div.on{color:rgba(255,255,255,.3)}
 </style>
 </head>
 <body>

@@ -69,9 +69,10 @@ for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco' && k !== 'spa'
 
 const DAILY_CAR = hashStr('dailycar-' + daily.key) % CARS.length; // el mismo coche y circuito para todos cada día
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
-const sel = { track: Math.max(0, tracks.findIndex((t) => t.key === 'daily')), mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, touchMode: 'buttons', colors: {}, vol: { master: 1, music: 0.7, engine: 0.65 }, gfx: 'auto' };
+const sel = { track: Math.max(0, tracks.findIndex((t) => t.key === 'daily')), mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, touchMode: 'halves', colors: {}, vol: { master: 1, music: 0.7, engine: 0.65 }, gfx: 'auto' };
 const paintOf = (c) => { const v = sel.colors[c.id]; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
-const saved = store.get('sel'); if (saved) { const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.touchMode = saved.touchMode === 'halves' ? 'halves' : 'buttons'; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
+const halvesOn = () => MOBILE && sel.touchMode === 'halves'; // el control por mitades solo existe en pantallas táctiles
+const saved = store.get('sel'); if (saved) { const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.touchMode = saved.touchMode === 'buttons' ? 'buttons' : 'halves'; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
 if (saved) { sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
 
 // ----- pilotos de la IA: nombre, país y nivel (de mejor a peor); en cada carrera se reparten al azar entre los coches rivales -----
@@ -213,15 +214,15 @@ function buildPaints() {
 }
 $('autoGas').onclick = () => { sel.autoGas = !sel.autoGas; buildMenu(); };
 // control por mitades: toca a la izquierda para girar a la izquierda y a la derecha para girar a la derecha (el acelerador va solo)
-const applyCtl = () => { document.body.classList.toggle('halves-mode', sel.touchMode === 'halves'); const b = $('ctlMode'); if (b) { b.classList.toggle('on', sel.touchMode === 'halves'); b.textContent = 'Control: ' + (sel.touchMode === 'halves' ? 'MITADES + ACEL. AUTO' : 'BOTONES'); } };
+const applyCtl = () => { document.body.classList.toggle('halves-mode', halvesOn()); const b = $('ctlMode'); if (b) { b.classList.toggle('on', sel.touchMode === 'halves'); b.textContent = 'Control: ' + (sel.touchMode === 'halves' ? 'MITADES + ACEL. AUTO' : 'BOTONES'); } };
 $('ctlMode').onclick = () => { sel.touchMode = sel.touchMode === 'halves' ? 'buttons' : 'halves'; store.set('sel', sel); applyCtl(); };
 applyCtl();
 {
-  const hz = $('halves'), hold = new Map();
-  const hUpd = () => { let l = 0, r = 0; for (const v of hold.values()) { if (v < 0) l = 1; else r = 1; } input.touch.l = l; input.touch.r = r; $('hL').classList.toggle('on', !!l); $('hR').classList.toggle('on', !!r); };
-  hz.addEventListener('pointerdown', (e) => { e.preventDefault(); hold.set(e.pointerId, e.clientX < window.innerWidth / 2 ? -1 : 1); try { hz.setPointerCapture(e.pointerId); } catch (_) { /* sin captura */ } sound.init(CARS[sel.car].id); hUpd(); });
-  hz.addEventListener('pointermove', (e) => { if (hold.has(e.pointerId)) { hold.set(e.pointerId, e.clientX < window.innerWidth / 2 ? -1 : 1); hUpd(); } });
-  const up = (e) => { hold.delete(e.pointerId); hUpd(); };
+  const hz = $('halves'), hold = new Map(), hx = new Map();
+  const hUpd = () => { let l = 0, r = 0; for (const [id, v] of hold) { if (v < 0) l = 1; else r = 1; const x = hx.get(id); if (x != null) $(v < 0 ? 'hL' : 'hR').style.setProperty('--x', (v < 0 ? x : x - window.innerWidth / 2) + 'px'); } input.touch.l = l; input.touch.r = r; $('hL').classList.toggle('on', !!l); $('hR').classList.toggle('on', !!r); };
+  hz.addEventListener('pointerdown', (e) => { e.preventDefault(); hold.set(e.pointerId, e.clientX < window.innerWidth / 2 ? -1 : 1); hx.set(e.pointerId, e.clientX); try { hz.setPointerCapture(e.pointerId); } catch (_) { /* sin captura */ } sound.init(CARS[sel.car].id); hUpd(); });
+  hz.addEventListener('pointermove', (e) => { if (hold.has(e.pointerId)) { hold.set(e.pointerId, e.clientX < window.innerWidth / 2 ? -1 : 1); hx.set(e.pointerId, e.clientX); hUpd(); } });
+  const up = (e) => { hold.delete(e.pointerId); hx.delete(e.pointerId); hUpd(); };
   hz.addEventListener('pointerup', up); hz.addEventListener('pointercancel', up); hz.addEventListener('lostpointercapture', up);
 }
 $('fsBtn').onclick = () => { try { const e = document.documentElement; (e.requestFullscreen || e.webkitRequestFullscreen).call(e); } catch (_) {} try { screen.orientation.lock('landscape').catch(() => {}); } catch (_) {} };
@@ -567,7 +568,7 @@ function readInput(o) {
     if (rs && S.state === 'racing' && !S.padReset) { S.padReset = true; doReset(); }
     if (!rs) S.padReset = false;
   }
-  if ((sel.autoGas || sel.touchMode === 'halves') && brk < 0.05) thr = 1;
+  if ((sel.autoGas || halvesOn()) && brk < 0.05) thr = 1;
   o.steer = steer; o.throttle = thr; o.brake = brk; o.drift = drift;
 }
 
@@ -1229,7 +1230,7 @@ function frame(now) {
     const gi = gearInfo(p.speed, p.type.vmax);
     if (S.lastAudioGear && gi.gear !== S.lastAudioGear && p.speed > 8) sound.play('shift');
     S.lastAudioGear = gi.gear;
-    sound.update({ carId: p.type.id, speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas || sel.touchMode === 'halves' ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), onKerb: p.onKerb, weather: S.th.weather, surface: p.surf || S.th.surface, air: p.air, offroad: p.offroad, offroadFactor: p.offroadFactor, puddleWater: p.puddleWater });
+    sound.update({ carId: p.type.id, speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas || halvesOn() ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), onKerb: p.onKerb, weather: S.th.weather, surface: p.surf || S.th.surface, air: p.air, offroad: p.offroad, offroadFactor: p.offroadFactor, puddleWater: p.puddleWater });
     updateHud(dt);
   }
   renderer.render(S.scene, camera);

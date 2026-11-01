@@ -103,3 +103,7 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 ## 0.0.19
 - Nuevo control táctil por mitades (Ajustes → Control): acelerador automático y solo giras; tocas la mitad izquierda para girar a la izquierda y la derecha para girar a la derecha.
 - Reto del día, Clasificación, Música y Ajustes son ahora botones con icono en el menú.
+
+## 0.0.20
+- El control por mitades de pantalla es ahora el predeterminado en móvil (se puede volver a los botones en Ajustes).
+- Sin sombreado amarillo al tocar: solo un punto tenue abajo, donde pulsas.
