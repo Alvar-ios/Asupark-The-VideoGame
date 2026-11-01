@@ -19,60 +19,6 @@ function skyMesh(th) {
   return m;
 }
 
-let asphaltTexCache = null;
-let asphaltRoughnessCache = null;
-function asphaltTex() {
-  if (asphaltTexCache) return asphaltTexCache;
-  const size = 512;
-  const c = document.createElement('canvas'); c.width = c.height = size;
-  const x = c.getContext('2d'), im = x.createImageData(size, size);
-  for (let y = 0; y < size; y++) {
-    for (let xp = 0; xp < size; xp++) {
-      const idx = (y * size + xp) * 4;
-      let val = 210;
-      val += (Math.random() - 0.5) * 36;
-      const p1 = Math.sin(xp * 0.45 + Math.cos(y * 0.42) * 3.2);
-      const p2 = Math.cos(y * 0.52 + Math.sin(xp * 0.38) * 2.7);
-      if (p1 * p2 > 0.42) val += 24;
-      else if (p1 * p2 < -0.40) val -= 26;
-      val += Math.sin(xp * 1.6) * 4.0;
-      if (Math.random() < 0.016) val += 36;
-      val = Math.max(130, Math.min(255, val));
-      im.data[idx] = im.data[idx + 1] = im.data[idx + 2] = val;
-      im.data[idx + 3] = 255;
-    }
-  }
-  x.putImageData(im, 0, 0);
-  asphaltTexCache = new THREE.CanvasTexture(c);
-  asphaltTexCache.wrapS = asphaltTexCache.wrapT = THREE.RepeatWrapping;
-  asphaltTexCache.repeat.set(16, 32);
-  asphaltTexCache.colorSpace = THREE.SRGBColorSpace;
-  asphaltTexCache.anisotropy = 8;
-  return asphaltTexCache;
-}
-
-function asphaltRoughnessTex() {
-  if (asphaltRoughnessCache) return asphaltRoughnessCache;
-  const size = 256;
-  const c = document.createElement('canvas'); c.width = c.height = size;
-  const x = c.getContext('2d'), im = x.createImageData(size, size);
-  for (let y = 0; y < size; y++) {
-    for (let xp = 0; xp < size; xp++) {
-      const idx = (y * size + xp) * 4;
-      const n = (Math.random() - 0.5) * 28;
-      const grain = Math.sin(xp * 0.32 + y * 0.28) * 14;
-      const val = Math.max(140, Math.min(245, 192 + n + grain));
-      im.data[idx] = im.data[idx + 1] = im.data[idx + 2] = val;
-      im.data[idx + 3] = 255;
-    }
-  }
-  x.putImageData(im, 0, 0);
-  asphaltRoughnessCache = new THREE.CanvasTexture(c);
-  asphaltRoughnessCache.wrapS = asphaltRoughnessCache.wrapT = THREE.RepeatWrapping;
-  asphaltRoughnessCache.repeat.set(16, 32);
-  asphaltRoughnessCache.anisotropy = 4;
-  return asphaltRoughnessCache;
-}
 function groundTex() {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const x = c.getContext('2d'), im = x.createImageData(128, 128);
@@ -318,8 +264,8 @@ function roadMesh(tr, th, stride = 1) {
   };
   const wet = th.weather === 'rain', snow = th.surface === 'snow', dirt = th.surface === 'dirt';
   const roadMaterial = wet
-    ? new THREE.MeshPhysicalMaterial({ vertexColors: true, side: THREE.DoubleSide, map: asphaltTex(), roughnessMap: wetRoughnessTexture(), color: 0xffffff, roughness: 0.82, metalness: 0.025, clearcoat: 0.68, clearcoatRoughness: 0.16, envMapIntensity: 0.8 })
-    : new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, map: asphaltTex(), roughnessMap: asphaltRoughnessTex(), roughness: snow ? 0.74 : dirt ? 0.78 : 0.84, metalness: 0.03, envMapIntensity: 0.45 });
+    ? new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.28, metalness: 0.08, envMapIntensity: 0.85 })
+    : new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: snow ? 0.72 : dirt ? 0.8 : 0.84, metalness: 0.04, envMapIntensity: 0.45 });
   const edgeMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.92, metalness: 0.01 });
   const group = new THREE.Group();
   for (const [data, material] of [[roadData, roadMaterial], [edgeData, edgeMaterial]]) {
@@ -354,43 +300,63 @@ function wallMesh(tr, th, stride = 1) {
   return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide }));
 }
 
-function kartBarriers(tr, th, scene, mobile, shadows) {
-  const step = mobile ? 4.2 : 3.0, count = Math.ceil(tr.len / step) * 2;
-  const geometry = new THREE.BoxGeometry(1.6, 1.15, step - 0.08);
-  const blocks = new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42, metalness: 0.05, flatShading: true }), count);
-  const d = new THREE.Object3D(), palette = th.palette.map(col);
-  let k = 0;
-  for (let s = 0; s < tr.len; s += step) {
-    const f = s / tr.ds, i = Math.floor(f) % tr.N, j = (i + 1) % tr.N, t = f - Math.floor(f);
-    const tx = tr.TX[i] + (tr.TX[j] - tr.TX[i]) * t, tz = tr.TZ[i] + (tr.TZ[j] - tr.TZ[i]) * t;
-    const tl = Math.hypot(tx, tz) || 1, nx = -tz / tl, nz = tx / tl;
-    const x = tr.X[i] + (tr.X[j] - tr.X[i]) * t, z = tr.Z[i] + (tr.Z[j] - tr.Z[i]) * t, y = tr.Y[i] + (tr.Y[j] - tr.Y[i]) * t;
-    const heading = Math.atan2(tx, tz), color = palette[Math.floor(s / step) % palette.length];
-    for (const side of [-1, 1]) {
-      const lat = side * (WALL + 2.0);
-      d.position.set(x + nx * lat, y + 0.58, z + nz * lat);
-      d.rotation.set(0, heading, 0); d.scale.set(1, 1, 1); d.updateMatrix();
-      blocks.setMatrixAt(k, d.matrix); blocks.setColorAt(k, color); k++;
-    }
+function marioArena(th, scene, shadows) {
+  const minX = -122, maxX = 118, minZ = -120, maxZ = 132;
+  const sandGeo = new THREE.PlaneGeometry(maxX - minX, maxZ - minZ).rotateX(-Math.PI / 2);
+  const sandMesh = new THREE.Mesh(sandGeo, new THREE.MeshStandardMaterial({ color: th.dirt, roughness: 0.95 }));
+  sandMesh.position.set((minX + maxX) * 0.5, 0.012, (minZ + maxZ) * 0.5);
+  sandMesh.receiveShadow = shadows;
+  scene.add(sandMesh);
+
+  const islands = [
+    { x0: -90, x1: -75, z0: 70, z1: 90 },
+    { x0: 35, x1: 65, z0: 65, z1: 90 },
+    { x0: 55, x1: 78, z0: -70, z1: 50 },
+    { x0: -95, x1: -20, z0: -70, z1: -56 },
+    { x0: -85, x1: -15, z0: -23, z1: -11 },
+  ];
+  const grassMat = new THREE.MeshStandardMaterial({ color: th.grass, roughness: 0.9 });
+  for (const isl of islands) {
+    const w = isl.x1 - isl.x0, d = isl.z1 - isl.z0;
+    const islMesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), grassMat);
+    islMesh.position.set((isl.x0 + isl.x1) * 0.5, 0.022, (isl.z0 + isl.z1) * 0.5);
+    islMesh.receiveShadow = shadows;
+    scene.add(islMesh);
   }
+
+  const step = 1.6;
+  const pts = [];
+  for (let x = minX; x <= maxX; x += step) { pts.push([x, minZ]); pts.push([x, maxZ]); }
+  for (let z = minZ; z <= maxZ; z += step) { pts.push([minX, z]); pts.push([maxX, z]); }
+  for (const isl of islands) {
+    for (let x = isl.x0; x <= isl.x1; x += step) { pts.push([x, isl.z0]); pts.push([x, isl.z1]); }
+    for (let z = isl.z0; z <= isl.z1; z += step) { pts.push([isl.x0, z]); pts.push([isl.x1, z]); }
+  }
+
+  const blockGeo = new THREE.BoxGeometry(1.5, 1.15, 1.5).translate(0, 0.58, 0);
+  const blockMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45, metalness: 0.05, flatShading: true });
+  const blocks = new THREE.InstancedMesh(blockGeo, blockMat, pts.length);
+  const dummy = new THREE.Object3D(), pal = (th.palette || [0xe52521, 0xf8d028, 0x1b75d0, 0x2bb830]).map(col);
+
+  pts.forEach(([px, pz], k) => {
+    dummy.position.set(px, 0, pz);
+    dummy.scale.set(1, 1, 1);
+    dummy.rotation.set(0, 0, 0);
+    dummy.updateMatrix();
+    blocks.setMatrixAt(k, dummy.matrix);
+    blocks.setColorAt(k, pal[k % pal.length]);
+  });
   if (blocks.instanceColor) blocks.instanceColor.needsUpdate = true;
-  blocks.castShadow = shadows; blocks.receiveShadow = shadows; blocks.frustumCulled = false; scene.add(blocks);
+  blocks.castShadow = shadows;
+  blocks.receiveShadow = shadows;
+  blocks.frustumCulled = false;
+  scene.add(blocks);
 }
 
-function marioPipes(tr, th, scene, shadows) {
+function marioPipes(scene, shadows) {
   const pipeSpots = [
-    { s: 50, lat: -13.0 },
-    { s: 135, lat: 10.5 },
-    { s: 215, lat: -12.0 },
-    { s: 285, lat: 11.0 },
-    { s: 365, lat: -11.5 },
-    { s: 440, lat: 10.5 },
-    { s: 535, lat: -12.0 },
-    { s: 645, lat: 11.0 },
-    { s: 755, lat: -11.5 },
-    { s: 865, lat: 11.5 },
-    { s: 985, lat: -12.5 },
-    { s: 1065, lat: 12.0 },
+    [68, 30], [68, -30], [-40, -15], [-70, -15],
+    [-65, 78], [98, -100], [-114, 114], [-108, -100]
   ];
   const count = pipeSpots.length;
   const pipeMat = new THREE.MeshStandardMaterial({ color: 0x1db82a, roughness: 0.38, metalness: 0.08 });
@@ -406,15 +372,7 @@ function marioPipes(tr, th, scene, shadows) {
 
   const d = new THREE.Object3D();
   pipeSpots.forEach((sp, idx) => {
-    const f = (((sp.s / tr.ds) % tr.N) + tr.N) % tr.N;
-    const i = Math.floor(f) % tr.N, j = (i + 1) % tr.N, t = f - i;
-    const tx = tr.TX[i] + (tr.TX[j] - tr.TX[i]) * t, tz = tr.TZ[i] + (tr.TZ[j] - tr.TZ[i]) * t;
-    const tl = Math.hypot(tx, tz) || 1, nx = -tz / tl, nz = tx / tl;
-    const x = tr.X[i] + (tr.X[j] - tr.X[i]) * t + nx * sp.lat;
-    const z = tr.Z[i] + (tr.Z[j] - tr.Z[i]) * t + nz * sp.lat;
-    const y = tr.Y[i] + (tr.Y[j] - tr.Y[i]) * t + bankOff(tr, i, sp.lat);
-
-    d.position.set(x, y - 0.05, z);
+    d.position.set(sp[0], 0, sp[1]);
     d.rotation.set(0, 0, 0);
     d.scale.set(1, 1, 1);
     d.updateMatrix();
@@ -860,7 +818,7 @@ function scenery(tr, th, scene, rng, q) {
       mm.setMatrixAt(k, dummy.matrix); mm.setColorAt(k, col([0x278f37, 0x3ca840, 0x56b541, 0x338c54][k % 4]));
     });
     if (mm.instanceColor) mm.instanceColor.needsUpdate = true;
-    mm.frustumCulled = false; mm.castShadow = !!q.shadows; scene.add(mm);
+    mm.frustumCulled = false; mm.castShadow = false; scene.add(mm);
   } else {
     const mountainGeometry = (seed) => {
       const segments = 24, rings = 6, positions = [], indices = [];
@@ -968,16 +926,13 @@ export function buildWorld(tr, th, opt = {}) {
     line.frustumCulled = false; scene.add(line);
   }
   if (th.deco === 'kart') {
-    const sand = new THREE.MeshStandardMaterial({ color: th.dirt, roughness: 1 });
-    for (const side of [-1, 1]) {
-      const runoff = new THREE.Mesh(stripGeom(tr, 0, tr.len - 1, side * (ROAD_HALF + 0.35), side * (ROAD_HALF + 15), 0.012), sand);
-      runoff.frustumCulled = false; runoff.receiveShadow = !!q.shadows; scene.add(runoff);
-    }
-  }
-  const walls = wallMesh(tr, th, q.stride); walls.receiveShadow = true; walls.castShadow = !!q.shadows; scene.add(walls);
-  if (th.deco === 'kart') {
-    kartBarriers(tr, th, scene, !!opt.mobile, !!q.shadows);
-    marioPipes(tr, th, scene, !!q.shadows);
+    marioArena(th, scene, !!q.shadows);
+    marioPipes(scene, !!q.shadows);
+  } else {
+    const walls = wallMesh(tr, th, q.stride);
+    walls.receiveShadow = true;
+    walls.castShadow = !!q.shadows;
+    scene.add(walls);
   }
   if (th.oil) {
     const oilMat = new THREE.MeshPhysicalMaterial({

@@ -34,7 +34,7 @@ const fmt = (t) => { if (t == null || !isFinite(t)) return '--'; const m = Math.
 // ---------- renderer ----------
 const canvas = $('gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.BasicShadowMap;
 const QUAL = { shadows: true };
 function applyGfx() {
   const g = sel.gfx;
