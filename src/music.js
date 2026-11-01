@@ -34,10 +34,20 @@ export const SONGS = [
     roots: [43, 40, 45, 38, 47, 40, 45, 38], bass: [[0, 0, 3], [6, 7, 2], [8, 0, 2], [12, 7, 1], [14, 0, 1]], stabs: [0, 3, 6, 10, 12],
     kick: [0, 6, 8, 14], kickOdd: [], snare: [10], hatEvery: 2, lead: 'sine',
     melody: [[[0, 83, 2], [3, 79, 1], [4, 81, 3], [8, 86, 2], [10, 83, 2], [12, 79, 4]], [[0, 80, 2], [3, 83, 1], [4, 86, 3], [8, 83, 2], [10, 80, 2], [12, 76, 4]], [[0, 81, 2], [3, 84, 1], [4, 88, 3], [8, 84, 2], [10, 81, 2], [12, 79, 4]], [[0, 78, 3], [4, 81, 1], [6, 84, 2], [8, 81, 3], [12, 78, 2], [14, 74, 2]], [[0, 83, 3], [4, 86, 1], [6, 83, 2], [8, 79, 3], [12, 83, 4]], [[0, 80, 2], [3, 83, 1], [4, 86, 4], [10, 83, 2], [12, 80, 4]], [[0, 84, 3], [4, 81, 1], [6, 79, 2], [8, 76, 4], [14, 79, 2]], [[0, 78, 2], [3, 81, 1], [4, 84, 3], [8, 81, 2], [10, 78, 2], [12, 74, 4]]] },
-  { tag: 'chill', name: 'Luna Llena de Gasolina', bpm: 76, swing: 0.12, soft: 0.4, chords: [[54, 57, 61, 64], [54, 57, 62, 66], [55, 59, 62, 66], [55, 57, 61, 64], [57, 61, 64, 66], [54, 57, 62, 66], [55, 59, 62, 66], [55, 57, 61, 64]],
-    roots: [38, 47, 40, 45, 42, 47, 40, 45], bass: [[0, 0, 6], [8, 7, 4], [12, 12, 2]], stabs: [0, 8],
-    kick: [0], kickOdd: [10], snare: [12], hatEvery: 4, lead: 'sine',
-    melody: [[[0, 81, 4], [6, 78, 2], [8, 76, 3], [12, 78, 4]], [[0, 78, 3], [4, 81, 1], [6, 85, 2], [8, 83, 4], [14, 81, 2]], [[0, 79, 3], [4, 83, 1], [6, 86, 2], [8, 83, 4], [12, 79, 4]], [[0, 76, 2], [3, 79, 1], [4, 81, 4], [10, 85, 2], [12, 81, 4]], [[0, 81, 3], [4, 85, 1], [6, 88, 2], [8, 85, 3], [12, 81, 4]], [[0, 81, 2], [3, 78, 1], [4, 74, 3], [8, 78, 2], [10, 81, 2], [12, 78, 4]], [[0, 79, 3], [4, 76, 1], [6, 79, 2], [8, 83, 4], [14, 79, 2]], [[0, 76, 2], [3, 81, 1], [4, 85, 4], [10, 81, 2], [12, 85, 2], [14, 88, 2]]] },
+  // ----- con más ritmo: house jazz, robots de discoteca y synthwave oscuro; cada uno con sus propios instrumentos -----
+  { tag: 'house', name: 'Ascensor con Barra Libre', bpm: 122, swing: 0.12, soft: 1, stab: 'organ', bassT: 'sub', clap: true, openHat: [2, 6, 10, 14], chords: [[53, 57, 60, 64], [53, 59, 64, 67], [55, 59, 62, 64], [55, 61, 64, 67], [53, 57, 60, 64], [56, 59, 62, 64], [55, 59, 60, 64], [57, 60, 64, 67]],
+    roots: [38, 43, 36, 45, 38, 40, 45, 45], bass: [[0, 0, 2], [3, 0, 1], [6, 7, 1], [8, 0, 2], [11, 12, 1], [14, 7, 1]], stabs: [3, 6, 10, 14],
+    kick: [0, 4, 8, 12], kickOdd: [], snare: [4, 12], hatEvery: 2, lead: 'tri',
+    melody: [[[0, 77, 2], [2, 76, 1], [3, 74, 1], [4, 72, 2], [6, 69, 2], [8, 72, 2], [10, 74, 2], [12, 76, 3]], [[0, 74, 2], [2, 71, 1], [3, 74, 1], [4, 77, 2], [6, 76, 2], [8, 74, 4], [14, 71, 2]], [[0, 72, 2], [2, 76, 2], [4, 79, 2], [6, 83, 1], [7, 81, 1], [8, 79, 2], [10, 76, 2], [12, 72, 4]], [[0, 73, 2], [2, 76, 2], [4, 81, 3], [8, 79, 1], [9, 76, 1], [10, 73, 2], [12, 76, 4]], [[0, 77, 2], [2, 81, 2], [4, 84, 3], [8, 81, 2], [10, 77, 2], [12, 74, 4]], [[0, 76, 2], [2, 80, 2], [4, 83, 3], [8, 80, 2], [10, 76, 1], [11, 74, 1], [12, 71, 4]], [[0, 72, 2], [2, 76, 2], [4, 81, 4], [10, 79, 2], [12, 76, 2], [14, 72, 2]], [[0, 69, 3], [4, 72, 2], [6, 76, 2], [8, 81, 6], [14, 79, 2]]] },
+  { tag: 'robots', name: 'Robots de Resaca', bpm: 116, swing: 0.02, soft: 1, stab: 'pluck', bassT: 'funk', clap: true, chords: [[55, 58, 62, 65], [51, 55, 58, 62], [53, 58, 62, 65], [53, 57, 60, 63], [51, 55, 58, 60], [54, 57, 60, 62], [55, 58, 62, 65], [55, 58, 62, 65]],
+    roots: [43, 39, 46, 41, 36, 38, 43, 43], bass: [[0, 0, 1], [2, 0, 1], [3, 12, 1], [6, 0, 1], [8, 0, 1], [10, 7, 1], [11, 12, 1], [14, 0, 1]], stabs: [2, 5, 10, 13],
+    kick: [0, 4, 8, 12], kickOdd: [], snare: [4, 12], hatEvery: 2, lead: 'robot',
+    melody: [[[0, 79, 1], [2, 79, 1], [3, 77, 1], [4, 74, 1], [6, 74, 1], [8, 77, 1], [10, 79, 1], [12, 82, 2]], [[0, 79, 1], [2, 79, 1], [3, 77, 1], [4, 75, 1], [6, 75, 1], [8, 79, 1], [10, 77, 1], [12, 75, 2]], [[0, 77, 1], [2, 77, 1], [3, 74, 1], [4, 70, 1], [6, 74, 1], [8, 77, 1], [10, 82, 1], [12, 81, 2]], [[0, 81, 1], [2, 79, 1], [3, 77, 1], [4, 75, 1], [6, 77, 1], [8, 79, 1], [10, 81, 1], [12, 84, 2]], [[0, 75, 1], [2, 75, 1], [3, 79, 1], [4, 82, 1], [6, 79, 1], [8, 75, 1], [10, 79, 1], [12, 82, 2]], [[0, 78, 1], [2, 78, 1], [3, 81, 1], [4, 84, 1], [6, 81, 1], [8, 78, 1], [10, 74, 1], [12, 78, 2]], [[0, 79, 1], [2, 79, 1], [3, 77, 1], [4, 74, 1], [6, 77, 1], [8, 79, 1], [10, 82, 1], [12, 86, 2]], [[0, 82, 2], [3, 79, 1], [4, 77, 2], [8, 74, 2], [12, 79, 1], [13, 77, 1], [14, 74, 2]]] },
+  { tag: 'synthwave', name: 'Neón y Mala Idea', bpm: 132, swing: 0, soft: 1.25, stab: 'pad', bassT: 'pulse', arp: true, chords: [[51, 55, 58, 60], [51, 56, 60, 63], [53, 58, 62, 65], [50, 55, 58, 62], [51, 55, 58, 60], [53, 56, 60, 65], [55, 58, 62, 67], [53, 55, 59, 62]],
+    roots: [36, 44, 46, 43, 36, 41, 43, 43], bass: [[0, 0, 1], [2, 0, 1], [4, 0, 1], [6, 12, 1], [8, 0, 1], [10, 0, 1], [12, 0, 1], [14, 12, 1]], stabs: [0],
+    kick: [0, 4, 8, 12], kickOdd: [], snare: [4, 12], hatEvery: 1, lead: 'saw',
+    melody: [[[0, 79, 4], [6, 75, 2], [8, 77, 4], [14, 79, 2]], [[0, 80, 4], [6, 77, 2], [8, 75, 4], [14, 72, 2]], [[0, 77, 4], [6, 74, 2], [8, 77, 2], [10, 79, 2], [12, 82, 4]], [[0, 79, 3], [4, 74, 1], [6, 70, 2], [8, 74, 4], [14, 79, 2]], [[0, 84, 4], [6, 79, 2], [8, 75, 4], [14, 79, 2]], [[0, 77, 2], [3, 80, 1], [4, 84, 4], [10, 80, 2], [12, 77, 4]], [[0, 79, 3], [4, 82, 1], [6, 86, 2], [8, 82, 4], [14, 79, 2]], [[0, 83, 2], [3, 79, 1], [4, 74, 4], [8, 71, 2], [10, 74, 2], [12, 79, 4]]] },
+
 ];
 
 export class Music {
@@ -115,13 +125,21 @@ export class Music {
     const S = this.song, ST = this.stepDur, bar = Math.floor(step / 16) % 8, s = step % 16, pass = Math.floor(step / 128); t += (s % 2) ? ST * S.swing : 0;
     // batería
     if (S.kick.includes(s) || (bar % 2 && S.kickOdd.includes(s))) this.kick(t, (s === 0 ? 1 : 0.8) * (S.soft || 1));
-    if (S.snare.includes(s)) this.snare(t, 0.9 * (S.soft || 1)); else if (s === 15 && bar % 4 === 3) this.snare(t, 0.35 * (S.soft || 1));
+    if (S.snare.includes(s)) { if (S.clap) this.clap(t, 0.9); else this.snare(t, 0.9 * (S.soft || 1)); } else if (s === 15 && bar % 4 === 3) this.snare(t, 0.35 * (S.soft || 1));
     if (s % S.hatEvery === 0) this.hat(t, (s % 4 === 2 ? 0.34 : 0.2) * (S.soft || 1), false); else if (s % 4 === 3) this.hat(t, 0.1 * (S.soft || 1), false);
     if (s === 14 && bar % 2 === 1) this.hat(t, 0.3 * (S.soft || 1), true);
     // bajo
-    for (const [bs, iv, len] of S.bass) if (bs === s) this.bass(S.roots[bar] + iv, t, ST * len * 0.92);
+    for (const [bs, iv, len] of S.bass) if (bs === s) this.bass(S.roots[bar] + iv, t, ST * len * 0.92, S.bassT);
     // piano eléctrico: acordes picados
-    if (S.stabs.includes(s)) { const ch = S.chords[bar], vel = s === S.stabs[0] ? 1 : 0.72; for (const n of ch) this.epiano(n, t, ST * (s === 0 ? 3.2 : 1.5), 0.05 * vel); }
+    if (S.stabs.includes(s)) {
+      const ch = S.chords[bar], vel = s === S.stabs[0] ? 1 : 0.72, K = S.stab || 'epiano';
+      if (K === 'pad') { if (s === 0) for (const n of ch) this.pad(n, t, ST * 15.5, 0.03); }
+      else if (K === 'organ') for (const n of ch) this.organ(n, t, ST * 1.4, 0.04 * vel);
+      else if (K === 'pluck') for (const n of ch) this.pluck(n + 12, t, ST * 1.6, 0.05 * vel);
+      else for (const n of ch) this.epiano(n, t, ST * (s === 0 ? 3.2 : 1.5), 0.05 * vel);
+    }
+    if (S.arp) this.pluck(S.chords[bar][s % 4] + (s % 8 >= 4 ? 24 : 12), t, ST * 0.8, 0.028); // arpegio en semicorcheas
+    if (S.openHat && S.openHat.includes(s)) this.hat(t, 0.55 * (S.soft || 1), true);
     // melodía (la segunda vuelta sube de registro)
     for (const [ms, note, len] of S.melody[bar]) if (ms === s) this.lead(note + (pass && note <= 79 ? 12 : 0), t, ST * len * 0.95, pass ? 0.075 : 0.065);
     if (pass && s % 4 === 1 && (bar === 3 || bar === 7)) this.epiano(S.chords[bar][(s >> 2) % 4] + 12, t, ST * 1.5, 0.028);
@@ -136,7 +154,27 @@ export class Music {
     if (pan) { pan.pan.value = (Math.random() - 0.5) * 0.5; g.connect(pan); pan.connect(this.out); } else g.connect(this.out);
     for (const o of [car, mod, car2]) { o.start(t); o.stop(t + dur * 1.4 + 0.4); }
   }
-  bass(m, t, dur) {
+  clap(t, v) { for (const d of [0, 0.011, 0.023]) this.noiseBurst(t + d, d > 0.02 ? 0.12 : 0.02, 'bandpass', 1500, 1.1, 0.17 * v); }
+  organ(m, t, dur, v) { // órgano de club: cuadrada + armónicos, seco y percusivo
+    const c = this.ctx, f = mtof(m), g = c.createGain(), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3400; lp.connect(g);
+    for (const [ty, k, a] of [['square', 1, 0.5], ['sine', 2, 0.6], ['sine', 3, 0.28]]) { const o = c.createOscillator(), og = c.createGain(); o.type = ty; o.frequency.value = f * k; og.gain.value = a; o.connect(og); og.connect(lp); o.start(t); o.stop(t + dur + 0.1); }
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.006); g.gain.exponentialRampToValueAtTime(v * 0.35, t + dur * 0.5); g.gain.setTargetAtTime(0.0001, t + dur, 0.035);
+    g.connect(this.out); g.connect(this.send);
+  }
+  pluck(m, t, dur, v) { // sierra con filtro que se cierra rápido: pulso disco/synthpop
+    const c = this.ctx, f = mtof(m), g = c.createGain(), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 5; lp.frequency.setValueAtTime(4200, t); lp.frequency.exponentialRampToValueAtTime(380, t + Math.max(0.12, dur * 0.7));
+    for (const dt of [-8, 7]) { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = dt; o.connect(lp); o.start(t); o.stop(t + dur + 0.2); }
+    lp.connect(g); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.004); g.gain.setTargetAtTime(0.0001, t + dur * 0.8, 0.06);
+    g.connect(this.out); g.connect(this.send);
+  }
+  pad(m, t, dur, v) { // colchón de sierras desafinadas con ataque lento
+    const c = this.ctx, f = mtof(m), g = c.createGain(), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(500, t); lp.frequency.linearRampToValueAtTime(1500, t + dur * 0.5); lp.frequency.linearRampToValueAtTime(600, t + dur);
+    for (const dt of [-11, 0, 12]) { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = dt; o.connect(lp); o.start(t); o.stop(t + dur + 0.6); }
+    lp.connect(g); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.5); g.gain.setValueAtTime(v, t + dur - 0.3); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.45);
+    g.connect(this.out);
+  }
+  bass(m, t, dur, kind) {
+    if (kind) return this.bassV(m, t, dur, kind);
     const c = this.ctx, f = mtof(m), o = c.createOscillator(), sub = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain();
     o.type = 'sawtooth'; sub.type = 'sine'; o.frequency.value = f; sub.frequency.value = f;
     lp.type = 'lowpass'; lp.Q.value = 3; lp.frequency.setValueAtTime(1600, t); lp.frequency.exponentialRampToValueAtTime(260, t + 0.12);
@@ -144,11 +182,21 @@ export class Music {
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 0.006); g.gain.setTargetAtTime(0.0001, t + dur, 0.05);
     g.connect(this.out); o.start(t); sub.start(t); o.stop(t + dur + 0.3); sub.stop(t + dur + 0.3);
   }
+  bassV(m, t, dur, kind) { // variantes de bajo: redondo (sub), funk y pulsante
+    const c = this.ctx, f = mtof(m), g = c.createGain(), lp = c.createBiquadFilter(), o = c.createOscillator(), o2 = c.createOscillator(); lp.type = 'lowpass';
+    if (kind === 'sub') { o.type = 'sine'; o2.type = 'triangle'; lp.frequency.value = 900; lp.Q.value = 0.7; }
+    else if (kind === 'funk') { o.type = 'square'; o2.type = 'sawtooth'; lp.Q.value = 6; lp.frequency.setValueAtTime(2200, t); lp.frequency.exponentialRampToValueAtTime(240, t + 0.14); }
+    else { o.type = 'sawtooth'; o2.type = 'square'; lp.Q.value = 3; lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(180, t + 0.11); }
+    o.frequency.value = f; o2.frequency.value = f; o2.detune.value = kind === 'sub' ? 0 : 5; const g2 = c.createGain(); g2.gain.value = kind === 'sub' ? 0.5 : 0.6; o2.connect(g2); g2.connect(lp); o.connect(lp); lp.connect(g);
+    const pk = kind === 'sub' ? 0.2 : 0.15; g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(pk, t + 0.006); g.gain.setTargetAtTime(0.0001, t + Math.min(dur, kind === 'pulse' ? 0.1 : dur), 0.04);
+    g.connect(this.out); o.start(t); o2.start(t); o.stop(t + dur + 0.3); o2.stop(t + dur + 0.3);
+  }
   lead(m, t, dur, v) {
     const c = this.ctx, f = mtof(m), a = c.createOscillator(), b = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
-    const LT = { square: ['square', 'triangle'], tri: ['triangle', 'sine'], sine: ['sine', 'triangle'] }[this.song.lead] || ['sawtooth', 'square']; a.type = LT[0]; b.type = LT[1]; a.frequency.value = f; b.frequency.value = f; a.detune.value = 6; b.detune.value = -7;
+    const LT = { square: ['square', 'triangle'], tri: ['triangle', 'sine'], sine: ['sine', 'triangle'], robot: ['sawtooth', 'square'] }[this.song.lead] || ['sawtooth', 'square']; a.type = LT[0]; b.type = LT[1]; a.frequency.value = f; b.frequency.value = f; a.detune.value = 6; b.detune.value = -7;
     lfo.frequency.value = 5.2; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(14, t + Math.max(0.05, dur * 0.6)); lfo.connect(lg); lg.connect(a.detune); lg.connect(b.detune);
     lp.type = 'lowpass'; lp.frequency.setValueAtTime(5200, t); lp.frequency.exponentialRampToValueAtTime(2300, t + dur); lp.Q.value = 1.2;
+    if (this.song.lead === 'robot') { lp.type = 'bandpass'; lp.frequency.setValueAtTime(800, t); lp.frequency.exponentialRampToValueAtTime(2600, t + Math.max(0.08, dur * 0.7)); lp.Q.value = 2.6; v *= 2; } // voz robótica
     const bg = c.createGain(); bg.gain.value = 0.45; a.connect(lp); b.connect(bg); bg.connect(lp); lp.connect(g);
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.012); g.gain.setTargetAtTime(0.0001, t + dur, 0.06);
     g.connect(this.out); g.connect(this.send); for (const o of [a, b, lfo]) { o.start(t); o.stop(t + dur + 0.4); }

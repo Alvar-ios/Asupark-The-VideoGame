@@ -69,9 +69,9 @@ for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco' && k !== 'spa'
 
 const DAILY_CAR = hashStr('dailycar-' + daily.key) % CARS.length; // el mismo coche y circuito para todos cada día
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
-const sel = { track: Math.max(0, tracks.findIndex((t) => t.key === 'daily')), mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, colors: {}, vol: { master: 1, music: 0.7, engine: 0.65 }, gfx: 'auto' };
+const sel = { track: Math.max(0, tracks.findIndex((t) => t.key === 'daily')), mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, touchMode: 'buttons', colors: {}, vol: { master: 1, music: 0.7, engine: 0.65 }, gfx: 'auto' };
 const paintOf = (c) => { const v = sel.colors[c.id]; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
-const saved = store.get('sel'); if (saved) { const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
+const saved = store.get('sel'); if (saved) { const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.touchMode = saved.touchMode === 'halves' ? 'halves' : 'buttons'; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
 if (saved) { sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
 
 // ----- pilotos de la IA: nombre, país y nivel (de mejor a peor); en cada carrera se reparten al azar entre los coches rivales -----
@@ -212,6 +212,18 @@ function buildPaints() {
   $('paintName').textContent = (car.paints.find((p) => p[1].toLowerCase() === cur) || car.paints[0])[0];
 }
 $('autoGas').onclick = () => { sel.autoGas = !sel.autoGas; buildMenu(); };
+// control por mitades: toca a la izquierda para girar a la izquierda y a la derecha para girar a la derecha (el acelerador va solo)
+const applyCtl = () => { document.body.classList.toggle('halves-mode', sel.touchMode === 'halves'); const b = $('ctlMode'); if (b) { b.classList.toggle('on', sel.touchMode === 'halves'); b.textContent = 'Control: ' + (sel.touchMode === 'halves' ? 'MITADES + ACEL. AUTO' : 'BOTONES'); } };
+$('ctlMode').onclick = () => { sel.touchMode = sel.touchMode === 'halves' ? 'buttons' : 'halves'; store.set('sel', sel); applyCtl(); };
+applyCtl();
+{
+  const hz = $('halves'), hold = new Map();
+  const hUpd = () => { let l = 0, r = 0; for (const v of hold.values()) { if (v < 0) l = 1; else r = 1; } input.touch.l = l; input.touch.r = r; $('hL').classList.toggle('on', !!l); $('hR').classList.toggle('on', !!r); };
+  hz.addEventListener('pointerdown', (e) => { e.preventDefault(); hold.set(e.pointerId, e.clientX < window.innerWidth / 2 ? -1 : 1); try { hz.setPointerCapture(e.pointerId); } catch (_) { /* sin captura */ } sound.init(CARS[sel.car].id); hUpd(); });
+  hz.addEventListener('pointermove', (e) => { if (hold.has(e.pointerId)) { hold.set(e.pointerId, e.clientX < window.innerWidth / 2 ? -1 : 1); hUpd(); } });
+  const up = (e) => { hold.delete(e.pointerId); hUpd(); };
+  hz.addEventListener('pointerup', up); hz.addEventListener('pointercancel', up); hz.addEventListener('lostpointercapture', up);
+}
 $('fsBtn').onclick = () => { try { const e = document.documentElement; (e.requestFullscreen || e.webkitRequestFullscreen).call(e); } catch (_) {} try { screen.orientation.lock('landscape').catch(() => {}); } catch (_) {} };
 $('modeSel').onclick = (e) => { if (e.target.dataset.v) { sel.mode = e.target.dataset.v; buildMenu(); } };
 $('diffSel').onclick = (e) => { if (e.target.dataset.v) { sel.diff = +e.target.dataset.v; buildMenu(); } };
@@ -555,7 +567,7 @@ function readInput(o) {
     if (rs && S.state === 'racing' && !S.padReset) { S.padReset = true; doReset(); }
     if (!rs) S.padReset = false;
   }
-  if (sel.autoGas && brk < 0.05) thr = 1;
+  if ((sel.autoGas || sel.touchMode === 'halves') && brk < 0.05) thr = 1;
   o.steer = steer; o.throttle = thr; o.brake = brk; o.drift = drift;
 }
 
@@ -1078,7 +1090,7 @@ const openSettings = () => { buildSettings(); $('settings').classList.remove('hi
 let songTimer = 0;
 function renderSongs() {
   const cur = sound.music && sound.music.playing ? sound.music.songIdx : -1;
-  $('songList').innerHTML = SONGS.map((sg, i) => `<button type="button" data-i="${i}" class="${i === cur ? 'on' : ''}"><i>${i === cur ? '♪' : i + 1}</i><b>${sg.name}</b><small>${sg.tag === 'chill' ? 'Chill' : 'Fusión 80s'}</small></button>`).join('');
+  $('songList').innerHTML = SONGS.map((sg, i) => `<button type="button" data-i="${i}" class="${i === cur ? 'on' : ''}"><i>${i === cur ? '♪' : i + 1}</i><b>${sg.name}</b><small>${{ chill: 'Chill', house: 'House jazz', robots: 'Robots', synthwave: 'Synthwave' }[sg.tag] || 'Fusión 80s'}</small></button>`).join('');
 }
 $('musicBtn').onclick = () => { sound.init(); renderSongs(); $('musicPick').classList.remove('hidden'); clearInterval(songTimer); songTimer = setInterval(renderSongs, 1500); };
 $('songList').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; sound.init(); if (sound.music) { sound.music.choose(+b.dataset.i); setTimeout(renderSongs, 120); } };
@@ -1217,7 +1229,7 @@ function frame(now) {
     const gi = gearInfo(p.speed, p.type.vmax);
     if (S.lastAudioGear && gi.gear !== S.lastAudioGear && p.speed > 8) sound.play('shift');
     S.lastAudioGear = gi.gear;
-    sound.update({ carId: p.type.id, speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), onKerb: p.onKerb, weather: S.th.weather, surface: p.surf || S.th.surface, air: p.air, offroad: p.offroad, offroadFactor: p.offroadFactor, puddleWater: p.puddleWater });
+    sound.update({ carId: p.type.id, speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas || sel.touchMode === 'halves' ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), onKerb: p.onKerb, weather: S.th.weather, surface: p.surf || S.th.surface, air: p.air, offroad: p.offroad, offroadFactor: p.offroadFactor, puddleWater: p.puddleWater });
     updateHud(dt);
   }
   renderer.render(S.scene, camera);

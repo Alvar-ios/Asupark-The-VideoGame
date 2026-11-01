@@ -670,6 +670,22 @@ body.mobile #settings #setClose{margin-top:8px;padding:11px}
 body.mobile #musicPick .panel{padding:12px 14px;max-height:100dvh;overflow-y:auto}body.mobile #musicPick h1{font-size:24px!important;margin:0 0 4px}body.mobile #musicPick .keys{display:block!important}
 body.mobile #songList button{padding:8px 10px}
 @media (orientation:landscape) and (max-height:540px){body.mobile #musicPick .panel{max-width:min(96vw,760px)!important}body.mobile #songList{display:grid;grid-template-columns:1fr 1fr}}
+
+/* accesos del menú como botones */
+#menu .links{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+#menu .link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:11px 4px 9px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.03));color:#e6ebf2;font-size:12px;font-weight:700;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.28);transition:transform .12s,border-color .12s,background .12s}
+#menu .link svg{width:24px;height:24px;color:#9fb3d1}
+#menu .link span{line-height:1.1;text-align:center}
+#menu .link:hover,#menu .link:focus-visible{transform:translateY(-2px);border-color:rgba(255,201,40,.7);background:linear-gradient(180deg,rgba(255,201,40,.18),rgba(255,255,255,.04));color:#fff;outline:0}
+#menu .link:hover svg{color:#ffc928}#menu .link:active{transform:translateY(0) scale(.97)}
+#menu .link.daily{border-color:rgba(255,201,40,.5)}#menu .link.daily svg{color:#ffc928}
+body.mobile #menu .links{gap:6px;margin-top:6px}body.mobile #menu .link{padding:7px 2px 6px;font-size:10.5px;gap:3px;border-radius:11px}body.mobile #menu .link svg{width:19px;height:19px}
+/* control táctil por mitades de pantalla (acelerador automático) */
+#halves{position:fixed;inset:0;z-index:2;display:none;touch-action:none}
+body.racing.halves-mode #halves{display:flex}body.halves-mode #touch{display:none!important}
+#halves>div{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7vh;font-size:34px;font-weight:900;color:rgba(255,255,255,.22);transition:background .08s}
+#halves #hL.on{background:linear-gradient(90deg,rgba(255,201,40,.28),rgba(255,201,40,0))}#halves #hR.on{background:linear-gradient(270deg,rgba(255,201,40,.28),rgba(255,201,40,0))}
+#halves>div.on{color:rgba(255,255,255,.7)}
 </style>
 </head>
 <body>
@@ -695,6 +711,7 @@ body.mobile #songList button{padding:8px 10px}
   <div id="help"><b>↑/W</b> acelerar · <b>↓/S</b> frenar · <b>←→</b> girar<br><b>ESPACIO</b> freno de mano · <b>R</b> volver a pista · <b>C</b> cámara · <b>M</b> sonido · <b>ESC</b> pausa</div>
 </div>
 <button id="pbtn" class="hidden" aria-label="Pausa">❚❚</button><button id="rbtn" class="hidden" aria-label="Reiniciar (T)">↺</button>
+<div id="halves"><div id="hL"><span>◀</span></div><div id="hR"><span>▶</span></div></div>
 <div id="touch" class="hidden"><div class="t" id="tL">◀</div><div class="t" id="tR">▶</div><div class="t" id="tG">ACEL</div><div class="t" id="tB">FRENO</div><div class="t" id="tD">F.M.</div></div>
 <div id="rotate"><div>↻<br>Gira el móvil<br><small>El juego se disfruta en horizontal</small></div></div>
 
@@ -714,7 +731,7 @@ body.mobile #songList button{padding:8px 10px}
         <button id="pickCar" class="pick" type="button"><small>Coche</small><b id="pickCarName">—</b><span id="pickCarSub"></span><img id="pickCarImg" class="pk-img" alt=""><i>›</i></button>
         <div class="modes"><div id="modeSel" class="seg"><button data-v="tt">Contrarreloj</button><button data-v="race">Carrera</button><button data-v="gp" class="gp">Gran Premio</button></div><p id="modeInfo" class="modeinfo"></p>
           <div id="diffWrap"><div id="diffSel" class="seg"><button data-v="0">Fácil</button><button data-v="1" class="on">Normal</button><button data-v="2">Difícil</button></div></div></div>
-        <div class="links"><button id="dailyBtn" class="link" type="button">Reto del día</button><button id="boardBtn" class="link" type="button">Clasificación</button><button id="musicBtn" class="link" type="button">Música</button><button id="setBtn" class="link" type="button">Ajustes</button></div>
+        <div class="links"><button id="dailyBtn" class="link daily" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="m12 12.4.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z" fill="currentColor" stroke="none"/></svg><span>Reto del día</span></button><button id="boardBtn" class="link" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4.5a3 3 0 0 0 3.5 4M16 6h3.5a3 3 0 0 1-3.5 4M12 13v4M8.5 20h7M10 17h4"/></svg><span>Clasificación</span></button><button id="musicBtn" class="link" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg><span>Música</span></button><button id="setBtn" class="link" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></svg><span>Ajustes</span></button></div>
       </div>
     </div>
   </div>
@@ -739,7 +756,7 @@ body.mobile #songList button{padding:8px 10px}
   <div class="row"><label style="flex:1">Música del menú <b id="vt_music"></b><input id="v_music" type="range" min="0" max="100" style="width:100%"></label></div>
   <div class="row"><label style="flex:1">Motor <b id="vt_engine"></b><input id="v_engine" type="range" min="0" max="100" style="width:100%"></label></div>
   <h3>Opciones</h3>
-  <div class="row" style="gap:8px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="raceMusicBtn" class="tog">Música al conducir: NO</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
+  <div class="row" style="gap:8px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="ctlMode" class="tog">Control: BOTONES</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="raceMusicBtn" class="tog">Música al conducir: NO</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
   <p class="keys" style="display:block;margin-top:8px"><b>WASD</b> o flechas para conducir · <b>ESPACIO</b> freno de mano · <b>R</b> recolocar · <b>T</b> reiniciar · <b>C</b> cámara · <b>ESC</b> pausa · también con mando</p>
   <h3>Piloto</h3>
   <div class="row"><label style="flex:1">Nombre en la clasificación<input id="pname" maxlength="20" class="sel" style="width:100%;margin-top:4px"></label></div>

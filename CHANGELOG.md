@@ -96,3 +96,10 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 ## 0.0.17
 - Cinco canciones nuevas, tranquilas (jazz suave y aire de consola clásica), con batería más suave.
 - Selector de música (botón «Música» del menú): eliges qué suena y después sigue en aleatorio. Todas las canciones tienen nombres graciosos.
+
+## 0.0.18
+- Fuera «Luna Llena de Gasolina». Tres canciones con más ritmo y cada una con sus instrumentos: house jazz (órgano de club y bajo redondo), robots de discoteca (arpegios con filtro, voz robótica y bajo funk) y synthwave oscuro (colchón de sintes, arpegio en semicorcheas y bajo pulsante).
+
+## 0.0.19
+- Nuevo control táctil por mitades (Ajustes → Control): acelerador automático y solo giras; tocas la mitad izquierda para girar a la izquierda y la derecha para girar a la derecha.
+- Reto del día, Clasificación, Música y Ajustes son ahora botones con icono en el menú.
