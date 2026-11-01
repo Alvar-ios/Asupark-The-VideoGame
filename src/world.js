@@ -93,7 +93,7 @@ function makeEnv(renderer, th) {
 function signTex(label, color) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 96; const x = c.getContext('2d');
   x.fillStyle = '#0c1220'; x.fillRect(0, 0, 256, 96); x.strokeStyle = color; x.lineWidth = 8; x.strokeRect(4, 4, 248, 88);
-  x.fillStyle = color; x.font = '900 italic 64px "Segoe UI",Arial,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(label, 128, 52);
+  x.fillStyle = color; x.font = '64px "Jersey 10",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(label, 128, 52);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 function gantry(tr, s, label, color) {
@@ -480,7 +480,7 @@ function turnSigns(tr, th, scene, mobile) {
     const x = c.getContext('2d');
     x.fillStyle = '#101725'; x.fillRect(0, 0, 384, 192);
     x.strokeStyle = '#' + new THREE.Color(th.kerb1).getHexString(); x.lineWidth = 14; x.strokeRect(8, 8, 368, 176);
-    x.fillStyle = '#f4f7ff'; x.font = '900 94px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillStyle = '#f4f7ff'; x.font = '94px "Jersey 10",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
     x.fillText(dir > 0 ? '›  ›  ›' : '‹  ‹  ‹', 192, 100);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   };

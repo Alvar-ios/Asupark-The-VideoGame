@@ -2,8 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.33
+- Jersey 10 aplicada a toda la interfaz, el HUD y las rotulaciones del circuito.
+- Cañón Prisma rediseñado como kartódromo original compacto, con horquillas, eses y escapatorias de arena.
+
 ## 0.0.32
-- Nueva fuente local Jersey 10 para la marca, botones y títulos del menú, basada en la referencia pixel-art; se conserva una fuente clara para textos descriptivos.
+- Nueva fuente local Jersey 10 para la marca, botones y títulos del menú, basada en la referencia pixel-art.
 
 ## 0.0.31
 - Menú principal rediseñado con jerarquía arcade, tipografía más contundente y botones de modo alineados.

@@ -7,7 +7,7 @@
 <style>
 :root{--bg:#0a0d16;--panel:rgba(14,18,30,.82);--line:rgba(255,255,255,.10);--txt:#eef2ff;--dim:#8f9ab8;--acc:#ffc928;--cy:#38e1ff;--mg:#ff3fb4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none}
-html,body{margin:0;height:100%;overscroll-behavior:none;background:#000;color:var(--txt);font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;overflow:hidden}
+html,body{margin:0;height:100%;overscroll-behavior:none;background:#000;color:var(--txt);font-family:"Jersey 10",Impact,sans-serif;overflow:hidden}
 #gl{position:fixed;inset:0;width:100%;height:100%;display:block;background:#0a0d16}
 .hidden{display:none!important}
 #fx-lines{position:fixed;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen;background:repeating-conic-gradient(from 0deg at 50% 52%,rgba(255,255,255,.0) 0deg,rgba(255,255,255,.55) .6deg,rgba(255,255,255,0) 1.8deg,rgba(255,255,255,0) 6deg);-webkit-mask-image:radial-gradient(ellipse at 50% 52%,transparent 38%,#000 85%);mask-image:radial-gradient(ellipse at 50% 52%,transparent 38%,#000 85%)}
@@ -303,7 +303,7 @@ body.mobile .sw{width:26px;height:26px}
 @media(max-width:620px){#menu{padding:0;align-items:stretch}#menu .panel{width:100%;height:100dvh;max-height:100dvh;border-radius:0}#menu .menu-scroll{padding:14px 13px 10px}#menu .menu-footer{padding:9px 13px max(12px,env(safe-area-inset-bottom))}#menu .menu-brand{margin-bottom:9px}#menu h1{font-size:36px}#menu .tag{margin:4px 0 11px;font-size:11px}#menu .daily-feature{min-height:0;align-items:flex-start;flex-direction:column;gap:10px;margin-bottom:11px;padding:12px}.daily-copy h2{margin-top:7px;font-size:18px}.daily-copy p{font-size:10px}.daily-proof{gap:5px;margin-top:9px}.daily-proof span{font-size:7px;padding:4px 6px}.daily-cta{align-self:stretch;justify-content:center;padding:10px}.daily-feature:after{right:-55px;top:-75px}#menu .section-heading{margin-top:10px}#menu #trackList{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#menu #carList{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#menu .card{padding:7px}#menu .card canvas{height:40px}#menu .card b{font-size:11px}#menu .card small{font-size:9px}#menu .track-env{font-size:7px}#menu .stat{font-size:8px;margin-top:3px}#menu .seg button{padding:7px 8px;font-size:10px}#menu .row{gap:9px}#menu .tog{padding:7px 8px;font-size:10px}#menu .sw{width:23px;height:23px}#menu .keys{font-size:9px}}
 
 /* ===== HUD estilo retransmisión de F1: plano, anguloso, condensado ===== */
-#hud{font-family:"Bahnschrift","DIN Alternate","Barlow Condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif;font-style:italic;font-weight:700;text-transform:uppercase;letter-spacing:.035em;text-shadow:none}
+#hud{font-family:"Jersey 10",Impact,sans-serif;font-style:normal;font-weight:400;text-transform:uppercase;letter-spacing:.025em;text-shadow:none}
 #hud #h-pos,#hud #h-lap,#hud #h-time,#hud #gearBox,#hud #weatherBadge,#hud #help{background:rgba(11,13,19,.9);border:0;border-radius:0;box-shadow:none;backdrop-filter:none}
 #hud #h-pos{left:0;top:14px;display:flex;align-items:baseline;gap:6px;padding:4px 26px 4px 16px;border-left:7px solid #e10600;clip-path:polygon(0 0,100% 0,calc(100% - 16px) 100%,0 100%);line-height:1}
 #hud #h-pos b{font-size:50px;color:#fff;letter-spacing:-.02em}#hud #h-pos b::before{content:"P";font-size:.52em;color:#e10600;margin-right:3px;vertical-align:.32em}
@@ -685,7 +685,7 @@ body.mobile #menu .links{gap:6px;margin-top:6px}body.mobile #menu .link{padding:
 #menu .panel{width:min(470px,48vw);height:100dvh;max-height:100dvh;margin:0;border:0;border-right:1px solid rgba(255,255,255,.16);border-radius:0 18px 18px 0;background:linear-gradient(155deg,rgba(12,19,31,.97),rgba(8,12,21,.94));box-shadow:18px 0 54px rgba(0,0,0,.42)}
 #menu .menu-scroll{padding:20px 22px 18px}
 #menu .wmrow{margin-bottom:12px}
-#menu .wm{font-family:"Bahnschrift","Arial Narrow",Impact,system-ui,sans-serif;font-style:normal;font-weight:900;font-size:clamp(38px,4.2vw,52px);letter-spacing:-.045em;text-transform:uppercase;text-shadow:0 3px 22px rgba(255,183,36,.16)}
+#menu .wm{font-family:"Jersey 10",Impact,sans-serif;font-style:normal;font-weight:900;font-size:clamp(38px,4.2vw,52px);letter-spacing:-.045em;text-transform:uppercase;text-shadow:0 3px 22px rgba(255,183,36,.16)}
 #menu .wm::first-letter{color:#ffc928}
 #menu .ver{display:none}
 #menu .daily-big{min-height:96px;margin-bottom:10px;padding:10px 12px;border:1px solid rgba(255,201,40,.42);border-radius:11px;background:linear-gradient(112deg,rgba(255,191,40,.18),rgba(255,118,48,.08) 58%,rgba(255,255,255,.035));box-shadow:inset 3px 0 #ffc928}
@@ -730,7 +730,8 @@ body.racing.halves-mode #halves{display:flex}body.halves-mode #touch{display:non
 body.mobile #hud #h-rec .trk{margin-top:2px;padding-top:2px}body.mobile #hud #h-rec .trk small{display:inline!important;font-size:9px;margin-right:4px}body.mobile #hud #h-rec .trk b{font-size:12px;display:inline}body.mobile #hud #h-rec .trk>span{display:none}
 @font-face{font-family:"Jersey 10";src:url("./assets/jersey10-latin.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
 /* Arcade menu treatment */
-#menu{--menu-accent:#ffd12e;--menu-cyan:#47d9f4;--menu-display:"Jersey 10",Impact,sans-serif;background:radial-gradient(ellipse at 16% 12%,rgba(24,62,82,.35),transparent 42%),linear-gradient(112deg,rgba(3,8,17,.97),rgba(4,9,17,.78) 44%,rgba(4,9,17,.18) 68%)!important;color:#f5f8ff;font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif}
+#menu{--menu-accent:#ffd12e;--menu-cyan:#47d9f4;--menu-display:"Jersey 10",Impact,sans-serif;background:radial-gradient(ellipse at 16% 12%,rgba(24,62,82,.35),transparent 42%),linear-gradient(112deg,rgba(3,8,17,.97),rgba(4,9,17,.78) 44%,rgba(4,9,17,.18) 68%)!important;color:#f5f8ff;font-family:var(--menu-display)}
 #menu #menuLeft.panel{position:relative;overflow:hidden;border-right:1px solid rgba(71,217,244,.18);background:linear-gradient(155deg,rgba(10,21,34,.97),rgba(4,10,19,.97));box-shadow:20px 0 70px rgba(0,0,0,.52)}
 #menu #menuLeft.panel::before{position:absolute;inset:0 0 auto;height:5px;content:"";background:linear-gradient(90deg,#ffad20,#ffe44d 40%,#47d9f4 100%);z-index:2}
 #menu #menuLeft .menu-scroll{position:relative;z-index:1;padding:30px 24px 24px}
