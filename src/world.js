@@ -195,7 +195,8 @@ function roadMesh(tr, th, stride = 1) {
     // perfil lateral: hierba | pianos en relieve (rampa, cresta, escalón) | asfalto | escalón, cresta, rampa | hierba
     const KW = Math.min(1.9, L - hw - 0.2); // pianos más anchos
     const GW = tr.rg ? hw + tr.rg[i] : hw + KW + 0.02, GWj = tr.rg ? hw + tr.rg[j] : hw + KW + 0.02;
-    const lat = (k, h, eo, krL, krR, gw) => [[-eo, 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h + 0.02], [-(hw + KW * 0.42), h + krL], [-hw, h + krL], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw, h + krR], [hw + KW * 0.42, h + krR], [hw + KW, h + 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, 0]][k];
+    // piano: a ras del asfalto en el borde de la pista y cada vez más alto hacia fuera; escalón en el lado exterior
+    const lat = (k, h, eo, krL, krR, gw) => [[-eo, 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + KW * 0.45), h + krL * 0.75], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw + KW * 0.45, h + krR * 0.75], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, 0]][k];
     const sLen = 3, s2k = (i + stride) * tr.ds;
     const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x, e) => (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) + ((Math.floor(x * 1.7) & 1) ? 0.05 : 0) : 0.03 + 0.018 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen)) * e;
     const krLi = kv === -1 ? wave(s, kEnv[i]) : 0, krRi = kv === 1 ? wave(s, kEnv[i]) : 0, krLj = kvj === -1 ? wave(s2k, kEnv[j]) : 0, krRj = kvj === 1 ? wave(s2k, kEnv[j]) : 0;
@@ -489,7 +490,22 @@ function scenery(tr, th, scene, rng, q) {
   return { cx: cxm, cz: czm, R, windMeshes };
 }
 
+// con lluvia el día se queda cubierto: colores, niebla y luz más oscuros (se aplica a todos los circuitos con lluvia)
+function rainTheme(th) {
+  if (th.weather !== 'rain' || th._rain) return th;
+  const k = th.night ? 0.2 : 0.55, dk = (c, to, a) => col(c).lerp(col(to), Math.min(1, a)).getHex();
+  return {
+    ...th, _rain: true,
+    skyTop: dk(th.skyTop, 0x252b32, k + 0.15), skyHor: dk(th.skyHor, 0x4b545d, k + 0.12), fog: dk(th.fog, 0x39424b, k + 0.12),
+    ground: dk(th.ground, 0x182018, k * 0.8), grass: dk(th.grass, 0x1f2e1d, k * 0.75), dirt: dk(th.dirt, 0x2c261d, k * 0.7), road: dk(th.road, 0x15181c, k * 0.5),
+    wall1: dk(th.wall1, 0x3a3f45, k * 0.6), wall2: dk(th.wall2, 0x4a2a28, k * 0.6), mount: dk(th.mount, 0x1f2a28, k * 0.7), treeCol: dk(th.treeCol, 0x10241a, k * 0.65),
+    kerb1: dk(th.kerb1, 0x4a2622, k * 0.55), kerb2: dk(th.kerb2, 0x8a8e90, k * 0.6), kerbs3: th.kerbs3 ? th.kerbs3.map((c) => dk(c, 0x30343a, k * 0.45)) : th.kerbs3,
+    hemiSky: dk(th.hemiSky, 0x4f5963, k), hemiGround: dk(th.hemiGround, 0x1d231c, k * 0.7), hemiI: th.hemiI * (th.night ? 1 : 0.8), sunI: th.sunI * (th.night ? 0.8 : 0.28), sun: dk(th.sun, 0x7f8a95, 0.6),
+    fogNear: th.fogNear * 0.8, fogFar: th.fogFar * 0.85,
+  };
+}
 export function buildWorld(tr, th, opt = {}) {
+  th = rainTheme(th);
   setRoad(tr);
   const q = opt.mobile ? { stride: 2, density: 0.5, mountains: 22, shadows: !!opt.shadows } : { stride: 1, density: 1, mountains: 46, shadows: !!opt.shadows };
   const scene = new THREE.Scene();

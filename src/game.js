@@ -8,6 +8,7 @@ import { buildSpeedProfile, aiInput, benchmark, aiType, AI_TOP } from './ai.js';
 import { buildWorld, disposeScene } from './world.js';
 import { Sound } from './audio.js';
 import { SONGS } from './music.js';
+import { addHeadlights, updateHeadlights } from './headlights.js';
 import { SURF } from './surface.js';
 import { Leaderboard } from './leaderboard.js';
 import { loadBora, buildBora, boraReady } from './bora.js';
@@ -444,6 +445,7 @@ async function startRace(restart = false) {
     const mkCar = (ct, color, name, isPlayer) => {
       const c = makeCar(ct, name, isPlayer);
       c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer ? (MOBILE ? 'lo' : 'hi') : 'lo'); scene.add(c.mesh.root);
+      addHeadlights(c.mesh, ct.id, S.th.night ? 1 : S.th.weather === 'rain' ? 0.8 : 0, isPlayer && !MOBILE); // faros encendidos si está oscuro
       c.blob = new THREE.Mesh(blobGeo, new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
       c.blob.scale.set(3.6 * CS, 1, 5.4 * CS); scene.add(c.blob);
       return c;
@@ -959,6 +961,7 @@ function updateCarVisual(c, dt) {
   c.wheelSpin += (c.vf / 0.4) * dt;
   for (const w of m.wheels) { w.spin.rotation.x = c.wheelSpin; if (w.front) w.pivot.rotation.y = -c.steer * 0.4; }
   m.tail.color.setHex(c.brake > 0.1 ? 0xff2a2a : 0x8a0f0f);
+  if (m.hl) updateHeadlights(m, c.brake);
   c.blob.visible = !QUAL.shadows; c.blob.position.set(x, c.loc.h + 0.09, z); c.blob.rotation.y = psi;
   const hh = Math.max(0, y - c.loc.h); const sc = Math.max(0.4, 1 - hh * 0.08); c.blob.scale.set(3.6 * sc * CS * 1.15, 1, 5.4 * sc * CS * 1.15);
   c.blob.material.opacity = Math.max(0.2, 1 - hh * 0.1);

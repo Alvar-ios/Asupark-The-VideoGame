@@ -118,3 +118,10 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Spa corregido: estaba en espejo. Ahora el circuito va en el sentido real (La Source es una horquilla a derechas).
 - Pianos de Spa mucho más altos y rugosos: se ven abultados y los notas al pisarlos (el coche se sacude y frena un poco).
 - Árboles pegados a las vallas, más grandes y muchos más (frondoso), asentados sobre el talud de la pista.
+
+## 0.0.23
+- Pianos corregidos en todos los circuitos: a ras del asfalto junto a la pista y cada vez más altos hacia fuera, con el escalón en el lado exterior.
+- Con lluvia todo el mundo se oscurece, como un día nublado: cielo, niebla, hierba, asfalto, árboles y luz (Spa, Neón y los retos con lluvia).
+
+## 0.0.24
+- Faros encendidos cuando está oscuro (noche y lluvia): cuatro estilos de iluminación que valen para todos los coches (halógeno clásico, LED afilado, xenón azulado y faros de rally), con haz de luz sobre la carretera, destellos y pilotos traseros que brillan al frenar. El coche del jugador lleva además un foco real en ordenador.
