@@ -25,9 +25,9 @@ export const MODEL = {
   z8: { hi: './assets/car_z8_hi.glb.gz', lo: './assets/car_z8_lo.glb.gz', paint: /(?!)/, length: 4.4 },
   f312t: { hi: './assets/car_f312t_hi.glb.gz', lo: './assets/car_f312t_lo.glb.gz', paint: /(?!)/, length: 4.4 },
   f550: { hi: './assets/car_f550_hi.glb.gz', lo: './assets/car_f550_lo.glb.gz', paint: /(?!)/, length: 4.5 },
-  etype: { hi: './assets/car_etype_hi.glb.gz', lo: './assets/car_etype_lo.glb.gz', paint: /(?!)/, length: 4.5, rotation: [0, -Math.PI / 2, 0] },
+  etype: { hi: './assets/car_etype_hi.glb.gz', lo: './assets/car_etype_lo.glb.gz', paint: /(?!)/, length: 4.5, rotation: [0, Math.PI / 2, 0] },
   xj13: { hi: './assets/car_xj13_hi.glb.gz', lo: './assets/car_xj13_lo.glb.gz', paint: /(?!)/, length: 4.8, rotation: [0, Math.PI, 0] },
-  e30: { hi: './assets/car_e30_hi.glb.gz', lo: './assets/car_e30_lo.glb.gz', paint: /(?!)/, length: 4.3, rotation: [0, -Math.PI / 2, 0] },
+  e30: { hi: './assets/car_e30_hi.glb.gz', lo: './assets/car_e30_lo.glb.gz', paint: /(?!)/, length: 4.3, rotation: [0, Math.PI / 2, 0] },
 };
 const cache = {}, pending = {};
 export const modelCarReady = (id, lod = 'hi') => !!(cache[id] && cache[id][lod]);
@@ -49,11 +49,12 @@ export function loadModelCar(id, lods = ['hi', 'lo']) {
 export function buildModelCar(id, color, lod = 'hi') {
   const src = cache[id][lod] || cache[id].lo || cache[id].hi, cfg = MODEL[id];
   const model = src.clone(true);
-  const root = new THREE.Group(), tilt = new THREE.Group(); root.add(tilt); tilt.add(model);
-  if (cfg.rotation) tilt.rotation.set(...cfg.rotation);
+  const root = new THREE.Group(), tilt = new THREE.Group(), orientation = new THREE.Group();
+  root.add(tilt); tilt.add(orientation); orientation.add(model);
+  if (cfg.rotation) orientation.rotation.set(...cfg.rotation);
   root.updateMatrixWorld(true);
   if (cfg.length) {
-    const bounds = new THREE.Box3().setFromObject(tilt), size = bounds.getSize(new THREE.Vector3());
+    const bounds = new THREE.Box3().setFromObject(orientation), size = bounds.getSize(new THREE.Vector3());
     if (!Number.isFinite(size.z) || size.z <= 0) throw new Error(`El modelo ${id} no tiene una longitud válida`);
     const fit = cfg.length / size.z, center = bounds.getCenter(new THREE.Vector3());
     tilt.scale.setScalar(fit);
@@ -77,13 +78,13 @@ export function buildModelCar(id, color, lod = 'hi') {
   const wheels = [], box = new THREE.Box3(), c = new THREE.Vector3();
   for (const k of ['FL', 'FR', 'RL', 'RR']) {
     const w = found[k]; if (!w) continue;
-    box.setFromObject(w); box.getCenter(c); tilt.worldToLocal(c);
-    const pivot = new THREE.Group(), spin = new THREE.Group(); pivot.position.copy(c); tilt.add(pivot); pivot.add(spin); spin.attach(w);
+    box.setFromObject(w); box.getCenter(c); orientation.worldToLocal(c);
+    const pivot = new THREE.Group(), spin = new THREE.Group(); pivot.position.copy(c); orientation.add(pivot); pivot.add(spin); spin.attach(w);
     wheels.push({ pivot, spin, front: k[0] === 'F' });
   }
   const flames = new THREE.Group();
   const fm = new THREE.MeshBasicMaterial({ color: 0x5ad0ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
   for (const s of [-1, 1]) flames.add(new THREE.Mesh(new THREE.ConeGeometry(0.17, 1.4, 8).rotateX(-Math.PI / 2).translate(s * 0.5, 0.45, -3.0), fm));
-  flames.visible = false; tilt.add(flames);
+  flames.visible = false; orientation.add(flames);
   return { root, tilt, wheels, tail, flames, W: 1.8, paint: [...paints][0] || { color: new THREE.Color() }, paints };
 }

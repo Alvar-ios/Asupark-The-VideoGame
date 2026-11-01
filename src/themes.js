@@ -29,9 +29,9 @@ export const THEMES = {
     hemiSky: 0xcfd9e0, hemiGround: 0x4c5a3c, hemiI: 0.95, sunI: 0.75, deco: 'pine', treeNear: 1, treeCount: 1900, kerbRough: true, treeCol: 0x1f4d2b, night: false, temp: 11, humidity: 0.9, wind: [6, 1.0], gripMul: 0.98, offroad: 0.6, slope: 1.4,
     weather: 'rain', wetGrip: 0.78, brakeForce: 22, mud: true,
     rainPalette: {
-      skyTop: 0x566b7a, skyHor: 0xa7b0ad, fog: 0x839087,
-      ground: 0x405c35, grass: 0x5b8347, dirt: 0x70563b, treeCol: 0x2d5939, mount: 0x53634b,
-      hemiSky: 0x8296a0, hemiGround: 0x43583d, sun: 0xf0dfbb,
+      skyTop: 0x46525b, skyHor: 0x78817f, fog: 0x6a7470,
+      ground: 0x2c3b2b, grass: 0x435c37, dirt: 0x514532, treeCol: 0x1e3d2c, mount: 0x414d43,
+      hemiSky: 0x69757a, hemiGround: 0x2c3728, sun: 0x9ca5a3,
       kerbs3: [0x1d1d1d, 0xe5c52a, 0xd73d3b],
     },
   },
@@ -63,8 +63,16 @@ export const THEMES = {
     wall1: 0x2f6fd6, wall2: 0xf4f4f4, mount: 0xb4c7da, sun: 0xffffff, sunDir: [0.4, 0.7, 0.4],
     hemiSky: 0xe6f1ff, hemiGround: 0x9fb2c4, hemiI: 1.05, sunI: 1.0, deco: 'snowpine', treeCol: 0x2d6a55, night: false, temp: -6, humidity: 0.6, wind: [9, 2.4], gripMul: 0.78, offroad: 0.75, surface: 'snow', offroadGrip: 0.38, brakeGrip: 0.62, rollingDrag: 1.05, steerOffroad: 0.52, dust: 0xdbeafa, brakeForce: 20, traction: 0.86,
   },
+  prisma: {
+    id: 'prisma', name: 'Cañón Prisma', sub: 'Curvas amplias · arena dorada · barreras de color', seed: 'prisma-kart-v1',
+    style: { zones: [], fixedNodes: [[0,0],[70,0],[140,4],[205,24],[250,60],[270,105],[250,150],[210,184],[155,195],[105,180],[72,150],[36,136],[-18,140],[-72,166],[-132,184],[-190,170],[-230,138],[-240,92],[-220,50],[-180,26],[-125,20],[-80,34],[-36,30]], scale: 1, half: 5.2, wall: 7.8, minR: 14, sep: 30, chicanes: 0, hill: 0, ramps: 0, pads: 0, rollers: 0, banks: [[0.35,0.46,8]], hillPts: [[0,0],[0.12,3],[0.25,1],[0.4,7],[0.54,11],[0.68,4],[0.8,1],[0.9,5],[1,0]] },
+    skyTop: 0xffe969, skyHor: 0xfff3a5, fog: 0xd8ec89, fogNear: 420, fogFar: 1800,
+    ground: 0x50ba32, grass: 0x73d635, dirt: 0xe5c34b, road: 0x4b5553, kerb1: 0xf24f4c, kerb2: 0xf7f1d2,
+    wall1: 0x38a9f5, wall2: 0xf4f0dc, mount: 0x3eaf39, sun: 0xfff1a0, sunDir: [-0.48, 0.72, 0.38],
+    hemiSky: 0xffedbb, hemiGround: 0x54763b, hemiI: 1.25, sunI: 1.35, deco: 'kart', treeCol: 0x3b9d35, treeCount: 620, treeNear: 8, toy: true, palette: [0xf04c4d, 0xffd642, 0x2e9df4, 0x39c94f, 0x963de3, 0xff8a30], night: false, temp: 24, humidity: 0.3, wind: [2, 0.6], gripMul: 1, offroad: 0.58,
+  },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

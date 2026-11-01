@@ -1248,7 +1248,7 @@ function frame(now) {
     const avg = slowAcc / slowN;
     if (sel.gfx === 'auto') {
       if (avg > 0.026 && pixelRatio > 0.8) { pixelRatio = Math.max(0.75, pixelRatio - 0.25); resize(); }
-      else if (avg > 0.03 && QUAL.shadows) setShadows(false);
+      else if (avg > 0.042 && QUAL.shadows) setShadows(false);
     }
     slowAcc = 0; slowN = 0;
   }

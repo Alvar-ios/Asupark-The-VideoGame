@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.31
+- Menú principal rediseñado con jerarquía arcade, tipografía más contundente y botones de modo alineados.
+- Corregida la orientación visual del BMW E30, Jaguar E-Type y Ford GT Heritage.
+- Nuevo circuito original Cañón Prisma, con barreras de colores y paisaje de karting.
+- Spa con lluvia más oscura y sombras ampliadas en árboles, montañas, barreras y edificios.
+
 ## 0.0.30
 - Menú principal más directo, compacto y arcade; se retiraron el acceso duplicado al reto y varios textos redundantes.
 - Asfalto de lluvia con reflejo más visible; árboles de bosque variados, montañas lejanas más orgánicas y edificios urbanos con ventanas y balcones.
