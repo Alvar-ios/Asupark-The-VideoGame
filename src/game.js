@@ -505,6 +505,10 @@ async function startRace(restart = false) {
     const rec = S.ghostRecs && S.ghostRecs.g, trec = S.ghostRecs && S.ghostRecs.t; // fantasma de tu grupo + el de la pista
     S.ghostBest = rec && rec.ghost ? Float32Array.from(rec.ghost) : null;
     S.ghostBestGold = trec && trec.ghost && !(rec && Math.abs(rec.time - trec.time) < 1e-6) ? Float32Array.from(trec.ghost) : null;
+    if (reuse) { // al reiniciar se reutiliza la escena: se ajustan los fantasmas a los récords actuales
+      const ctOf = (r) => (r && r.car && CARS.find((c) => c.id === r.car)) || type, same = rec && trec && Math.abs(rec.time - trec.time) < 1e-6;
+      setGhost('ghostMesh', ctOf(same ? trec : rec), !!same); setGhost('ghostGold', S.ghostBestGold ? ctOf(trec) : null, true);
+    }
     if (S.ghostMesh) S.ghostMesh.root.visible = false; if (S.ghostGold) S.ghostGold.root.visible = false;
   }
   S.ghostRec = [];
@@ -754,13 +758,19 @@ function computeRecords(ti, type, bench) {
   S.lapRec = lap != null ? lap : bench ? bench.lap : 1e9;
   S.secRec = sec.map((v, i) => (v != null ? v : bench ? bench.sec[i] : 1e9));
   updateRecPanel();
-  const no = S.raceNo + 1;
-  getRows(ti).then((res) => {
+  refreshOnlineRecords(S.raceNo + 1);
+}
+// récords online (de tu grupo y de toda la pista): se consultan al empezar, al cerrar una vuelta y cada cierto tiempo mientras corres
+function refreshOnlineRecords(no) {
+  const ti = S.trackInfo, p = S.player; if (!ti || !p) return;
+  const g = p.type.group;
+  return getRows(ti).then((res) => {
     if (!res.online || S.raceNo !== no) return;
-    const all = rankRows(res.rows, () => true); if (all.length && all[0].ms / 1000 < S.trkLap) { S.trkLap = all[0].ms / 1000; S.trkWho = all[0].you ? 'Tú' : all[0].name; S.trkGroup = groupIdOfCar(all[0].carId); updateRecPanel(); }
-    const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === g); if (!list.length) return;
-    const t = list[0].ms / 1000;
-    if (!S.recReal || t < S.lapRec) { S.lapRec = t; S.recReal = true; S.recWho = list[0].you ? 'Tú' : list[0].name; updateRecPanel(); }
+    const all = rankRows(res.rows, () => true);
+    if (all.length && all[0].ms / 1000 < S.trkLap) { S.trkLap = all[0].ms / 1000; S.trkWho = all[0].you ? 'Tú' : all[0].name; S.trkGroup = groupIdOfCar(all[0].carId); }
+    const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === g);
+    if (list.length) { const t = list[0].ms / 1000; if (!S.recReal || t < S.lapRec) { S.lapRec = t; S.recReal = true; S.recWho = list[0].you ? 'Tú' : list[0].name; } }
+    updateRecPanel();
   }).catch(() => {});
 }
 function updateRecPanel() {
@@ -785,6 +795,12 @@ function sectorDone(i, t) {
   showRaceBanner(`SECTOR ${i + 1} · ${head.toUpperCase()}`, fmtS(t), detail, cls);
 }
 
+// cambia el fantasma de una ranura por otro con la forma del coche indicado (azul = tu grupo, dorado = récord de la pista)
+function setGhost(slot, ct, gold) {
+  const old = S[slot]; if (old && old.root.parent) old.root.parent.remove(old.root);
+  S[slot] = null; if (!ct || !S.scene || !carAssetReady(ct, 'lo')) return;
+  const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold); m.root.visible = false; S.scene.add(m.root); S[slot] = m;
+}
 function onPlayerLap(c, lt, done) {
   S.deltaS = null;
   for (let k = 0; k < 3; k++) { const e = $('s' + k); e.className = 'sec' + (k === 0 ? ' cur' : ''); e.lastElementChild.textContent = '--'; } // cada vuelta empiezan limpias
@@ -810,6 +826,11 @@ function onPlayerLap(c, lt, done) {
     if (lt < S.lapRec) { S.lapRec = lt; S.recReal = true; S.recWho = 'Tú'; updateRecPanel(); }
     if (lt < S.trkLap) { S.trkLap = lt; S.trkWho = 'Tú'; S.trkGroup = c.type.group; updateRecPanel(); }
     if (S.mode === 'tt') { const tk = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.track', tb = store.get(tk); if (!tb || lt < tb.time) store.set(tk, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id }); } // y el mejor de la pista, para el fantasma dorado
+    if (S.mode === 'tt' && newPB) { // el fantasma se actualiza al momento: tu nueva vuelta pasa a ser el de tu grupo (o el dorado si también es el mejor de la pista)
+      const tb2 = store.get('best.' + S.trackInfo.key + '.' + S.tr.seed + '.track'), isTrack = tb2 && Math.abs(tb2.time - lt) < 1e-6;
+      setGhost('ghostMesh', c.type, !!isTrack); if (isTrack) { setGhost('ghostGold', null); S.ghostBestGold = null; }
+    }
+    setTimeout(() => refreshOnlineRecords(S.raceNo), 2500); // por si otros jugadores han marcado mejores tiempos
   }
   S.curProf.fill(-1);
   if (S.mode === 'tt') S.ghostRec = [];
@@ -1274,6 +1295,7 @@ function frame(now) {
       } else mesh.root.visible = false;
     };
     driveGhost(S.ghostMesh, S.ghostBest); driveGhost(S.ghostGold, S.ghostBestGold);
+    if (S.mode === 'tt' && S.state === 'racing') { S.recPoll = (S.recPoll || 0) + dt; if (S.recPoll > 45) { S.recPoll = 0; refreshOnlineRecords(S.raceNo); } } // récords online al día mientras corres
     // contramano
     if (S.state === 'racing' && !p.finished) {
       const along = p.vx * p.loc.tx + p.vz * p.loc.tz;

@@ -138,3 +138,8 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 ## 0.0.27
 - El fantasma tiene la forma del coche con el que se hizo la mejor vuelta (no el que estás conduciendo).
 - Segundo fantasma, dorado: el mejor tiempo de la pista entre todos los grupos y coches (de este dispositivo). Si el mejor de tu grupo es también el de la pista, sale uno solo, dorado.
+
+## 0.0.28
+- Récords en tiempo real: al batir tu mejor vuelta, el fantasma se actualiza al momento (con la forma de tu coche, y dorado si además es el récord de la pista); el fantasma dorado antiguo desaparece si lo superas.
+- Los récords online (de tu grupo y de toda la pista) se consultan al empezar, al acabar una vuelta y cada 45 s mientras corres.
+- Al reiniciar (T), los fantasmas se ajustan a los récords actuales.
