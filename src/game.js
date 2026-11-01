@@ -7,6 +7,7 @@ import { hashStr } from './rng.js';
 import { buildSpeedProfile, aiInput, benchmark, aiType, AI_TOP } from './ai.js';
 import { buildWorld, disposeScene } from './world.js';
 import { Sound } from './audio.js';
+import { SONGS } from './music.js';
 import { SURF } from './surface.js';
 import { Leaderboard } from './leaderboard.js';
 import { loadBora, buildBora, boraReady } from './bora.js';
@@ -1073,6 +1074,15 @@ function buildSettings() {
 for (const k of ['master', 'music', 'engine']) $('v_' + k).oninput = (e) => { sel.vol[k] = e.target.value / 100; $('vt_' + k).textContent = e.target.value + '%'; sound.init(); sound.setVolumes(sel.vol); store.set('sel', sel); };
 $('gfxSel').onclick = (e) => { if (e.target.dataset.v) { sel.gfx = e.target.dataset.v; store.set('sel', sel); applyGfx(); buildSettings(); } };
 const openSettings = () => { buildSettings(); $('settings').classList.remove('hidden'); };
+// selector de música
+let songTimer = 0;
+function renderSongs() {
+  const cur = sound.music && sound.music.playing ? sound.music.songIdx : -1;
+  $('songList').innerHTML = SONGS.map((sg, i) => `<button type="button" data-i="${i}" class="${i === cur ? 'on' : ''}"><i>${i === cur ? '♪' : i + 1}</i><b>${sg.name}</b><small>${sg.tag === 'chill' ? 'Chill' : 'Fusión 80s'}</small></button>`).join('');
+}
+$('musicBtn').onclick = () => { sound.init(); renderSongs(); $('musicPick').classList.remove('hidden'); clearInterval(songTimer); songTimer = setInterval(renderSongs, 1500); };
+$('songList').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; sound.init(); if (sound.music) { sound.music.choose(+b.dataset.i); setTimeout(renderSongs, 120); } };
+$('musicClose').onclick = () => { $('musicPick').classList.add('hidden'); clearInterval(songTimer); };
 $('setBtn').onclick = openSettings; $('setBtn2').onclick = openSettings; $('setClose').onclick = () => $('settings').classList.add('hidden');
 
 // ---------- coche de fondo en el menú ----------

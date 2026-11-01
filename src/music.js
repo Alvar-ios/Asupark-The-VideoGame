@@ -3,20 +3,41 @@
 const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 // Tres temas originales (estilo fusión japonés de los 80), cada uno con su personalidad.
 export const SONGS = [
-  { name: 'Cielo abierto', bpm: 126, swing: 0.06, chords: [[53, 57, 60, 64], [55, 59, 64, 65], [52, 55, 59, 62], [57, 60, 64, 67], [53, 57, 60, 64], [55, 59, 65, 68], [55, 59, 62, 64], [55, 59, 62, 64]],
+  { tag: 'fusión', name: 'Fiesta en el Parking', bpm: 126, swing: 0.06, chords: [[53, 57, 60, 64], [55, 59, 64, 65], [52, 55, 59, 62], [57, 60, 64, 67], [53, 57, 60, 64], [55, 59, 65, 68], [55, 59, 62, 64], [55, 59, 62, 64]],
     roots: [41, 43, 40, 45, 38, 43, 36, 36], bass: [[0, 0, 2], [3, 0, 1], [6, 12, 1], [8, 0, 2], [10, 7, 1], [12, 0, 1], [14, 12, 1]], stabs: [0, 3, 6, 10, 13],
     kick: [0, 6, 10], kickOdd: [14], snare: [4, 12], hatEvery: 2, lead: 'saw',
     melody: [[[0, 76, 3], [4, 77, 1], [6, 79, 2], [10, 81, 2], [13, 79, 1], [14, 76, 2]], [[0, 79, 2], [3, 81, 1], [4, 83, 3], [8, 81, 2], [11, 79, 1], [12, 77, 4]], [[0, 76, 2], [3, 79, 1], [4, 83, 2], [8, 81, 1], [9, 79, 1], [10, 76, 2], [14, 74, 2]], [[0, 72, 2], [3, 76, 1], [4, 79, 3], [8, 83, 2], [11, 81, 1], [12, 79, 4]], [[0, 77, 3], [4, 76, 1], [6, 74, 2], [8, 72, 2], [11, 74, 1], [12, 77, 2], [14, 79, 2]], [[0, 80, 2], [3, 79, 1], [4, 77, 2], [6, 74, 2], [8, 71, 3], [12, 74, 2], [14, 77, 2]], [[0, 76, 4], [6, 79, 2], [8, 83, 3], [12, 81, 1], [13, 79, 1], [14, 76, 2]], [[0, 74, 2], [3, 76, 1], [4, 79, 6], [12, 77, 2], [14, 74, 2]]] },
   // Noche en autopista: más lento y melancólico, en La menor, con bajo pausado y melodía cantable
-  { name: 'Noche en autopista', bpm: 104, swing: 0.11, chords: [[57, 60, 64, 67], [60, 66, 71, 64], [55, 59, 62, 66], [60, 64, 67, 71], [54, 57, 60, 64], [59, 63, 69, 72], [52, 55, 59, 62], [56, 62, 64, 68]],
+  { tag: 'fusión', name: 'Peaje a las 3 AM', bpm: 104, swing: 0.11, chords: [[57, 60, 64, 67], [60, 66, 71, 64], [55, 59, 62, 66], [60, 64, 67, 71], [54, 57, 60, 64], [59, 63, 69, 72], [52, 55, 59, 62], [56, 62, 64, 68]],
     roots: [45, 38, 43, 36, 42, 47, 40, 40], bass: [[0, 0, 3], [6, 0, 1], [8, 7, 2], [12, 0, 1], [14, 12, 1]], stabs: [0, 6, 10, 14],
     kick: [0, 10], kickOdd: [7], snare: [4, 12], hatEvery: 2, lead: 'square',
     melody: [[[0, 76, 4], [6, 79, 2], [8, 81, 4], [14, 79, 2]], [[0, 78, 3], [4, 81, 2], [8, 83, 4], [14, 81, 2]], [[0, 79, 4], [6, 78, 2], [8, 74, 4], [14, 76, 2]], [[0, 76, 3], [4, 74, 1], [6, 71, 2], [8, 72, 6], [14, 74, 2]], [[0, 72, 3], [4, 76, 2], [8, 78, 4], [14, 76, 2]], [[0, 75, 2], [3, 78, 1], [4, 81, 4], [10, 78, 2], [12, 75, 4]], [[0, 74, 4], [6, 71, 2], [8, 79, 6], [14, 76, 2]], [[0, 76, 2], [3, 80, 1], [4, 83, 8], [14, 80, 2]]] },
   // Costa rápida: brillante y funky, en Re mayor, con bajo en semicorcheas
-  { name: 'Costa rápida', bpm: 138, swing: 0.04, chords: [[54, 57, 61, 64], [52, 57, 59, 62], [56, 59, 64, 68], [57, 61, 64, 66], [62, 66, 69, 73], [56, 62, 64, 66], [56, 61, 64, 68], [57, 61, 66, 69]],
+  { tag: 'fusión', name: 'Spoiler Gigante', bpm: 138, swing: 0.04, chords: [[54, 57, 61, 64], [52, 57, 59, 62], [56, 59, 64, 68], [57, 61, 64, 66], [62, 66, 69, 73], [56, 62, 64, 66], [56, 61, 64, 68], [57, 61, 66, 69]],
     roots: [38, 40, 37, 42, 47, 40, 45, 45], bass: [[0, 0, 1], [2, 0, 1], [3, 12, 1], [6, 0, 1], [8, 0, 1], [10, 7, 1], [11, 0, 1], [14, 12, 1]], stabs: [2, 4, 7, 10, 12, 15],
     kick: [0, 3, 8, 11], kickOdd: [6], snare: [4, 12], hatEvery: 1, lead: 'saw',
     melody: [[[0, 78, 2], [3, 81, 1], [4, 85, 3], [8, 83, 2], [11, 81, 1], [12, 78, 3]], [[0, 80, 2], [2, 83, 2], [4, 85, 2], [8, 83, 1], [9, 80, 1], [10, 76, 3], [14, 80, 2]], [[0, 80, 3], [4, 83, 1], [6, 85, 2], [8, 88, 3], [12, 85, 2], [14, 83, 2]], [[0, 81, 2], [3, 85, 1], [4, 84, 3], [8, 81, 2], [11, 78, 1], [12, 81, 4]], [[0, 85, 3], [4, 83, 1], [6, 81, 2], [8, 78, 3], [12, 81, 2], [14, 85, 2]], [[0, 83, 2], [3, 80, 1], [4, 78, 2], [6, 80, 2], [8, 83, 3], [12, 86, 2], [14, 83, 2]], [[0, 85, 4], [6, 88, 2], [8, 85, 3], [12, 84, 1], [13, 81, 1], [14, 80, 2]], [[0, 81, 2], [3, 85, 1], [4, 88, 6], [12, 85, 2], [14, 81, 2]]] },
+  // ----- temas tranquilos: jazz suave y aire de consola clásica -----
+  { tag: 'chill', name: 'Domingo de Sofá y Manta', bpm: 84, swing: 0.2, soft: 0.5, chords: [[53, 57, 60, 64], [53, 59, 62, 67], [52, 55, 59, 64], [55, 59, 60, 64], [53, 57, 60, 64], [53, 59, 64, 67], [52, 55, 59, 64], [55, 61, 64, 67]],
+    roots: [38, 43, 36, 45, 38, 43, 36, 45], bass: [[0, 0, 3], [6, 7, 1], [8, 0, 2], [12, 12, 1], [14, 7, 1]], stabs: [0, 6, 10],
+    kick: [0], kickOdd: [10], snare: [4, 12], hatEvery: 2, lead: 'tri',
+    melody: [[[0, 76, 2], [3, 74, 1], [4, 72, 3], [8, 69, 2], [11, 72, 1], [12, 74, 4]], [[0, 71, 3], [4, 74, 2], [7, 77, 1], [8, 76, 4], [14, 74, 2]], [[0, 72, 2], [3, 76, 1], [4, 79, 4], [10, 76, 2], [12, 74, 2], [14, 72, 2]], [[0, 76, 3], [4, 72, 1], [6, 69, 2], [8, 71, 2], [11, 72, 1], [12, 76, 4]], [[0, 77, 2], [3, 76, 1], [4, 74, 3], [8, 72, 2], [11, 74, 1], [12, 77, 4]], [[0, 79, 3], [4, 77, 1], [6, 76, 2], [8, 74, 3], [12, 71, 2], [14, 74, 2]], [[0, 72, 4], [6, 76, 2], [8, 79, 3], [12, 84, 1], [13, 83, 1], [14, 79, 2]], [[0, 76, 2], [3, 73, 1], [4, 76, 2], [8, 81, 3], [12, 80, 2], [14, 76, 2]]] },
+  { tag: 'chill', name: 'Cobrando Intereses en Bayas', bpm: 96, swing: 0.08, soft: 0.5, chords: [[53, 57, 60, 64], [50, 57, 60, 65], [55, 58, 62, 65], [52, 55, 58, 64], [57, 60, 64, 67], [53, 57, 60, 64], [53, 58, 62, 65], [52, 55, 58, 60]],
+    roots: [41, 38, 43, 36, 45, 38, 46, 36], bass: [[0, 0, 2], [4, 0, 1], [6, 7, 1], [8, 0, 2], [12, 7, 1], [14, 12, 1]], stabs: [2, 6, 10, 14],
+    kick: [0, 8], kickOdd: [], snare: [12], hatEvery: 4, lead: 'tri',
+    melody: [[[0, 81, 2], [2, 79, 1], [3, 77, 1], [4, 84, 3], [8, 81, 2], [10, 79, 2], [12, 77, 4]], [[0, 74, 2], [2, 77, 2], [4, 81, 3], [8, 79, 2], [10, 77, 1], [11, 74, 1], [12, 77, 4]], [[0, 79, 2], [2, 82, 2], [4, 86, 3], [8, 84, 2], [10, 82, 2], [12, 79, 4]], [[0, 76, 2], [2, 79, 1], [3, 82, 1], [4, 79, 2], [6, 76, 2], [8, 79, 4], [14, 76, 2]], [[0, 81, 2], [2, 84, 2], [4, 88, 3], [8, 84, 2], [10, 81, 2], [12, 84, 4]], [[0, 77, 2], [2, 81, 2], [4, 84, 3], [8, 81, 2], [10, 77, 1], [11, 76, 1], [12, 74, 4]], [[0, 82, 2], [2, 79, 1], [3, 77, 1], [4, 74, 3], [8, 77, 2], [10, 79, 2], [12, 82, 4]], [[0, 79, 2], [2, 76, 1], [3, 79, 1], [4, 82, 4], [10, 79, 2], [12, 76, 2], [14, 79, 2]]] },
+  { tag: 'chill', name: 'Cortado con Goteras', bpm: 72, swing: 0.22, soft: 0.5, chords: [[55, 59, 60, 64], [53, 57, 60, 64], [53, 59, 64, 67], [55, 59, 62, 64], [53, 57, 60, 64], [57, 59, 62, 65], [56, 59, 62, 64], [55, 59, 60, 64]],
+    roots: [45, 38, 43, 36, 41, 47, 40, 45], bass: [[0, 0, 4], [8, 0, 2], [12, 7, 2]], stabs: [0, 10],
+    kick: [0, 10], kickOdd: [6], snare: [4, 12], hatEvery: 2, lead: 'tri',
+    melody: [[[0, 76, 3], [4, 72, 2], [7, 71, 1], [8, 69, 4], [14, 71, 2]], [[0, 74, 3], [4, 77, 2], [8, 76, 3], [12, 72, 4]], [[0, 71, 2], [3, 74, 1], [4, 77, 3], [8, 76, 2], [10, 74, 2], [12, 71, 4]], [[0, 72, 4], [6, 76, 2], [8, 79, 4], [14, 76, 2]], [[0, 77, 3], [4, 76, 1], [6, 72, 2], [8, 69, 4], [12, 72, 4]], [[0, 74, 3], [4, 72, 1], [6, 71, 2], [8, 74, 3], [12, 77, 2], [14, 74, 2]], [[0, 76, 2], [3, 80, 1], [4, 83, 3], [8, 80, 2], [10, 76, 2], [12, 74, 4]], [[0, 72, 2], [3, 69, 1], [4, 76, 6], [12, 72, 4]]] },
+  { tag: 'chill', name: 'Siesta en la Isla Cutre', bpm: 112, swing: 0.1, soft: 0.5, chords: [[55, 59, 62, 66], [56, 59, 62, 64], [55, 60, 64, 67], [54, 57, 60, 62], [57, 59, 62, 66], [56, 59, 62, 64], [55, 60, 64, 67], [54, 57, 60, 62]],
+    roots: [43, 40, 45, 38, 47, 40, 45, 38], bass: [[0, 0, 3], [6, 7, 2], [8, 0, 2], [12, 7, 1], [14, 0, 1]], stabs: [0, 3, 6, 10, 12],
+    kick: [0, 6, 8, 14], kickOdd: [], snare: [10], hatEvery: 2, lead: 'sine',
+    melody: [[[0, 83, 2], [3, 79, 1], [4, 81, 3], [8, 86, 2], [10, 83, 2], [12, 79, 4]], [[0, 80, 2], [3, 83, 1], [4, 86, 3], [8, 83, 2], [10, 80, 2], [12, 76, 4]], [[0, 81, 2], [3, 84, 1], [4, 88, 3], [8, 84, 2], [10, 81, 2], [12, 79, 4]], [[0, 78, 3], [4, 81, 1], [6, 84, 2], [8, 81, 3], [12, 78, 2], [14, 74, 2]], [[0, 83, 3], [4, 86, 1], [6, 83, 2], [8, 79, 3], [12, 83, 4]], [[0, 80, 2], [3, 83, 1], [4, 86, 4], [10, 83, 2], [12, 80, 4]], [[0, 84, 3], [4, 81, 1], [6, 79, 2], [8, 76, 4], [14, 79, 2]], [[0, 78, 2], [3, 81, 1], [4, 84, 3], [8, 81, 2], [10, 78, 2], [12, 74, 4]]] },
+  { tag: 'chill', name: 'Luna Llena de Gasolina', bpm: 76, swing: 0.12, soft: 0.4, chords: [[54, 57, 61, 64], [54, 57, 62, 66], [55, 59, 62, 66], [55, 57, 61, 64], [57, 61, 64, 66], [54, 57, 62, 66], [55, 59, 62, 66], [55, 57, 61, 64]],
+    roots: [38, 47, 40, 45, 42, 47, 40, 45], bass: [[0, 0, 6], [8, 7, 4], [12, 12, 2]], stabs: [0, 8],
+    kick: [0], kickOdd: [10], snare: [12], hatEvery: 4, lead: 'sine',
+    melody: [[[0, 81, 4], [6, 78, 2], [8, 76, 3], [12, 78, 4]], [[0, 78, 3], [4, 81, 1], [6, 85, 2], [8, 83, 4], [14, 81, 2]], [[0, 79, 3], [4, 83, 1], [6, 86, 2], [8, 83, 4], [12, 79, 4]], [[0, 76, 2], [3, 79, 1], [4, 81, 4], [10, 85, 2], [12, 81, 4]], [[0, 81, 3], [4, 85, 1], [6, 88, 2], [8, 85, 3], [12, 81, 4]], [[0, 81, 2], [3, 78, 1], [4, 74, 3], [8, 78, 2], [10, 81, 2], [12, 78, 4]], [[0, 79, 3], [4, 76, 1], [6, 79, 2], [8, 83, 4], [14, 79, 2]], [[0, 76, 2], [3, 81, 1], [4, 85, 4], [10, 81, 2], [12, 85, 2], [14, 88, 2]]] },
 ];
 
 export class Music {
@@ -48,7 +69,14 @@ export class Music {
   start() {
     if (this.playing) return; this.playing = true; const c = this.ctx;
     this.out.gain.cancelScheduledValues(c.currentTime); this.out.gain.setTargetAtTime(this.vol, c.currentTime, 0.6);
-    this.songIdx = this.nextIdx != null && this.nextIdx !== this.songIdx ? this.nextIdx : this.pickNext(this.songIdx); this.nextIdx = null; this.playNext();
+    this.songIdx = this.nextIdx != null ? this.nextIdx : this.pickNext(this.songIdx); this.nextIdx = null; this.playNext();
+  }
+  // elige un tema concreto; al terminar sigue en aleatorio
+  choose(idx) {
+    if (!(idx >= 0 && idx < SONGS.length)) return; this.nextIdx = null;
+    if (!this.playing) { this.nextIdx = idx; return; }
+    if (this.src) { const o = this.src; this.src = null; o.onended = null; try { o.stop(); } catch (_) { /* ya parado */ } }
+    this.songIdx = idx; if (this.timer) { this.step = 0; return; } this.playNext();
   }
   pickNext(cur) { if (SONGS.length < 2) return 0; let n; do n = Math.floor(Math.random() * SONGS.length); while (n === cur); return n; } // siempre una canción al azar, distinta de la actual
   playNext() {
@@ -86,10 +114,10 @@ export class Music {
   play(step, t) {
     const S = this.song, ST = this.stepDur, bar = Math.floor(step / 16) % 8, s = step % 16, pass = Math.floor(step / 128); t += (s % 2) ? ST * S.swing : 0;
     // batería
-    if (S.kick.includes(s) || (bar % 2 && S.kickOdd.includes(s))) this.kick(t, s === 0 ? 1 : 0.8);
-    if (S.snare.includes(s)) this.snare(t, 0.9); else if (s === 15 && bar % 4 === 3) this.snare(t, 0.35);
-    if (s % S.hatEvery === 0) this.hat(t, s % 4 === 2 ? 0.34 : 0.2, false); else if (s % 4 === 3) this.hat(t, 0.1, false);
-    if (s === 14 && bar % 2 === 1) this.hat(t, 0.3, true);
+    if (S.kick.includes(s) || (bar % 2 && S.kickOdd.includes(s))) this.kick(t, (s === 0 ? 1 : 0.8) * (S.soft || 1));
+    if (S.snare.includes(s)) this.snare(t, 0.9 * (S.soft || 1)); else if (s === 15 && bar % 4 === 3) this.snare(t, 0.35 * (S.soft || 1));
+    if (s % S.hatEvery === 0) this.hat(t, (s % 4 === 2 ? 0.34 : 0.2) * (S.soft || 1), false); else if (s % 4 === 3) this.hat(t, 0.1 * (S.soft || 1), false);
+    if (s === 14 && bar % 2 === 1) this.hat(t, 0.3 * (S.soft || 1), true);
     // bajo
     for (const [bs, iv, len] of S.bass) if (bs === s) this.bass(S.roots[bar] + iv, t, ST * len * 0.92);
     // piano eléctrico: acordes picados
@@ -118,7 +146,7 @@ export class Music {
   }
   lead(m, t, dur, v) {
     const c = this.ctx, f = mtof(m), a = c.createOscillator(), b = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
-    a.type = this.song.lead === 'square' ? 'square' : 'sawtooth'; b.type = this.song.lead === 'square' ? 'triangle' : 'square'; a.frequency.value = f; b.frequency.value = f; a.detune.value = 6; b.detune.value = -7;
+    const LT = { square: ['square', 'triangle'], tri: ['triangle', 'sine'], sine: ['sine', 'triangle'] }[this.song.lead] || ['sawtooth', 'square']; a.type = LT[0]; b.type = LT[1]; a.frequency.value = f; b.frequency.value = f; a.detune.value = 6; b.detune.value = -7;
     lfo.frequency.value = 5.2; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(14, t + Math.max(0.05, dur * 0.6)); lfo.connect(lg); lg.connect(a.detune); lg.connect(b.detune);
     lp.type = 'lowpass'; lp.frequency.setValueAtTime(5200, t); lp.frequency.exponentialRampToValueAtTime(2300, t + dur); lp.Q.value = 1.2;
     const bg = c.createGain(); bg.gain.value = 0.45; a.connect(lp); b.connect(bg); bg.connect(lp); lp.connect(g);

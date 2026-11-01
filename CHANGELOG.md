@@ -92,3 +92,7 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 ## 0.0.16
 - Casco mucho más simple: 12 cascos para elegir con un toque (sin colores sueltos). Dibujo del casco más fino.
 - Ajustes en móvil más compactos.
+
+## 0.0.17
+- Cinco canciones nuevas, tranquilas (jazz suave y aire de consola clásica), con batería más suave.
+- Selector de música (botón «Música» del menú): eliges qué suena y después sigue en aleatorio. Todas las canciones tienen nombres graciosos.

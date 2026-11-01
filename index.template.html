@@ -660,6 +660,16 @@ body.mobile #settings #setClose{margin-top:8px;padding:11px}
  body.mobile #settings #helGrid{grid-template-columns:repeat(6,1fr)}
  body.mobile #settings #setClose{break-inside:avoid}
 }
+
+/* selector de música */
+#songList{display:flex;flex-direction:column;gap:6px;margin:6px 0 12px}
+#songList button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:#e6ebf2;font:inherit;font-weight:700;cursor:pointer}
+#songList button i{font-style:normal;width:22px;text-align:center;color:#8e98a8}#songList button b{flex:1;min-width:0}
+#songList button small{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8e98a8;font-weight:700}
+#songList button.on{border-color:#ffc928;background:rgba(255,201,40,.14);color:#ffd34e}#songList button.on i{color:#ffc928}
+body.mobile #musicPick .panel{padding:12px 14px;max-height:100dvh;overflow-y:auto}body.mobile #musicPick h1{font-size:24px!important;margin:0 0 4px}body.mobile #musicPick .keys{display:block!important}
+body.mobile #songList button{padding:8px 10px}
+@media (orientation:landscape) and (max-height:540px){body.mobile #musicPick .panel{max-width:min(96vw,760px)!important}body.mobile #songList{display:grid;grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -704,7 +714,7 @@ body.mobile #settings #setClose{margin-top:8px;padding:11px}
         <button id="pickCar" class="pick" type="button"><small>Coche</small><b id="pickCarName">—</b><span id="pickCarSub"></span><img id="pickCarImg" class="pk-img" alt=""><i>›</i></button>
         <div class="modes"><div id="modeSel" class="seg"><button data-v="tt">Contrarreloj</button><button data-v="race">Carrera</button><button data-v="gp" class="gp">Gran Premio</button></div><p id="modeInfo" class="modeinfo"></p>
           <div id="diffWrap"><div id="diffSel" class="seg"><button data-v="0">Fácil</button><button data-v="1" class="on">Normal</button><button data-v="2">Difícil</button></div></div></div>
-        <div class="links"><button id="dailyBtn" class="link" type="button">Reto del día</button><button id="boardBtn" class="link" type="button">Clasificación</button><button id="setBtn" class="link" type="button">Ajustes</button></div>
+        <div class="links"><button id="dailyBtn" class="link" type="button">Reto del día</button><button id="boardBtn" class="link" type="button">Clasificación</button><button id="musicBtn" class="link" type="button">Música</button><button id="setBtn" class="link" type="button">Ajustes</button></div>
       </div>
     </div>
   </div>
@@ -722,6 +732,7 @@ body.mobile #settings #setClose{margin-top:8px;padding:11px}
   <div id="boardStatus" class="keys" style="display:block;margin:4px 0 8px"></div>
   <div style="max-height:50vh;overflow:auto"><table id="boardTable" class="lbt"></table></div>
   <button id="boardClose" class="big">CERRAR</button></div></div>
+<div id="musicPick" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="text-align:left;max-width:520px"><h1 style="font-size:32px">MÚSICA</h1><p class="keys" style="display:block;margin:0 0 8px">Toca una canción para escucharla. Al terminar, el resto suena en aleatorio.</p><div id="songList"></div><button id="musicClose" class="big">LISTO</button></div></div>
 <div id="settings" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="text-align:left;max-width:520px"><h1 style="font-size:32px">AJUSTES</h1>
   <h3>Sonido</h3>
   <div class="row"><label style="flex:1">Volumen general <b id="vt_master"></b><input id="v_master" type="range" min="0" max="100" style="width:100%"></label></div>
