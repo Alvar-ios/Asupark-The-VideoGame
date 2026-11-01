@@ -134,3 +134,7 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - En contrarreloj, el fantasma, la mejor vuelta y los sectores propios son por grupo, no por coche: corres contra lo mejor que hayas hecho con cualquier coche de tu grupo (se recogen los datos antiguos por coche).
 - Siempre se muestra el récord de la pista de todos los grupos (en dorado, con quién y de qué grupo), aparte del récord de tu grupo (en morado).
 - Charcos de luz de los faros sin bordes visibles y asfalto mojado menos blanquecino.
+
+## 0.0.27
+- El fantasma tiene la forma del coche con el que se hizo la mejor vuelta (no el que estás conduciendo).
+- Segundo fantasma, dorado: el mejor tiempo de la pista entre todos los grupos y coches (de este dispositivo). Si el mejor de tu grupo es también el de la pista, sale uno solo, dorado.

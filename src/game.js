@@ -250,8 +250,8 @@ function buildCarMesh(color, kind, lod = 'lo') {
 
 // fantasma: una sola silueta translúcida. Un pase previo escribe la profundidad sin pintar y el pase de color solo pinta la superficie más cercana,
 // así no se transparenta el interior (asientos, motor, cristales) de ningún modelo.
-function makeGhost(root) {
-  const color = new THREE.MeshLambertMaterial({ color: 0xbfe4ff, emissive: 0x2a4a66, transparent: true, opacity: 0.4, depthWrite: false });
+function makeGhost(root, gold) {
+  const color = new THREE.MeshLambertMaterial({ color: gold ? 0xffd34e : 0xbfe4ff, emissive: gold ? 0x7a5a10 : 0x2a4a66, transparent: true, opacity: gold ? 0.5 : 0.4, depthWrite: false });
   const pre = new THREE.MeshBasicMaterial({ colorWrite: false });
   const meshes = []; root.traverse((o) => { if (o.isMesh) meshes.push(o); });
   for (const o of meshes) {
@@ -309,7 +309,7 @@ const tmpP = { x: 0, y: 0, z: 0, tx: 0, tz: 1 };
 
 function clearRace() {
   if (S.scene) { disposeScene(S.scene); S.scene = null; }
-  S.cars = []; S.player = null; S.particles = null; S.skid = null; S.ghostMesh = null; S.world = null; S.raceScene = false;
+  S.cars = []; S.player = null; S.particles = null; S.skid = null; S.ghostMesh = null; S.ghostGold = null; S.ghostBestGold = null; S.world = null; S.raceScene = false;
 }
 // ----- escenario vivo del menú: la pista elegida con el coche girando -----
 const _sunV = new THREE.Vector3();
@@ -409,6 +409,12 @@ async function startRace(restart = false) {
     status.textContent = `No se inició la carrera: no se pudo cargar ${e.message.replace(/^.*modelo /i, '')}. Revisa la conexión y vuelve a intentarlo.`;
     status.hidden = false; button.disabled = false; button.textContent = previousLabel; return;
   }
+  S.ghostRecs = null;
+  if (S.mode === 'tt') { // fantasmas: el mejor de tu grupo (azul) y el mejor de la pista (dorado), con la forma del coche que los hizo
+    const tiG = tracks[sel.track], gk = tiG.key + '.' + tiG.tr.seed; migrateGroupBest(gk, pt.group);
+    S.ghostRecs = { g: store.get('best.' + gk + '.g:' + pt.group), t: trackBestGhost(gk) };
+    for (const r of [S.ghostRecs.g, S.ghostRecs.t]) { const ct = r && r.car && CARS.find((c) => c.id === r.car); if (ct && !carAssetReady(ct, 'lo')) await loadCarAsset(ct, false).catch(() => {}); }
+  }
   button.disabled = false; button.textContent = previousLabel;
   menuWorldFree();
   const ti = tracks[sel.track], tr = ti.tr, type = CARS[sel.car];
@@ -459,8 +465,12 @@ async function startRace(restart = false) {
         c.driver = d; c.code = d.code; c.ai = { lane: (Math.random() * 2 - 1) * 3, skill: AI_TOP * d.level * diff, base: AI_TOP * d.level * diff }; S.cars.push(c);
       });
     } else {
-      S.ghostMesh = buildCarMesh(0xffffff, type.kind, 'lo'); makeGhost(S.ghostMesh.root);
-      S.ghostMesh.root.visible = false; scene.add(S.ghostMesh.root);
+      const mkGhost = (rec, gold) => {
+        const ct = (rec && rec.car && CARS.find((c) => c.id === rec.car && carAssetReady(c, 'lo'))) || type;
+        const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold); m.root.visible = false; scene.add(m.root); return m;
+      };
+      const gr = S.ghostRecs && S.ghostRecs.g, tr2 = S.ghostRecs && S.ghostRecs.t, same = gr && tr2 && Math.abs(gr.time - tr2.time) < 1e-6;
+      S.ghostMesh = mkGhost(same ? tr2 : gr, !!same); S.ghostGold = tr2 && !same ? mkGhost(tr2, true) : null; // si el mejor de tu grupo también es el de la pista, es uno solo (dorado)
     }
     // minimapa
     const mc = document.createElement('canvas'); mc.width = mc.height = 300; const mx = mc.getContext('2d');
@@ -492,9 +502,10 @@ async function startRace(restart = false) {
   } else {
     placeCar(player, tr, -260, 0, 18); S.auto = true; S.autoAi = { lane: 0, skill: AI_TOP * 0.5 }; flashCount(''); showMsg('PILOTO AUTOMÁTICO', 4200, 'cy'); // contrarreloj: salida lanzada, el crono arranca al cruzar la meta
     migrateGroupBest(ti.key + '.' + tr.seed, type.group);
-    const rec = store.get('best.' + ti.key + '.' + tr.seed + '.g:' + type.group); // el fantasma es el mejor de tu grupo, sea del coche que sea
+    const rec = S.ghostRecs && S.ghostRecs.g, trec = S.ghostRecs && S.ghostRecs.t; // fantasma de tu grupo + el de la pista
     S.ghostBest = rec && rec.ghost ? Float32Array.from(rec.ghost) : null;
-    if (S.ghostMesh) S.ghostMesh.root.visible = false;
+    S.ghostBestGold = trec && trec.ghost && !(rec && Math.abs(rec.time - trec.time) < 1e-6) ? Float32Array.from(trec.ghost) : null;
+    if (S.ghostMesh) S.ghostMesh.root.visible = false; if (S.ghostGold) S.ghostGold.root.visible = false;
   }
   S.ghostRec = [];
   migrateGroupBest(ti.key + '.' + tr.seed, type.group);
@@ -700,6 +711,14 @@ function trackSectors(p) {
   S.secIdx = idx; S.secStart = S.t;
   if (idx >= 0) { for (let k = 0; k < 3; k++) $('s' + k).classList.toggle('cur', k === idx); }
 }
+// mejor fantasma de la pista entre todos los grupos y coches (solo los de este dispositivo)
+function trackBestGhost(gk) {
+  const tb = store.get('best.' + gk + '.track'); if (tb && tb.ghost) return tb;
+  let b = null;
+  for (const c of CARS) for (const k of ['best.' + gk + '.' + c.id, 'best.' + gk + '.g:' + c.group]) { const r = store.get(k); if (r && r.ghost && (!b || r.time < b.time)) b = { ...r, car: r.car || (k.endsWith('.' + c.id) ? c.id : null) }; }
+  if (b) store.set('best.' + gk + '.track', b);
+  return b;
+}
 // los mejores tiempos, sectores y fantasma se guardan por grupo; si solo existen los antiguos por coche, se reúnen aquí
 function migrateGroupBest(gk, gid) {
   if (store.get('pb.' + gk + '.g:' + gid)) return;
@@ -784,12 +803,13 @@ function onPlayerLap(c, lt, done) {
       S.refProf = S.pbRec.prof; S.refName = 'PB'; S.refFill = fillProf(S.refProf);
       if (S.mode === 'tt') {
         S.ghostBest = Float32Array.from(S.ghostRec);
-        store.set(key, { time: lt, ghost: Array.from(S.ghostBest, (v) => Math.round(v * 100) / 100) });
+        store.set(key, { time: lt, ghost: Array.from(S.ghostBest, (v) => Math.round(v * 100) / 100), car: c.type.id });
       }
       markDaily();
     }
     if (lt < S.lapRec) { S.lapRec = lt; S.recReal = true; S.recWho = 'Tú'; updateRecPanel(); }
     if (lt < S.trkLap) { S.trkLap = lt; S.trkWho = 'Tú'; S.trkGroup = c.type.group; updateRecPanel(); }
+    if (S.mode === 'tt') { const tk = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.track', tb = store.get(tk); if (!tb || lt < tb.time) store.set(tk, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id }); } // y el mejor de la pista, para el fantasma dorado
   }
   S.curProf.fill(-1);
   if (S.mode === 'tt') S.ghostRec = [];
@@ -1242,16 +1262,18 @@ function frame(now) {
     if (p.onKerb && p.speed > 10) S.shake = Math.max(S.shake, S.th && S.th.kerbRough ? 0.2 : 0.09);
     followSun(S.world, lerp(p.px, p.x, S.alpha), lerp(p.py, p.y, S.alpha), lerp(p.pz, p.z, S.alpha));
     // fantasma
-    if (S.ghostMesh && !S.ghostBest) S.ghostMesh.root.visible = false;
-    if (S.ghostMesh && S.ghostBest && running && !p.finished) {
-      const t = (S.t - p.lapStart) * 40, n = S.ghostBest.length / 4, i = Math.floor(t);
+    const driveGhost = (mesh, g) => {
+      if (!mesh) return;
+      if (!g || !running || p.finished) { mesh.root.visible = false; return; }
+      const t = (S.t - p.lapStart) * 40, n = g.length / 4, i = Math.floor(t);
       if (i >= 0 && i < n - 1) {
-        const f = t - i, g = S.ghostBest, o = i * 4, q = o + 4;
-        S.ghostMesh.root.visible = true;
-        S.ghostMesh.root.position.set(lerp(g[o], g[q], f), lerp(g[o + 1], g[q + 1], f), lerp(g[o + 2], g[q + 2], f));
-        S.ghostMesh.root.rotation.y = g[o + 3] + wrapPi(g[q + 3] - g[o + 3]) * f;
-      } else S.ghostMesh.root.visible = false;
-    }
+        const f = t - i, o = i * 4, q = o + 4;
+        mesh.root.visible = true;
+        mesh.root.position.set(lerp(g[o], g[q], f), lerp(g[o + 1], g[q + 1], f), lerp(g[o + 2], g[q + 2], f));
+        mesh.root.rotation.y = g[o + 3] + wrapPi(g[q + 3] - g[o + 3]) * f;
+      } else mesh.root.visible = false;
+    };
+    driveGhost(S.ghostMesh, S.ghostBest); driveGhost(S.ghostGold, S.ghostBestGold);
     // contramano
     if (S.state === 'racing' && !p.finished) {
       const along = p.vx * p.loc.tx + p.vz * p.loc.tz;
