@@ -448,8 +448,8 @@ input,select,textarea{-webkit-user-select:text;user-select:text;touch-action:man
 }
 /* ===== Móvil: HUD y controles tanto en horizontal como en vertical ===== */
 #menu #menuLeft.panel{width:min(430px,100%)}
-body.tt #hud #weatherBadge{top:188px}
-body.mobile.tt #hud #weatherBadge{top:160px}
+body.tt #hud #weatherBadge{top:244px}
+body.mobile.tt #hud #weatherBadge{top:196px}
 body.mobile #hud #weatherBadge{padding:3px 8px;font-size:9px;letter-spacing:.08em}
 @media (orientation:portrait){
   body.mobile{--b:min(92px,22vw)}
@@ -686,6 +686,12 @@ body.racing.halves-mode #halves{display:flex}body.halves-mode #touch{display:non
 #halves>div{position:relative;flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7vh;font-size:30px;font-weight:900;color:rgba(255,255,255,.14)}
 #halves>div::after{content:'';position:absolute;bottom:4vh;left:var(--x,50%);width:58px;height:58px;margin-left:-29px;border-radius:50%;background:rgba(255,255,255,.16);opacity:0;transition:opacity .07s}
 #halves>div.on::after{opacity:1}#halves>div.on{color:rgba(255,255,255,.3)}
+
+/* récord de la pista (todos los grupos), en dorado y aparte del récord del grupo (morado) */
+#hud #h-rec .trk{margin-top:5px;padding-top:4px;border-top:1px solid rgba(255,201,40,.45)}
+#hud #h-rec .trk small{color:#ffc928;font-size:10px;letter-spacing:.12em;font-weight:800}
+#hud #h-rec .trk b{color:#ffd34e;font-size:17px}#hud #h-rec .trk>span{margin-left:6px;color:#b9a25a;font-size:9px;letter-spacing:.08em}
+body.mobile #hud #h-rec .trk{margin-top:2px;padding-top:2px}body.mobile #hud #h-rec .trk small{display:inline!important;font-size:9px;margin-right:4px}body.mobile #hud #h-rec .trk b{font-size:12px;display:inline}body.mobile #hud #h-rec .trk>span{display:none}
 </style>
 </head>
 <body>
@@ -695,7 +701,7 @@ body.racing.halves-mode #halves{display:flex}body.halves-mode #touch{display:non
   <div id="h-pos"><b id="pos">1</b><span>/4</span></div>
   <div id="h-lap">VUELTA <b id="lap">1/3</b></div>
   <div id="tower"></div>
-  <div id="h-rec"><small id="recLabel">RÉCORD</small><b id="recLap">--</b><span id="recWho"></span><div class="rs"><i><small>S1</small><b id="rs0">--</b></i><i><small>S2</small><b id="rs1">--</b></i><i><small>S3</small><b id="rs2">--</b></i></div></div>
+  <div id="h-rec"><small id="recLabel">RÉCORD</small><b id="recLap">--</b><span id="recWho"></span><div class="rs"><i><small>S1</small><b id="rs0">--</b></i><i><small>S2</small><b id="rs1">--</b></i><i><small>S3</small><b id="rs2">--</b></i></div><div class="trk"><small>♛ RÉCORD PISTA</small><b id="trkLap">--</b><span id="trkWho"></span></div></div>
   <div id="h-time"><div id="time">0:00.00</div><div id="best">MEJOR --</div><div id="delta"></div>
     <div id="secs"><div class="sec" id="s0"><b>S1</b><span>--</span></div><div class="sec" id="s1"><b>S2</b><span>--</span></div><div class="sec" id="s2"><b>S3</b><span>--</span></div></div>
   </div>

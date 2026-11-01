@@ -6,10 +6,13 @@ const mkTex = (w, h, draw) => { const c = document.createElement('canvas'); c.wi
 let glowT = null, flareT = null, beamT = null;
 const glowTex = () => glowT || (glowT = mkTex(64, 64, (g, w, h) => { const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.22, 'rgba(255,255,255,.6)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
 const flareTex = () => flareT || (flareT = mkTex(128, 32, (g, w, h) => { const r = g.createLinearGradient(0, 0, w, 0); r.addColorStop(0, 'rgba(255,255,255,0)'); r.addColorStop(0.5, 'rgba(255,255,255,.95)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, h / 2 - 2, w, 4); const v = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, h / 2); v.addColorStop(0, 'rgba(255,255,255,.9)'); v.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = v; g.fillRect(w / 2 - h / 2, 0, h, h); }));
-// haz: arriba (lejos) transparente, abajo (cerca) intenso; bordes suaves
-const beamTex = () => beamT || (beamT = mkTex(64, 128, (g, w, h) => {
-  const v = g.createLinearGradient(0, 0, 0, h); v.addColorStop(0, 'rgba(255,255,255,0)'); v.addColorStop(0.5, 'rgba(255,255,255,.3)'); v.addColorStop(0.88, 'rgba(255,255,255,.85)'); v.addColorStop(1, 'rgba(255,255,255,.35)'); g.fillStyle = v; g.fillRect(0, 0, w, h);
-  g.globalCompositeOperation = 'destination-in'; const u = g.createLinearGradient(0, 0, w, 0); u.addColorStop(0, 'rgba(0,0,0,0)'); u.addColorStop(0.3, 'rgba(0,0,0,1)'); u.addColorStop(0.7, 'rgba(0,0,0,1)'); u.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = u; g.fillRect(0, 0, w, h);
+// haz: charco de luz elíptico sobre el suelo (cerca = abajo), desenfocado y con una cola tenue
+const beamTex = () => beamT || (beamT = mkTex(128, 256, (g, w, h) => {
+  try { g.filter = 'blur(7px)'; } catch (e) { /* sin desenfoque nativo */ }
+  g.save(); g.translate(w / 2, h * 0.6); g.scale(1, 2.1);
+  const r = g.createRadialGradient(0, 0, 0, 0, 0, w * 0.42); r.addColorStop(0, 'rgba(255,255,255,.9)'); r.addColorStop(0.35, 'rgba(255,255,255,.5)'); r.addColorStop(0.7, 'rgba(255,255,255,.16)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r; g.beginPath(); g.arc(0, 0, w * 0.42, 0, Math.PI * 2); g.fill(); g.restore();
+  g.save(); g.translate(w / 2, h * 0.3); g.scale(1, 3.4); const t = g.createRadialGradient(0, 0, 0, 0, 0, w * 0.2); t.addColorStop(0, 'rgba(255,255,255,.14)'); t.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = t; g.beginPath(); g.arc(0, 0, w * 0.2, 0, Math.PI * 2); g.fill(); g.restore(); // cola tenue
 }));
 
 // cuatro estilos de iluminación
@@ -26,7 +29,7 @@ export const headStyleOf = (id) => HEAD_STYLES[STYLE_OF[id]] || HEAD_STYLES[['ha
 
 function beamMesh(len, w0, w1, color, op) {
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute([-w0 / 2, 0, 0, w0 / 2, 0, 0, -w1 / 2, 0, len, w1 / 2, 0, len], 3));
+  const wm = (w0 + w1) / 2; g.setAttribute('position', new THREE.Float32BufferAttribute([-wm / 2, 0, 0, wm / 2, 0, 0, -wm / 2, 0, len, wm / 2, 0, len], 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1, 1, 1], 2)); g.setIndex([0, 1, 2, 1, 3, 2]);
   const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: beamTex(), color, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
   m.renderOrder = 4; m.frustumCulled = false; return m;
@@ -42,30 +45,32 @@ export function addHeadlights(mesh, carId, k, real) {
   for (const ch of mesh.tilt.children) { if (ch === mesh.flames) continue; const b = new THREE.Box3().setFromObject(ch); if (!b.isEmpty()) box.union(b.applyMatrix4(inv)); }
   if (box.isEmpty()) return;
   const W = box.max.x - box.min.x, Hh = box.max.y, zf = box.max.z, zr = box.min.z, ly = Math.max(0.35, Hh * 0.46), lx = W * 0.31;
-  const group = new THREE.Group(), tails = [];
+  const group = new THREE.Group(), ground = new THREE.Group(), tails = [], fl = [];
   const col = new THREE.Color(st.color);
   for (const s of [-1, 1]) {
     const x = s * lx;
     { const g1 = sprite(glowTex(), col, 0.5 * st.glow + 0.2, 0.9 * k); g1.position.set(x, ly, zf + 0.05); group.add(g1); }
+    { const hz = sprite(glowTex(), col, 1.7 * st.glow + 0.5, 0.2 * k); hz.position.set(x, ly, zf + 0.1); group.add(hz); fl.push(hz.material); }
     if (st.flare) { const f1 = sprite(flareTex(), col, 0.35, 0.7 * k, 3.4); f1.position.set(x, ly, zf + 0.08); group.add(f1); }
-    if (st.strip) { const bar = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.2, 0.05), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 * k, fog: false })); bar.position.set(x, ly + 0.17, zf + 0.04); group.add(bar); }
+    if (st.strip) { const bar = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.2, 0.05), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 * k, fog: false })); bar.position.set(x, ly + 0.17, zf + 0.04); group.add(bar); }
     if (st.extra) { const e = sprite(glowTex(), col, 0.5, 0.9 * k); e.position.set(s * W * 0.14, ly + 0.02, zf + 0.06); group.add(e); }
-    // haces sobre la carretera, uno por faro
-    for (const bm of st.beams) { const b = beamMesh(bm.len, bm.w0 * 1.2, bm.w1 * 0.8, col, bm.op * k * 0.75); b.position.set(x, 0.07, zf - 0.1); b.rotation.x = 0.01; b.rotation.y = s * 0.035; group.add(b); }
+    // charcos de luz sobre el suelo, uno por faro: pegados al asfalto (no suben con el cabeceo), cada uno un poco distinto
+    for (const bm of st.beams) { const b = beamMesh(bm.len, bm.w0 * 1.6, bm.w1 * 1.05, col, bm.op * k * (0.85 + Math.random() * 0.25)); b.position.set(x, 0.09, zf - 0.3); b.rotation.x = 0.012; b.rotation.y = s * (0.03 + Math.random() * 0.03); ground.add(b); fl.push(b.material); }
     // piloto trasero: brilla más al frenar
     const t = sprite(glowTex(), 0xff2a1a, 0.7, 0.45 * k); t.position.set(s * lx * 0.95, ly + 0.03, zr - 0.04); group.add(t); tails.push(t);
   }
-  mesh.tilt.add(group);
+  mesh.tilt.add(group); mesh.root.add(ground);
   let spot = null;
   if (real) {
     spot = new THREE.SpotLight(st.color, 55 * k, 60, 0.55, 0.65, 1.2); spot.position.set(0, ly + 0.1, zf - 0.3);
     const tg = new THREE.Object3D(); tg.position.set(0, 0, zf + 16); mesh.tilt.add(tg); spot.target = tg; mesh.tilt.add(spot);
   }
-  mesh.hl = { group, tails, spot, k };
+  mesh.hl = { group, ground, tails, spot, k, fl: fl.map((m) => ({ m, o: m.opacity })) };
 }
 // cada fotograma: pilotos traseros según el freno
 export function updateHeadlights(mesh, brake) {
   const h = mesh && mesh.hl; if (!h) return;
+  const tt = performance.now() * 0.001; h.fl.forEach((f, i) => { f.m.opacity = f.o * (0.93 + 0.07 * Math.sin(tt * (9 + i * 1.7) + i * 2.1)); }); // titileo leve
   const b = brake > 0.1 ? 1 : 0, o = (0.4 + 0.55 * b) * h.k, sz = 0.7 + 0.55 * b;
   for (const t of h.tails) { t.material.opacity = o; t.scale.set(sz, sz, 1); }
 }

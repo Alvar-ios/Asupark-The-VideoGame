@@ -125,3 +125,12 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 ## 0.0.24
 - Faros encendidos cuando está oscuro (noche y lluvia): cuatro estilos de iluminación que valen para todos los coches (halógeno clásico, LED afilado, xenón azulado y faros de rally), con haz de luz sobre la carretera, destellos y pilotos traseros que brillan al frenar. El coche del jugador lleva además un foco real en ordenador.
+
+## 0.0.25
+- Faros menos perfectos: charcos de luz desenfocados sobre el suelo (ya no rayos hacia delante), halos velados, titileo leve y cada faro algo distinto.
+- Pista mojada con lluvia: asfalto brillante con reflejos del cielo, charcos muy brillantes entre zonas más mates.
+
+## 0.0.26
+- En contrarreloj, el fantasma, la mejor vuelta y los sectores propios son por grupo, no por coche: corres contra lo mejor que hayas hecho con cualquier coche de tu grupo (se recogen los datos antiguos por coche).
+- Siempre se muestra el récord de la pista de todos los grupos (en dorado, con quién y de qué grupo), aparte del récord de tu grupo (en morado).
+- Charcos de luz de los faros sin bordes visibles y asfalto mojado menos blanquecino.

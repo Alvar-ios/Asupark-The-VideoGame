@@ -31,6 +31,15 @@ function asphaltTex() {
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   return t;
 }
+// mapa de rugosidad del asfalto mojado: zonas encharcadas (muy brillantes) entre zonas más mate
+let wetRT = null;
+function wetRoughTex() {
+  if (wetRT) return wetRT;
+  const n = 128, c = document.createElement('canvas'); c.width = c.height = n; const x = c.getContext('2d');
+  x.fillStyle = 'rgb(0,104,0)'; x.fillRect(0, 0, n, n);
+  for (let i = 0; i < 26; i++) { const px = Math.random() * n, py = Math.random() * n, r = 8 + Math.random() * 20, v = Math.random() < 0.65 ? 18 : 150; for (const ox of [-n, 0, n]) for (const oy of [-n, 0, n]) { const g = x.createRadialGradient(px + ox, py + oy, 0, px + ox, py + oy, r); g.addColorStop(0, `rgba(0,${v},0,.85)`); g.addColorStop(1, 'rgba(0,104,0,0)'); x.fillStyle = g; x.fillRect(px + ox - r, py + oy - r, r * 2, r * 2); } }
+  wetRT = new THREE.CanvasTexture(c); wetRT.wrapS = wetRT.wrapT = THREE.RepeatWrapping; wetRT.anisotropy = 4; return wetRT;
+}
 function groundTex() {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const x = c.getContext('2d'), im = x.createImageData(128, 128);
@@ -232,7 +241,10 @@ function roadMesh(tr, th, stride = 1) {
   let up = 0; for (let k = 0; k < Math.min(nrm.count, 3000); k++) up += nrm.getY(k);
   if (up < 0) { for (let k = 0; k < nrm.count; k++) nrm.setXYZ(k, -nrm.getX(k), -nrm.getY(k), -nrm.getZ(k)); }
   const wet = th.weather === 'rain', snow = th.surface === 'snow', dirt = th.surface === 'dirt';
-  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, map: th.toy ? null : asphaltTex(), roughness: wet ? 0.24 : snow ? 0.74 : dirt ? 0.78 : 0.86, metalness: wet ? 0.14 : 0.02 }));
+  const m = new THREE.Mesh(g, wet
+    // lluvia: asfalto mojado, con reflejos del cielo, brillos en charcos y zonas más secas (mapa de rugosidad)
+    ? new THREE.MeshPhysicalMaterial({ vertexColors: true, side: THREE.DoubleSide, map: th.toy ? null : asphaltTex(), color: 0x80868e, roughness: 1, roughnessMap: wetRoughTex(), metalness: 0.2, clearcoat: 0.7, clearcoatRoughness: 0.12, envMapIntensity: 0.9 })
+    : new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, map: th.toy ? null : asphaltTex(), roughness: snow ? 0.74 : dirt ? 0.78 : 0.86, metalness: 0.02 }));
   m.receiveShadow = true;
   return m;
 }

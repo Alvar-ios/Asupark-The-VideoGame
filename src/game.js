@@ -491,12 +491,14 @@ async function startRace(restart = false) {
     S.ghostBest = null;
   } else {
     placeCar(player, tr, -260, 0, 18); S.auto = true; S.autoAi = { lane: 0, skill: AI_TOP * 0.5 }; flashCount(''); showMsg('PILOTO AUTOMÁTICO', 4200, 'cy'); // contrarreloj: salida lanzada, el crono arranca al cruzar la meta
-    const rec = store.get('best.' + ti.key + '.' + tr.seed + '.' + type.id);
+    migrateGroupBest(ti.key + '.' + tr.seed, type.group);
+    const rec = store.get('best.' + ti.key + '.' + tr.seed + '.g:' + type.group); // el fantasma es el mejor de tu grupo, sea del coche que sea
     S.ghostBest = rec && rec.ghost ? Float32Array.from(rec.ghost) : null;
     if (S.ghostMesh) S.ghostMesh.root.visible = false;
   }
   S.ghostRec = [];
-  const skey = ti.key + '.' + tr.seed + '.' + type.id;
+  migrateGroupBest(ti.key + '.' + tr.seed, type.group);
+  const skey = ti.key + '.' + tr.seed + '.g:' + type.group; // mejor vuelta, sectores y fantasma por grupo (no por coche)
   S.skey = skey;
   const bench = benchFor(ti, type); S.bench = bench;
   const pb = store.get('pb.' + skey);
@@ -698,6 +700,23 @@ function trackSectors(p) {
   S.secIdx = idx; S.secStart = S.t;
   if (idx >= 0) { for (let k = 0; k < 3; k++) $('s' + k).classList.toggle('cur', k === idx); }
 }
+// los mejores tiempos, sectores y fantasma se guardan por grupo; si solo existen los antiguos por coche, se reúnen aquí
+function migrateGroupBest(gk, gid) {
+  if (store.get('pb.' + gk + '.g:' + gid)) return;
+  let lap = null, prof = null, gb = null; const sec = [null, null, null];
+  for (const c of CARS) {
+    if (c.group !== gid) continue;
+    const r = store.get('pb.' + gk + '.' + c.id);
+    if (r) {
+      if (r.lap != null && (lap == null || r.lap < lap)) { lap = r.lap; prof = r.prof || null; }
+      if (Array.isArray(r.sec)) r.sec.forEach((v, i) => { if (v != null && (sec[i] == null || v < sec[i])) sec[i] = v; });
+    }
+    const g = store.get('best.' + gk + '.' + c.id); if (g && g.ghost && (!gb || g.time < gb.time)) gb = { ...g, car: c.id };
+  }
+  if (lap == null && sec.every((v) => v == null)) return;
+  store.set('pb.' + gk + '.g:' + gid, { lap, sec, prof });
+  if (gb) store.set('best.' + gk + '.g:' + gid, gb);
+}
 // récord de la pista del grupo del coche (tus tiempos en este dispositivo + clasificación online); si aún no hay, la referencia de la IA
 function computeRecords(ti, type, bench) {
   const g = type.group; let lap = null; const sec = [null, null, null];
@@ -707,6 +726,11 @@ function computeRecords(ti, type, bench) {
     if (r.lap != null && (lap == null || r.lap < lap)) lap = r.lap;
     if (Array.isArray(r.sec)) r.sec.forEach((v, i) => { if (v != null && (sec[i] == null || v < sec[i])) sec[i] = v; });
   }
+  { const gr = store.get('pb.' + ti.key + '.' + ti.tr.seed + '.g:' + g);
+    if (gr) { if (gr.lap != null && (lap == null || gr.lap < lap)) lap = gr.lap; if (Array.isArray(gr.sec)) gr.sec.forEach((v, i) => { if (v != null && (sec[i] == null || v < sec[i])) sec[i] = v; }); } }
+  // récord de la pista entre todos los grupos (aparte del récord de tu grupo)
+  { let tl = null, tg = ''; for (const c of CARS) { const r = store.get('pb.' + ti.key + '.' + ti.tr.seed + '.' + c.id); if (r && r.lap != null && (tl == null || r.lap < tl)) { tl = r.lap; tg = c.group; } }
+    S.trkLap = tl != null ? tl : 1e9; S.trkWho = tl != null ? 'Tú' : ''; S.trkGroup = tg; }
   S.recReal = lap != null; S.recWho = lap != null ? 'Tú' : '';
   S.lapRec = lap != null ? lap : bench ? bench.lap : 1e9;
   S.secRec = sec.map((v, i) => (v != null ? v : bench ? bench.sec[i] : 1e9));
@@ -714,6 +738,7 @@ function computeRecords(ti, type, bench) {
   const no = S.raceNo + 1;
   getRows(ti).then((res) => {
     if (!res.online || S.raceNo !== no) return;
+    const all = rankRows(res.rows, () => true); if (all.length && all[0].ms / 1000 < S.trkLap) { S.trkLap = all[0].ms / 1000; S.trkWho = all[0].you ? 'Tú' : all[0].name; S.trkGroup = groupIdOfCar(all[0].carId); updateRecPanel(); }
     const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === g); if (!list.length) return;
     const t = list[0].ms / 1000;
     if (!S.recReal || t < S.lapRec) { S.lapRec = t; S.recReal = true; S.recWho = list[0].you ? 'Tú' : list[0].name; updateRecPanel(); }
@@ -723,6 +748,7 @@ function updateRecPanel() {
   const g = groupName((S.player ? S.player.type : CARS[sel.car]).group).toUpperCase();
   setText('recLabel', 'RÉCORD · ' + g); setText('recLap', S.lapRec < 1e8 ? fmt(S.lapRec) : '--'); setText('recWho', S.recReal ? S.recWho : 'REFERENCIA');
   for (let k = 0; k < 3; k++) setText('rs' + k, S.secRec && S.secRec[k] < 1e8 ? fmtS(S.secRec[k]) : '--');
+  setText('trkLap', S.trkLap < 1e8 ? fmt(S.trkLap) : '--'); setText('trkWho', S.trkLap < 1e8 ? (S.trkWho || '') + (S.trkGroup ? ' · ' + groupName(S.trkGroup) : '') : '');
 }
 function sectorDone(i, t) {
   if (S.secInvalid) { S.secInvalid = false; return; }
@@ -743,15 +769,16 @@ function sectorDone(i, t) {
 function onPlayerLap(c, lt, done) {
   S.deltaS = null;
   for (let k = 0; k < 3; k++) { const e = $('s' + k); e.className = 'sec' + (k === 0 ? ' cur' : ''); e.lastElementChild.textContent = '--'; } // cada vuelta empiezan limpias
-  const key = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.' + c.type.id;
+  const key = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.g:' + c.type.group;
   const valid = !S.lapInvalid && (S.mode === 'tt' || done > 1) && (!S.bench || lt > S.bench.lap * 0.6);
   S.lapInvalid = false;
   const cls = valid ? classify(lt, S.lapPB, S.lapRec) : '';
   let newPB = false; const previousPB = S.lapPB;
   if (valid) {
+    { const ck = 'pb.' + S.trackInfo.key + '.' + S.tr.seed + '.' + c.type.id, cr = store.get(ck); // tu mejor con este coche (clasificación online y local por coche)
+      if (!cr || cr.lap == null || lt < cr.lap) { store.set(ck, { ...(cr || { sec: [null, null, null], prof: null }), lap: lt }); lb.submit(trackIdOf(S.trackInfo), c.type.id, Math.round(lt * 1000)).catch(() => {}); } }
     if (S.lapPB == null || lt < S.lapPB) {
       newPB = true; S.lapPB = lt; S.bestLap = lt;
-      lb.submit(trackIdOf(S.trackInfo), c.type.id, Math.round(lt * 1000)).catch(() => {});
       S.pbRec.lap = lt; S.pbRec.prof = Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000));
       store.set('pb.' + S.skey, S.pbRec);
       S.refProf = S.pbRec.prof; S.refName = 'PB'; S.refFill = fillProf(S.refProf);
@@ -762,6 +789,7 @@ function onPlayerLap(c, lt, done) {
       markDaily();
     }
     if (lt < S.lapRec) { S.lapRec = lt; S.recReal = true; S.recWho = 'Tú'; updateRecPanel(); }
+    if (lt < S.trkLap) { S.trkLap = lt; S.trkWho = 'Tú'; S.trkGroup = c.type.group; updateRecPanel(); }
   }
   S.curProf.fill(-1);
   if (S.mode === 'tt') S.ghostRec = [];
