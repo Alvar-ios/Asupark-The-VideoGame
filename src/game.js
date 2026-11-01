@@ -953,7 +953,7 @@ function updateCarVisual(c, dt) {
   c.impact *= Math.exp(-7 * dt);
   const kk = 1 - Math.exp(-8.5 * dt);
   c.visPitch += (pitch - c.visPitch) * kk; c.visRoll += (roll - c.visRoll) * kk;
-  if (c.onKerb && c.speed > 10) c.bounceV += Math.sin(c.wheelSpin * 1.8 + c.psi) * Math.min(5, c.speed * 0.075) * dt;
+  if (c.onKerb && c.speed > 10) c.bounceV += Math.sin(c.wheelSpin * 1.8 + c.psi) * Math.min(5, c.speed * 0.075) * (S.th && S.th.kerbRough ? 3.4 : 1) * dt;
   c.bounceV += (-c.bounce * 120 - c.bounceV * 9) * dt; c.bounce = clamp(c.bounce + c.bounceV * dt, -0.3, 0.3);
   m.tilt.rotation.set(c.visPitch, 0, c.visRoll); m.tilt.position.y = c.bounce - (c.df || 0) * 0.07; // el efecto suelo aplasta el coche contra el asfalto
   c.wheelSpin += (c.vf / 0.4) * dt;
@@ -1208,7 +1208,7 @@ function frame(now) {
     S.world.sky.rotation.y += dt * 0.004;
     S.world.updateWind(dt);
     S.world.updateWeather(dt, p.x, p.y, p.z);
-    if (p.onKerb && p.speed > 10) S.shake = Math.max(S.shake, 0.09);
+    if (p.onKerb && p.speed > 10) S.shake = Math.max(S.shake, S.th && S.th.kerbRough ? 0.2 : 0.09);
     followSun(S.world, lerp(p.px, p.x, S.alpha), lerp(p.py, p.y, S.alpha), lerp(p.pz, p.z, S.alpha));
     // fantasma
     if (S.ghostMesh && !S.ghostBest) S.ghostMesh.root.visible = false;

@@ -223,6 +223,7 @@ export function stepCar(c, inp, dt, tr, env) {
     const depth = clamp(over / 1.2, 0, 1), push = 5.5 * depth * clamp(c.speed / 32, 0.3, 1.3); // m/s² hacia el centro
     c.vx += loc.tz * side * push * dt; c.vz += -loc.tx * side * push * dt;
     c.psi += clamp(wrapPi(Math.atan2(loc.tx, loc.tz) - c.psi), -0.4, 0.4) * 0.35 * depth * dt; // y el morro tiende a alinearse con la pista
+    if (env.kerbRough) { const f = Math.exp(-0.45 * depth * dt); c.vx *= f; c.vz *= f; c.vx += (Math.random() - 0.5) * 0.9 * depth; c.vz += (Math.random() - 0.5) * 0.9 * depth; } // pianos altos y rugosos: frenan un poco y sacuden
   }
   // altura y saltos
   const hNew = loc.h;

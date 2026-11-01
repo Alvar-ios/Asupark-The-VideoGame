@@ -197,7 +197,7 @@ function roadMesh(tr, th, stride = 1) {
     const GW = tr.rg ? hw + tr.rg[i] : hw + KW + 0.02, GWj = tr.rg ? hw + tr.rg[j] : hw + KW + 0.02;
     const lat = (k, h, eo, krL, krR, gw) => [[-eo, 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h + 0.02], [-(hw + KW * 0.42), h + krL], [-hw, h + krL], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw, h + krR], [hw + KW * 0.42, h + krR], [hw + KW, h + 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, 0]][k];
     const sLen = 3, s2k = (i + stride) * tr.ds;
-    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x, e) => (0.03 + 0.018 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen)) * e;
+    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x, e) => (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) + ((Math.floor(x * 1.7) & 1) ? 0.05 : 0) : 0.03 + 0.018 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen)) * e;
     const krLi = kv === -1 ? wave(s, kEnv[i]) : 0, krRi = kv === 1 ? wave(s, kEnv[i]) : 0, krLj = kvj === -1 ? wave(s2k, kEnv[j]) : 0, krRj = kvj === 1 ? wave(s2k, kEnv[j]) : 0;
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
     const stripeN = Math.floor(s / sLen), stripe = stripeN % 2 === 0;
@@ -378,11 +378,13 @@ function scenery(tr, th, scene, rng, q) {
   let guard = 0;
   while (spots.length < want && guard++ < want * 25) {
     const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1;
-    const near = th.treeNear != null, base = near ? WALL + 2.5 + tr.Y[i] * 1.15 + th.treeNear : WALL + 14 + tr.Y[i] * 1.2;
-    const l = base + Math.pow(rng(), near ? 1.4 : 1.6) * (near ? 120 : 140);
+    const near = th.treeNear != null, base = near ? WALL + th.treeNear * 0.5 : WALL + 14 + tr.Y[i] * 1.2;
+    const l = base + Math.pow(rng(), near ? 1.9 : 1.6) * (near ? 95 : 140);
     if (near && tr.open && tr.open[i] && l - base < 55) continue; // zonas abiertas: sin árboles junto a la pista
     const x = tr.X[i] + -tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side;
-    if (clearance(x, z, near ? WALL + 2.5 + tr.Y[i] * 1.15 + 2.5 : WALL + 12 + 8 + tr.Y[i] * 1.2 + 4)) spots.push([x, z, 0.7 + rng() * 0.9, rng() * 6.28]);
+    // junto a las vallas los árboles se asientan sobre el talud de la pista elevada
+    const hw0 = tr.Y[i] + (near ? bankOff(tr, i, side * WALL) : 0), yy = near ? Math.max(0, hw0 * (1 - (l - WALL) / (2.5 + 1.1 * tr.Y[i]))) : 0;
+    if (clearance(x, z, near ? WALL + 0.9 : WALL + 12 + 8 + tr.Y[i] * 1.2 + 4)) spots.push([x, z, near ? 0.85 + rng() * 1.0 : 0.7 + rng() * 0.9, rng() * 6.28, yy]);
   }
   const dummy = new THREE.Object3D();
   const windMeshes = [];
@@ -394,10 +396,10 @@ function scenery(tr, th, scene, rng, q) {
   const lam = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.92 });
   if (th.deco === 'pine' || th.deco === 'snowpine') {
     const snow = th.deco === 'snowpine';
-    inst(new THREE.CylinderGeometry(0.34, 0.48, 2.35, 10).translate(0, 1.17, 0), lam(0x594331), spots, (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.setScalar(s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.34, 0.48, 2.35, 10).translate(0, 1.17, 0), lam(0x594331), spots, (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.setScalar(s[2]); d.rotation.set(0, s[3], 0); });
     if (snow) {
       for (const [geo, mat] of [[new THREE.ConeGeometry(2.6, 5.2, 12).translate(0, 4.6, 0), lam(th.treeCol)], [new THREE.ConeGeometry(2.0, 4.2, 12).translate(0, 7.4, 0), lam(0xf2f8ff)]]) {
-        const mesh = inst(geo, mat, spots, (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.setScalar(s[2]); d.rotation.set(0, s[3], 0); });
+        const mesh = inst(geo, mat, spots, (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.setScalar(s[2]); d.rotation.set(0, s[3], 0); });
         windMeshes.push({ mesh, spots, kind: 'tree' });
       }
     } else {
@@ -407,7 +409,7 @@ function scenery(tr, th, scene, rng, q) {
         { geo: new THREE.SphereGeometry(1, 10, 8).scale(1.85, 2.1, 1.8).translate(1.15, 3.65, -0.35), color: 1.08 },
       ];
       for (const { geo, color } of crownSets) {
-        const mesh = inst(geo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.96 }), spots, (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.setScalar(s[2]); d.rotation.set(0, s[3], 0); });
+        const mesh = inst(geo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.96 }), spots, (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.setScalar(s[2]); d.rotation.set(0, s[3], 0); });
         spots.forEach((_, k) => { const shade = color * (0.9 + ((k * 17) % 9) * 0.018); mesh.setColorAt(k, col(th.treeCol).multiplyScalar(shade)); });
         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
         windMeshes.push({ mesh, spots, kind: 'tree' });
@@ -415,24 +417,24 @@ function scenery(tr, th, scene, rng, q) {
     }
   } else if (th.deco === 'cactus') {
     const half = spots.length >> 1;
-    inst(new THREE.CylinderGeometry(0.45, 0.55, 4.2, 7).translate(0, 2.1, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.set(s[2], s[2] * 1.1, s[2]); d.rotation.set(0, s[3], 0); });
-    inst(new THREE.CylinderGeometry(0.28, 0.28, 1.6, 6).rotateZ(Math.PI / 2).translate(0.9, 2.6, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
-    inst(new THREE.DodecahedronGeometry(2.2, 0).translate(0, 1.0, 0), lam(0xa65f35), spots.slice(half), (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.set(s[2] * 1.4, s[2] * 0.9, s[2] * 1.2); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.45, 0.55, 4.2, 7).translate(0, 2.1, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2] * 1.1, s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.28, 0.28, 1.6, 6).rotateZ(Math.PI / 2).translate(0.9, 2.6, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.DodecahedronGeometry(2.2, 0).translate(0, 1.0, 0), lam(0xa65f35), spots.slice(half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2] * 1.4, s[2] * 0.9, s[2] * 1.2); d.rotation.set(0, s[3], 0); });
   } else if (th.deco === 'toy') {
     const pal = (th.palette || [0xff3b3b, 0x3bb0ff, 0xffd23b, 0x4cd964, 0xb36bff, 0xff8a3b]).map(col);
     const half = th.urban ? 0 : th.harbor ? spots.length : spots.length >> 1;
     const bm = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), half);
-    spots.slice(0, half).forEach((s, k) => { const w = th.harbor ? 7 + s[2] * 9 : 5 + s[2] * 7; dummy.position.set(s[0], 0, s[1]); dummy.scale.set(w, th.harbor ? 10 + (k % 5) * 9 + s[2] * 8 : w * (0.7 + (k % 3) * 0.35), w); dummy.rotation.set(0, s[3], 0); dummy.updateMatrix(); bm.setMatrixAt(k, dummy.matrix); bm.setColorAt(k, pal[k % 6]); });
+    spots.slice(0, half).forEach((s, k) => { const w = th.harbor ? 7 + s[2] * 9 : 5 + s[2] * 7; dummy.position.set(s[0], s[4] || 0, s[1]); dummy.scale.set(w, th.harbor ? 10 + (k % 5) * 9 + s[2] * 8 : w * (0.7 + (k % 3) * 0.35), w); dummy.rotation.set(0, s[3], 0); dummy.updateMatrix(); bm.setMatrixAt(k, dummy.matrix); bm.setColorAt(k, pal[k % 6]); });
     bm.frustumCulled = false; scene.add(bm);
     const rest = th.urban ? [] : spots.slice(half);
     const cm = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 14).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), rest.length);
-    rest.forEach((s, k) => { const r = 2.5 + s[2] * 3; dummy.position.set(s[0], 0, s[1]); dummy.scale.set(r, r * (1.6 + (k % 3) * 0.5), r); dummy.rotation.set(0, s[3], 0); dummy.updateMatrix(); cm.setMatrixAt(k, dummy.matrix); cm.setColorAt(k, pal[(k + 2) % 6]); });
+    rest.forEach((s, k) => { const r = 2.5 + s[2] * 3; dummy.position.set(s[0], s[4] || 0, s[1]); dummy.scale.set(r, r * (1.6 + (k % 3) * 0.5), r); dummy.rotation.set(0, s[3], 0); dummy.updateMatrix(); cm.setMatrixAt(k, dummy.matrix); cm.setColorAt(k, pal[(k + 2) % 6]); });
     cm.frustumCulled = false; scene.add(cm);
   } else if (th.deco === 'city') {
     const m = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), spots.length);
     spots.forEach((s, k) => {
       const h = 14 + s[2] * 70, w = 10 + s[2] * 12;
-      dummy.position.set(s[0], 0, s[1]); dummy.scale.set(w, h, w); dummy.rotation.set(0, s[3], 0); dummy.updateMatrix(); m.setMatrixAt(k, dummy.matrix);
+      dummy.position.set(s[0], s[4] || 0, s[1]); dummy.scale.set(w, h, w); dummy.rotation.set(0, s[3], 0); dummy.updateMatrix(); m.setMatrixAt(k, dummy.matrix);
       m.setColorAt(k, col([0x1c1a4a, 0x2a1860, 0x14224f, 0x30164f][k % 4]));
     });
     m.frustumCulled = false; scene.add(m);
@@ -459,7 +461,7 @@ function scenery(tr, th, scene, rng, q) {
     blade.setIndex([0, 2, 1, 2, 3, 1, 2, 4, 3]); blade.computeVertexNormals();
     const bladeSpots = [];
     for (const s of grassSpots) for (let j = 0; j < 3; j++) bladeSpots.push([s[0], s[1], s[2] * (0.78 + j * 0.12), s[3] + j * Math.PI / 3]);
-    const gm = inst(blade, new THREE.MeshStandardMaterial({ color, roughness: 0.96, side: THREE.DoubleSide }), bladeSpots, (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    const gm = inst(blade, new THREE.MeshStandardMaterial({ color, roughness: 0.96, side: THREE.DoubleSide }), bladeSpots, (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
     windMeshes.push({ mesh: gm, spots: bladeSpots, kind: 'grass' });
   }
   // postes de neón junto a la valla
@@ -584,7 +586,7 @@ export function buildWorld(tr, th, opt = {}) {
       for (let k = 0; k < spots.length; k++) {
         const s = spots[k], phase = t * (kind === 'grass' ? 1.8 : 0.72) + s[0] * 0.035 + s[1] * 0.027;
         const sway = Math.sin(phase) * (kind === 'grass' ? 0.17 : 0.035) + Math.sin(phase * 0.53) * (kind === 'grass' ? 0.06 : 0.012);
-        windDummy.position.set(s[0], 0, s[1]);
+        windDummy.position.set(s[0], s[4] || 0, s[1]);
         windDummy.scale.setScalar(s[2]);
         windDummy.rotation.set(sway, s[3], -sway * 0.38);
         windDummy.updateMatrix(); mesh.setMatrixAt(k, windDummy.matrix);

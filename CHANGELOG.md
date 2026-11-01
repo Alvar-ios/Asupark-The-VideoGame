@@ -113,3 +113,8 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Escapatorias anchas: grava junto al asfalto y hierba segada hasta las vallas, que ahora están mucho más lejos. En la grava el coche pierde agarre y velocidad. En cuatro zonas la escapatoria es aún más ancha y sin árboles.
 - Muchos más árboles alrededor de la pista.
 - Pianos con los colores de la bandera de Bélgica (negro, amarillo y rojo).
+
+## 0.0.22
+- Spa corregido: estaba en espejo. Ahora el circuito va en el sentido real (La Source es una horquilla a derechas).
+- Pianos de Spa mucho más altos y rugosos: se ven abultados y los notas al pisarlos (el coche se sacude y frena un poco).
+- Árboles pegados a las vallas, más grandes y muchos más (frondoso), asentados sobre el talud de la pista.
