@@ -75,11 +75,11 @@ if (saved) { sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...se
 
 // ----- pilotos de la IA: nombre, país y nivel (de mejor a peor); en cada carrera se reparten al azar entre los coches rivales -----
 const DRIVERS = [
-  { code: 'SEN', name: 'Senna', flag: 'br', level: 1.0 }, { code: 'ALO', name: 'Alonso', flag: 'es', level: 0.97 },
-  { code: 'VER', name: 'Verstappen', flag: 'nl', level: 0.95 }, { code: 'HAM', name: 'Hamilton', flag: 'gb', level: 0.93 },
-  { code: 'FAN', name: 'Fangio', flag: 'it', level: 0.9 }, { code: 'QUE', name: 'Quesada', flag: 'es', level: 0.85 },
-  { code: 'PAL', name: 'Paloma', flag: 'es', level: 0.8 }, { code: 'PAT', name: 'Pati', flag: 'es', level: 0.76 },
-  { code: 'TRA', name: 'Trakatrá', flag: 'pr', level: 0.72 }, { code: 'WOO', name: 'Woods', flag: 'us', level: 0.68 },
+  { code: 'SEN', name: 'Senna', flag: 'br', level: 1.0, helm: 'f4d000|1d9a4a|111827|1' }, { code: 'ALO', name: 'Alonso', flag: 'es', level: 0.97, helm: '1d6fd6|f4d000|111827|3' },
+  { code: 'VER', name: 'Verstappen', flag: 'nl', level: 0.95, helm: 'ff6a00|0a2a6b|111827|2' }, { code: 'HAM', name: 'Hamilton', flag: 'gb', level: 0.93, helm: 'f4d000|111827|111827|2' },
+  { code: 'FAN', name: 'Fangio', flag: 'it', level: 0.9, helm: 'c1121f|ffffff|111827|1' }, { code: 'QUE', name: 'Quesada', flag: 'es', level: 0.85, helm: '2a9d8f|f4a300|111827|3' },
+  { code: 'PAL', name: 'Paloma', flag: 'es', level: 0.8, helm: '8e44ad|f9a8d4|111827|2' }, { code: 'PAT', name: 'Pati', flag: 'es', level: 0.76, helm: 'f4a300|ffffff|111827|1' },
+  { code: 'TRA', name: 'Trakatrá', flag: 'pr', level: 0.72, helm: 'ff8c00|004dff|111827|3' }, { code: 'WOO', name: 'Woods', flag: 'us', level: 0.68, helm: '111827|22c55e|e5e7eb|2' },
 ];
 const shuffled = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 // ----- banderas (SVG propio: los emojis de bandera no se ven en Windows) -----
@@ -98,9 +98,36 @@ const FLAGS = {
   gb: '<rect width="30" height="20" fill="#012169"/><path d="M0,0 L30,20 M30,0 L0,20" stroke="#f4f4f4" stroke-width="4"/><path d="M0,0 L30,20 M30,0 L0,20" stroke="#c8102e" stroke-width="1.5"/><rect x="12" width="6" height="20" fill="#f4f4f4"/><rect y="7" width="30" height="6" fill="#f4f4f4"/><rect x="13" width="4" height="20" fill="#c8102e"/><rect y="8" width="30" height="4" fill="#c8102e"/>',
   us: '<rect width="30" height="20" fill="#f4f4f4"/>' + [0, 2, 4, 6, 8, 10, 12].map((i) => `<rect y="${i * 20 / 13}" width="30" height="${20 / 13}" fill="#b22234"/>`).join('') + '<rect width="13" height="10.8" fill="#3c3b6e"/>',
   pr: ['#e40303', '#ff8c00', '#ffed00', '#008026', '#004dff', '#750787'].map((c, i) => `<rect y="${i * 20 / 6}" width="30" height="${20 / 6 + 0.1}" fill="${c}"/>`).join(''),
+  fr: '<rect width="10" height="20" fill="#0055a4"/><rect x="10" width="10" height="20" fill="#f4f4f4"/><rect x="20" width="10" height="20" fill="#ef4135"/>',
+  de: '<rect width="30" height="7" fill="#111"/><rect y="6.67" width="30" height="6.67" fill="#dd0000"/><rect y="13.33" width="30" height="6.67" fill="#ffce00"/>',
+  ie: '<rect width="10" height="20" fill="#169b62"/><rect x="10" width="10" height="20" fill="#f4f4f4"/><rect x="20" width="10" height="20" fill="#ff883e"/>',
+  pl: '<rect width="30" height="10" fill="#f4f4f4"/><rect y="10" width="30" height="10" fill="#dc143c"/>',
+  ar: '<rect width="30" height="20" fill="#74acdf"/><rect y="6.67" width="30" height="6.67" fill="#f4f4f4"/><circle cx="15" cy="10" r="1.8" fill="#f6b40e"/>',
+  co: '<rect width="30" height="10" fill="#fcd116"/><rect y="10" width="30" height="5" fill="#003893"/><rect y="15" width="30" height="5" fill="#ce1126"/>',
+  ro: '<rect width="10" height="20" fill="#002b7f"/><rect x="10" width="10" height="20" fill="#fcd116"/><rect x="20" width="10" height="20" fill="#ce1126"/>',
+  ua: '<rect width="30" height="10" fill="#0057b7"/><rect y="10" width="30" height="10" fill="#ffd700"/>',
+  se: '<rect width="30" height="20" fill="#006aa7"/><rect x="8" width="4" height="20" fill="#fecc00"/><rect y="8" width="30" height="4" fill="#fecc00"/>',
+  pt: '<rect width="12" height="20" fill="#006600"/><rect x="12" width="18" height="20" fill="#ff0000"/><circle cx="12" cy="10" r="3.4" fill="#ffcc00"/>',
   ch: '<rect width="30" height="20" fill="#da291c"/><rect x="13" y="4" width="4" height="12" fill="#f4f4f4"/><rect x="9" y="8" width="12" height="4" fill="#f4f4f4"/>',
 };
 const flagSvg = (c) => `<svg viewBox="0 0 30 20" aria-hidden="true">${FLAGS[c] || FLAGS.es}</svg>`;
+// ----- cascos (SVG propio): base|franja|visera|dibujo, colores en hexadecimal sin # -----
+let helmN = 0;
+const HELM_DEF = 'e63946|ffffff|111827|1';
+const helmetSvg = (h) => {
+  const m = /^([0-9a-f]{6})\|([0-9a-f]{6})\|([0-9a-f]{6})\|([0-9])$/i.exec(String(h || HELM_DEF)) || /^([0-9a-f]{6})\|([0-9a-f]{6})\|([0-9a-f]{6})\|([0-9])$/i.exec(HELM_DEF);
+  const [, b, st, v, pt] = m, id = 'hm' + (helmN++), pat = +pt;
+  const shell = 'M2.5 14.5C2.5 7.5 7 3 12.6 3C18.2 3 21.8 7.4 21.8 13.2L21.8 17.2C21.8 19.2 20.4 20.4 18.4 20.4L8.2 20.4C4.9 20.4 2.5 18.4 2.5 14.5Z';
+  let deco = '';
+  if (pat === 1) deco = '<rect x="10.3" y="2" width="4.6" height="19" fill="#' + st + '"/>';
+  else if (pat === 2) deco = '<rect x="2" y="15.4" width="21" height="2.8" fill="#' + st + '"/><rect x="2" y="3" width="21" height="1.7" fill="#' + st + '"/>';
+  else if (pat === 3) deco = '<polygon points="11,2 16,2 19,21 14,21" fill="#' + st + '"/>';
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="${id}"><path d="${shell}"/></clipPath></defs><path d="${shell}" fill="#${b}"/><g clip-path="url(#${id})">${deco}</g><path d="${shell}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="1"/><path d="M2.8 10.6C6.3 9.6 11.5 9.7 15.2 10.8L15 15.6C11 16 6.2 15.8 3.4 15.2Z" fill="#${v}" stroke="rgba(0,0,0,.4)" stroke-width=".6"/><path d="M4.5 11.6C7 11 10 11 12.5 11.5" stroke="rgba(255,255,255,.55)" stroke-width=".8" fill="none"/></svg>`;
+};
+const playerDrv = () => ({ flag: lb.flag, helm: lb.helmet });
+const drvOf = (c) => (c && c.isPlayer ? playerDrv() : c && c.driver) || null;
+const drvIc = (d, sm) => d ? `<span class="flag${sm ? ' sm' : ''}">${flagSvg(d.flag)}</span><span class="hel${sm ? ' sm' : ''}">${helmetSvg(d.helm)}</span>` : '';
+const FLAG_NAMES = { es: 'España', pt: 'Portugal', fr: 'Francia', de: 'Alemania', it: 'Italia', gb: 'Reino Unido', ie: 'Irlanda', nl: 'Países Bajos', be: 'Bélgica', ch: 'Suiza', at: 'Austria', pl: 'Polonia', ro: 'Rumanía', ua: 'Ucrania', se: 'Suecia', mc: 'Mónaco', us: 'Estados Unidos', mx: 'México', co: 'Colombia', ar: 'Argentina', br: 'Brasil', ma: 'Marruecos', jp: 'Japón', pr: 'Orgullo' };
 const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'] };
 const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
 function drawPreview(cv, tr, th) {
@@ -167,7 +194,7 @@ function buildMenu() {
     cl.appendChild(d);
   });
   if (!cl.children.length) cl.innerHTML = '<p class="soon">Próximamente: nuevos coches en este grupo.</p>';
-  $('diffWrap').style.display = sel.mode === 'race' ? '' : 'none'; $('modeInfo').textContent = { tt: 'Salida lanzada y vueltas ilimitadas: persigue el récord de tu grupo.', race: 'Carrera rápida: 3 vueltas contra 3 rivales.', gp: 'Gran Premio: 3 vueltas de clasificación y 5 de carrera contra 9 pilotos. Sales en la posición que consigas.' }[sel.mode] || '';
+  $('diffWrap').style.display = sel.mode === 'race' ? '' : 'none'; $('modeInfo').textContent = { tt: 'Salida lanzada y vueltas ilimitadas: persigue el récord de tu grupo.', race: 'Carrera rápida: 3 vueltas contra 3 rivales.', gp: 'Gran Premio: 3 vueltas de clasificación y 5 de carrera contra 5 pilotos. Sales en la posición que consigas.' }[sel.mode] || '';
   for (const b of $('modeSel').children) b.classList.toggle('on', b.dataset.v === sel.mode);
   for (const b of $('diffSel').children) b.classList.toggle('on', +b.dataset.v === sel.diff);
   buildPaints(); sound.setMuted(!!sel.mute); $('sndBtn').classList.toggle('on', !sel.mute); $('sndBtn').textContent = 'Sonido: ' + (sel.mute ? 'NO' : 'SÍ');
@@ -308,7 +335,7 @@ function rankRows(rows, pred) {
   for (const r of rows.filter(pred).sort((a, b) => a.ms - b.ms)) { if (seen.has(r.key)) continue; seen.add(r.key); out.push({ ...r }); }
   out.forEach((r, i) => { r.rank = i + 1; }); return out;
 }
-const boardRow = (r) => `<tr class="${r.you ? 'me' : ''}"><td>${r.rank}º</td><td>${esc(r.name)}</td><td class="car">${esc(carName(r.carId))}</td><td>${fmt(r.ms / 1000)}</td></tr>`;
+const boardRow = (r) => `<tr class="${r.you ? 'me' : ''}"><td>${r.rank}º</td><td>${r.you ? drvIc(playerDrv(), 1) : ''}${esc(r.name)}</td><td class="car">${esc(carName(r.carId))}</td><td>${fmt(r.ms / 1000)}</td></tr>`;
 async function getRows(ti) {
   const res = await lb.all(trackIdOf(ti));
   if (!res.remote || res.error) return { rows: localRows(ti), online: false, error: !!res.error };
@@ -344,7 +371,7 @@ function pickRivals(n = 3) { // solo coches del mismo grupo que el tuyo, al azar
   return Array.from({ length: n }, () => pool[Math.floor(Math.random() * pool.length)]);
 }
 function makeField(ti) {
-  const rts = pickRivals(9), drs = shuffled(DRIVERS).slice(0, rts.length);
+  const rts = pickRivals(5), drs = shuffled(DRIVERS).slice(0, rts.length);
   return rts.map((rt, i) => { const bm = benchFor(ti, rt), t = (bm ? bm.lap : 60) / Math.pow(drs[i].level, 0.8) * (1 + (Math.random() - 0.5) * 0.01); return { rt, driver: drs[i], t, rev: 9 + (0.1 + Math.random() * 0.9) * t * 2.6 }; });
 }
 async function startRace(restart = false) {
@@ -352,7 +379,7 @@ async function startRace(restart = false) {
   const gpMode = sel.mode === 'gp';
   if (gpMode && (!restart || !S.gp)) S.gp = { phase: 'quali', qBest: null, grid: null };
   if (!gpMode) S.gp = null;
-  S.mode = gpMode ? (S.gp.phase === 'race' ? 'race' : 'tt') : sel.mode; S.laps = gpMode ? (S.gp.phase === 'race' ? 5 : LAPS) : LAPS; S.nRiv = gpMode ? 9 : 3;
+  S.mode = gpMode ? (S.gp.phase === 'race' ? 'race' : 'tt') : sel.mode; S.laps = gpMode ? (S.gp.phase === 'race' ? 5 : LAPS) : LAPS; S.nRiv = gpMode ? 5 : 3;
   const ti0 = tracks[sel.track];
   if (gpMode && S.gp.phase === 'quali' && !S.gp.field) S.gp.field = makeField(ti0);
   if (S.mode === 'race') { if (gpMode) S.rivalTypes = S.gp.field.map((f) => f.rt); else if (!restart || !S.rivalTypes) S.rivalTypes = pickRivals(S.nRiv); }
@@ -763,7 +790,7 @@ function fillProf(prof) {
 }
 // podio: tres escalones (2º, 1º, 3º) con bandera, nombre, coche y tiempo
 function podiumHtml(top, me) {
-  const step = (r, n) => r ? `<div class="pd p${n}${r.c === me ? ' me' : ''}"><span class="flag">${r.c.driver ? flagSvg(r.c.driver.flag) : ''}</span><b>${esc(r.c.isPlayer ? 'TÚ' : r.c.name)}</b><small>${esc(r.c.type.name)}</small><em>${r.est ? '~' : ''}${fmt(r.t)}</em><div class="blk">${n}</div></div>` : '';
+  const step = (r, n) => r ? `<div class="pd p${n}${r.c === me ? ' me' : ''}">${drvIc(drvOf(r.c))}<b>${esc(r.c.isPlayer ? 'TÚ' : r.c.name)}</b><small>${esc(r.c.type.name)}</small><em>${r.est ? '~' : ''}${fmt(r.t)}</em><div class="blk">${n}</div></div>` : '';
   return `<div class="podium">${step(top[1], 2)}${step(top[0], 1)}${step(top[2], 3)}</div>`;
 }
 const confettiHtml = () => '<div class="confetti">' + Array.from({ length: 36 }, (_, i) => `<i style="left:${(i * 2.8 + (i % 5)) % 100}%;animation-delay:${(i % 9) * 0.18}s;background:${['#ffc928', '#e10600', '#22c55e', '#4aa8ff', '#fff', '#b44bff'][i % 6]}"></i>`).join('') + '</div>';
@@ -777,16 +804,16 @@ function showResults() {
   $('againBtn').textContent = 'OTRA VEZ';
   if (S.gp && S.gp.phase === 'quali') {
     const ti = S.trackInfo; if (!S.gp.field) S.gp.field = makeField(ti);
-    const list = S.gp.field.map((f) => ({ n: f.driver.name, c: f.driver.flag, t: f.t })).concat([{ n: 'TÚ', c: null, t: S.gp.qBest != null ? S.gp.qBest : 1e9, me: 1 }]).sort((a, b) => a.t - b.t);
+    const list = S.gp.field.map((f) => ({ n: f.driver.name, d: f.driver, t: f.t })).concat([{ n: 'TÚ', d: playerDrv(), t: S.gp.qBest != null ? S.gp.qBest : 1e9, me: 1 }]).sort((a, b) => a.t - b.t);
     const pos = list.findIndex((r) => r.me) + 1;
-    list.forEach((r, i) => rows.push(`<tr class="${r.me ? 'me' : ''}"><td>${i + 1}º</td><td>${r.c ? `<span class="flag sm">${flagSvg(r.c)}</span>` : ''}${esc(r.n)}</td><td>${r.t < 1e8 ? fmt(r.t) : '—'}</td></tr>`));
+    list.forEach((r, i) => rows.push(`<tr class="${r.me ? 'me' : ''}"><td>${i + 1}º</td><td>${drvIc(r.d, 1)}${esc(r.n)}</td><td>${r.t < 1e8 ? fmt(r.t) : '—'}</td></tr>`));
     $('rBig').textContent = 'P' + pos; $('rTitle').textContent = 'CLASIFICACIÓN';
     $('againBtn').textContent = 'EMPEZAR CARRERA · 5 VUELTAS';
   } else if (S.mode === 'race') {
     const fin = S.cars.filter((c) => c.finished).sort((a, b) => a.finishTime - b.finishTime);
     const rest = S.cars.filter((c) => !c.finished).map((c) => ({ c, est: S.t + (S.laps * S.tr.len - c.D) / Math.max(14, c.speed) })).sort((a, b) => a.est - b.est);
     const all = fin.map((c) => ({ c, t: c.finishTime, est: false })).concat(rest.map((r) => ({ c: r.c, t: r.est, est: true })));
-    all.forEach((r, i) => rows.push(`<tr class="${r.c === p ? 'me' : ''}"><td>${i + 1}º</td><td>${r.c.driver ? `<span class="flag sm">${flagSvg(r.c.driver.flag)}</span>` : ''}${esc(r.c.isPlayer ? 'TÚ' : r.c.name)} <small class="cartag">${esc(r.c.type.name)}</small></td><td>${r.est ? '~' : ''}${fmt(r.t)}</td></tr>`));
+    all.forEach((r, i) => rows.push(`<tr class="${r.c === p ? 'me' : ''}"><td>${i + 1}º</td><td>${drvIc(drvOf(r.c), 1)}${esc(r.c.isPlayer ? 'TÚ' : r.c.name)} <small class="cartag">${esc(r.c.type.name)}</small></td><td>${r.est ? '~' : ''}${fmt(r.t)}</td></tr>`));
     const prank = all.findIndex((r) => r.c === p) + 1;
     $('rBig').textContent = prank + 'º'; $('rTitle').textContent = prank === 1 ? '¡VICTORIA!' : prank <= 3 ? '¡PODIO!' : 'META';
     extra = podiumHtml(all.slice(0, 3), p) + (prank <= 3 ? confettiHtml() : '');
@@ -939,17 +966,17 @@ function updateTower(dt) {
   cars.forEach((c, i) => {
     let g = '', cl = '';
     if (c !== me) { const d = c.finished && me.finished ? me.finishTime - c.finishTime : (c.D - me.D) / Math.max(12, me.speed); g = (d >= 0 ? '−' : '+') + Math.abs(d).toFixed(1); cl = d >= 0 ? ' ahead' : ' behind'; } // siempre sobre ti: − va por delante, + por detrás
-    h += `<div class="tr${c.isPlayer ? ' me' : ''}"><b>${i + 1}</b><span class="flag">${c.driver ? flagSvg(c.driver.flag) : ''}</span><i>${c.isPlayer ? 'TÚ' : c.code}</i><em class="${cl}">${g}</em></div>`;
+    h += `<div class="tr${c.isPlayer ? ' me' : ''}"><b>${i + 1}</b>${drvIc(drvOf(c))}<i>${c.isPlayer ? 'TÚ' : c.code}</i><em class="${cl}">${g}</em></div>`;
   });
   $('tower').innerHTML = h;
 }
 // clasificación en directo: los rivales van marcando sus tiempos y tú ves tu posición al instante
 function updateTowerQuali(dt) {
   towerT += dt; if (towerT < 0.4) return; towerT = 0;
-  const done = Math.max(0, Math.floor(S.player.D / S.tr.len)), rows = S.gp.field.filter((f) => S.t >= f.rev).map((f) => ({ code: f.driver.code, flag: f.driver.flag, t: f.t }));
-  rows.push({ code: 'TÚ', t: S.gp.qBest != null ? S.gp.qBest : 1e9, me: 1 }); rows.sort((a, b) => a.t - b.t);
+  const done = Math.max(0, Math.floor(S.player.D / S.tr.len)), rows = S.gp.field.filter((f) => S.t >= f.rev).map((f) => ({ code: f.driver.code, d: f.driver, t: f.t }));
+  rows.push({ code: 'TÚ', d: playerDrv(), t: S.gp.qBest != null ? S.gp.qBest : 1e9, me: 1 }); rows.sort((a, b) => a.t - b.t);
   let h = `<div class="th">CLASIF. · VUELTA ${Math.min(3, done + 1)}/3</div>`;
-  rows.forEach((r, i) => { h += `<div class="tr${r.me ? ' me' : ''}"><b>${i + 1}</b><span class="flag">${r.flag ? flagSvg(r.flag) : ''}</span><i>${r.code}</i><em>${r.t < 1e8 ? fmtS(r.t) : '--'}</em></div>`; });
+  rows.forEach((r, i) => { h += `<div class="tr${r.me ? ' me' : ''}"><b>${i + 1}</b>${drvIc(r.d)}<i>${r.code}</i><em>${r.t < 1e8 ? fmtS(r.t) : '--'}</em></div>`; });
   $('tower').innerHTML = h;
 }
 function updateHud(dt) {
@@ -996,7 +1023,7 @@ window.addEventListener('pointerdown', firstGesture); window.addEventListener('k
 
 // ---------- clasificación ----------
 const BD = { track: 0, group: 'all' };
-const boardRow2 = (r, best) => `<tr class="${r.you ? 'me' : ''}"><td class="rk">${r.rank}</td><td>${esc(r.name)}</td><td class="car"><small>${esc((CARS.find((c) => c.id === r.carId) || {}).brand || '')}</small> ${esc(carName(r.carId))}</td><td class="tm">${fmt(r.ms / 1000)}</td><td class="gp">${r.rank === 1 ? '' : '+' + ((r.ms - best) / 1000).toFixed(2)}</td></tr>`;
+const boardRow2 = (r, best) => `<tr class="${r.you ? 'me' : ''}"><td class="rk">${r.rank}</td><td>${r.you ? drvIc(playerDrv(), 1) : ''}${esc(r.name)}</td><td class="car"><small>${esc((CARS.find((c) => c.id === r.carId) || {}).brand || '')}</small> ${esc(carName(r.carId))}</td><td class="tm">${fmt(r.ms / 1000)}</td><td class="gp">${r.rank === 1 ? '' : '+' + ((r.ms - best) / 1000).toFixed(2)}</td></tr>`;
 async function renderBoard() {
   const ti = tracks[BD.track], st = $('boardStatus');
   $('boardTracks').innerHTML = tracks.map((t, i) => `<button type="button" class="${i === BD.track ? 'on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span>${t.key === 'daily' ? 'Del día' : esc(t.name.replace(/ · .*$/, ''))}</button>`).join('');
@@ -1025,11 +1052,22 @@ $('boardGroups').onclick = (e) => { const b = e.target.closest('button'); if (b)
 $('boardBtn').onclick = () => openBoard(); $('boardBtn2').onclick = () => openBoard(S.trackInfo && S.trackInfo.key); $('boardClose').onclick = () => $('board').classList.add('hidden');
 $('pname').onchange = (e) => { e.target.value = lb.setName(e.target.value); };
 $('pname').onkeydown = (e) => e.stopPropagation();
+// nacionalidad y casco del piloto
+const HEL_COLS = ['e63946', 'ff6a00', 'f4a300', 'f4d000', '22c55e', '2a9d8f', '1d6fd6', '0a2a6b', '8e44ad', 'f9a8d4', 'ffffff', '111827'];
+$('pflag').innerHTML = Object.keys(FLAG_NAMES).map((k) => `<option value="${k}">${FLAG_NAMES[k]}</option>`).join('');
+$('pflag').onchange = (e) => { lb.setFlag(e.target.value); };
+function buildHelmetEditor() {
+  const h = lb.helmet.split('|'); $('pflag').value = lb.flag;
+  const sw = (id, idx) => { $(id).innerHTML = HEL_COLS.map((c) => `<button type="button" data-c="${c}" style="background:#${c}" class="${c === h[idx] ? 'on' : ''}" aria-label="${c}"></button>`).join(''); $(id).onclick = (e) => { const b = e.target.closest('button'); if (!b) return; h[idx] = b.dataset.c; lb.setHelmet(h.join('|')); buildHelmetEditor(); }; };
+  sw('helBase', 0); sw('helStripe', 1); sw('helVisor', 2);
+  for (const b of $('helPat').children) { b.classList.toggle('on', b.dataset.v === h[3]); b.onclick = () => { h[3] = b.dataset.v; lb.setHelmet(h.join('|')); buildHelmetEditor(); }; }
+  $('helPrev').innerHTML = helmetSvg(h.join('|'));
+}
 lb.flush();
 
 // ---------- ajustes ----------
 function buildSettings() {
-  $('pname').value = lb.name;
+  $('pname').value = lb.name; buildHelmetEditor();
   for (const k of ['master', 'music', 'engine']) { $('v_' + k).value = Math.round(sel.vol[k] * 100); $('vt_' + k).textContent = Math.round(sel.vol[k] * 100) + '%'; }
   for (const b of $('gfxSel').children) b.classList.toggle('on', b.dataset.v === sel.gfx);
 }

@@ -171,7 +171,15 @@ function roadMesh(tr, th, stride = 1) {
   const N = tr.N, hw = ROAD_HALF, L = WALL;
   const pos = [], colors = [], uvs = [];
   const cRoad = col(th.road), cRoad2 = col(th.road).multiplyScalar(0.93), cGrass = col(th.grass), cDirt = col(th.dirt);
-  const k1 = col(th.kerb1), k2 = col(th.kerb2), yel = col(0xffc400), blk = col(0x222222);
+  const k1 = col(th.kerb1).multiplyScalar(0.86), k2 = col(th.kerb2).multiplyScalar(0.88), yel = col(0xffc400), blk = col(0x222222);
+  // los pianos nacen y mueren poco a poco (altura y color se funden con el asfalto) y cada franja tiene un desgaste distinto
+  const kEnv = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const v = th.noKerbs ? 0 : tr.kerb[i]; if (!v) continue;
+    let d = 14; for (let k = 1; k < 14; k++) if (tr.kerb[(i + k) % N] !== v || tr.kerb[(i - k + N) % N] !== v) { d = k; break; }
+    kEnv[i] = Math.min(1, d / 9);
+  }
+  const wornC = (c, n) => { const f = 0.9 + 0.1 * (((Math.sin(n * 12.9898) * 43758.5453) % 1 + 1) % 1); return c.clone().multiplyScalar(f); };
   const pushQuad = (ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz, c, uv, outerColor = c) => {
     // a,b = borde i (izq, der); c,d = borde i+1 (izq, der)
     pos.push(ax, ay, az, cx, cy, cz, bx, by, bz, bx, by, bz, cx, cy, cz, dx, dy, dz);
@@ -186,11 +194,11 @@ function roadMesh(tr, th, stride = 1) {
     // perfil lateral: hierba | pianos en relieve (rampa, cresta, escalón) | asfalto | escalón, cresta, rampa | hierba
     const KW = Math.min(1.9, L - hw - 0.2); // pianos más anchos
     const lat = (k, h, eo, krL, krR) => [[-eo, 0], [-L, h - 0.05], [-(hw + KW), h + 0.02], [-(hw + KW * 0.42), h + krL], [-hw, h + krL], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw, h + krR], [hw + KW * 0.42, h + krR], [hw + KW, h + 0.02], [L, h - 0.05], [eo, 0]][k];
-    const sLen = 2.4, s2k = (i + stride) * tr.ds;
-    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x) => 0.07 + 0.04 * Math.sin(Math.PI * x / sLen);
-    const krLi = kv === -1 ? wave(s) : 0, krRi = kv === 1 ? wave(s) : 0, krLj = kvj === -1 ? wave(s2k) : 0, krRj = kvj === 1 ? wave(s2k) : 0;
+    const sLen = 3, s2k = (i + stride) * tr.ds;
+    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x, e) => (0.03 + 0.018 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen)) * e;
+    const krLi = kv === -1 ? wave(s, kEnv[i]) : 0, krRi = kv === 1 ? wave(s, kEnv[i]) : 0, krLj = kvj === -1 ? wave(s2k, kEnv[j]) : 0, krRj = kvj === 1 ? wave(s2k, kEnv[j]) : 0;
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
-    const stripe = Math.floor(s / 2.4) % 2 === 0;
+    const stripeN = Math.floor(s / sLen), stripe = stripeN % 2 === 0;
     for (let b = 0; b < 13; b++) {
       const [l0, y0i] = lat(b, hi, eoI, krLi, krRi), [l1, y1i] = lat(b + 1, hi, eoI, krLi, krRi);
       const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj);
@@ -200,7 +208,7 @@ function roadMesh(tr, th, stride = 1) {
       let outerColor = null;
       if (b === 0 || b === 12) { color = cGrass; outerColor = cDirt; }
       else if (b === 1 || b === 11) color = cGrass;
-      else if (b === 2 || b === 3 || b === 4 || b === 8 || b === 9 || b === 10) color = th.noKerbs ? cGrass : (b < 5 ? kv === -1 : kv === 1) ? (stripe ? k1 : k2) : cRoad2; // sin piano: arcén de asfalto
+      else if (b === 2 || b === 3 || b === 4 || b === 8 || b === 9 || b === 10) color = th.noKerbs ? cGrass : (b < 5 ? kv === -1 : kv === 1) ? wornC(stripe ? k1 : k2, stripeN).lerp(cRoad2, 1 - kEnv[i]) : cRoad2; // sin piano: arcén de asfalto
       else {
         color = Math.floor(s / 24) % 2 ? cRoad : cRoad2;
         const zn = zoneAt(tr, s); if (zn && zn.w > 0.5 && zn.key !== 'asphalt') { const zc = SURF[zn.key].col; if (zc != null) color = col(zc).multiplyScalar(Math.floor(s / 6) % 2 ? 1 : 0.93); }

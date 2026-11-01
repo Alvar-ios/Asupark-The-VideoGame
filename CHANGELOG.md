@@ -79,3 +79,12 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 ## 0.0.14
 - Rampas: despegue con pendiente suave pero real y gravedad reducida en el aire; los coches vuelan unos 1,4 s (unos 60 m a 150 km/h) en lugar de caer a plomo.
 - Pianos: solo en el interior de las curvas, más anchos y sin frenar. Al pisarlos te lanzan suavemente hacia el centro de la pista y alinean el morro, lo que ayuda a cerrar la curva. Fuera de las curvas hay arcén de asfalto.
+
+## 0.0.15
+- Primera rampa de Pruebas arreglada: estaba en una bajada y no despegaba. Ahora el terreno se aplana antes de cada rampa y la detección de despegue es más fiable (todas las rampas vuelan ~1-1,5 s con cualquier coche).
+- Pianos más naturales: más bajos, franjas más largas con desgaste y colores menos saturados, y nacen y mueren poco a poco fundiéndose con el asfalto.
+- Perfil: nacionalidad (bandera) y casco personalizable (colores y dibujo). Se ven en la torre, resultados, podio y clasificación. Los pilotos de la IA llevan su propio casco.
+- Gran Premio con 5 rivales (antes 9) para ir más fluido.
+- Pantallas finales en móvil: en horizontal se reparten en dos columnas y ya no se cortan los botones.
+- La música elige siempre una canción al azar (distinta de la anterior).
+

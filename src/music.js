@@ -48,8 +48,9 @@ export class Music {
   start() {
     if (this.playing) return; this.playing = true; const c = this.ctx;
     this.out.gain.cancelScheduledValues(c.currentTime); this.out.gain.setTargetAtTime(this.vol, c.currentTime, 0.6);
-    this.songIdx = (this.songIdx + 1) % SONGS.length; this.playNext();
+    this.songIdx = this.nextIdx != null && this.nextIdx !== this.songIdx ? this.nextIdx : this.pickNext(this.songIdx); this.nextIdx = null; this.playNext();
   }
+  pickNext(cur) { if (SONGS.length < 2) return 0; let n; do n = Math.floor(Math.random() * SONGS.length); while (n === cur); return n; } // siempre una canción al azar, distinta de la actual
   playNext() {
     if (!this.playing) return; const idx = this.songIdx, c = this.ctx;
     const live = setTimeout(() => { if (this.playing && !this.src && !this.bufs[idx]) this.startLive(); }, 2500); // mientras se prepara el tema, suena en vivo
@@ -57,8 +58,8 @@ export class Music {
       clearTimeout(live); if (this.timer) { clearInterval(this.timer); this.timer = 0; }
       if (!this.playing || this.songIdx !== idx) return;
       const src = c.createBufferSource(); src.buffer = buf; src.connect(this.out); src.start(); this.src = src;
-      src.onended = () => { if (this.src === src && this.playing) { this.songIdx = (idx + 1) % SONGS.length; this.playNext(); } };
-      setTimeout(() => this.render((idx + 1) % SONGS.length).catch(() => {}), 2000); // el siguiente tema se prepara con calma
+      src.onended = () => { if (this.src === src && this.playing) { this.songIdx = this.nextIdx != null ? this.nextIdx : this.pickNext(idx); this.nextIdx = null; this.playNext(); } };
+      this.nextIdx = this.pickNext(idx); setTimeout(() => this.render(this.nextIdx).catch(() => {}), 2000); // el siguiente tema se prepara con calma
     }).catch(() => this.startLive());
   }
   startLive() { // respaldo si el navegador no puede pre-renderizar
@@ -79,7 +80,7 @@ export class Music {
     while (this.next < ctx.currentTime + 0.5) {
       if (this.step === 0) { this.song = SONGS[this.songIdx]; this.stepDur = 60 / this.song.bpm / 4; this.delay.delayTime.setValueAtTime((60 / this.song.bpm) * 0.75, this.next); }
       this.play(this.step, this.next); this.next += this.stepDur; this.step++;
-      if (this.step >= 256) { this.step = 0; this.songIdx = (this.songIdx + 1) % SONGS.length; } // al acabar un tema, pasa al siguiente
+      if (this.step >= 256) { this.step = 0; this.songIdx = this.pickNext(this.songIdx); } // al acabar un tema, pasa al siguiente
     }
   }
   play(step, t) {

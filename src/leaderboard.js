@@ -15,6 +15,10 @@ export class Leaderboard {
   get cfg() { return (typeof window !== 'undefined' && window.DRIFT_CONFIG) || {}; }
   get remote() { return !!(this.cfg.supabaseUrl && this.cfg.supabaseKey); }
   get name() { return this.player.name; }
+  get flag() { return /^[a-z]{2}$/.test(this.player.flag || '') ? this.player.flag : 'es'; }
+  get helmet() { return /^([0-9a-f]{6}\|){3}[0-9]$/i.test(this.player.helmet || '') ? this.player.helmet : 'e63946|ffffff|111827|1'; }
+  setFlag(f) { if (/^[a-z]{2}$/.test(f)) { this.player.flag = f; save(KEY_PLAYER, this.player); } return this.flag; }
+  setHelmet(h) { if (/^([0-9a-f]{6}\|){3}[0-9]$/i.test(h)) { this.player.helmet = h; save(KEY_PLAYER, this.player); } return this.helmet; }
   setName(n) { const c = cleanName(n); if (c.length >= 2) { this.player.name = c; save(KEY_PLAYER, this.player); } return this.player.name; }
   async call(path, init = {}) {
     const c = this.cfg, ac = new AbortController(), to = setTimeout(() => ac.abort(), 7000);

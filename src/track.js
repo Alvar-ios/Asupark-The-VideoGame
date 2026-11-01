@@ -172,7 +172,7 @@ export function buildTrack(seed, style) {
   for (const sep of [300, 200, 120, 80]) {
     for (const s of cands) {
       if (tr.ramps.length >= style.ramps) break;
-      if (tr.ramps.every((r) => Math.abs(r.s0 - s) > sep)) tr.ramps.push({ s0: s, len: 14, h: 1.4 });
+      if (tr.ramps.every((r) => Math.abs(r.s0 - s) > sep)) tr.ramps.push({ s0: s, len: 14, h: 1.1 });
     }
   }
   const rn = style.rollerN || 5, rl = rn * 32 + 15;
@@ -232,6 +232,17 @@ export function buildTrack(seed, style) {
     }
     minBase = Math.min(minBase, base[i]);
   }
+  // antes de cada rampa la pista se aplana (si bajaba, la rampa solo frenaba la bajada y el coche no despegaba)
+  for (const r of tr.ramps) {
+    const iA = Math.floor(r.s0 / ds) % N, hA = base[iA], PRE = 34, POST = 150, SP = -0.02;
+    const ss = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+    for (let k = -Math.ceil(PRE / ds); k <= Math.ceil((r.len + POST) / ds); k++) {
+      const i = (iA + k + N) % N, u = k * ds;
+      const w = u < 0 ? ss(1 + u / PRE) : u <= r.len ? 1 : ss(1 - (u - r.len) / POST);
+      base[i] = base[i] + (hA + SP * u - base[i]) * w; // recta con poca bajada: el coche vuela y aterriza cerca
+    }
+  }
+  minBase = 1e9; for (let i = 0; i < N; i++) minBase = Math.min(minBase, base[i]);
   // fuera de la salida la pista es llana (primeros metros)
   for (let i = 0; i < N; i++) {
     let h = base[i] - minBase + 0.8;

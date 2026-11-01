@@ -618,6 +618,29 @@ body.mobile #hud .sec{min-width:44px!important;min-height:24px;border-top-width:
 body.mobile #hud .sec span{display:block!important;font-size:0!important;line-height:1}
 body.mobile #hud .sec span small{display:block;font-size:10px!important;line-height:1.3;font-weight:700}
 body.mobile #hud .sec.purple span small{color:#e0b4ff}body.mobile #hud .sec.green span small{color:#86f0ad}body.mobile #hud .sec.orange span small{color:#ffe27a}
+
+/* cascos y nacionalidad */
+.hel{display:inline-block;width:18px;height:18px;flex:none;vertical-align:-4px}.hel svg{display:block;width:100%;height:100%}.hel.sm{width:16px;height:16px;margin-right:6px;vertical-align:-3px}
+#tower .tr .hel{width:15px;height:15px}body.mobile #tower .tr .hel{width:11px;height:11px}
+.podium .pd .hel{width:26px;height:26px;display:block;margin-bottom:3px}.podium .pd .flag{margin-bottom:1px}
+.helEd{display:flex;gap:12px;align-items:center;margin:8px 0}.hel.big{width:84px;height:84px;vertical-align:baseline;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+.helCtl{flex:1;min-width:0}.helCtl small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8e98a8;margin:5px 0 3px}
+.sws{display:flex;flex-wrap:wrap;gap:6px}.sws button{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.25);padding:0;cursor:pointer}.sws button.on{border-color:#ffc928;box-shadow:0 0 0 2px rgba(255,201,40,.45)}
+
+/* pantallas finales en móvil: apaisado a dos columnas, sin cortar botones; tablas bien alineadas */
+body.mobile #rTable td:nth-child(2){text-align:left}body.mobile #rTable td:last-child{text-align:right}
+@media (orientation:landscape) and (max-height:540px){
+ body.mobile #results .rbox{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);column-gap:14px;align-content:center;width:min(96vw,840px);max-width:none;padding:8px 14px;max-height:100dvh}
+ body.mobile #rTitle{grid-column:1;grid-row:1;font-size:22px;margin:0}
+ body.mobile #rBig{grid-column:1;grid-row:2;font-size:42px}
+ body.mobile #rNew{grid-column:1;grid-row:3/span 4;align-self:start}
+ body.mobile #rTable{grid-column:2;grid-row:1/span 3;align-self:start;margin:0}body.mobile #rTable td{padding:4px 6px;font-size:13px}
+ body.mobile #againBtn{grid-column:2;grid-row:4}body.mobile #boardBtn2{grid-column:2;grid-row:5}body.mobile #menuBtn2{grid-column:2;grid-row:6}
+ body.mobile #results .rbox button.big{margin-top:5px;padding:8px;font-size:14px}
+ body.mobile .podium{margin:2px 0 4px}body.mobile .podium .p1 .blk{height:46px}body.mobile .podium .p2 .blk{height:32px}body.mobile .podium .p3 .blk{height:22px}
+ body.mobile .podium .pd .hel{width:20px;height:20px}body.mobile .podium .pd .flag{width:20px;height:13px}body.mobile .podium .pd small{display:none}
+}
+body.mobile .helEd{align-items:flex-start}body.mobile .hel.big{width:56px;height:56px}body.mobile .sws button{width:22px;height:22px}
 </style>
 </head>
 <body>
@@ -690,6 +713,8 @@ body.mobile #hud .sec.purple span small{color:#e0b4ff}body.mobile #hud .sec.gree
   <p class="keys" style="display:block;margin-top:8px"><b>WASD</b> o flechas para conducir · <b>ESPACIO</b> freno de mano · <b>R</b> recolocar · <b>T</b> reiniciar · <b>C</b> cámara · <b>ESC</b> pausa · también con mando</p>
   <h3>Piloto</h3>
   <div class="row"><label style="flex:1">Nombre en la clasificación<input id="pname" maxlength="20" class="sel" style="width:100%;margin-top:4px"></label></div>
+  <div class="row"><label style="flex:1">Nacionalidad<select id="pflag" class="sel" style="width:100%;margin-top:4px"></select></label></div>
+  <div class="helEd"><div id="helPrev" class="hel big"></div><div class="helCtl"><small>Casco · base</small><div id="helBase" class="sws"></div><small>Franja</small><div id="helStripe" class="sws"></div><small>Visera</small><div id="helVisor" class="sws"></div><small>Dibujo</small><div id="helPat" class="seg"><button data-v="0">Liso</button><button data-v="1">Central</button><button data-v="2">Bandas</button><button data-v="3">Diagonal</button></div></div></div>
   <h3>Gráficos</h3>
   <div id="gfxSel" class="seg"><button data-v="auto">Auto</button><button data-v="high">Alta</button><button data-v="medium">Media</button><button data-v="low">Baja</button></div>
   <p class="keys" style="display:block">Auto baja la calidad solo si el juego va lento. «Baja» quita las sombras y reduce la resolución: úsala si va a tirones en el móvil.</p>

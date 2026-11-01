@@ -230,9 +230,10 @@ export function stepCar(c, inp, dt, tr, env) {
     const dd = Math.max(0.05, Math.abs(vf) * dt);
     const grad = clamp(((hNew - c.y) / dd) * (vf >= 0 ? 1 : -1), -0.35, 0.35);
     c.grad += (grad - c.grad) * 0.15;
-    const yBall = c.y + c.vy * dt - 0.5 * G * dt * dt;
-    if (c.vy > 1.5 && hNew < yBall - 0.05) {
-      c.air = true; c.y = yBall; c.vy = c.vy * 1.12 - G * dt; c.airTime = 0;
+    c.vUp = Math.max(c.vy, (c.vUp || 0) * 0.94); // recuerda la subida de los últimos instantes: el borde de la rampa no siempre cae en un solo paso
+    const yBall = c.y + c.vUp * dt - 0.5 * G * dt * dt;
+    if (c.vUp > 1.5 && hNew < yBall - 0.05) {
+      c.air = true; c.y = yBall; c.vy = c.vUp * 1.12 - G * dt; c.airTime = 0; c.vUp = 0;
       c.drifting = false;
       c.events.push({ t: 'takeoff', v: c.vy });
     } else {
