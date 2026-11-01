@@ -728,56 +728,57 @@ body.racing.halves-mode #halves{display:flex}body.halves-mode #touch{display:non
 #hud #h-rec .trk small{color:#ffc928;font-size:10px;letter-spacing:.12em;font-weight:800}
 #hud #h-rec .trk b{color:#ffd34e;font-size:17px}#hud #h-rec .trk>span{margin-left:6px;color:#b9a25a;font-size:9px;letter-spacing:.08em}
 body.mobile #hud #h-rec .trk{margin-top:2px;padding-top:2px}body.mobile #hud #h-rec .trk small{display:inline!important;font-size:9px;margin-right:4px}body.mobile #hud #h-rec .trk b{font-size:12px;display:inline}body.mobile #hud #h-rec .trk>span{display:none}
+@font-face{font-family:"Jersey 10";src:url("./assets/jersey10-latin.woff2") format("woff2");font-style:normal;font-weight:400;font-display:swap}
 /* Arcade menu treatment */
-#menu{--menu-accent:#ffd12e;--menu-cyan:#47d9f4;background:radial-gradient(ellipse at 16% 12%,rgba(24,62,82,.35),transparent 42%),linear-gradient(112deg,rgba(3,8,17,.97),rgba(4,9,17,.78) 44%,rgba(4,9,17,.18) 68%)!important;color:#f5f8ff;font-family:"Arial Black","Bahnschrift",Impact,system-ui,sans-serif}
+#menu{--menu-accent:#ffd12e;--menu-cyan:#47d9f4;--menu-display:"Jersey 10",Impact,sans-serif;background:radial-gradient(ellipse at 16% 12%,rgba(24,62,82,.35),transparent 42%),linear-gradient(112deg,rgba(3,8,17,.97),rgba(4,9,17,.78) 44%,rgba(4,9,17,.18) 68%)!important;color:#f5f8ff;font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
 #menu #menuLeft.panel{position:relative;overflow:hidden;border-right:1px solid rgba(71,217,244,.18);background:linear-gradient(155deg,rgba(10,21,34,.97),rgba(4,10,19,.97));box-shadow:20px 0 70px rgba(0,0,0,.52)}
 #menu #menuLeft.panel::before{position:absolute;inset:0 0 auto;height:5px;content:"";background:linear-gradient(90deg,#ffad20,#ffe44d 40%,#47d9f4 100%);z-index:2}
 #menu #menuLeft .menu-scroll{position:relative;z-index:1;padding:30px 24px 24px}
 #menu .wmrow{align-items:center;margin-bottom:19px}
-#menu .wm{font-size:clamp(42px,4.2vw,56px);font-weight:1000;font-style:italic;letter-spacing:-.065em;line-height:.96;color:#fff;background:linear-gradient(100deg,#fff 5%,#ffe25a 54%,#ff9b27);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;filter:drop-shadow(0 5px 18px rgba(255,173,32,.16))}
+#menu .wm{font-family:var(--menu-display);font-size:clamp(54px,5.4vw,70px);font-weight:400;font-style:normal;letter-spacing:.015em;line-height:.84;text-transform:uppercase;color:#fff;background:linear-gradient(100deg,#fff 5%,#ffe25a 54%,#ff9b27);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;filter:drop-shadow(0 4px 12px rgba(255,173,32,.12))}
 #menu .wm::first-letter{-webkit-text-fill-color:#fff}
 #menu .daily-big{min-height:100px;margin-bottom:13px;border:1px solid rgba(255,194,44,.48);border-radius:13px;background:linear-gradient(115deg,rgba(255,185,34,.2),rgba(238,91,36,.12) 56%,rgba(71,217,244,.08));box-shadow:inset 4px 0 #ffc928,0 12px 30px rgba(0,0,0,.22);transition:transform .16s,border-color .16s}
 #menu .daily-big:hover{transform:translateY(-2px);border-color:#ffd34c}
 #menu .dc-txt small{font-size:11px;font-weight:900;letter-spacing:.11em;color:#ffe08a}
-#menu .dc-txt b{font-size:19px;font-weight:900}
+#menu .dc-txt b{font-family:var(--menu-display);font-size:21px;font-weight:400;line-height:1;white-space:nowrap}
 #menu .dc-txt span{font-size:14px;color:#d9e2ef}
 #menu .dc-go{font-size:12px;padding:8px 11px;border-radius:7px;box-shadow:0 4px 14px rgba(255,180,30,.2)}
-#menu button.big#startBtn{min-height:62px;margin-bottom:13px;border-radius:10px;background:linear-gradient(100deg,#ffe24d,#ffb51f 62%,#ff8b22);font-size:23px;font-weight:1000;letter-spacing:.16em;box-shadow:0 8px 24px rgba(255,158,28,.28),inset 0 1px rgba(255,255,255,.55);transition:transform .14s,filter .14s}
+#menu button.big#startBtn{min-height:62px;margin-bottom:13px;border-radius:10px;background:linear-gradient(100deg,#ffe24d,#ffb51f 62%,#ff8b22);font-family:var(--menu-display)!important;font-size:31px!important;font-weight:400!important;letter-spacing:.09em!important;line-height:1!important;box-shadow:0 8px 24px rgba(255,158,28,.28),inset 0 1px rgba(255,255,255,.55);transition:transform .14s,filter .14s}
 #menu button.big#startBtn:hover{transform:translateY(-2px);filter:brightness(1.08)}
 #menu .pick{min-height:67px;margin-bottom:9px;padding:9px 116px 9px 14px;border:1px solid rgba(150,185,210,.17);border-radius:11px;background:linear-gradient(110deg,rgba(255,255,255,.075),rgba(255,255,255,.025));box-shadow:inset 3px 0 rgba(71,217,244,.65);transition:background .16s,border-color .16s,transform .16s}
 #menu .pick:hover,#menu .pick.on{border-color:rgba(255,209,46,.7);background:linear-gradient(110deg,rgba(255,209,46,.14),rgba(255,255,255,.035));transform:translateX(2px)}
 #menu .pick small{font-size:12px;line-height:1.2;font-weight:900;letter-spacing:.13em;color:#8cecff}
-#menu .pick b{font-size:19px;font-weight:900;letter-spacing:.01em}
+#menu .pick b{font-family:var(--menu-display);font-size:25px;font-weight:400;letter-spacing:.015em;line-height:1}
 #menu .pick span{font-size:13px;color:#c1cada}
 #menu .pick .pk-flag{right:47px;width:37px;height:25px}
 #menu .pick .pk-img{right:35px;width:84px;height:53px}
 #menu .pick>i{font-size:30px;color:#d4deeb}
 #menu .modes{margin:14px 0 16px}
 #menu .modes .seg{gap:5px;width:100%;border:0;overflow:visible;flex-wrap:nowrap}
-#menu .modes .seg button{flex:1 1 0;min-width:0;min-height:42px;padding:9px 5px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.055);font-family:inherit;font-size:13px;font-weight:900;letter-spacing:.01em;white-space:nowrap}
+#menu .modes .seg button{flex:1 1 0;min-width:0;min-height:42px;padding:9px 5px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.055);font-family:var(--menu-display);font-size:20px;font-weight:400;letter-spacing:0;white-space:nowrap}
 #menu .modes .seg button.gp{flex:1 1 0;order:0;border-bottom:1px solid rgba(255,255,255,.12);letter-spacing:0}
 #menu .modes .seg button.on{border-color:#ffe04b;background:linear-gradient(120deg,#ffe24d,#ffb51f);color:#161209;box-shadow:0 5px 16px rgba(255,186,35,.18)}
 #menu .links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
-#menu .link{display:flex;min-height:72px;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:8px 3px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:linear-gradient(155deg,rgba(255,255,255,.075),rgba(255,255,255,.025));color:#dbe5f2;font-family:inherit;font-size:11px;font-weight:800;text-decoration:none;transition:transform .14s,border-color .14s,color .14s}
+#menu .link{display:flex;min-height:72px;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:8px 3px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:linear-gradient(155deg,rgba(255,255,255,.075),rgba(255,255,255,.025));color:#dbe5f2;font-family:var(--menu-display);font-size:16px;font-weight:400;text-decoration:none;transition:transform .14s,border-color .14s,color .14s}
 #menu .link:hover{transform:translateY(-2px);border-color:rgba(71,217,244,.45);color:#fff}
 #menu .link svg{width:23px;height:23px;color:#ffd34c}
 #menu #flyout{background:linear-gradient(155deg,rgba(7,15,25,.97),rgba(4,9,17,.97));border-left:1px solid rgba(71,217,244,.2);box-shadow:-18px 0 45px rgba(0,0,0,.24)}
 #menu #flyout .vhead{background:rgba(7,15,25,.98)}
-#menu #flyout .vhead h2{font-family:inherit;font-size:27px;font-weight:1000;font-style:italic;letter-spacing:-.03em;color:#ffe052;text-transform:uppercase}
+#menu #flyout .vhead h2{font-family:var(--menu-display);font-size:34px;font-weight:400;font-style:normal;letter-spacing:.025em;color:#ffe052;text-transform:uppercase}
 #menu #flyout .back{color:#dce7f3}
 #menu #flyout #trackList .card,#menu #flyout #carList .card{border-radius:12px;border-color:rgba(160,194,220,.15);background:linear-gradient(155deg,rgba(255,255,255,.085),rgba(255,255,255,.025));transition:transform .14s,border-color .14s}
 #menu #flyout #trackList .card.on,#menu #flyout #carList .card.on{border-color:#ffd34c;background:linear-gradient(155deg,rgba(255,205,51,.18),rgba(255,255,255,.035));box-shadow:0 8px 22px rgba(255,190,40,.12)}
-#menu #flyout #trackList .card b,#menu #flyout #carList .card b{font-family:inherit;font-size:15px;font-weight:900;color:#f8fbff}
+#menu #flyout #trackList .card b,#menu #flyout #carList .card b{font-family:var(--menu-display);font-size:20px;font-weight:400;color:#f8fbff}
 #menu #flyout .tc-head .cty,#menu #flyout .tc-head .tc-len,#menu #flyout #trackList .card .track-sub{font-size:12px}
 #menu #flyout .track-env{font-size:11px;font-weight:800}
-#menu .tabs button{border-radius:8px;font-family:inherit;font-size:13px;font-weight:800}
+#menu .tabs button{border-radius:8px;font-family:var(--menu-display);font-size:19px;font-weight:400}
 #menu .tabs button.on{background:#ffe04b;border-color:#ffe04b;color:#171309}
 @media(max-width:760px){
   #menu #menuLeft.panel{background:linear-gradient(155deg,rgba(8,19,32,.96),rgba(4,10,19,.94))}
   #menu #menuLeft .menu-scroll{padding:20px 16px max(16px,env(safe-area-inset-bottom))}
-  #menu .wm{font-size:40px}
+  #menu .wm{font-size:52px}
   #menu .links{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-  #menu .link{min-height:64px;font-size:10px}
+  #menu .link{min-height:64px;font-size:14px}
   #menu #flyout{background:rgba(5,12,21,.98)}
 }
 </style>

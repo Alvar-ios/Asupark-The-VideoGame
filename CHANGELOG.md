@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.32
+- Nueva fuente local Jersey 10 para la marca, botones y títulos del menú, basada en la referencia pixel-art; se conserva una fuente clara para textos descriptivos.
+
 ## 0.0.31
 - Menú principal rediseñado con jerarquía arcade, tipografía más contundente y botones de modo alineados.
 - Corregida la orientación visual del BMW E30, Jaguar E-Type y Ford GT Heritage.
