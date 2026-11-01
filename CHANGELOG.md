@@ -72,3 +72,6 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 - Peraltes, rampas, rodillos y zonas de superficie más suaves (entrada y salida graduales, menos altura y menos extremos).
 - Reto del día en grande en el menú: mismo circuito y mismo coche para todos los jugadores cada día.
 - Casillas de sector bajo el diferencial: color y diferencial propio, en vivo mientras corres y fijo al cerrar el sector.
+
+## 0.0.13
+- Arreglado el HUD de sectores en móvil: los colores (morado, verde, amarillo) no se veían por un conflicto de estilos, y ahora además se muestra el diferencial de cada sector.
