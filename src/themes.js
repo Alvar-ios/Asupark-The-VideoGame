@@ -83,7 +83,7 @@ export const THEMES = {
         [28.4, 136.9], [45.8, 147.3], [69, 144.4], [92.2, 132.8], [112.5, 112.5], [127, 80.6], [131.7, 48.7]
       ],
       startNear: [131.7, 13.9],
-      scale: 0.78, half: 5.0, wall: 18.0, minR: 8, sep: 10,
+      scale: 0.78, half: 5.0, wall: 8.0, minR: 8, sep: 10,
       chicanes: 0, hill: 0, ramps: 0, pads: 0, rollers: 0, banks: [],
       hillPts: [[0, 0], [1, 0]],
     },

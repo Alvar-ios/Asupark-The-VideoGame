@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { ROAD_HALF, WALL, setRoad } from './track.js';
 import { SURF, zoneAt, smoothstep, patchBoundary, puddleParams, mudParams, MARIO_OIL_PATCHES } from './surface.js';
 import { rngFromSeed } from './rng.js';
+import { getSponsorTexture } from './sponsors.js';
 
 const col = (hex) => new THREE.Color(hex);
 
@@ -564,7 +565,7 @@ function tunnelMesh(tr, t, th) {
 }
 function roadMesh(tr, th, stride = 1) {
   const N = tr.N, hw = ROAD_HALF, L = WALL, isKart = th.deco === 'kart';
-  const effectiveStride = isKart ? Math.max(2, stride) : stride;
+  const effectiveStride = stride;
   const roadData = { pos: [], colors: [], uvs: [] };
   const kerbData = { pos: [], colors: [], uvs: [] };
   const gravelData = { pos: [], colors: [], uvs: [] };
@@ -592,8 +593,6 @@ function roadMesh(tr, th, stride = 1) {
     target.uvs.push(ua, va, uc, vc, ub, vb, ub, vb, uc, vc, ud, vd);
   };
 
-  const gridStep = 2.5;
-
   for (let i = 0; i < N; i += effectiveStride) {
     const j = (i + effectiveStride) % N, s = i * tr.ds;
     const hi = tr.Y[i], hj = tr.Y[j];
@@ -618,16 +617,8 @@ function roadMesh(tr, th, stride = 1) {
       const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj, GWj), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj, GWj);
 
       const P = (idx, l, y) => {
-        let posX = tr.X[idx], posZ = tr.Z[idx];
-        let nx = -tr.TZ[idx], nz = tr.TX[idx];
-        if (isKart) {
-          posX = Math.round(posX / gridStep) * gridStep;
-          posZ = Math.round(posZ / gridStep) * gridStep;
-          const ang = Math.atan2(nz, nx);
-          const snap = Math.round(ang / (Math.PI / 4)) * (Math.PI / 4);
-          nx = Math.cos(snap);
-          nz = Math.sin(snap);
-        }
+        const posX = tr.X[idx], posZ = tr.Z[idx];
+        const nx = -tr.TZ[idx], nz = tr.TX[idx];
         const bnk = (Math.abs(l) <= L ? l * Math.tan(tr.bank[idx]) : (l > 0 ? 1 : -1) * L * Math.tan(tr.bank[idx]));
         return [posX + nx * l, y + bnk, posZ + nz * l];
       };
@@ -759,11 +750,67 @@ function roadMesh(tr, th, stride = 1) {
   return group;
 }
 
+function marioTrackBlocks(tr, th) {
+  const N = tr.N, L = WALL;
+  const step = 1.75;
+  const blockCountPerSide = Math.floor(tr.len / step);
+  const totalBlocks = blockCountPerSide * 2;
+
+  const boxPart = new THREE.BoxGeometry(1.6, 0.95, 1.6).toNonIndexed();
+  boxPart.translate(0, 0.475, 0);
+  const pyrPart = new THREE.CylinderGeometry(0.68, 1.13, 0.35, 4).toNonIndexed();
+  pyrPart.rotateY(Math.PI / 4);
+  pyrPart.translate(0, 1.125, 0);
+  const posA = boxPart.attributes.position.array, posB = pyrPart.attributes.position.array;
+  const combinedPos = new Float32Array(posA.length + posB.length);
+  combinedPos.set(posA, 0); combinedPos.set(posB, posA.length);
+  const blockGeo = new THREE.BufferGeometry();
+  blockGeo.setAttribute('position', new THREE.BufferAttribute(combinedPos, 3));
+  blockGeo.computeVertexNormals();
+
+  const blockMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff, roughness: 0.42, metalness: 0.05, flatShading: true
+  });
+  const blocks = new THREE.InstancedMesh(blockGeo, blockMat, totalBlocks);
+  const dummy = new THREE.Object3D(), pal = [0xe52521, 0x1b75d0, 0x2bb830, 0xf8d028].map(col);
+
+  let k = 0;
+  for (const side of [-1, 1]) {
+    for (let idx = 0; idx < blockCountPerSide; idx++) {
+      const s = idx * step;
+      const i = Math.floor((s / tr.ds)) % N;
+      const tx = tr.TX[i], tz = tr.TZ[i];
+      const nx = -tz * side, nz = tx * side;
+      const x = tr.X[i] + nx * L, z = tr.Z[i] + nz * L;
+      const y = tr.Y[i] + bankOff(tr, i, side * L);
+      const heading = Math.atan2(tx, tz);
+
+      dummy.position.set(x, y, z);
+      dummy.scale.set(1, 1, 1);
+      dummy.rotation.set(0, heading, 0);
+      dummy.updateMatrix();
+      blocks.setMatrixAt(k, dummy.matrix);
+      blocks.setColorAt(k, pal[(idx + (side > 0 ? 2 : 0)) % pal.length]);
+      k++;
+    }
+  }
+  if (blocks.instanceColor) blocks.instanceColor.needsUpdate = true;
+  blocks.castShadow = true;
+  blocks.receiveShadow = true;
+  blocks.frustumCulled = false;
+  return blocks;
+}
+
 function wallMesh(tr, th, stride = 1) {
-  const N = tr.N, L = WALL, pos = [], colors = [], uvs = [];
+  const N = tr.N, L = WALL;
+  const isKart = th.deco === 'kart';
+  if (isKart) {
+    return marioTrackBlocks(tr, th);
+  }
+
+  const pos = [], colors = [], uvs = [];
   const c1 = col(th.wall1), c2 = col(th.wall2);
   const H = 0.65, T = 0.45;
-  const isKart = th.deco === 'kart';
 
   for (const side of [-1, 1]) {
     for (let i = 0; i < N; i += stride) {
@@ -789,67 +836,49 @@ function wallMesh(tr, th, stride = 1) {
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   g.computeVertexNormals();
 
-  const wallMat = isKart
-    ? new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide })
-    : new THREE.MeshStandardMaterial({
-        vertexColors: true, map: armcoTex(), roughness: 0.38, metalness: 0.72,
-        side: THREE.DoubleSide, envMapIntensity: 0.55
-      });
+  const wallMat = new THREE.MeshStandardMaterial({
+    vertexColors: true, map: armcoTex(), roughness: 0.38, metalness: 0.72,
+    side: THREE.DoubleSide, envMapIntensity: 0.55
+  });
 
   const mesh = new THREE.Mesh(g, wallMat);
   return mesh;
 }
 
 function marioArena(th, scene, shadows) {
-  const minX = -124, maxX = 120, minZ = -122, maxZ = 134;
+  const minX = -135, maxX = 135, minZ = -135, maxZ = 135;
   const sandGeo = new THREE.PlaneGeometry(maxX - minX, maxZ - minZ).rotateX(-Math.PI / 2);
   const sandMesh = new THREE.Mesh(sandGeo, new THREE.MeshStandardMaterial({ color: th.dirt, roughness: 0.95 }));
   sandMesh.position.set((minX + maxX) * 0.5, 0.012, (minZ + maxZ) * 0.5);
   sandMesh.receiveShadow = shadows;
   scene.add(sandMesh);
 
-  const islands = [
-    { x0: 56, x1: 88, z0: -48, z1: 64 },
-    { x0: 42, x1: 88, z0: -82, z1: -48 },
-    { x0: 46, x1: 72, z0: 64, z1: 76 },
-    { x0: -96, x1: -44, z0: -84, z1: -66 },
-    { x0: -96, x1: -76, z0: -66, z1: -48 },
-    { x0: -88, x1: 22, z0: -24, z1: -12 },
-    { x0: 16, x1: 28, z0: -20, z1: -12 },
-    { x0: -96, x1: -72, z0: 50, z1: 94 },
-    { x0: -72, x1: -46, z0: 72, z1: 94 },
-    { x0: -10, x1: 18, z0: 68, z1: 116 },
-    { x0: 24, x1: 56, z0: 22, z1: 44 },
+  // Zonas de césped interiores en los bucles abiertos (distancia segura > 12m de la carretera)
+  const safeInfields = [
+    { x: -70, z: -62, w: 42, d: 26 },
+    { x: -24, z: -18, w: 64, d: 12 },
+    { x: -72, z: 74, w: 38, d: 34 },
+    { x: 60, z: 10, w: 42, d: 88 },
   ];
   const grassMat = new THREE.MeshStandardMaterial({ color: th.grass, roughness: 0.9 });
-  for (const isl of islands) {
-    const w = isl.x1 - isl.x0, d = isl.z1 - isl.z0;
-    const islMesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), grassMat);
-    islMesh.position.set((isl.x0 + isl.x1) * 0.5, 0.045, (isl.z0 + isl.z1) * 0.5);
+  for (const isl of safeInfields) {
+    const islMesh = new THREE.Mesh(new THREE.PlaneGeometry(isl.w, isl.d).rotateX(-Math.PI / 2), grassMat);
+    islMesh.position.set(isl.x, 0.02, isl.z);
     islMesh.receiveShadow = shadows;
     scene.add(islMesh);
   }
 
-  const step = 1.7;
+  // Muro perimetral exterior del estadio con bloques 3D
+  const step = 1.8;
   const pts = [];
   for (let x = minX; x <= maxX; x += step) { pts.push([x, minZ]); pts.push([x, maxZ]); }
   for (let z = minZ; z <= maxZ; z += step) { pts.push([minX, z]); pts.push([maxX, z]); }
-  for (const isl of islands) {
-    for (let x = isl.x0; x <= isl.x1; x += step) { pts.push([x, isl.z0]); pts.push([x, isl.z1]); }
-    for (let z = isl.z0; z <= isl.z1; z += step) { pts.push([isl.x0, z]); pts.push([isl.x1, z]); }
-  }
-  // Dientes en sierra (sawtooth) a lo largo del borde este de la isla frente a la recta de meta
-  for (let z = -40; z <= 56; z += step) {
-    if (Math.floor((z + 40) / 8) % 2 === 0) {
-      pts.push([91.4, z]);
-    }
-  }
 
-  const boxPart = new THREE.BoxGeometry(1.6, 0.9, 1.6).toNonIndexed();
-  boxPart.translate(0, 0.45, 0);
+  const boxPart = new THREE.BoxGeometry(1.6, 0.95, 1.6).toNonIndexed();
+  boxPart.translate(0, 0.475, 0);
   const pyrPart = new THREE.CylinderGeometry(0.68, 1.13, 0.35, 4).toNonIndexed();
   pyrPart.rotateY(Math.PI / 4);
-  pyrPart.translate(0, 1.075, 0);
+  pyrPart.translate(0, 1.125, 0);
   const posA = boxPart.attributes.position.array, posB = pyrPart.attributes.position.array;
   const combinedPos = new Float32Array(posA.length + posB.length);
   combinedPos.set(posA, 0); combinedPos.set(posB, posA.length);
@@ -963,9 +992,11 @@ function marioProps(scene, shadows) {
 
   const brickSpots = [];
   const qSpots = [];
-  for (let h = 0; h < 4; h++) brickSpots.push([106, 1.0 + h * 2.0, 18]);
-  for (let h = 0; h < 3; h++) brickSpots.push([106, 1.0 + h * 2.0, 15.5]);
+  // Column behind right finish arch post: x ~ 113.5, z ~ 11 (clear distance > 10.7m from track)
+  for (let h = 0; h < 4; h++) brickSpots.push([113.5, 1.0 + h * 2.0, 11]);
+  for (let h = 0; h < 3; h++) brickSpots.push([113.5, 1.0 + h * 2.0, 8.5]);
 
+  // Floating row in the northern infield: 2 bricks, 1 ?, 2 bricks
   const rowZ = -60;
   for (let i = -2; i <= 2; i++) {
     const x = -30 + i * 2.1;
@@ -973,12 +1004,14 @@ function marioProps(scene, shadows) {
     else brickSpots.push([x, 4.5, rowZ]);
   }
 
+  // Floating row in the center infield (safe distance > 19m from track):
   for (let i = -1; i <= 1; i++) {
-    const x = 5 + i * 2.1;
-    if (i === 0) qSpots.push([x, 4.0, -10]);
-    else brickSpots.push([x, 4.0, -10]);
+    const x = -20 + i * 2.1;
+    if (i === 0) qSpots.push([x, 4.0, -18]);
+    else brickSpots.push([x, 4.0, -18]);
   }
 
+  // Column in the western sand:
   for (let i = 0; i < 3; i++) {
     brickSpots.push([-115, 1.0 + i * 2.0, 25]);
   }
@@ -1073,12 +1106,12 @@ function distanceMarkers(tr, th, scene) {
 
       dummy.position.set(x, y + 1.2, zPos);
       dummy.scale.set(1, 1, 1);
-      dummy.rotation.set(0, heading, 0);
+      dummy.rotation.set(0, heading + Math.PI, 0);
       dummy.updateMatrix();
       posts.setMatrixAt(idx, dummy.matrix);
 
       dummy.position.set(x - nx * 0.05, y + 2.0, zPos - nz * 0.05);
-      dummy.rotation.set(0, heading, 0);
+      dummy.rotation.set(0, heading + Math.PI, 0);
       dummy.updateMatrix();
       boards.setMatrixAt(idx, dummy.matrix);
     });
@@ -1093,43 +1126,61 @@ function sponsorHoardings(tr, th, scene) {
   if (th.deco === 'kart') return;
   const N = tr.N;
   const hoardings = [];
-  for (let s = 20; s < tr.len - 40; s += 16) {
+  for (let s = 24; s < tr.len - 40; s += 20) {
     const i = Math.floor(s / tr.ds) % N;
     if (Math.abs(tr.kap[i]) < 0.005) {
       if ((tr.tunnels || []).some((t) => s > t.s0 - 4 && s < t.s1 + 4)) continue;
-      hoardings.push({ s, i, brandIdx: Math.floor(s / 16) % 6 });
+      hoardings.push({ s, i, brandIdx: Math.floor(s / 20) % 4 });
     }
   }
   if (!hoardings.length) return;
 
-  const panelGeo = new THREE.PlaneGeometry(5.2, 1.15);
+  const panelGeo = new THREE.PlaneGeometry(5.2, 1.35);
+  const postGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.2, 6);
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x828994, metalness: 0.7, roughness: 0.4 });
   const dummy = new THREE.Object3D();
 
-  for (let b = 0; b < 6; b++) {
+  for (let b = 0; b < 4; b++) {
     const group = hoardings.filter((h) => h.brandIdx === b);
     if (!group.length) continue;
-    const mat = new THREE.MeshBasicMaterial({ map: getSponsorTex(b), side: THREE.DoubleSide });
+    const tex = getSponsorTexture(b);
+    const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
     const count = group.length * 2;
     const mesh = new THREE.InstancedMesh(panelGeo, mat, count);
+    const posts = new THREE.InstancedMesh(postGeo, postMat, count * 2);
 
-    let k = 0;
+    let k = 0, kp = 0;
     for (const h of group) {
       const i = h.i;
       const tx = tr.TX[i], tz = tr.TZ[i];
       const heading = Math.atan2(tx, tz);
       for (const side of [-1, 1]) {
         const nx = -tz * side, nz = tx * side;
-        const x = tr.X[i] + nx * (WALL + 0.15), zPos = tr.Z[i] + nz * (WALL + 0.15);
-        const y = tr.Y[i] + bankOff(tr, i, side * (WALL + 0.15)) + 0.72;
+        // Colocadas limpiamente DETRÁS del guardarraíl en el arcén (WALL + 1.8m)
+        const x = tr.X[i] + nx * (WALL + 1.8), zPos = tr.Z[i] + nz * (WALL + 1.8);
+        const y = tr.Y[i] + bankOff(tr, i, side * (WALL + 1.8));
+        // Orientadas de cara al tráfico entrante y con leve ángulo hacia la pista
+        const yaw = heading + Math.PI - side * 0.25;
 
-        dummy.position.set(x, y, zPos);
+        dummy.position.set(x, y + 1.85, zPos);
         dummy.scale.set(1, 1, 1);
-        dummy.rotation.set(0, heading + (side > 0 ? 0 : Math.PI), 0);
+        dummy.rotation.set(0, yaw, 0);
         dummy.updateMatrix();
         mesh.setMatrixAt(k++, dummy.matrix);
+
+        // Postes dobles de soporte tras la valla
+        for (const postOff of [-1.8, 1.8]) {
+          const px = x + tx * postOff, pz = zPos + tz * postOff;
+          dummy.position.set(px, y + 1.1, pz);
+          dummy.scale.set(1, 1, 1);
+          dummy.rotation.set(0, yaw, 0);
+          dummy.updateMatrix();
+          posts.setMatrixAt(kp++, dummy.matrix);
+        }
       }
     }
-    mesh.frustumCulled = false;
+    mesh.frustumCulled = posts.frustumCulled = false;
+    scene.add(posts);
     scene.add(mesh);
   }
 }
@@ -1729,16 +1780,17 @@ export function buildWorld(tr, th, opt = {}) {
   }
   scene.add(startGridBoxes(tr, th));
   if (th.deco !== 'kart') scene.add(brakingMarks(tr, th));
+  const walls = wallMesh(tr, th, q.stride);
+  walls.receiveShadow = true;
+  walls.castShadow = !!q.shadows;
+  scene.add(walls);
+
   if (th.deco === 'kart') {
     marioArena(th, scene, !!q.shadows);
     marioPipes(scene, !!q.shadows);
     marioProps(scene, !!q.shadows);
     marioArrows(tr, scene);
   } else {
-    const walls = wallMesh(tr, th, q.stride);
-    walls.receiveShadow = true;
-    walls.castShadow = !!q.shadows;
-    scene.add(walls);
     distanceMarkers(tr, th, scene);
     sponsorHoardings(tr, th, scene);
   }
