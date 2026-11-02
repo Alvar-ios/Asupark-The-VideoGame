@@ -7,12 +7,33 @@ import { rngFromSeed } from './rng.js';
 const col = (hex) => new THREE.Color(hex);
 
 function skyMesh(th) {
+  const isKart = th.deco === 'kart';
   const storm = th.weather === 'rain';
   const mat = new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false,
-    uniforms: { top: { value: col(th.skyTop).lerp(col(0x465361), storm ? 0.48 : 0) }, hor: { value: col(th.skyHor).lerp(col(0x8996a2), storm ? 0.5 : 0) }, sunC: { value: col(th.sun).lerp(col(0xa9b3bf), storm ? 0.65 : 0) }, sunD: { value: new THREE.Vector3(...th.sunDir).normalize() } },
+    uniforms: {
+      top: { value: isKart ? col(0x289ef5) : col(th.skyTop).lerp(col(0x424e5a), storm ? 0.52 : 0) },
+      hor: { value: isKart ? col(0xfef6a2) : col(th.skyHor).lerp(col(0x7d8995), storm ? 0.54 : 0) },
+      sunC: { value: col(th.sun).lerp(col(0xa9b3bf), storm ? 0.65 : 0) },
+      sunD: { value: new THREE.Vector3(...th.sunDir).normalize() }
+    },
     vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-    fragmentShader: 'uniform vec3 top; uniform vec3 hor; uniform vec3 sunC; uniform vec3 sunD; varying vec3 vD; void main(){ float h = clamp(vD.y,0.0,1.0); vec3 c = mix(hor, top, pow(h,0.55)); float haze = pow(1.0-abs(vD.y),3.0); c = mix(c,hor,haze*0.2); float s = max(dot(normalize(vD), sunD),0.0); c += sunC*(pow(s,600.0)*1.5 + pow(s,18.0)*0.28 + pow(s,5.0)*0.045); if(vD.y<0.0) c = hor; gl_FragColor = vec4(c,1.0); }',
+    fragmentShader: `
+      uniform vec3 top; uniform vec3 hor; uniform vec3 sunC; uniform vec3 sunD;
+      varying vec3 vD;
+      void main(){
+        float h = clamp(vD.y, 0.0, 1.0);
+        vec3 c = mix(hor, top, pow(h, 0.44));
+        float haze = pow(1.0 - abs(vD.y), 3.8);
+        c = mix(c, hor * 1.06, haze * 0.32);
+        float s = max(dot(normalize(vD), sunD), 0.0);
+        float sunDisk = pow(s, 1200.0) * 2.2;
+        float sunGlow = pow(s, 72.0) * 0.42 + pow(s, 9.0) * 0.12;
+        c += sunC * (sunDisk + sunGlow);
+        if(vD.y < 0.0) c = hor;
+        gl_FragColor = vec4(c, 1.0);
+      }
+    `,
   });
   const m = new THREE.Mesh(new THREE.SphereGeometry(1800, 24, 16), mat);
   m.renderOrder = -10; m.frustumCulled = false;
@@ -31,25 +52,50 @@ function groundTex() {
   return t;
 }
 
-let tarmacTextureCache = null;
-function tarmacTex() {
-  if (tarmacTextureCache) return tarmacTextureCache;
-  const size = 128, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+const asphaltCache = new Map();
+function asphaltTex(th) {
+  const key = th.id || 'default';
+  if (asphaltCache.has(key)) return asphaltCache.get(key);
+  const size = 256, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d'), im = ctx.createImageData(size, size);
+  let baseLum = 120, noiseAmp = 30, speckRatio = 0.11, warmR = 0, coolB = 0;
+  if (th.id === 'spa') {
+    baseLum = 72; noiseAmp = 40; speckRatio = 0.18; coolB = 10;
+  } else if (th.id === 'monaco') {
+    baseLum = 108; noiseAmp = 26; speckRatio = 0.12; warmR = 5;
+  } else if (th.id === 'desierto') {
+    baseLum = 146; noiseAmp = 34; speckRatio = 0.08; warmR = 16;
+  } else if (th.id === 'nieve') {
+    baseLum = 138; noiseAmp = 36; speckRatio = 0.15; coolB = 14;
+  } else if (th.id === 'neon') {
+    baseLum = 58; noiseAmp = 28; speckRatio = 0.16; coolB = 12;
+  } else {
+    baseLum = 114; noiseAmp = 30; speckRatio = 0.10;
+  }
   for (let i = 0; i < size * size; i++) {
-    const base = 126;
-    const noise = (Math.random() - 0.5) * 34;
-    const speck = Math.random() < 0.08 ? (Math.random() < 0.5 ? 42 : -36) : 0;
-    const v = Math.max(0, Math.min(255, Math.round(base + noise + speck)));
-    im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255;
+    const x = i % size;
+    let n = (Math.random() - 0.5) * noiseAmp;
+    if (Math.random() < speckRatio) n += (Math.random() < 0.5 ? 46 : -42);
+    const groove = Math.sin(x * 0.14) * 4.5;
+    const v = Math.max(0, Math.min(255, Math.round(baseLum + n + groove)));
+    const idx = i * 4;
+    im.data[idx] = Math.max(0, Math.min(255, v + warmR));
+    im.data[idx + 1] = v;
+    im.data[idx + 2] = Math.max(0, Math.min(255, v + coolB));
+    im.data[idx + 3] = 255;
   }
   ctx.putImageData(im, 0, 0);
-  tarmacTextureCache = new THREE.CanvasTexture(canvas);
-  tarmacTextureCache.wrapS = tarmacTextureCache.wrapT = THREE.RepeatWrapping;
-  tarmacTextureCache.repeat.set(6, 40);
-  tarmacTextureCache.colorSpace = THREE.SRGBColorSpace;
-  tarmacTextureCache.anisotropy = 4;
-  return tarmacTextureCache;
+  if (th.id === 'desierto' || th.id === 'monaco') {
+    ctx.strokeStyle = 'rgba(25, 25, 30, 0.38)'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(size * 0.22, 0); ctx.bezierCurveTo(size * 0.27, size * 0.45, size * 0.16, size * 0.72, size * 0.24, size); ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(8, 32);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  asphaltCache.set(key, tex);
+  return tex;
 }
 
 let marioTarmacTextureCache = null;
@@ -74,6 +120,150 @@ function marioTarmacTex() {
   marioTarmacTextureCache.minFilter = THREE.NearestFilter;
   marioTarmacTextureCache.colorSpace = THREE.SRGBColorSpace;
   return marioTarmacTextureCache;
+}
+
+let marioArrowTextureCache = null;
+function marioArrowTex() {
+  if (marioArrowTextureCache) return marioArrowTextureCache;
+  const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+  const x = c.getContext('2d');
+  x.clearRect(0, 0, 128, 128);
+  x.fillStyle = '#ffcc00';
+  for (let i = 0; i < 2; i++) {
+    const yOff = i * 48;
+    x.beginPath();
+    x.moveTo(64, 18 + yOff);
+    x.lineTo(108, 54 + yOff);
+    x.lineTo(84, 54 + yOff);
+    x.lineTo(64, 38 + yOff);
+    x.lineTo(44, 54 + yOff);
+    x.lineTo(20, 54 + yOff);
+    x.closePath();
+    x.fill();
+  }
+  marioArrowTextureCache = new THREE.CanvasTexture(c);
+  marioArrowTextureCache.colorSpace = THREE.SRGBColorSpace;
+  return marioArrowTextureCache;
+}
+
+let gravelTextureCache = null;
+function gravelTex() {
+  if (gravelTextureCache) return gravelTextureCache;
+  const size = 128, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#c5a270'; ctx.fillRect(0, 0, size, size);
+  const stonePals = ['#b89462', '#dcbc8a', '#9e7b4e', '#dfd0b2', '#866b47', '#e8d8be'];
+  for (let i = 0; i < 480; i++) {
+    const x = Math.random() * size, y = Math.random() * size, r = 1 + Math.random() * 2.8;
+    ctx.fillStyle = stonePals[Math.floor(Math.random() * stonePals.length)];
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(100, 75, 45, 0.16)'; ctx.lineWidth = 2.0;
+  for (let y = 4; y < size; y += 8) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+  }
+  gravelTextureCache = new THREE.CanvasTexture(canvas);
+  gravelTextureCache.wrapS = gravelTextureCache.wrapT = THREE.RepeatWrapping;
+  gravelTextureCache.repeat.set(10, 40);
+  gravelTextureCache.colorSpace = THREE.SRGBColorSpace;
+  return gravelTextureCache;
+}
+
+let kerbTextureCache = null;
+function kerbTex() {
+  if (kerbTextureCache) return kerbTextureCache;
+  const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#e5ebf3'; ctx.fillRect(0, 0, 128, 128);
+  const im = ctx.getImageData(0, 0, 128, 128);
+  for (let i = 0; i < 128 * 128; i++) {
+    const n = (Math.random() - 0.5) * 26;
+    im.data[i * 4] = Math.max(0, Math.min(255, im.data[i * 4] + n));
+    im.data[i * 4 + 1] = Math.max(0, Math.min(255, im.data[i * 4 + 1] + n));
+    im.data[i * 4 + 2] = Math.max(0, Math.min(255, im.data[i * 4 + 2] + n));
+  }
+  ctx.putImageData(im, 0, 0);
+  for (let y = 0; y < 128; y += 16) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.24)'; ctx.fillRect(0, y, 128, 4);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.38)'; ctx.fillRect(0, y + 4, 128, 3);
+  }
+  ctx.fillStyle = 'rgba(18, 20, 24, 0.42)';
+  for (let i = 0; i < 30; i++) {
+    const rx = 16 + Math.random() * 96, ry = Math.random() * 128;
+    const rw = 2 + Math.random() * 8, rh = 12 + Math.random() * 28;
+    ctx.fillRect(rx, ry, rw, rh);
+  }
+  kerbTextureCache = new THREE.CanvasTexture(canvas);
+  kerbTextureCache.wrapS = kerbTextureCache.wrapT = THREE.RepeatWrapping;
+  kerbTextureCache.repeat.set(2, 8);
+  kerbTextureCache.colorSpace = THREE.SRGBColorSpace;
+  return kerbTextureCache;
+}
+
+let armcoTextureCache = null;
+function armcoTex() {
+  if (armcoTextureCache) return armcoTextureCache;
+  const size = 128, canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  for (let y = 0; y < size; y++) {
+    const wave = Math.sin((y / size) * Math.PI * 8);
+    const lum = Math.round(180 + wave * 46);
+    ctx.fillStyle = `rgb(${lum}, ${lum + 2}, ${lum + 6})`;
+    ctx.fillRect(0, y, size, 1);
+  }
+  for (let x = 16; x < size; x += 32) {
+    for (let y = 16; y < size; y += 32) {
+      ctx.fillStyle = '#656a74'; ctx.fillRect(x - 2, y - 2, 4, 4);
+    }
+  }
+  armcoTextureCache = new THREE.CanvasTexture(canvas);
+  armcoTextureCache.wrapS = armcoTextureCache.wrapT = THREE.RepeatWrapping;
+  armcoTextureCache.repeat.set(12, 1);
+  armcoTextureCache.colorSpace = THREE.SRGBColorSpace;
+  return armcoTextureCache;
+}
+
+const sponsorBoardCaches = [];
+function getSponsorTex(idx) {
+  if (sponsorBoardCaches[idx]) return sponsorBoardCaches[idx];
+  const brands = [
+    { bg: '#0d1117', fg: '#f0f4f8', text: 'ASUPARK RACING', accent: '#e52521' },
+    { bg: '#e52521', fg: '#fefefe', text: 'PIRELLI', accent: '#ffd000' },
+    { bg: '#0b2046', fg: '#ffffff', text: 'MOBIL 1', accent: '#e52521' },
+    { bg: '#101720', fg: '#00e5ff', text: 'BREMBO', accent: '#ffffff' },
+    { bg: '#0f172a', fg: '#38bdf8', text: 'TAG HEUER', accent: '#22c55e' },
+    { bg: '#b91c1c', fg: '#ffffff', text: 'BRIDGESTONE', accent: '#000000' },
+  ];
+  const b = brands[idx % brands.length];
+  const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = b.bg; ctx.fillRect(0, 0, 512, 128);
+  ctx.fillStyle = b.accent; ctx.fillRect(0, 0, 512, 10); ctx.fillRect(0, 118, 512, 10);
+  ctx.font = '900 58px "Jersey 10",Impact,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = b.fg;
+  ctx.fillText(b.text, 256, 64);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  sponsorBoardCaches[idx] = tex;
+  return tex;
+}
+
+const distBoardCaches = {};
+function distanceBoardTex(num) {
+  if (distBoardCaches[num]) return distBoardCaches[num];
+  const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 256, 256);
+  ctx.lineWidth = 14; ctx.strokeStyle = '#c92a2a'; ctx.strokeRect(10, 10, 236, 236);
+  ctx.fillStyle = '#111317';
+  ctx.font = '900 120px "Jersey 10",Impact,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(num), 128, 128);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  distBoardCaches[num] = tex;
+  return tex;
 }
 function glowTex(inner = 'rgba(255,255,255,1)') {
   const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
@@ -374,11 +564,19 @@ function tunnelMesh(tr, t, th) {
 }
 function roadMesh(tr, th, stride = 1) {
   const N = tr.N, hw = ROAD_HALF, L = WALL, isKart = th.deco === 'kart';
-  const roadData = { pos: [], colors: [], uvs: [] }, edgeData = { pos: [], colors: [], uvs: [] };
-  const cRoad = col(th.road), cRoad2 = col(th.road).multiplyScalar(0.93), cGrass = col(th.grass), cDirt = col(th.dirt);
-  const k1 = col(th.kerb1).multiplyScalar(0.86), k2 = col(th.kerb2).multiplyScalar(0.88), yel = col(0xffc400), blk = col(0x222222);
-  const kset = th.kerbs3 ? th.kerbs3.map((c) => col(c).multiplyScalar(0.92)) : null, cGravel = col(0xe2cf9c);
-  // los pianos nacen y mueren poco a poco (altura y color se funden con el asfalto) y cada franja tiene un desgaste distinto
+  const effectiveStride = isKart ? Math.max(2, stride) : stride;
+  const roadData = { pos: [], colors: [], uvs: [] };
+  const kerbData = { pos: [], colors: [], uvs: [] };
+  const gravelData = { pos: [], colors: [], uvs: [] };
+  const edgeData = { pos: [], colors: [], uvs: [] };
+
+  const cRoad = col(th.road), cRoad2 = col(th.road).multiplyScalar(0.92);
+  const cGrass = col(th.grass), cDirt = col(th.dirt);
+  const k1 = col(th.kerb1).multiplyScalar(0.9), k2 = col(th.kerb2).multiplyScalar(0.92);
+  const yel = col(0xffc400), blk = col(0x222222);
+  const kset = th.kerbs3 ? th.kerbs3.map((c) => col(c).multiplyScalar(0.92)) : null;
+  const cGravel = col(0xd4be88);
+
   const kEnv = new Float32Array(N);
   for (let i = 0; i < N; i++) {
     const v = th.noKerbs ? 0 : tr.kerb[i]; if (!v) continue;
@@ -386,72 +584,101 @@ function roadMesh(tr, th, stride = 1) {
     kEnv[i] = Math.min(1, d / 9);
   }
   const wornC = (c, n) => { const f = 0.9 + 0.1 * (((Math.sin(n * 12.9898) * 43758.5453) % 1 + 1) % 1); return c.clone().multiplyScalar(f); };
+
   const pushQuad = (target, ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz, c, uv, outerColor = c) => {
-    // a,b = borde i (izq, der); c,d = borde i+1 (izq, der)
     target.pos.push(ax, ay, az, cx, cy, cz, bx, by, bz, bx, by, bz, cx, cy, cz, dx, dy, dz);
     for (const shade of [outerColor, outerColor, c, c, outerColor, c]) target.colors.push(shade.r, shade.g, shade.b);
     const [ua, va, ub, vb, uc, vc, ud, vd] = uv;
     target.uvs.push(ua, va, uc, vc, ub, vb, ub, vb, uc, vc, ud, vd);
   };
-  for (let i = 0; i < N; i += stride) {
-    const j = (i + stride) % N, s = i * tr.ds;
+
+  const gridStep = 2.5;
+
+  for (let i = 0; i < N; i += effectiveStride) {
+    const j = (i + effectiveStride) % N, s = i * tr.ds;
     const hi = tr.Y[i], hj = tr.Y[j];
     const eoI = L + 2.5 + hi * 1.1, eoJ = L + 2.5 + hj * 1.1;
-    // perfil lateral: hierba | pianos en relieve (rampa, cresta, escalón) | asfalto | escalón, cresta, rampa | hierba
-    const KW = Math.min(1.9, L - hw - 0.2); // pianos más anchos
+    const KW = isKart ? 1.4 : Math.min(1.9, L - hw - 0.2);
     const GW = tr.rg ? hw + tr.rg[i] : hw + KW + 0.02, GWj = tr.rg ? hw + tr.rg[j] : hw + KW + 0.02;
-    // piano: a ras del asfalto en el borde de la pista y cada vez más alto hacia fuera; escalón en el lado exterior
-    const lat = (k, h, eo, krL, krR, gw) => [[-eo, 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + KW * 0.45), h + krL * 0.75], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw + KW * 0.45, h + krR * 0.75], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, 0]][k];
-    const sLen = 3, s2k = (i + stride) * tr.ds;
-    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x, e) => (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) + ((Math.floor(x * 1.7) & 1) ? 0.05 : 0) : (isKart ? 0.065 + 0.03 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) : 0.045 + 0.024 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen))) * e;
-    const krLi = kv === -1 ? wave(s, kEnv[i]) : 0, krRi = kv === 1 ? wave(s, kEnv[i]) : 0, krLj = kvj === -1 ? wave(s2k, kEnv[j]) : 0, krRj = kvj === 1 ? wave(s2k, kEnv[j]) : 0;
+
+    const lat = (k, h, eo, krL, krR, gw) => isKart
+      ? [[-eo, 0], [-L, h - 0.04], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + 0.2), h + krL * 0.9], [-hw, h + 0.005], [-0.22, h], [0.22, h], [hw, h + 0.005], [hw + 0.2, h + krR * 0.9], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.04], [eo, 0]][k]
+      : [[-eo, 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + KW * 0.45), h + krL * 0.75], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw + KW * 0.45, h + krR * 0.75], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, 0]][k];
+
+    const sLen = isKart ? 3.2 : 3.0, s2k = (i + effectiveStride) * tr.ds;
+    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]);
+    const wave = (x, e) => (isKart ? 0.22 : (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) : 0.048 + 0.024 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen))) * e;
+    const krLi = kv === -1 ? wave(s, kEnv[i]) : 0, krRi = kv === 1 ? wave(s, kEnv[i]) : 0;
+    const krLj = kvj === -1 ? wave(s2k, kEnv[j]) : 0, krRj = kvj === 1 ? wave(s2k, kEnv[j]) : 0;
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
     const stripeN = Math.floor(s / sLen), stripe = stripeN % 2 === 0;
+
     for (let b = 0; b < 15; b++) {
       const [l0, y0i] = lat(b, hi, eoI, krLi, krRi, GW), [l1, y1i] = lat(b + 1, hi, eoI, krLi, krRi, GW);
       const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj, GWj), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj, GWj);
+
       const P = (idx, l, y) => {
+        let posX = tr.X[idx], posZ = tr.Z[idx];
         let nx = -tr.TZ[idx], nz = tr.TX[idx];
         if (isKart) {
+          posX = Math.round(posX / gridStep) * gridStep;
+          posZ = Math.round(posZ / gridStep) * gridStep;
           const ang = Math.atan2(nz, nx);
           const snap = Math.round(ang / (Math.PI / 4)) * (Math.PI / 4);
           nx = Math.cos(snap);
           nz = Math.sin(snap);
         }
         const bnk = (Math.abs(l) <= L ? l * Math.tan(tr.bank[idx]) : (l > 0 ? 1 : -1) * L * Math.tan(tr.bank[idx]));
-        return [tr.X[idx] + nx * l, y + bnk, tr.Z[idx] + nz * l];
+        return [posX + nx * l, y + bnk, posZ + nz * l];
       };
+
       const a = P(i, l0, y0i), bb = P(i, l1, y1i), c = P(j, l0j, y0j), d = P(j, l1j, y1j);
       let color;
       let outerColor = null;
-      if (b === 0 || b === 14) { color = cGrass; outerColor = cDirt; }
-      else if (b === 1 || b === 13) color = tr.rg ? cGrass.clone().multiplyScalar(Math.floor(s / 14) % 2 ? 1 : 0.93) : cGrass; // hierba segada a franjas
-      else if (b === 2 || b === 12) color = tr.rg ? cGravel.clone().multiplyScalar(0.92 + 0.08 * (((Math.sin(Math.floor(s / 3) * 5.31 + b) * 4375.5) % 1 + 1) % 1)) : cGrass; // grava
-      else if (b === 3 || b === 4 || b === 5 || b === 9 || b === 10 || b === 11) {
+
+      if (b === 0 || b === 14) {
+        color = cGrass; outerColor = cDirt;
+      } else if (b === 1 || b === 13) {
+        color = tr.rg ? cGrass.clone().multiplyScalar(Math.floor(s / 14) % 2 ? 1 : 0.93) : cGrass;
+      } else if (b === 2 || b === 12) {
+        color = tr.rg ? cGravel.clone().multiplyScalar(0.92 + 0.08 * (((Math.sin(Math.floor(s / 3) * 5.31 + b) * 4375.5) % 1 + 1) % 1)) : cGrass;
+      } else if (b === 3 || b === 4 || b === 5 || b === 9 || b === 10 || b === 11) {
         const hasKerb = b < 6 ? kv === -1 : kv === 1;
         const baseKerb = isKart
           ? (stripe ? col(0xee2c2c) : col(0xffffff))
           : (kset ? kset[stripeN % 3] : (stripe ? k1 : k2));
         let kShaded = isKart ? baseKerb.clone() : wornC(baseKerb, stripeN).lerp(cRoad2, 1 - kEnv[i]);
-        if (b === 4 || b === 10) kShaded.multiplyScalar(1.08);
-        else if (b === 3 || b === 11) kShaded.multiplyScalar(0.72);
+        if (b === 4 || b === 10) kShaded.multiplyScalar(isKart ? 1.0 : 1.08);
+        else if (b === 3 || b === 11) kShaded.multiplyScalar(isKart ? 0.9 : 0.72);
         color = th.noKerbs ? cGrass : hasKerb ? kShaded : (tr.rg ? cGravel : cRoad2);
-      }
-      else {
+      } else {
         if (isKart) {
-          color = Math.abs(tr.kap[i]) < 0.007
-            ? (Math.floor(s / 3.4) % 2 === 0 ? col(0x565a64) : col(0x383b42))
-            : col(0x383b42);
+          const isStraight = Math.abs(tr.kap[i]) < 0.007;
+          color = isStraight
+            ? (Math.floor(s / 3.4) % 2 === 0 ? col(0x545863) : col(0x363941))
+            : col(0x363941);
         } else {
           color = Math.floor(s / 24) % 2 ? cRoad : cRoad2;
-          const zn = zoneAt(tr, s); if (zn && zn.w > 0.5 && zn.key !== 'asphalt') { const zc = SURF[zn.key].col; if (zc != null) color = col(zc).multiplyScalar(Math.floor(s / 6) % 2 ? 1 : 0.93); }
+          const zn = zoneAt(tr, s);
+          if (zn && zn.w > 0.5 && zn.key !== 'asphalt') {
+            const zc = SURF[zn.key].col;
+            if (zc != null) color = col(zc).multiplyScalar(Math.floor(s / 6) % 2 ? 1 : 0.93);
+          }
           if (inRamp) color = Math.floor(s / 1.5) % 2 ? yel : blk;
         }
       }
-      const s2 = (i + stride) * tr.ds, K = 1 / 5;
-      pushQuad(b >= 6 && b <= 8 ? roadData : edgeData, a[0], a[1], a[2], bb[0], bb[1], bb[2], c[0], c[1], c[2], d[0], d[1], d[2], color, [l0 * K, s * K, l1 * K, s * K, l0j * K, s2 * K, l1j * K, s2 * K], outerColor || color);
+
+      const s2 = (i + effectiveStride) * tr.ds, K = 1 / 5;
+      let target;
+      if (b >= 6 && b <= 8) target = roadData;
+      else if ((b >= 3 && b <= 5) || (b >= 9 && b <= 11)) target = kerbData;
+      else if (b === 2 || b === 12) target = gravelData;
+      else target = edgeData;
+
+      pushQuad(target, a[0], a[1], a[2], bb[0], bb[1], bb[2], c[0], c[1], c[2], d[0], d[1], d[2], color, [l0 * K, s * K, l1 * K, s * K, l0j * K, s2 * K, l1j * K, s2 * K], outerColor || color);
     }
   }
+
   const geometry = (data) => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(data.pos, 3));
@@ -463,43 +690,114 @@ function roadMesh(tr, th, stride = 1) {
     if (up < 0) { for (let k = 0; k < nrm.count; k++) nrm.setXYZ(k, -nrm.getX(k), -nrm.getY(k), -nrm.getZ(k)); }
     return g;
   };
+
   const wet = th.weather === 'rain', snow = th.surface === 'snow', dirt = th.surface === 'dirt';
-  const roadTex = isKart ? marioTarmacTex() : tarmacTex();
-  const roadMaterial = wet
-    ? new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.60, metalness: 0.01, envMapIntensity: 0.40, map: roadTex })
-    : new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: snow ? 0.72 : dirt ? 0.8 : 0.82, metalness: 0.01, envMapIntensity: 0.20, map: roadTex });
-  const edgeMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.92, metalness: 0.01 });
-  const group = new THREE.Group();
-  for (const [data, material] of [[roadData, roadMaterial], [edgeData, edgeMaterial]]) {
-    const mesh = new THREE.Mesh(geometry(data), material);
-    mesh.receiveShadow = true; group.add(mesh);
+  const rTex = isKart ? marioTarmacTex() : asphaltTex(th);
+
+  let roadRough = 0.76, roadMetal = 0.01, envInt = 0.28;
+  if (isKart) {
+    roadRough = 0.85; roadMetal = 0.01; envInt = 0.15;
+  } else if (th.id === 'spa') {
+    roadRough = 0.44; roadMetal = 0.02; envInt = 0.72;
+  } else if (th.id === 'neon') {
+    roadRough = 0.40; roadMetal = 0.05; envInt = 0.88;
+  } else if (th.id === 'nieve') {
+    roadRough = 0.68; roadMetal = 0.04; envInt = 0.55;
+  } else if (th.id === 'desierto') {
+    roadRough = 0.88; roadMetal = 0.01; envInt = 0.16;
+  } else if (th.id === 'monaco') {
+    roadRough = 0.74; roadMetal = 0.02; envInt = 0.32;
   }
+
+  const roadMaterial = new THREE.MeshStandardMaterial({
+    vertexColors: true, side: THREE.DoubleSide,
+    roughness: roadRough, metalness: roadMetal, envMapIntensity: envInt, map: rTex
+  });
+
+  const kerbMaterial = new THREE.MeshStandardMaterial({
+    vertexColors: true, side: THREE.DoubleSide,
+    roughness: isKart ? 0.45 : 0.68, metalness: 0.02,
+    map: isKart ? null : kerbTex(), envMapIntensity: 0.22, flatShading: isKart
+  });
+
+  const gravelMaterial = new THREE.MeshStandardMaterial({
+    vertexColors: true, side: THREE.DoubleSide,
+    roughness: 0.95, metalness: 0.01, map: gravelTex()
+  });
+
+  const edgeMaterial = new THREE.MeshStandardMaterial({
+    vertexColors: true, side: THREE.DoubleSide,
+    roughness: 0.92, metalness: 0.01
+  });
+
+  const group = new THREE.Group();
+  for (const [data, mat] of [
+    [roadData, roadMaterial],
+    [kerbData, kerbMaterial],
+    [gravelData, gravelMaterial],
+    [edgeData, edgeMaterial]
+  ]) {
+    if (data.pos.length) {
+      const mesh = new THREE.Mesh(geometry(data), mat);
+      mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+  }
+
+  // Líneas dobles pintadas en los bordes para Mario Circuit (amarilla interior, blanca exterior)
+  if (isKart) {
+    const yellowMat = new THREE.MeshBasicMaterial({ color: 0xffd000, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const whiteMat = new THREE.MeshBasicMaterial({ color: 0xf5f7fa, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    for (const side of [-1, 1]) {
+      const yLine = new THREE.Mesh(stripGeom(tr, 0, tr.len - 1, side * (ROAD_HALF - 0.32) - 0.12, side * (ROAD_HALF - 0.32) + 0.12, 0.04), yellowMat);
+      const wLine = new THREE.Mesh(stripGeom(tr, 0, tr.len - 1, side * (ROAD_HALF - 0.08) - 0.12, side * (ROAD_HALF - 0.08) + 0.12, 0.04), whiteMat);
+      yLine.frustumCulled = wLine.frustumCulled = false;
+      group.add(yLine, wLine);
+    }
+  }
+
   return group;
 }
 
 function wallMesh(tr, th, stride = 1) {
-  const N = tr.N, L = WALL, pos = [], colors = [];
+  const N = tr.N, L = WALL, pos = [], colors = [], uvs = [];
   const c1 = col(th.wall1), c2 = col(th.wall2);
-  const H = th.deco === 'kart' ? 0.28 : 0.55, T = th.deco === 'kart' ? 0.28 : 0.5;
+  const H = 0.65, T = 0.45;
+  const isKart = th.deco === 'kart';
+
   for (const side of [-1, 1]) {
     for (let i = 0; i < N; i += stride) {
       const j = (i + stride) % N, s = i * tr.ds;
-      const c = th.deco === 'kart'
-        ? col(th.palette[Math.floor(s / 3) % th.palette.length])
-        : Math.floor(s / 6) % 2 ? c1 : c2;
+      const c = Math.floor(s / 6) % 2 ? c1 : c2;
       const P = (idx, l, y) => [tr.X[idx] + -tr.TZ[idx] * l * side, y + bankOff(tr, idx, l * side), tr.Z[idx] + tr.TX[idx] * l * side];
       const a0 = P(i, L, tr.Y[i] - 0.05), a1 = P(i, L, tr.Y[i] + H), b0 = P(j, L, tr.Y[j] - 0.05), b1 = P(j, L, tr.Y[j] + H);
       const t0 = P(i, L + T, tr.Y[i] + H), t1 = P(j, L + T, tr.Y[j] + H);
-      const quad = (p, q, r, s2) => { pos.push(...p, ...r, ...q, ...q, ...r, ...s2); for (let k = 0; k < 6; k++) colors.push(c.r, c.g, c.b); };
-      quad(a0, a1, b0, b1);
-      quad(a1, t0, b1, t1);
+      const quad = (p, q, r, s2, u0, u1) => {
+        pos.push(...p, ...r, ...q, ...q, ...r, ...s2);
+        for (let k = 0; k < 6; k++) colors.push(c.r, c.g, c.b);
+        uvs.push(u0, 0, u1, 0, u0, 1, u0, 1, u1, 0, u1, 1);
+      };
+      const u0 = (s / 4) % 1, u1 = ((s + stride * tr.ds) / 4) % 1;
+      quad(a0, a1, b0, b1, u0, u1);
+      quad(a1, t0, b1, t1, u0, u1);
     }
   }
+
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
   g.computeVertexNormals();
-  return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide }));
+
+  const wallMat = isKart
+    ? new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide })
+    : new THREE.MeshStandardMaterial({
+        vertexColors: true, map: armcoTex(), roughness: 0.38, metalness: 0.72,
+        side: THREE.DoubleSide, envMapIntensity: 0.55
+      });
+
+  const mesh = new THREE.Mesh(g, wallMat);
+  return mesh;
 }
 
 function marioArena(th, scene, shadows) {
@@ -511,12 +809,17 @@ function marioArena(th, scene, shadows) {
   scene.add(sandMesh);
 
   const islands = [
-    { x0: 52, x1: 90, z0: -75.5, z1: 64 },
-    { x0: 22, x1: 52, z0: 52, z1: 88 },
-    { x0: -12, x1: 14, z0: -116, z1: -92.5 },
-    { x0: -92, x1: 22, z0: -23.5, z1: -12.5 },
-    { x0: -96, x1: -65, z0: -83, z1: -54 },
-    { x0: -96, x1: -54, z0: 50, z1: 84 },
+    { x0: 56, x1: 88, z0: -48, z1: 64 },
+    { x0: 42, x1: 88, z0: -82, z1: -48 },
+    { x0: 46, x1: 72, z0: 64, z1: 76 },
+    { x0: -96, x1: -44, z0: -84, z1: -66 },
+    { x0: -96, x1: -76, z0: -66, z1: -48 },
+    { x0: -88, x1: 22, z0: -24, z1: -12 },
+    { x0: 16, x1: 28, z0: -20, z1: -12 },
+    { x0: -96, x1: -72, z0: 50, z1: 94 },
+    { x0: -72, x1: -46, z0: 72, z1: 94 },
+    { x0: -10, x1: 18, z0: 68, z1: 116 },
+    { x0: 24, x1: 56, z0: 22, z1: 44 },
   ];
   const grassMat = new THREE.MeshStandardMaterial({ color: th.grass, roughness: 0.9 });
   for (const isl of islands) {
@@ -535,6 +838,12 @@ function marioArena(th, scene, shadows) {
     for (let x = isl.x0; x <= isl.x1; x += step) { pts.push([x, isl.z0]); pts.push([x, isl.z1]); }
     for (let z = isl.z0; z <= isl.z1; z += step) { pts.push([isl.x0, z]); pts.push([isl.x1, z]); }
   }
+  // Dientes en sierra (sawtooth) a lo largo del borde este de la isla frente a la recta de meta
+  for (let z = -40; z <= 56; z += step) {
+    if (Math.floor((z + 40) / 8) % 2 === 0) {
+      pts.push([91.4, z]);
+    }
+  }
 
   const boxPart = new THREE.BoxGeometry(1.6, 0.9, 1.6).toNonIndexed();
   boxPart.translate(0, 0.45, 0);
@@ -550,7 +859,7 @@ function marioArena(th, scene, shadows) {
 
   const blockMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42, metalness: 0.05, flatShading: true });
   const blocks = new THREE.InstancedMesh(blockGeo, blockMat, pts.length);
-  const dummy = new THREE.Object3D(), pal = (th.palette || [0xe52521, 0xf8d028, 0x1b75d0, 0x2bb830]).map(col);
+  const dummy = new THREE.Object3D(), pal = [0xe52521, 0x1b75d0, 0x2bb830, 0xf8d028].map(col);
 
   pts.forEach(([px, pz], k) => {
     dummy.position.set(px, 0, pz);
@@ -600,6 +909,229 @@ function marioPipes(scene, shadows) {
   baseMesh.receiveShadow = lipMesh.receiveShadow = shadows;
   baseMesh.frustumCulled = lipMesh.frustumCulled = capMesh.frustumCulled = false;
   scene.add(baseMesh); scene.add(lipMesh); scene.add(capMesh);
+}
+
+let marioBrickTextureCache = null;
+function marioBrickTex() {
+  if (marioBrickTextureCache) return marioBrickTextureCache;
+  const size = 64, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#b84418'; ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#2b1008';
+  ctx.fillRect(0, 0, size, 2); ctx.fillRect(0, 16, size, 2); ctx.fillRect(0, 32, size, 2); ctx.fillRect(0, 48, size, 2); ctx.fillRect(0, 62, size, 2);
+  for (let r = 0; r < 4; r++) {
+    const y = r * 16 + 2;
+    const shift = (r % 2 === 0) ? 0 : 16;
+    for (let x = shift; x < size; x += 32) ctx.fillRect(x, y, 2, 14);
+  }
+  ctx.fillStyle = '#e57a44';
+  for (let r = 0; r < 4; r++) {
+    const y = r * 16 + 2;
+    ctx.fillRect(0, y, size, 2);
+  }
+  marioBrickTextureCache = new THREE.CanvasTexture(canvas);
+  marioBrickTextureCache.magFilter = THREE.NearestFilter;
+  marioBrickTextureCache.minFilter = THREE.NearestFilter;
+  marioBrickTextureCache.colorSpace = THREE.SRGBColorSpace;
+  return marioBrickTextureCache;
+}
+
+let marioQuestionTextureCache = null;
+function marioQuestionTex() {
+  if (marioQuestionTextureCache) return marioQuestionTextureCache;
+  const size = 64, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fc9838'; ctx.fillRect(0, 0, size, size);
+  ctx.strokeStyle = '#421a08'; ctx.lineWidth = 4; ctx.strokeRect(2, 2, 60, 60);
+  ctx.fillStyle = '#421a08';
+  ctx.fillRect(6, 6, 4, 4); ctx.fillRect(54, 6, 4, 4); ctx.fillRect(6, 54, 4, 4); ctx.fillRect(54, 54, 4, 4);
+  ctx.font = '900 44px "Jersey 10",Impact,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#2a1205'; ctx.fillText('?', 34, 34);
+  ctx.fillStyle = '#ffffff'; ctx.fillText('?', 32, 32);
+  marioQuestionTextureCache = new THREE.CanvasTexture(canvas);
+  marioQuestionTextureCache.magFilter = THREE.NearestFilter;
+  marioQuestionTextureCache.minFilter = THREE.NearestFilter;
+  marioQuestionTextureCache.colorSpace = THREE.SRGBColorSpace;
+  return marioQuestionTextureCache;
+}
+
+function marioProps(scene, shadows) {
+  const brickMat = new THREE.MeshStandardMaterial({ map: marioBrickTex(), roughness: 0.85, metalness: 0.05 });
+  const qMat = new THREE.MeshStandardMaterial({ map: marioQuestionTex(), roughness: 0.45, metalness: 0.08 });
+  const boxGeo = new THREE.BoxGeometry(2.0, 2.0, 2.0);
+
+  const brickSpots = [];
+  const qSpots = [];
+  for (let h = 0; h < 4; h++) brickSpots.push([106, 1.0 + h * 2.0, 18]);
+  for (let h = 0; h < 3; h++) brickSpots.push([106, 1.0 + h * 2.0, 15.5]);
+
+  const rowZ = -60;
+  for (let i = -2; i <= 2; i++) {
+    const x = -30 + i * 2.1;
+    if (i === 0) qSpots.push([x, 4.5, rowZ]);
+    else brickSpots.push([x, 4.5, rowZ]);
+  }
+
+  for (let i = -1; i <= 1; i++) {
+    const x = 5 + i * 2.1;
+    if (i === 0) qSpots.push([x, 4.0, -10]);
+    else brickSpots.push([x, 4.0, -10]);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    brickSpots.push([-115, 1.0 + i * 2.0, 25]);
+  }
+
+  const dummy = new THREE.Object3D();
+  if (brickSpots.length) {
+    const brickMesh = new THREE.InstancedMesh(boxGeo, brickMat, brickSpots.length);
+    brickSpots.forEach((p, idx) => {
+      dummy.position.set(p[0], p[1], p[2]); dummy.scale.set(1, 1, 1); dummy.rotation.set(0, 0, 0); dummy.updateMatrix();
+      brickMesh.setMatrixAt(idx, dummy.matrix);
+    });
+    brickMesh.castShadow = brickMesh.receiveShadow = shadows;
+    brickMesh.frustumCulled = false;
+    scene.add(brickMesh);
+  }
+
+  if (qSpots.length) {
+    const qMesh = new THREE.InstancedMesh(boxGeo, qMat, qSpots.length);
+    qSpots.forEach((p, idx) => {
+      dummy.position.set(p[0], p[1], p[2]); dummy.scale.set(1, 1, 1); dummy.rotation.set(0, 0, 0); dummy.updateMatrix();
+      qMesh.setMatrixAt(idx, dummy.matrix);
+    });
+    qMesh.castShadow = qMesh.receiveShadow = shadows;
+    qMesh.frustumCulled = false;
+    scene.add(qMesh);
+  }
+}
+
+function marioArrows(tr, scene) {
+  const arrowS = [
+    tr.len * 0.08,
+    tr.len * 0.28,
+    tr.len * 0.52,
+    tr.len * 0.76
+  ];
+  const arrowMat = new THREE.MeshBasicMaterial({
+    map: marioArrowTex(),
+    transparent: true,
+    opacity: 0.95,
+    polygonOffset: true,
+    polygonOffsetFactor: -3,
+    polygonOffsetUnits: -3,
+    side: THREE.DoubleSide
+  });
+
+  for (const s of arrowS) {
+    const mesh = new THREE.Mesh(stripGeom(tr, s, s + 4.5, -2.2, 2.2, 0.045), arrowMat);
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+  }
+}
+
+function distanceMarkers(tr, th, scene) {
+  if (th.deco === 'kart') return;
+  const N = tr.N;
+  const zones = [];
+  let lastS = -100;
+  for (let i = 40; i < N - 40; i += 10) {
+    const ak = Math.abs(tr.kap[i]);
+    const s = i * tr.ds;
+    if (ak > 0.013 && s - lastS > 90) {
+      const iPrev = Math.max(0, i - Math.round(60 / tr.ds));
+      if (Math.abs(tr.kap[iPrev]) < 0.007) {
+        zones.push({ i, s, side: tr.kap[i] > 0 ? -1 : 1 });
+        lastS = s;
+      }
+    }
+  }
+  if (!zones.length) return;
+
+  const distances = [200, 150, 100, 50];
+  const boardGeo = new THREE.PlaneGeometry(1.6, 1.6);
+  const postGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.4, 6);
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x828994, metalness: 0.7, roughness: 0.4 });
+
+  const dummy = new THREE.Object3D();
+  for (const dist of distances) {
+    const tex = distanceBoardTex(dist);
+    const boardMat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+    const boards = new THREE.InstancedMesh(boardGeo, boardMat, zones.length);
+    const posts = new THREE.InstancedMesh(postGeo, postMat, zones.length);
+
+    zones.forEach((z, idx) => {
+      const sMarker = Math.max(0, z.s - dist * 0.4);
+      const iM = Math.floor(sMarker / tr.ds) % N;
+      const tx = tr.TX[iM], tz = tr.TZ[iM];
+      const side = z.side;
+      const nx = -tz * side, nz = tx * side;
+      const x = tr.X[iM] + nx * (WALL + 0.9), zPos = tr.Z[iM] + nz * (WALL + 0.9);
+      const y = tr.Y[iM] + bankOff(tr, iM, side * (WALL + 0.9));
+      const heading = Math.atan2(tx, tz);
+
+      dummy.position.set(x, y + 1.2, zPos);
+      dummy.scale.set(1, 1, 1);
+      dummy.rotation.set(0, heading, 0);
+      dummy.updateMatrix();
+      posts.setMatrixAt(idx, dummy.matrix);
+
+      dummy.position.set(x - nx * 0.05, y + 2.0, zPos - nz * 0.05);
+      dummy.rotation.set(0, heading, 0);
+      dummy.updateMatrix();
+      boards.setMatrixAt(idx, dummy.matrix);
+    });
+
+    boards.frustumCulled = posts.frustumCulled = false;
+    scene.add(posts);
+    scene.add(boards);
+  }
+}
+
+function sponsorHoardings(tr, th, scene) {
+  if (th.deco === 'kart') return;
+  const N = tr.N;
+  const hoardings = [];
+  for (let s = 20; s < tr.len - 40; s += 16) {
+    const i = Math.floor(s / tr.ds) % N;
+    if (Math.abs(tr.kap[i]) < 0.005) {
+      if ((tr.tunnels || []).some((t) => s > t.s0 - 4 && s < t.s1 + 4)) continue;
+      hoardings.push({ s, i, brandIdx: Math.floor(s / 16) % 6 });
+    }
+  }
+  if (!hoardings.length) return;
+
+  const panelGeo = new THREE.PlaneGeometry(5.2, 1.15);
+  const dummy = new THREE.Object3D();
+
+  for (let b = 0; b < 6; b++) {
+    const group = hoardings.filter((h) => h.brandIdx === b);
+    if (!group.length) continue;
+    const mat = new THREE.MeshBasicMaterial({ map: getSponsorTex(b), side: THREE.DoubleSide });
+    const count = group.length * 2;
+    const mesh = new THREE.InstancedMesh(panelGeo, mat, count);
+
+    let k = 0;
+    for (const h of group) {
+      const i = h.i;
+      const tx = tr.TX[i], tz = tr.TZ[i];
+      const heading = Math.atan2(tx, tz);
+      for (const side of [-1, 1]) {
+        const nx = -tz * side, nz = tx * side;
+        const x = tr.X[i] + nx * (WALL + 0.15), zPos = tr.Z[i] + nz * (WALL + 0.15);
+        const y = tr.Y[i] + bankOff(tr, i, side * (WALL + 0.15)) + 0.72;
+
+        dummy.position.set(x, y, zPos);
+        dummy.scale.set(1, 1, 1);
+        dummy.rotation.set(0, heading + (side > 0 ? 0 : Math.PI), 0);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(k++, dummy.matrix);
+      }
+    }
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+  }
 }
 
 // tira que sigue la carretera (turbos y luces de neón)
@@ -1200,11 +1732,15 @@ export function buildWorld(tr, th, opt = {}) {
   if (th.deco === 'kart') {
     marioArena(th, scene, !!q.shadows);
     marioPipes(scene, !!q.shadows);
+    marioProps(scene, !!q.shadows);
+    marioArrows(tr, scene);
   } else {
     const walls = wallMesh(tr, th, q.stride);
     walls.receiveShadow = true;
     walls.castShadow = !!q.shadows;
     scene.add(walls);
+    distanceMarkers(tr, th, scene);
+    sponsorHoardings(tr, th, scene);
   }
   if (th.oil) {
     const oilMat = new THREE.MeshPhysicalMaterial({
@@ -1257,15 +1793,20 @@ export function buildWorld(tr, th, opt = {}) {
     for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k), uv.getY(k));
     const fl = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: t, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); fl.receiveShadow = true; scene.add(fl);
   }
-  // Líneas blancas continuas de borde, separadas de los pianos elevados.
-  const edgeMat = new THREE.MeshBasicMaterial({ color: th.surface === 'snow' ? 0xd7e9ff : 0xf5f2e9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-  for (const side of [-1, 1]) {
-    const edge = new THREE.Mesh(stripGeom(tr, 0, tr.len - 1, side * (ROAD_HALF - 0.24) - 0.075, side * (ROAD_HALF - 0.24) + 0.075, 0.075), edgeMat);
-    edge.frustumCulled = false; scene.add(edge);
+  // Líneas blancas continuas de borde, separadas de los pianos elevados (circuitos realistas).
+  if (th.deco !== 'kart') {
+    const edgeMat = new THREE.MeshBasicMaterial({ color: th.surface === 'snow' ? 0xd7e9ff : 0xf5f2e9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    for (const side of [-1, 1]) {
+      const edge = new THREE.Mesh(stripGeom(tr, 0, tr.len - 1, side * (ROAD_HALF - 0.24) - 0.075, side * (ROAD_HALF - 0.24) + 0.075, 0.075), edgeMat);
+      edge.frustumCulled = false; scene.add(edge);
+    }
   }
-  scene.add(gantry(tr, tr.len / 3, 'S2', '#66e8ff')); scene.add(gantry(tr, (tr.len * 2) / 3, 'S3', '#66e8ff'));
-  tyreStacks(tr, th, scene);
-  turnSigns(tr, th, scene, !!opt.mobile);
+  if (th.deco !== 'kart') {
+    scene.add(gantry(tr, tr.len / 3, 'S2', '#66e8ff'));
+    scene.add(gantry(tr, (tr.len * 2) / 3, 'S3', '#66e8ff'));
+    tyreStacks(tr, th, scene);
+    turnSigns(tr, th, scene, !!opt.mobile);
+  }
 
   const info = scenery(tr, th, scene, rng, q);
   const windDummy = new THREE.Object3D();
