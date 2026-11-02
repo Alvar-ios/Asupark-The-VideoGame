@@ -53,6 +53,62 @@ function groundTex() {
   return t;
 }
 
+function mergeBufferGeometries(geos) {
+  let totalPos = 0, totalNorm = 0, totalUv = 0, totalCol = 0;
+  const nonIndexed = geos.map((g) => (g.index ? g.toNonIndexed() : g));
+  for (const g of nonIndexed) {
+    if (g.attributes.position) totalPos += g.attributes.position.array.length;
+    if (g.attributes.normal) totalNorm += g.attributes.normal.array.length;
+    if (g.attributes.uv) totalUv += g.attributes.uv.array.length;
+    if (g.attributes.color) totalCol += g.attributes.color.array.length;
+  }
+  const pos = new Float32Array(totalPos);
+  const norm = totalNorm === totalPos ? new Float32Array(totalNorm) : null;
+  const uv = totalUv > 0 ? new Float32Array(totalUv) : null;
+  const col = totalCol === totalPos ? new Float32Array(totalCol) : null;
+
+  let posOff = 0, normOff = 0, uvOff = 0, colOff = 0;
+  for (const g of nonIndexed) {
+    if (g.attributes.position) {
+      pos.set(g.attributes.position.array, posOff);
+      posOff += g.attributes.position.array.length;
+    }
+    if (norm && g.attributes.normal) {
+      norm.set(g.attributes.normal.array, normOff);
+      normOff += g.attributes.normal.array.length;
+    }
+    if (uv && g.attributes.uv) {
+      uv.set(g.attributes.uv.array, uvOff);
+      uvOff += g.attributes.uv.array.length;
+    }
+    if (col && g.attributes.color) {
+      col.set(g.attributes.color.array, colOff);
+      colOff += g.attributes.color.array.length;
+    }
+  }
+
+  const merged = new THREE.BufferGeometry();
+  merged.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  if (norm) merged.setAttribute('normal', new THREE.BufferAttribute(norm, 3));
+  else merged.computeVertexNormals();
+  if (uv) merged.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  if (col) merged.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return merged;
+}
+
+function colorGeometry(geo, r, g, b) {
+  const nonIdx = geo.index ? geo.toNonIndexed() : geo;
+  const count = nonIdx.attributes.position.count;
+  const cols = new Float32Array(count * 3);
+  for (let v = 0; v < count; v++) {
+    cols[v * 3] = r;
+    cols[v * 3 + 1] = g;
+    cols[v * 3 + 2] = b;
+  }
+  nonIdx.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  return nonIdx;
+}
+
 const asphaltCache = new Map();
 function asphaltTex(th) {
   const key = th.id || 'default';
@@ -750,12 +806,9 @@ function roadMesh(tr, th, stride = 1) {
   return group;
 }
 
-function marioTrackBlocks(tr, th) {
-  const N = tr.N, L = WALL;
-  const step = 1.75;
-  const blockCountPerSide = Math.floor(tr.len / step);
-  const totalBlocks = blockCountPerSide * 2;
-
+let marioBlockGeoCache = null;
+function getMarioBlockGeo() {
+  if (marioBlockGeoCache) return marioBlockGeoCache;
   const boxPart = new THREE.BoxGeometry(1.6, 0.95, 1.6).toNonIndexed();
   boxPart.translate(0, 0.475, 0);
   const pyrPart = new THREE.CylinderGeometry(0.68, 1.13, 0.35, 4).toNonIndexed();
@@ -764,10 +817,19 @@ function marioTrackBlocks(tr, th) {
   const posA = boxPart.attributes.position.array, posB = pyrPart.attributes.position.array;
   const combinedPos = new Float32Array(posA.length + posB.length);
   combinedPos.set(posA, 0); combinedPos.set(posB, posA.length);
-  const blockGeo = new THREE.BufferGeometry();
-  blockGeo.setAttribute('position', new THREE.BufferAttribute(combinedPos, 3));
-  blockGeo.computeVertexNormals();
+  marioBlockGeoCache = new THREE.BufferGeometry();
+  marioBlockGeoCache.setAttribute('position', new THREE.BufferAttribute(combinedPos, 3));
+  marioBlockGeoCache.computeVertexNormals();
+  return marioBlockGeoCache;
+}
 
+function marioTrackBlocks(tr, th) {
+  const N = tr.N, L = WALL;
+  const step = 1.75;
+  const blockCountPerSide = Math.floor(tr.len / step);
+  const totalBlocks = blockCountPerSide * 2;
+
+  const blockGeo = getMarioBlockGeo();
   const blockMat = new THREE.MeshStandardMaterial({
     color: 0xffffff, roughness: 0.42, metalness: 0.05, flatShading: true
   });
@@ -795,7 +857,7 @@ function marioTrackBlocks(tr, th) {
     }
   }
   if (blocks.instanceColor) blocks.instanceColor.needsUpdate = true;
-  blocks.castShadow = true;
+  blocks.castShadow = false;
   blocks.receiveShadow = true;
   blocks.frustumCulled = false;
   return blocks;
@@ -874,18 +936,7 @@ function marioArena(th, scene, shadows) {
   for (let x = minX; x <= maxX; x += step) { pts.push([x, minZ]); pts.push([x, maxZ]); }
   for (let z = minZ; z <= maxZ; z += step) { pts.push([minX, z]); pts.push([maxX, z]); }
 
-  const boxPart = new THREE.BoxGeometry(1.6, 0.95, 1.6).toNonIndexed();
-  boxPart.translate(0, 0.475, 0);
-  const pyrPart = new THREE.CylinderGeometry(0.68, 1.13, 0.35, 4).toNonIndexed();
-  pyrPart.rotateY(Math.PI / 4);
-  pyrPart.translate(0, 1.125, 0);
-  const posA = boxPart.attributes.position.array, posB = pyrPart.attributes.position.array;
-  const combinedPos = new Float32Array(posA.length + posB.length);
-  combinedPos.set(posA, 0); combinedPos.set(posB, posA.length);
-  const blockGeo = new THREE.BufferGeometry();
-  blockGeo.setAttribute('position', new THREE.BufferAttribute(combinedPos, 3));
-  blockGeo.computeVertexNormals();
-
+  const blockGeo = getMarioBlockGeo();
   const blockMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42, metalness: 0.05, flatShading: true });
   const blocks = new THREE.InstancedMesh(blockGeo, blockMat, pts.length);
   const dummy = new THREE.Object3D(), pal = [0xe52521, 0x1b75d0, 0x2bb830, 0xf8d028].map(col);
@@ -899,7 +950,7 @@ function marioArena(th, scene, shadows) {
     blocks.setColorAt(k, pal[k % pal.length]);
   });
   if (blocks.instanceColor) blocks.instanceColor.needsUpdate = true;
-  blocks.castShadow = shadows;
+  blocks.castShadow = false;
   blocks.receiveShadow = shadows;
   blocks.frustumCulled = false;
   scene.add(blocks);
@@ -934,7 +985,7 @@ function marioPipes(scene, shadows) {
     capMesh.setMatrixAt(idx, d.matrix);
   });
 
-  baseMesh.castShadow = lipMesh.castShadow = shadows;
+  baseMesh.castShadow = lipMesh.castShadow = false;
   baseMesh.receiveShadow = lipMesh.receiveShadow = shadows;
   baseMesh.frustumCulled = lipMesh.frustumCulled = capMesh.frustumCulled = false;
   scene.add(baseMesh); scene.add(lipMesh); scene.add(capMesh);
@@ -1023,7 +1074,8 @@ function marioProps(scene, shadows) {
       dummy.position.set(p[0], p[1], p[2]); dummy.scale.set(1, 1, 1); dummy.rotation.set(0, 0, 0); dummy.updateMatrix();
       brickMesh.setMatrixAt(idx, dummy.matrix);
     });
-    brickMesh.castShadow = brickMesh.receiveShadow = shadows;
+    brickMesh.castShadow = false;
+    brickMesh.receiveShadow = shadows;
     brickMesh.frustumCulled = false;
     scene.add(brickMesh);
   }
@@ -1034,7 +1086,8 @@ function marioProps(scene, shadows) {
       dummy.position.set(p[0], p[1], p[2]); dummy.scale.set(1, 1, 1); dummy.rotation.set(0, 0, 0); dummy.updateMatrix();
       qMesh.setMatrixAt(idx, dummy.matrix);
     });
-    qMesh.castShadow = qMesh.receiveShadow = shadows;
+    qMesh.castShadow = false;
+    qMesh.receiveShadow = shadows;
     qMesh.frustumCulled = false;
     scene.add(qMesh);
   }
@@ -1297,7 +1350,7 @@ function sponsorFoamWedges(tr, th, scene) {
     });
 
     mesh.frustumCulled = false;
-    mesh.castShadow = true;
+    mesh.castShadow = false;
     mesh.receiveShadow = true;
     scene.add(mesh);
   }
@@ -1380,25 +1433,24 @@ function motorsportAmbiance(tr, th, scene, q) {
   const standZ = tr.Z[iMid] + txM * standLat;
   const standY = tr.Y[iMid] + bankOff(tr, iMid, standLat);
 
-  // Gradas escalonadas
+  // Gradas escalonadas en 1 sola geometría optimizada
   const bleachersGroup = new THREE.Group();
   bleachersGroup.position.set(standX, standY, standZ);
   bleachersGroup.rotation.set(0, headingM, 0);
 
   const concMat = new THREE.MeshStandardMaterial({ color: 0x8a9098, roughness: 0.88 });
+  const bleacherGeos = [];
   for (let t = 0; t < standTiers; t++) {
-    const stepDepth = (standTiers - t) * standTierDepth;
-    const tierMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(standTierDepth, standTierH * (t + 1), standLength),
-      concMat
-    );
-    tierMesh.position.set(t * standTierDepth, (standTierH * (t + 1)) * 0.5, 0);
-    tierMesh.receiveShadow = !!q.shadows;
-    tierMesh.castShadow = !!q.shadows;
-    bleachersGroup.add(tierMesh);
+    const tierGeo = new THREE.BoxGeometry(standTierDepth, standTierH * (t + 1), standLength);
+    tierGeo.translate(t * standTierDepth, (standTierH * (t + 1)) * 0.5, 0);
+    bleacherGeos.push(tierGeo);
   }
+  const bleachersMesh = new THREE.Mesh(mergeBufferGeometries(bleacherGeos), concMat);
+  bleachersMesh.receiveShadow = !!q.shadows;
+  bleachersMesh.castShadow = false;
+  bleachersGroup.add(bleachersMesh);
 
-  // Techo cubierta volada sobre la tribuna
+  // Techo cubierta volada sobre la tribuna (proyecta la sombra principal sobre toda la grada)
   const roofMesh = new THREE.Mesh(
     new THREE.BoxGeometry(standTiers * standTierDepth + 1.2, 0.22, standLength + 2.0),
     new THREE.MeshStandardMaterial({ color: 0x3d444e, metalness: 0.65, roughness: 0.4 })
@@ -1430,6 +1482,8 @@ function motorsportAmbiance(tr, th, scene, q) {
     }
   }
   if (seatMesh.instanceColor) seatMesh.instanceColor.needsUpdate = true;
+  seatMesh.castShadow = false;
+  seatMesh.receiveShadow = !!q.shadows;
   bleachersGroup.add(seatMesh);
   scene.add(bleachersGroup);
 
@@ -1442,7 +1496,7 @@ function motorsportAmbiance(tr, th, scene, q) {
   pitWallMesh.position.set(tr.X[0] + -tz0 * pitLat, tr.Y[0] + bankOff(tr, 0, pitLat) + 0.48, tr.Z[0] + tx0 * pitLat);
   pitWallMesh.rotation.set(0, heading0, 0);
   pitWallMesh.receiveShadow = !!q.shadows;
-  pitWallMesh.castShadow = !!q.shadows;
+  pitWallMesh.castShadow = false;
   scene.add(pitWallMesh);
 
   // Puestos de ingenieros en el muro de boxes (pit perches) con monitores
@@ -1456,6 +1510,7 @@ function motorsportAmbiance(tr, th, scene, q) {
     const perch = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.4, 1.6), perchMat);
     perch.position.set(px, py + 0.7, pz);
     perch.rotation.set(0, heading0, 0);
+    perch.receiveShadow = !!q.shadows;
     scene.add(perch);
 
     const mon = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.55), monitorMat);
@@ -1489,7 +1544,8 @@ function motorsportAmbiance(tr, th, scene, q) {
     const hut = new THREE.Mesh(postHutGeo, hutMat);
     hut.position.set(mx, my + 2.5, mz);
     hut.rotation.set(0, heading, 0);
-    hut.castShadow = !!q.shadows;
+    hut.receiveShadow = !!q.shadows;
+    hut.castShadow = false;
     scene.add(hut);
 
     const roof = new THREE.Mesh(new THREE.ConeGeometry(1.6, 0.65, 4).rotateY(Math.PI / 4), hutRoofMat);
@@ -1786,78 +1842,77 @@ function scenery(tr, th, scene, rng, q) {
   }
   const dummy = new THREE.Object3D();
   const windMeshes = [];
-  const inst = (geo, mat, list, f) => {
+  const inst = (geo, mat, list, f, canCast = true) => {
     const m = new THREE.InstancedMesh(geo, mat, list.length);
     list.forEach((s, k) => { f(dummy, s); dummy.updateMatrix(); m.setMatrixAt(k, dummy.matrix); });
-    m.frustumCulled = false; m.castShadow = !!q.shadows; scene.add(m); return m;
+    m.frustumCulled = false; m.castShadow = canCast && !!q.shadows; m.receiveShadow = !!q.shadows; scene.add(m); return m;
   };
   const lam = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.92 });
   if (th.deco === 'pine' || th.deco === 'snowpine') {
     const snow = th.deco === 'snowpine';
     const treeTransform = (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2] * s[5], s[2] * s[6], s[2] * s[5]); d.rotation.set(0, s[3], 0); };
-    const trunk = inst(new THREE.CylinderGeometry(0.24, 0.44, 5.8, 14, 3).translate(0, 2.9, 0), lam(0x4c3524), spots, treeTransform);
+    const trunk = inst(new THREE.CylinderGeometry(0.24, 0.44, 5.8, 12, 1).translate(0, 2.9, 0), lam(0x4c3524), spots, treeTransform, false);
     spots.forEach((_, k) => trunk.setColorAt(k, col(0x4c3524).multiplyScalar(0.78 + ((k * 19) % 8) * 0.055)));
     if (snow) {
-      // Pinos alpinos con nieve acumulada en capas superiores de 4 niveles
-      const snowSets = [
-        { bough: new THREE.ConeGeometry(2.85, 3.6, 24, 2).translate(0, 3.6, 0), snow: new THREE.ConeGeometry(2.7, 1.4, 24).translate(0, 4.6, 0), shade: 0.72 },
-        { bough: new THREE.ConeGeometry(2.32, 3.2, 24, 2).translate(0, 5.2, 0), snow: new THREE.ConeGeometry(2.18, 1.3, 24).translate(0, 6.1, 0), shade: 0.88 },
-        { bough: new THREE.ConeGeometry(1.78, 2.8, 24, 2).translate(0, 6.6, 0), snow: new THREE.ConeGeometry(1.65, 1.2, 24).translate(0, 7.4, 0), shade: 1.04 },
-        { bough: new THREE.ConeGeometry(1.18, 2.4, 24, 2).translate(0, 7.9, 0), snow: new THREE.ConeGeometry(1.08, 1.1, 24).translate(0, 8.5, 0), shade: 1.18 },
+      // Pinos alpinos con nieve acumulada: 4 niveles fusionados en 2 geometrías (ramas + nieve)
+      const bTiers = [
+        colorGeometry(new THREE.ConeGeometry(2.85, 3.6, 18, 1).translate(0, 3.6, 0), 0.72, 0.72, 0.72),
+        colorGeometry(new THREE.ConeGeometry(2.32, 3.2, 18, 1).translate(0, 5.2, 0), 0.88, 0.88, 0.88),
+        colorGeometry(new THREE.ConeGeometry(1.78, 2.8, 18, 1).translate(0, 6.6, 0), 1.04, 1.04, 1.04),
+        colorGeometry(new THREE.ConeGeometry(1.18, 2.4, 18, 1).translate(0, 7.9, 0), 1.18, 1.18, 1.18),
       ];
-      for (const set of snowSets) {
-        const bMesh = inst(set.bough, lam(th.treeCol), spots, treeTransform);
-        spots.forEach((_, k) => bMesh.setColorAt(k, col(th.treeCol).multiplyScalar(set.shade * (0.92 + ((k * 13) % 7) * 0.02))));
-        if (bMesh.instanceColor) bMesh.instanceColor.needsUpdate = true;
-        windMeshes.push({ mesh: bMesh, spots, kind: 'tree' });
+      const sTiers = [
+        new THREE.ConeGeometry(2.7, 1.4, 18).translate(0, 4.6, 0),
+        new THREE.ConeGeometry(2.18, 1.3, 18).translate(0, 6.1, 0),
+        new THREE.ConeGeometry(1.65, 1.2, 18).translate(0, 7.4, 0),
+        new THREE.ConeGeometry(1.08, 1.1, 18).translate(0, 8.5, 0),
+      ];
+      const snowBoughGeo = mergeBufferGeometries(bTiers);
+      const snowCapGeo = mergeBufferGeometries(sTiers);
+      const bMesh = inst(snowBoughGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 }), spots, treeTransform, true);
+      spots.forEach((_, k) => bMesh.setColorAt(k, col(th.treeCol).multiplyScalar(0.92 + ((k * 13) % 7) * 0.02)));
+      if (bMesh.instanceColor) bMesh.instanceColor.needsUpdate = true;
 
-        const sMesh = inst(set.snow, new THREE.MeshStandardMaterial({ color: 0xf4f9ff, roughness: 0.82 }), spots, treeTransform);
-        windMeshes.push({ mesh: sMesh, spots, kind: 'tree' });
-      }
+      inst(snowCapGeo, new THREE.MeshStandardMaterial({ color: 0xf4f9ff, roughness: 0.82 }), spots, treeTransform, false);
     } else {
       const conifers = spots.filter((s) => s[7] >= 0.48), deciduous = spots.filter((s) => s[7] < 0.48);
-      // Pinos de alta definición: 4 niveles escalonados con 24 segmentos radiales
-      const crownSets = [
-        { geo: new THREE.ConeGeometry(2.85, 3.8, 24, 2).translate(0, 3.6, 0), shade: 0.70 },
-        { geo: new THREE.ConeGeometry(2.35, 3.4, 24, 2).translate(0, 5.2, 0), shade: 0.85 },
-        { geo: new THREE.ConeGeometry(1.80, 3.0, 24, 2).translate(0, 6.7, 0), shade: 1.02 },
-        { geo: new THREE.ConeGeometry(1.20, 2.6, 24, 2).translate(0, 8.1, 0), shade: 1.18 },
+      // Pinos de alta definición: 4 niveles escalonados fusionados en 1 sola geometría y 1 solo draw call
+      const cTiers = [
+        colorGeometry(new THREE.ConeGeometry(2.85, 3.8, 18, 1).translate(0, 3.6, 0), 0.70, 0.70, 0.70),
+        colorGeometry(new THREE.ConeGeometry(2.35, 3.4, 18, 1).translate(0, 5.2, 0), 0.85, 0.85, 0.85),
+        colorGeometry(new THREE.ConeGeometry(1.80, 3.0, 18, 1).translate(0, 6.7, 0), 1.02, 1.02, 1.02),
+        colorGeometry(new THREE.ConeGeometry(1.20, 2.6, 18, 1).translate(0, 8.1, 0), 1.18, 1.18, 1.18),
       ];
-      for (const { geo, shade } of crownSets) {
-        const mesh = inst(geo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.94, flatShading: true }), conifers, treeTransform);
-        conifers.forEach((_, k) => { mesh.setColorAt(k, col(th.treeCol).multiplyScalar(shade * (0.9 + ((k * 17) % 9) * 0.018))); });
-        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-        windMeshes.push({ mesh, spots: conifers, kind: 'tree' });
-      }
-      // Árboles caducifolios frondosos: 5 lóbulos esféricos que forman copas orgánicas y densas
-      const leafSets = [
-        { geo: new THREE.SphereGeometry(1, 14, 10).scale(2.3, 2.1, 2.3).translate(0, 5.7, 0), shade: 0.98 },
-        { geo: new THREE.SphereGeometry(1, 12, 8).scale(1.7, 1.5, 1.7).translate(0, 4.7, 1.25), shade: 0.86 },
-        { geo: new THREE.SphereGeometry(1, 12, 8).scale(1.7, 1.5, 1.7).translate(0, 4.6, -1.25), shade: 1.04 },
-        { geo: new THREE.SphereGeometry(1, 12, 8).scale(1.6, 1.45, 1.6).translate(-1.3, 4.8, 0), shade: 0.88 },
-        { geo: new THREE.SphereGeometry(1, 12, 8).scale(1.6, 1.45, 1.6).translate(1.3, 4.8, 0), shade: 1.06 },
+      const coniferCrownGeo = mergeBufferGeometries(cTiers);
+      const coniferMesh = inst(coniferCrownGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.94, flatShading: true }), conifers, treeTransform, true);
+      conifers.forEach((_, k) => { coniferMesh.setColorAt(k, col(th.treeCol).multiplyScalar(0.9 + ((k * 17) % 9) * 0.018)); });
+      if (coniferMesh.instanceColor) coniferMesh.instanceColor.needsUpdate = true;
+
+      // Árboles caducifolios frondosos: 5 lóbulos esféricos fusionados en 1 sola geometría y 1 solo draw call
+      const dSpheres = [
+        colorGeometry(new THREE.SphereGeometry(1, 10, 7).scale(2.3, 2.1, 2.3).translate(0, 5.7, 0), 0.98, 0.98, 0.98),
+        colorGeometry(new THREE.SphereGeometry(1, 8, 6).scale(1.7, 1.5, 1.7).translate(0, 4.7, 1.25), 0.86, 0.86, 0.86),
+        colorGeometry(new THREE.SphereGeometry(1, 8, 6).scale(1.7, 1.5, 1.7).translate(0, 4.6, -1.25), 1.04, 1.04, 1.04),
+        colorGeometry(new THREE.SphereGeometry(1, 8, 6).scale(1.6, 1.45, 1.6).translate(-1.3, 4.8, 0), 0.88, 0.88, 0.88),
+        colorGeometry(new THREE.SphereGeometry(1, 8, 6).scale(1.6, 1.45, 1.6).translate(1.3, 4.8, 0), 1.06, 1.06, 1.06),
       ];
-      for (const { geo, shade } of leafSets) {
-        const mesh = inst(geo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, flatShading: true }), deciduous, treeTransform);
-        deciduous.forEach((_, k) => {
-          const autumnTint = (k * 11) % 7 === 0 ? 0.22 : 0;
-          mesh.setColorAt(k, col(th.treeCol).lerp(col(0x777849), autumnTint).multiplyScalar(shade * (0.9 + ((k * 13) % 9) * 0.018)));
-        });
-        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-        windMeshes.push({ mesh, spots: deciduous, kind: 'tree' });
-      }
+      const deciduousCrownGeo = mergeBufferGeometries(dSpheres);
+      const deciduousMesh = inst(deciduousCrownGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, flatShading: true }), deciduous, treeTransform, true);
+      deciduous.forEach((_, k) => {
+        const autumnTint = (k * 11) % 7 === 0 ? 0.22 : 0;
+        deciduousMesh.setColorAt(k, col(th.treeCol).lerp(col(0x777849), autumnTint).multiplyScalar(0.9 + ((k * 13) % 9) * 0.018));
+      });
+      if (deciduousMesh.instanceColor) deciduousMesh.instanceColor.needsUpdate = true;
     }
   } else if (th.deco === 'kart') {
     const trunks = inst(new THREE.CylinderGeometry(0.48, 0.62, 4.3, 10).translate(0, 2.15, 0), lam(0x82572f), spots, (d, s) => {
       d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0);
-    });
+    }, false);
     const crowns = inst(new THREE.SphereGeometry(1, 12, 9).scale(2.8, 2.35, 2.65).translate(0, 5.1, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), spots, (d, s) => {
       d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2] * s[5], s[2] * s[6], s[2] * s[5]); d.rotation.set(0, s[3], 0);
-    });
+    }, true);
     spots.forEach((_, k) => crowns.setColorAt(k, col([0x38a438, 0x55ba3d, 0x2e8e40, 0x70c94a][k % 4])));
     if (crowns.instanceColor) crowns.instanceColor.needsUpdate = true;
-    windMeshes.push({ mesh: crowns, spots, kind: 'tree' });
-    trunks.castShadow = !!q.shadows;
   } else if (th.deco === 'cactus') {
     const half = spots.length >> 1;
     // Cactus saguaro de alta definición: tronco acanalado con 16 segmentos y dos brazos curvados
@@ -1933,7 +1988,7 @@ function scenery(tr, th, scene, rng, q) {
     blade.setIndex([0, 2, 1, 2, 3, 1, 2, 4, 3]); blade.computeVertexNormals();
     const bladeSpots = [];
     for (const s of grassSpots) for (let j = 0; j < 3; j++) bladeSpots.push([s[0], s[1], s[2] * (0.78 + j * 0.12), s[3] + j * Math.PI / 3]);
-    const gm = inst(blade, new THREE.MeshStandardMaterial({ color, roughness: 0.96, side: THREE.DoubleSide }), bladeSpots, (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    const gm = inst(blade, new THREE.MeshStandardMaterial({ color, roughness: 0.96, side: THREE.DoubleSide }), bladeSpots, (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); }, false);
     windMeshes.push({ mesh: gm, spots: bladeSpots, kind: 'grass' });
   }
   // postes de neón junto a la valla
@@ -2217,6 +2272,7 @@ export function buildWorld(tr, th, opt = {}) {
   const windDummy = new THREE.Object3D();
   let windClock = 0;
   const updateWind = (dt) => {
+    if (!info.windMeshes || !info.windMeshes.length) return;
     windClock += Math.min(dt, 0.05);
     const t = windClock;
     for (const entry of info.windMeshes) {
