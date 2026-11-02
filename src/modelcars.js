@@ -28,13 +28,13 @@ export const MODEL = {
   etype: { hi: './assets/car_etype_hi.glb.gz', lo: './assets/car_etype_lo.glb.gz', paint: /(?!)/, length: 4.5, rotation: [0, Math.PI / 2, 0] },
   xj13: { hi: './assets/car_xj13_hi.glb.gz', lo: './assets/car_xj13_lo.glb.gz', paint: /(?!)/, length: 4.8, rotation: [0, Math.PI, 0] },
   e30: { hi: './assets/car_e30_hi.glb.gz', lo: './assets/car_e30_lo.glb.gz', paint: /(?!)/, length: 4.3, rotation: [0, Math.PI / 2, 0] },
-  r24: { hi: './assets/car_r24_hi.glb.gz', lo: './assets/car_r24_lo.glb.gz', paint: /(?!)/, length: 4.65 },
+  r24: { hi: './assets/car_r24_hi.glb.gz', lo: './assets/car_r24_lo.glb.gz', paint: /(?!)/, length: 4.65, rotation: [0, Math.PI, 0] },
   fordgt06: { hi: './assets/car_fordgt06_hi.glb.gz', lo: './assets/car_fordgt06_lo.glb.gz', paint: /(?!)/, length: 4.64 },
   mp423: { hi: './assets/car_mp423_hi.glb.gz', lo: './assets/car_mp423_lo.glb.gz', paint: /(?!)/, length: 4.8 },
   brawngp: { hi: './assets/car_brawngp_hi.glb.gz', lo: './assets/car_brawngp_lo.glb.gz', paint: /(?!)/, length: 4.7 },
-  rx7toon: { hi: './assets/car_rx7toon_hi.glb.gz', lo: './assets/car_rx7toon_lo.glb.gz', paint: /(?!)/, length: 4.2, rotation: [0, -Math.PI / 2, 0] },
+  rx7toon: { hi: './assets/car_rx7toon_hi.glb.gz', lo: './assets/car_rx7toon_lo.glb.gz', paint: /(?!)/, length: 4.2, rotation: [0, Math.PI / 2, 0] },
   mp45: { hi: './assets/car_mp45_hi.glb.gz', lo: './assets/car_mp45_lo.glb.gz', paint: /(?!)/, length: 4.5 },
-  minis: { hi: './assets/car_minis_hi.glb.gz', lo: './assets/car_minis_lo.glb.gz', paint: /(?!)/, length: 3.7, rotation: [0, Math.PI, 0] },
+  minis: { hi: './assets/car_minis_hi.glb.gz', lo: './assets/car_minis_lo.glb.gz', paint: /(?!)/, length: 3.7 },
 };
 const cache = {}, pending = {};
 export const modelCarReady = (id, lod = 'hi') => !!(cache[id] && cache[id][lod]);

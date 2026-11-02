@@ -30,6 +30,51 @@ function groundTex() {
   const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(42, 42); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 2;
   return t;
 }
+
+let tarmacTextureCache = null;
+function tarmacTex() {
+  if (tarmacTextureCache) return tarmacTextureCache;
+  const size = 128, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d'), im = ctx.createImageData(size, size);
+  for (let i = 0; i < size * size; i++) {
+    const base = 126;
+    const noise = (Math.random() - 0.5) * 34;
+    const speck = Math.random() < 0.08 ? (Math.random() < 0.5 ? 42 : -36) : 0;
+    const v = Math.max(0, Math.min(255, Math.round(base + noise + speck)));
+    im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(im, 0, 0);
+  tarmacTextureCache = new THREE.CanvasTexture(canvas);
+  tarmacTextureCache.wrapS = tarmacTextureCache.wrapT = THREE.RepeatWrapping;
+  tarmacTextureCache.repeat.set(6, 40);
+  tarmacTextureCache.colorSpace = THREE.SRGBColorSpace;
+  tarmacTextureCache.anisotropy = 4;
+  return tarmacTextureCache;
+}
+
+let marioTarmacTextureCache = null;
+function marioTarmacTex() {
+  if (marioTarmacTextureCache) return marioTarmacTextureCache;
+  const size = 32, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d'), im = ctx.createImageData(size, size);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const idx = (y * size + x) * 4;
+      const dither = ((x + y) % 2 === 0 ? 8 : -8) + ((Math.floor(x / 4) + Math.floor(y / 4)) % 2 === 0 ? 6 : -6);
+      const v = Math.max(0, Math.min(255, 140 + dither));
+      im.data[idx] = im.data[idx + 1] = im.data[idx + 2] = v;
+      im.data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(im, 0, 0);
+  marioTarmacTextureCache = new THREE.CanvasTexture(canvas);
+  marioTarmacTextureCache.wrapS = marioTarmacTextureCache.wrapT = THREE.RepeatWrapping;
+  marioTarmacTextureCache.repeat.set(8, 32);
+  marioTarmacTextureCache.magFilter = THREE.NearestFilter;
+  marioTarmacTextureCache.minFilter = THREE.NearestFilter;
+  marioTarmacTextureCache.colorSpace = THREE.SRGBColorSpace;
+  return marioTarmacTextureCache;
+}
 function glowTex(inner = 'rgba(255,255,255,1)') {
   const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
   const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, inner); g.addColorStop(0.25, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
@@ -131,7 +176,7 @@ function urbanMesh(tr, th) {
       items.push({ x, z, ry: Math.atan2(tr.TX[i], tr.TZ[i]), side, d, w: step + 0.6, h: tr.Y[i] + 6 + hsh * 9 + (Math.floor(s / step) % 3) * 2.5, c: pal[Math.floor(hsh * 997) % pal.length] });
     }
   }
-  const group = new THREE.Group(), D = new THREE.Object3D(), frames = [], panes = [], balconies = [], rails = [], roofs = [];
+  const group = new THREE.Group(), D = new THREE.Object3D(), frames = [], panes = [], balconies = [], rails = [], roofs = [], awnings = [];
   const m = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true }), items.length);
   items.forEach((b, k) => {
     D.position.set(b.x, -1, b.z); D.scale.set(b.d, b.h + 1, b.w); D.rotation.set(0, b.ry, 0); D.updateMatrix(); m.setMatrixAt(k, D.matrix); m.setColorAt(k, b.c);
@@ -148,6 +193,11 @@ function urbanMesh(tr, th) {
         const bz = b.z - (localX + face * 0.52) * Math.sin(b.ry) + localZ * Math.cos(b.ry);
         balconies.push({ x: bx, y: y - height * 0.56, z: bz, ry: b.ry });
         rails.push({ x: bx + face * Math.cos(b.ry) * 0.48, y: y - height * 0.1, z: bz - face * Math.sin(b.ry) * 0.48, ry: b.ry });
+      }
+      if (face === -b.side && floor === 1 && (k + column) % 2 === 0) {
+        const ax = b.x + (localX + face * 0.65) * Math.cos(b.ry) + localZ * Math.sin(b.ry);
+        const az = b.z - (localX + face * 0.65) * Math.sin(b.ry) + localZ * Math.cos(b.ry);
+        awnings.push({ x: ax, y: y - height * 0.12, z: az, ry: b.ry, shade: (k + column) % 4 });
       }
     }
   });
@@ -168,6 +218,137 @@ function urbanMesh(tr, th) {
   const rail = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x565b5e, metalness: 0.55, roughness: 0.42 }), rails.length);
   rails.forEach((b, k) => { D.position.set(b.x, b.y, b.z); D.scale.set(0.08, 0.62, 1.8); D.rotation.set(0, b.ry, 0); D.updateMatrix(); rail.setMatrixAt(k, D.matrix); });
   rail.frustumCulled = false; group.add(rail);
+  if (awnings.length) {
+    const awningMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.75, side: THREE.DoubleSide });
+    const awningPal = [0xc43228, 0x1d558b, 0x27743d, 0xbf812d].map(col);
+    const am = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), awningMat, awnings.length);
+    awnings.forEach((b, k) => {
+      D.position.set(b.x, b.y, b.z);
+      D.scale.set(1.05, 0.32, 1.75);
+      D.rotation.set(0, b.ry, 0.22);
+      D.updateMatrix();
+      am.setMatrixAt(k, D.matrix);
+      am.setColorAt(k, awningPal[b.shade]);
+    });
+    am.frustumCulled = false; group.add(am);
+  }
+  return group;
+}
+
+// Cuenca marítima de Port Hercule con muelles, pantalanes flotantes y yates de lujo amarrados
+function monacoHarbor(scene, shadows) {
+  const group = new THREE.Group();
+  const waterGeo = new THREE.PlaneGeometry(185, 215).rotateX(-Math.PI / 2);
+  const waterMat = new THREE.MeshStandardMaterial({
+    color: 0x114269,
+    roughness: 0.15,
+    metalness: 0.28,
+    map: waterTexture(),
+    envMapIntensity: 0.95,
+  });
+  const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+  waterMesh.position.set(118, 0.05, -125);
+  waterMesh.receiveShadow = shadows;
+  group.add(waterMesh);
+
+  const quayMat = new THREE.MeshStandardMaterial({ color: 0x9b948a, roughness: 0.88 });
+  const quays = [
+    { x: 34, z: -125, w: 7, l: 215, h: 0.55 },
+    { x: 120, z: -228, w: 180, l: 7, h: 0.55 },
+    { x: 206, z: -130, w: 7, l: 195, h: 0.55 },
+  ];
+  for (const q of quays) {
+    const qm = new THREE.Mesh(new THREE.BoxGeometry(q.w, q.h, q.l), quayMat);
+    qm.position.set(q.x, q.h * 0.5, q.z);
+    qm.receiveShadow = shadows;
+    qm.castShadow = shadows;
+    group.add(qm);
+  }
+
+  const pontoonMat = new THREE.MeshStandardMaterial({ color: 0x765c43, roughness: 0.82 });
+  const pontoons = [
+    { x: 105, z: -80, w: 125, l: 3.2 },
+    { x: 105, z: -135, w: 125, l: 3.2 },
+    { x: 100, z: -185, w: 115, l: 3.2 },
+  ];
+  for (const p of pontoons) {
+    const pm = new THREE.Mesh(new THREE.BoxGeometry(p.w, 0.35, p.l), pontoonMat);
+    pm.position.set(p.x, 0.2, p.z);
+    pm.receiveShadow = shadows;
+    group.add(pm);
+  }
+
+  const yachtSpots = [
+    { x: 55, z: -72, ry: 0, s: 1.1 }, { x: 75, z: -72, ry: 0, s: 1.25 }, { x: 95, z: -72, ry: 0, s: 1.0 }, { x: 118, z: -72, ry: 0, s: 1.35 }, { x: 142, z: -72, ry: 0, s: 1.15 },
+    { x: 62, z: -88, ry: Math.PI, s: 1.05 }, { x: 84, z: -88, ry: Math.PI, s: 1.3 }, { x: 106, z: -88, ry: Math.PI, s: 1.1 }, { x: 130, z: -88, ry: Math.PI, s: 1.4 },
+    { x: 58, z: -127, ry: 0, s: 1.2 }, { x: 80, z: -127, ry: 0, s: 1.4 }, { x: 105, z: -127, ry: 0, s: 1.1 }, { x: 132, z: -127, ry: 0, s: 1.5 },
+    { x: 68, z: -143, ry: Math.PI, s: 1.15 }, { x: 92, z: -143, ry: Math.PI, s: 1.35 }, { x: 120, z: -143, ry: Math.PI, s: 1.25 },
+    { x: 65, z: -177, ry: 0, s: 1.3 }, { x: 95, z: -177, ry: 0, s: 1.45 }, { x: 128, z: -177, ry: 0, s: 1.2 },
+    { x: 75, z: -193, ry: Math.PI, s: 1.1 }, { x: 110, z: -193, ry: Math.PI, s: 1.35 },
+  ];
+
+  const hullMat = new THREE.MeshStandardMaterial({ color: 0xf6f8fc, roughness: 0.35, metalness: 0.1 });
+  const deckMat = new THREE.MeshStandardMaterial({ color: 0x9b7b58, roughness: 0.75 });
+  const cabinMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.05 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x162432, roughness: 0.15, metalness: 0.85 });
+
+  const hullGeo = new THREE.BoxGeometry(4.6, 1.8, 14.5).translate(0, 0.9, 0);
+  const deckGeo = new THREE.BoxGeometry(4.3, 0.12, 13.8).translate(0, 1.82, 0);
+  const cabinGeo = new THREE.BoxGeometry(3.6, 1.5, 8.5).translate(0, 2.6, -0.6);
+  const glassGeo = new THREE.BoxGeometry(3.68, 0.75, 5.2).translate(0, 2.7, 0.2);
+
+  const hullMesh = new THREE.InstancedMesh(hullGeo, hullMat, yachtSpots.length);
+  const deckMesh = new THREE.InstancedMesh(deckGeo, deckMat, yachtSpots.length);
+  const cabinMesh = new THREE.InstancedMesh(cabinGeo, cabinMat, yachtSpots.length);
+  const glassMesh = new THREE.InstancedMesh(glassGeo, glassMat, yachtSpots.length);
+
+  const D = new THREE.Object3D();
+  yachtSpots.forEach((sp, idx) => {
+    D.position.set(sp.x, 0.05, sp.z);
+    D.rotation.set(0, sp.ry, 0);
+    D.scale.set(sp.s, sp.s, sp.s);
+    D.updateMatrix();
+
+    hullMesh.setMatrixAt(idx, D.matrix);
+    deckMesh.setMatrixAt(idx, D.matrix);
+    cabinMesh.setMatrixAt(idx, D.matrix);
+    glassMesh.setMatrixAt(idx, D.matrix);
+  });
+
+  hullMesh.castShadow = cabinMesh.castShadow = shadows;
+  hullMesh.receiveShadow = deckMesh.receiveShadow = cabinMesh.receiveShadow = shadows;
+  hullMesh.frustumCulled = deckMesh.frustumCulled = cabinMesh.frustumCulled = glassMesh.frustumCulled = false;
+  group.add(hullMesh, deckMesh, cabinMesh, glassMesh);
+
+  const palmSpots = [];
+  for (let z = -220; z <= -35; z += 12) palmSpots.push([30.5, z]);
+  for (let x = 40; x <= 180; x += 14) palmSpots.push([x, -224]);
+
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6e5239, roughness: 0.92 });
+  const frondMat = new THREE.MeshStandardMaterial({ color: 0x2e7534, roughness: 0.88, side: THREE.DoubleSide });
+
+  const trunkGeo = new THREE.CylinderGeometry(0.24, 0.38, 5.8, 7).translate(0, 2.9, 0);
+  const frondGeo = new THREE.ConeGeometry(2.4, 1.2, 7).translate(0, 5.8, 0);
+
+  const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, palmSpots.length);
+  const frondMesh = new THREE.InstancedMesh(frondGeo, frondMat, palmSpots.length);
+
+  palmSpots.forEach((p, idx) => {
+    D.position.set(p[0], 0, p[1]);
+    D.rotation.set((idx % 3 - 1) * 0.06, idx * 0.8, (idx % 2 === 0 ? 1 : -1) * 0.08);
+    const s = 0.85 + (idx % 4) * 0.12;
+    D.scale.set(s, s, s);
+    D.updateMatrix();
+
+    trunkMesh.setMatrixAt(idx, D.matrix);
+    frondMesh.setMatrixAt(idx, D.matrix);
+  });
+
+  trunkMesh.castShadow = frondMesh.castShadow = shadows;
+  trunkMesh.receiveShadow = shadows;
+  trunkMesh.frustumCulled = frondMesh.frustumCulled = false;
+  group.add(trunkMesh, frondMesh);
+
   return group;
 }
 // túnel: carcasa elíptica oscura sobre la pista, con aros de luz en el techo y bocas más claras
@@ -192,7 +373,7 @@ function tunnelMesh(tr, t, th) {
   return g;
 }
 function roadMesh(tr, th, stride = 1) {
-  const N = tr.N, hw = ROAD_HALF, L = WALL;
+  const N = tr.N, hw = ROAD_HALF, L = WALL, isKart = th.deco === 'kart';
   const roadData = { pos: [], colors: [], uvs: [] }, edgeData = { pos: [], colors: [], uvs: [] };
   const cRoad = col(th.road), cRoad2 = col(th.road).multiplyScalar(0.93), cGrass = col(th.grass), cDirt = col(th.dirt);
   const k1 = col(th.kerb1).multiplyScalar(0.86), k2 = col(th.kerb2).multiplyScalar(0.88), yel = col(0xffc400), blk = col(0x222222);
@@ -222,14 +403,24 @@ function roadMesh(tr, th, stride = 1) {
     // piano: a ras del asfalto en el borde de la pista y cada vez más alto hacia fuera; escalón en el lado exterior
     const lat = (k, h, eo, krL, krR, gw) => [[-eo, 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + KW * 0.45), h + krL * 0.75], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw + KW * 0.45, h + krR * 0.75], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, 0]][k];
     const sLen = 3, s2k = (i + stride) * tr.ds;
-    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x, e) => (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) + ((Math.floor(x * 1.7) & 1) ? 0.05 : 0) : (th.deco === 'kart' ? 0.065 + 0.03 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) : 0.045 + 0.024 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen))) * e;
+    const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]), wave = (x, e) => (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) + ((Math.floor(x * 1.7) & 1) ? 0.05 : 0) : (isKart ? 0.065 + 0.03 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) : 0.045 + 0.024 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen))) * e;
     const krLi = kv === -1 ? wave(s, kEnv[i]) : 0, krRi = kv === 1 ? wave(s, kEnv[i]) : 0, krLj = kvj === -1 ? wave(s2k, kEnv[j]) : 0, krRj = kvj === 1 ? wave(s2k, kEnv[j]) : 0;
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
     const stripeN = Math.floor(s / sLen), stripe = stripeN % 2 === 0;
     for (let b = 0; b < 15; b++) {
       const [l0, y0i] = lat(b, hi, eoI, krLi, krRi, GW), [l1, y1i] = lat(b + 1, hi, eoI, krLi, krRi, GW);
       const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj, GWj), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj, GWj);
-      const P = (idx, l, y) => [tr.X[idx] + -tr.TZ[idx] * l, y + (Math.abs(l) <= L ? l * Math.tan(tr.bank[idx]) : (l > 0 ? 1 : -1) * L * Math.tan(tr.bank[idx])), tr.Z[idx] + tr.TX[idx] * l];
+      const P = (idx, l, y) => {
+        let nx = -tr.TZ[idx], nz = tr.TX[idx];
+        if (isKart) {
+          const ang = Math.atan2(nz, nx);
+          const snap = Math.round(ang / (Math.PI / 4)) * (Math.PI / 4);
+          nx = Math.cos(snap);
+          nz = Math.sin(snap);
+        }
+        const bnk = (Math.abs(l) <= L ? l * Math.tan(tr.bank[idx]) : (l > 0 ? 1 : -1) * L * Math.tan(tr.bank[idx]));
+        return [tr.X[idx] + nx * l, y + bnk, tr.Z[idx] + nz * l];
+      };
       const a = P(i, l0, y0i), bb = P(i, l1, y1i), c = P(j, l0j, y0j), d = P(j, l1j, y1j);
       let color;
       let outerColor = null;
@@ -238,14 +429,24 @@ function roadMesh(tr, th, stride = 1) {
       else if (b === 2 || b === 12) color = tr.rg ? cGravel.clone().multiplyScalar(0.92 + 0.08 * (((Math.sin(Math.floor(s / 3) * 5.31 + b) * 4375.5) % 1 + 1) % 1)) : cGrass; // grava
       else if (b === 3 || b === 4 || b === 5 || b === 9 || b === 10 || b === 11) {
         const hasKerb = b < 6 ? kv === -1 : kv === 1;
-        color = th.noKerbs ? cGrass : hasKerb
-          ? wornC(kset ? kset[stripeN % 3] : (stripe ? k1 : k2), stripeN).lerp(cRoad2, 1 - kEnv[i])
-          : tr.rg ? cGravel : cRoad2;
+        const baseKerb = isKart
+          ? (stripe ? col(0xee2c2c) : col(0xffffff))
+          : (kset ? kset[stripeN % 3] : (stripe ? k1 : k2));
+        let kShaded = isKart ? baseKerb.clone() : wornC(baseKerb, stripeN).lerp(cRoad2, 1 - kEnv[i]);
+        if (b === 4 || b === 10) kShaded.multiplyScalar(1.08);
+        else if (b === 3 || b === 11) kShaded.multiplyScalar(0.72);
+        color = th.noKerbs ? cGrass : hasKerb ? kShaded : (tr.rg ? cGravel : cRoad2);
       }
       else {
-        color = Math.floor(s / 24) % 2 ? cRoad : cRoad2;
-        const zn = zoneAt(tr, s); if (zn && zn.w > 0.5 && zn.key !== 'asphalt') { const zc = SURF[zn.key].col; if (zc != null) color = col(zc).multiplyScalar(Math.floor(s / 6) % 2 ? 1 : 0.93); }
-        if (inRamp) color = Math.floor(s / 1.5) % 2 ? yel : blk;
+        if (isKart) {
+          color = Math.abs(tr.kap[i]) < 0.007
+            ? (Math.floor(s / 3.4) % 2 === 0 ? col(0x565a64) : col(0x383b42))
+            : col(0x383b42);
+        } else {
+          color = Math.floor(s / 24) % 2 ? cRoad : cRoad2;
+          const zn = zoneAt(tr, s); if (zn && zn.w > 0.5 && zn.key !== 'asphalt') { const zc = SURF[zn.key].col; if (zc != null) color = col(zc).multiplyScalar(Math.floor(s / 6) % 2 ? 1 : 0.93); }
+          if (inRamp) color = Math.floor(s / 1.5) % 2 ? yel : blk;
+        }
       }
       const s2 = (i + stride) * tr.ds, K = 1 / 5;
       pushQuad(b >= 6 && b <= 8 ? roadData : edgeData, a[0], a[1], a[2], bb[0], bb[1], bb[2], c[0], c[1], c[2], d[0], d[1], d[2], color, [l0 * K, s * K, l1 * K, s * K, l0j * K, s2 * K, l1j * K, s2 * K], outerColor || color);
@@ -263,9 +464,10 @@ function roadMesh(tr, th, stride = 1) {
     return g;
   };
   const wet = th.weather === 'rain', snow = th.surface === 'snow', dirt = th.surface === 'dirt';
+  const roadTex = isKart ? marioTarmacTex() : tarmacTex();
   const roadMaterial = wet
-    ? new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.28, metalness: 0.08, envMapIntensity: 0.85 })
-    : new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: snow ? 0.72 : dirt ? 0.8 : 0.84, metalness: 0.04, envMapIntensity: 0.45 });
+    ? new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.60, metalness: 0.01, envMapIntensity: 0.40, map: roadTex })
+    : new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: snow ? 0.72 : dirt ? 0.8 : 0.82, metalness: 0.01, envMapIntensity: 0.20, map: roadTex });
   const edgeMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.92, metalness: 0.01 });
   const group = new THREE.Group();
   for (const [data, material] of [[roadData, roadMaterial], [edgeData, edgeMaterial]]) {
@@ -301,7 +503,7 @@ function wallMesh(tr, th, stride = 1) {
 }
 
 function marioArena(th, scene, shadows) {
-  const minX = -122, maxX = 118, minZ = -120, maxZ = 132;
+  const minX = -124, maxX = 120, minZ = -122, maxZ = 134;
   const sandGeo = new THREE.PlaneGeometry(maxX - minX, maxZ - minZ).rotateX(-Math.PI / 2);
   const sandMesh = new THREE.Mesh(sandGeo, new THREE.MeshStandardMaterial({ color: th.dirt, roughness: 0.95 }));
   sandMesh.position.set((minX + maxX) * 0.5, 0.012, (minZ + maxZ) * 0.5);
@@ -309,22 +511,23 @@ function marioArena(th, scene, shadows) {
   scene.add(sandMesh);
 
   const islands = [
-    { x0: -90, x1: -75, z0: 70, z1: 90 },
-    { x0: 35, x1: 65, z0: 65, z1: 90 },
-    { x0: 55, x1: 78, z0: -70, z1: 50 },
-    { x0: -95, x1: -20, z0: -70, z1: -56 },
-    { x0: -85, x1: -15, z0: -23, z1: -11 },
+    { x0: 52, x1: 90, z0: -75.5, z1: 64 },
+    { x0: 22, x1: 52, z0: 52, z1: 88 },
+    { x0: -12, x1: 14, z0: -116, z1: -92.5 },
+    { x0: -92, x1: 22, z0: -23.5, z1: -12.5 },
+    { x0: -96, x1: -65, z0: -83, z1: -54 },
+    { x0: -96, x1: -54, z0: 50, z1: 84 },
   ];
   const grassMat = new THREE.MeshStandardMaterial({ color: th.grass, roughness: 0.9 });
   for (const isl of islands) {
     const w = isl.x1 - isl.x0, d = isl.z1 - isl.z0;
     const islMesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), grassMat);
-    islMesh.position.set((isl.x0 + isl.x1) * 0.5, 0.022, (isl.z0 + isl.z1) * 0.5);
+    islMesh.position.set((isl.x0 + isl.x1) * 0.5, 0.045, (isl.z0 + isl.z1) * 0.5);
     islMesh.receiveShadow = shadows;
     scene.add(islMesh);
   }
 
-  const step = 1.6;
+  const step = 1.7;
   const pts = [];
   for (let x = minX; x <= maxX; x += step) { pts.push([x, minZ]); pts.push([x, maxZ]); }
   for (let z = minZ; z <= maxZ; z += step) { pts.push([minX, z]); pts.push([maxX, z]); }
@@ -333,8 +536,19 @@ function marioArena(th, scene, shadows) {
     for (let z = isl.z0; z <= isl.z1; z += step) { pts.push([isl.x0, z]); pts.push([isl.x1, z]); }
   }
 
-  const blockGeo = new THREE.BoxGeometry(1.5, 1.15, 1.5).translate(0, 0.58, 0);
-  const blockMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45, metalness: 0.05, flatShading: true });
+  const boxPart = new THREE.BoxGeometry(1.6, 0.9, 1.6).toNonIndexed();
+  boxPart.translate(0, 0.45, 0);
+  const pyrPart = new THREE.CylinderGeometry(0.68, 1.13, 0.35, 4).toNonIndexed();
+  pyrPart.rotateY(Math.PI / 4);
+  pyrPart.translate(0, 1.075, 0);
+  const posA = boxPart.attributes.position.array, posB = pyrPart.attributes.position.array;
+  const combinedPos = new Float32Array(posA.length + posB.length);
+  combinedPos.set(posA, 0); combinedPos.set(posB, posA.length);
+  const blockGeo = new THREE.BufferGeometry();
+  blockGeo.setAttribute('position', new THREE.BufferAttribute(combinedPos, 3));
+  blockGeo.computeVertexNormals();
+
+  const blockMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42, metalness: 0.05, flatShading: true });
   const blocks = new THREE.InstancedMesh(blockGeo, blockMat, pts.length);
   const dummy = new THREE.Object3D(), pal = (th.palette || [0xe52521, 0xf8d028, 0x1b75d0, 0x2bb830]).map(col);
 
@@ -355,8 +569,8 @@ function marioArena(th, scene, shadows) {
 
 function marioPipes(scene, shadows) {
   const pipeSpots = [
-    [68, 30], [68, -30], [-40, -15], [-70, -15],
-    [-65, 78], [98, -100], [-114, 114], [-108, -100]
+    [68, 30], [68, -30], [-40, -18], [-70, -18],
+    [-62, 78], [98, -100], [-114, 114], [-108, -100]
   ];
   const count = pipeSpots.length;
   const pipeMat = new THREE.MeshStandardMaterial({ color: 0x1db82a, roughness: 0.38, metalness: 0.08 });
@@ -871,6 +1085,61 @@ function rainTheme(th) {
     fogNear: th.fogNear * 0.8, fogFar: th.fogFar * 0.85,
   };
 }
+// Parrilla de salida con cajones escalonados en la recta principal
+function startGridBoxes(tr, th) {
+  const g = new THREE.Group();
+  const isKart = th.deco === 'kart';
+  const mat = new THREE.MeshBasicMaterial({
+    color: isKart ? 0xffffff : (th.surface === 'snow' ? 0xd0e8ff : 0xf2f4f8),
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: isKart ? 0.95 : 0.72,
+    polygonOffset: true,
+    polygonOffsetFactor: -2.5,
+    polygonOffsetUnits: -2.5,
+  });
+  const count = 10;
+  for (let k = 0; k < count; k++) {
+    const sBox = tr.len - 38 + k * 3.4;
+    const side = (k % 2 === 0 ? -1 : 1) * (ROAD_HALF * 0.42);
+    const boxMesh = new THREE.Mesh(stripGeom(tr, sBox, sBox + 1.6, side - 1.15, side + 1.15, 0.038), mat);
+    boxMesh.frustumCulled = false;
+    g.add(boxMesh);
+  }
+  return g;
+}
+
+// Marcas de frenada (skid marks) en las aproximaciones a curvas fuertes
+function brakingMarks(tr, th) {
+  const g = new THREE.Group();
+  const rubberMat = new THREE.MeshBasicMaterial({
+    color: 0x16181b,
+    transparent: true,
+    opacity: 0.32,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2,
+    side: THREE.DoubleSide,
+  });
+  const N = tr.N;
+  let lastS = -50;
+  for (let i = 20; i < N - 20; i += 8) {
+    const ak = Math.abs(tr.kap[i]);
+    const s = i * tr.ds;
+    if (ak > 0.012 && s - lastS > 45) {
+      const s0 = Math.max(0, s - 18), s1 = s;
+      for (const side of [-1, 1]) {
+        const skid = new THREE.Mesh(stripGeom(tr, s0, s1, side * 0.72 - 0.18, side * 0.72 + 0.18, 0.032), rubberMat);
+        skid.frustumCulled = false;
+        g.add(skid);
+      }
+      lastS = s;
+    }
+  }
+  return g;
+}
+
 export function buildWorld(tr, th, opt = {}) {
   th = rainTheme(th);
   setRoad(tr);
@@ -919,12 +1188,15 @@ export function buildWorld(tr, th, opt = {}) {
   const road = roadMesh(tr, th, q.stride); scene.add(road);
   for (const t of tr.tunnels || []) scene.add(tunnelMesh(tr, t, th));
   if (th.urban) scene.add(urbanMesh(tr, th));
+  if (th.harbor) scene.add(monacoHarbor(scene, !!q.shadows));
   // Marcas tenues de goma en la trazada: dos huellas de rueda, sin línea central de carretera.
   const rubber = new THREE.MeshStandardMaterial({ color: th.weather === 'rain' ? 0x35404a : 0x25292d, roughness: 0.94, metalness: 0.02, transparent: true, opacity: th.weather === 'rain' ? 0.36 : 0.24, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide });
   for (const side of [-1, 1]) {
     const line = new THREE.Mesh(stripGeom(tr, 0, tr.len - 1, side * 0.66 - 0.085, side * 0.66 + 0.085, 0.026), rubber);
     line.frustumCulled = false; scene.add(line);
   }
+  scene.add(startGridBoxes(tr, th));
+  if (th.deco !== 'kart') scene.add(brakingMarks(tr, th));
   if (th.deco === 'kart') {
     marioArena(th, scene, !!q.shadows);
     marioPipes(scene, !!q.shadows);

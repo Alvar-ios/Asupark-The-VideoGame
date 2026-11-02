@@ -63,3 +63,4 @@ for (const id of cars) {
 await browser.close();
 server.close();
 console.log('All thumbnails generated successfully!');
+

@@ -44,9 +44,23 @@ function triangleCount(doc) {
 function removeGroundPlanes(doc) {
   for (const node of doc.getRoot().listNodes()) {
     const mesh = node.getMesh();
-    if (!mesh) continue;
-    const names = [node.getName(), ...mesh.listPrimitives().map((primitive) => primitive.getMaterial()?.getName() || '')];
-    if (names.some((name) => /^(?:floor|ground|ground[_\s-]*plane|floor[_\s-]*plane)$/i.test(name.trim()))) node.setMesh(null);
+    const names = [node.getName(), mesh?.getName() || '', ...(mesh ? mesh.listPrimitives().map((primitive) => primitive.getMaterial()?.getName() || '') : [])];
+    if (names.some((name) => /floor|ground/i.test(name.trim()))) {
+      node.setMesh(null);
+      for (const child of node.listChildren()) child.setMesh(null);
+    }
+  }
+}
+
+function fixMaterials(doc) {
+  for (const mat of doc.getRoot().listMaterials()) {
+    const base = mat.getBaseColorFactor();
+    const emissive = mat.getEmissiveFactor();
+    if (base[0] === 0 && base[1] === 0 && base[2] === 0 && (emissive[0] > 0 || emissive[1] > 0 || emissive[2] > 0)) {
+      mat.setBaseColorFactor([emissive[0], emissive[1], emissive[2], 1.0]);
+      mat.setRoughnessFactor(0.55);
+      mat.setMetallicFactor(0.05);
+    }
   }
 }
 
@@ -63,6 +77,7 @@ for (const car of cars.filter((entry) => requested.size === 0 || requested.has(e
   ]) {
     const doc = await io.read(source);
     removeGroundPlanes(doc);
+    fixMaterials(doc);
     const before = triangleCount(doc);
     const transforms = [flatten(), weld(), join()];
     if (before > budget) transforms.push(simplify({ simplifier: MeshoptSimplifier, ratio: budget / before, error }));
