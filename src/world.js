@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { ROAD_HALF, WALL, setRoad } from './track.js';
 import { SURF, zoneAt, smoothstep, patchBoundary, puddleParams, mudParams, MARIO_OIL_PATCHES } from './surface.js';
 import { rngFromSeed } from './rng.js';
-import { getSponsorTexture } from './sponsors.js';
+import { getSponsorTexture, SPONSOR_COLORS } from './sponsors.js';
 
 const col = (hex) => new THREE.Color(hex);
 
@@ -1083,9 +1083,9 @@ function distanceMarkers(tr, th, scene) {
   if (!zones.length) return;
 
   const distances = [200, 150, 100, 50];
-  const boardGeo = new THREE.PlaneGeometry(1.6, 1.6);
-  const postGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.4, 6);
-  const postMat = new THREE.MeshStandardMaterial({ color: 0x828994, metalness: 0.7, roughness: 0.4 });
+  const boardGeo = new THREE.PlaneGeometry(1.1, 0.60);
+  const postGeo = new THREE.CylinderGeometry(0.035, 0.035, 1.0, 6);
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x7c838d, metalness: 0.8, roughness: 0.35 });
 
   const dummy = new THREE.Object3D();
   for (const dist of distances) {
@@ -1100,17 +1100,17 @@ function distanceMarkers(tr, th, scene) {
       const tx = tr.TX[iM], tz = tr.TZ[iM];
       const side = z.side;
       const nx = -tz * side, nz = tx * side;
-      const x = tr.X[iM] + nx * (WALL + 0.9), zPos = tr.Z[iM] + nz * (WALL + 0.9);
-      const y = tr.Y[iM] + bankOff(tr, iM, side * (WALL + 0.9));
+      const x = tr.X[iM] + nx * (WALL + 0.45), zPos = tr.Z[iM] + nz * (WALL + 0.45);
+      const y = tr.Y[iM] + bankOff(tr, iM, side * (WALL + 0.45));
       const heading = Math.atan2(tx, tz);
 
-      dummy.position.set(x, y + 1.2, zPos);
+      dummy.position.set(x, y + 0.50, zPos);
       dummy.scale.set(1, 1, 1);
       dummy.rotation.set(0, heading + Math.PI, 0);
       dummy.updateMatrix();
       posts.setMatrixAt(idx, dummy.matrix);
 
-      dummy.position.set(x - nx * 0.05, y + 2.0, zPos - nz * 0.05);
+      dummy.position.set(x - nx * 0.03, y + 0.90, zPos - nz * 0.03);
       dummy.rotation.set(0, heading + Math.PI, 0);
       dummy.updateMatrix();
       boards.setMatrixAt(idx, dummy.matrix);
@@ -1122,67 +1122,397 @@ function distanceMarkers(tr, th, scene) {
   }
 }
 
-function sponsorHoardings(tr, th, scene) {
+function createFoamWedgeGeometry() {
+  const W = 0.55, H = 0.36, L2 = 1.6;
+  const pos = [
+    // Rampa frontal inclinada (cara principal donde va el logo con 32 grados de elevación)
+    0, 0.02, -L2,   W, H, -L2,   0, 0.02, L2,
+    0, 0.02, L2,    W, H, -L2,   W, H, L2,
+    // Cara trasera vertical
+    W, 0, -L2,      W, 0, L2,    W, H, -L2,
+    W, H, -L2,      W, 0, L2,    W, H, L2,
+    // Base inferior
+    0, 0, -L2,      W, 0, -L2,   0, 0, L2,
+    0, 0, L2,       W, 0, -L2,   W, 0, L2,
+    // Tapón lateral 1 (Z = -L2)
+    0, 0.02, -L2,   W, 0, -L2,   W, H, -L2,
+    // Tapón lateral 2 (Z = +L2)
+    0, 0.02, L2,    W, H, L2,    W, 0, L2,
+  ];
+  const uvs = [
+    // Rampa frontal
+    0.02, 0.04,   0.02, 0.96,   0.98, 0.04,
+    0.98, 0.04,   0.02, 0.96,   0.98, 0.96,
+    // Trasera
+    0.02, 0.02,   0.02, 0.02,   0.02, 0.02,
+    0.02, 0.02,   0.02, 0.02,   0.02, 0.02,
+    // Base
+    0.02, 0.02,   0.02, 0.02,   0.02, 0.02,
+    0.02, 0.02,   0.02, 0.02,   0.02, 0.02,
+    // Tapón 1
+    0.02, 0.02,   0.02, 0.02,   0.02, 0.02,
+    // Tapón 2
+    0.02, 0.02,   0.02, 0.02,   0.02, 0.02,
+  ];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  g.computeVertexNormals();
+  return g;
+}
+
+function sponsorBarrierDecals(tr, th, scene) {
   if (th.deco === 'kart') return;
   const N = tr.N;
-  const hoardings = [];
-  for (let s = 24; s < tr.len - 40; s += 20) {
+  const sections = [];
+  const minSpacing = 38;
+  let lastS = -50;
+  for (let s = 25; s < tr.len - 30; s += 16) {
     const i = Math.floor(s / tr.ds) % N;
-    if (Math.abs(tr.kap[i]) < 0.005) {
-      if ((tr.tunnels || []).some((t) => s > t.s0 - 4 && s < t.s1 + 4)) continue;
-      hoardings.push({ s, i, brandIdx: Math.floor(s / 20) % 4 });
+    if (Math.abs(tr.kap[i]) < 0.0055 && s - lastS >= minSpacing) {
+      if ((tr.tunnels || []).some((t) => s > t.s0 - 6 && s < t.s1 + 6)) continue;
+      sections.push({ s0: s, s1: s + 12.0, brandIdx: Math.floor(s / 32) % 4 });
+      lastS = s;
     }
   }
-  if (!hoardings.length) return;
-
-  const panelGeo = new THREE.PlaneGeometry(5.2, 1.35);
-  const postGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.2, 6);
-  const postMat = new THREE.MeshStandardMaterial({ color: 0x828994, metalness: 0.7, roughness: 0.4 });
-  const dummy = new THREE.Object3D();
+  if (!sections.length) return;
 
   for (let b = 0; b < 4; b++) {
-    const group = hoardings.filter((h) => h.brandIdx === b);
+    const group = sections.filter((sec) => sec.brandIdx === b);
     if (!group.length) continue;
     const tex = getSponsorTexture(b);
-    const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
-    const count = group.length * 2;
-    const mesh = new THREE.InstancedMesh(panelGeo, mat, count);
-    const posts = new THREE.InstancedMesh(postGeo, postMat, count * 2);
+    const mat = new THREE.MeshStandardMaterial({
+      map: tex,
+      roughness: 0.35,
+      metalness: 0.35,
+      side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -1.8,
+      polygonOffsetUnits: -1.8,
+    });
 
-    let k = 0, kp = 0;
-    for (const h of group) {
-      const i = h.i;
-      const tx = tr.TX[i], tz = tr.TZ[i];
-      const heading = Math.atan2(tx, tz);
+    const pos = [], uvs = [], idx = [];
+    let vOffset = 0;
+
+    for (const sec of group) {
+      const stepN = Math.max(2, Math.round((sec.s1 - sec.s0) / tr.ds));
       for (const side of [-1, 1]) {
-        const nx = -tz * side, nz = tx * side;
-        // Colocadas limpiamente DETRÁS del guardarraíl en el arcén (WALL + 1.8m)
-        const x = tr.X[i] + nx * (WALL + 1.8), zPos = tr.Z[i] + nz * (WALL + 1.8);
-        const y = tr.Y[i] + bankOff(tr, i, side * (WALL + 1.8));
-        // Orientadas de cara al tráfico entrante y con leve ángulo hacia la pista
-        const yaw = heading + Math.PI - side * 0.25;
+        const baseV = vOffset;
+        for (let k = 0; k <= stepN; k++) {
+          const s = sec.s0 + (k / stepN) * (sec.s1 - sec.s0);
+          const f = (((s / tr.ds) % N) + N) % N;
+          const i = Math.floor(f), j = (i + 1) % N, t = f - i;
+          const tx = tr.TX[i] + (tr.TX[j] - tr.TX[i]) * t;
+          const tz = tr.TZ[i] + (tr.TZ[j] - tr.TZ[i]) * t;
+          const tl = Math.hypot(tx, tz) || 1;
+          const nx = -tz / tl, nz = tx / tl;
+          const xCenter = tr.X[i] + (tr.X[j] - tr.X[i]) * t;
+          const zCenter = tr.Z[i] + (tr.Z[j] - tr.Z[i]) * t;
+          const yCenter = tr.Y[i] + (tr.Y[j] - tr.Y[i]) * t;
 
-        dummy.position.set(x, y + 1.85, zPos);
-        dummy.scale.set(1, 1, 1);
-        dummy.rotation.set(0, yaw, 0);
-        dummy.updateMatrix();
-        mesh.setMatrixAt(k++, dummy.matrix);
+          const lat = side * (WALL - 0.015);
+          const px = xCenter + nx * lat;
+          const pz = zCenter + nz * lat;
+          const py = yCenter + bankOff(tr, i, lat);
 
-        // Postes dobles de soporte tras la valla
-        for (const postOff of [-1.8, 1.8]) {
-          const px = x + tx * postOff, pz = zPos + tz * postOff;
-          dummy.position.set(px, y + 1.1, pz);
-          dummy.scale.set(1, 1, 1);
-          dummy.rotation.set(0, yaw, 0);
-          dummy.updateMatrix();
-          posts.setMatrixAt(kp++, dummy.matrix);
+          // Puntos inferior y superior del decal en la cara vertical del guardarraíl
+          pos.push(px, py + 0.08, pz);
+          pos.push(px, py + 0.58, pz);
+
+          const u = (k / stepN) * 2.0; // 2 repeticiones completas del logo por tramo de 12m
+          uvs.push(u, 0.0, u, 1.0);
+          vOffset += 2;
+        }
+        for (let k = 0; k < stepN; k++) {
+          const a = baseV + k * 2;
+          if (side === 1) {
+            idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+          } else {
+            idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+          }
         }
       }
     }
-    mesh.frustumCulled = posts.frustumCulled = false;
-    scene.add(posts);
+
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    const mesh = new THREE.Mesh(g, mat);
+    mesh.frustumCulled = false;
     scene.add(mesh);
   }
+}
+
+function sponsorFoamWedges(tr, th, scene) {
+  if (th.deco === 'kart') return;
+  const N = tr.N;
+  const wedges = [];
+  const minSpacing = 42;
+  let lastS = -60;
+  for (let s = 30; s < tr.len - 35; s += 18) {
+    const i = Math.floor(s / tr.ds) % N;
+    if (s - lastS >= minSpacing) {
+      if ((tr.tunnels || []).some((t) => s > t.s0 - 6 && s < t.s1 + 6)) continue;
+      const brandIdx = Math.floor(s / 36) % 4;
+      // Posicionados a los lados en el arcén/borde de pista
+      const side = (Math.floor(s / 24) % 2 === 0 ? 1 : -1);
+      wedges.push({ s, i, side, brandIdx });
+      lastS = s;
+    }
+  }
+  if (!wedges.length) return;
+
+  const wedgeGeo = createFoamWedgeGeometry();
+  const dummy = new THREE.Object3D();
+
+  for (let b = 0; b < 4; b++) {
+    const group = wedges.filter((w) => w.brandIdx === b);
+    if (!group.length) continue;
+    const tex = getSponsorTexture(b);
+    const mat = new THREE.MeshStandardMaterial({
+      map: tex,
+      roughness: 0.48,
+      metalness: 0.12,
+    });
+    const mesh = new THREE.InstancedMesh(wedgeGeo, mat, group.length);
+
+    group.forEach((w, idx) => {
+      const i = w.i;
+      const tx = tr.TX[i], tz = tr.TZ[i];
+      const heading = Math.atan2(tx, tz);
+      const side = w.side;
+      // Asentada en el suelo del arcén (WALL - 0.65m), de perfil bajo (0.36m alto)
+      const lat = side * (WALL - 0.65);
+      const x = tr.X[i] + -tz * lat;
+      const zPos = tr.Z[i] + tx * lat;
+      const y = tr.Y[i] + bankOff(tr, i, lat);
+
+      dummy.position.set(x, y + 0.01, zPos);
+      dummy.scale.set(side > 0 ? 1 : -1, 1, 1);
+      dummy.rotation.set(0, heading + Math.PI, 0);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(idx, dummy.matrix);
+    });
+
+    mesh.frustumCulled = false;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+  }
+}
+
+function motorsportAmbiance(tr, th, scene, q) {
+  if (th.deco === 'kart') return;
+  const N = tr.N;
+
+  // 1. Pórtico de salida/meta elevado sobre la pista en s = 0
+  const gantryPillars = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.38, 6.8, 0.38).translate(0, 3.4, 0),
+    new THREE.MeshStandardMaterial({ color: 0x2a3038, metalness: 0.85, roughness: 0.28 }),
+    2
+  );
+  const dummy = new THREE.Object3D();
+  const tx0 = tr.TX[0], tz0 = tr.TZ[0];
+  const heading0 = Math.atan2(tx0, tz0);
+
+  for (let sIdx = 0; sIdx < 2; sIdx++) {
+    const side = sIdx === 0 ? -1 : 1;
+    const lat = side * (WALL + 0.65);
+    const px = tr.X[0] + -tz0 * lat, pz = tr.Z[0] + tx0 * lat;
+    const py = tr.Y[0] + bankOff(tr, 0, lat);
+    dummy.position.set(px, py - 0.2, pz);
+    dummy.rotation.set(0, heading0, 0);
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    gantryPillars.setMatrixAt(sIdx, dummy.matrix);
+  }
+  gantryPillars.castShadow = !!q.shadows;
+  scene.add(gantryPillars);
+
+  // Viga transversal del pórtico
+  const span = (WALL + 0.65) * 2 + 0.6;
+  const beamGeo = new THREE.BoxGeometry(span, 0.58, 0.72);
+  const beamMat = new THREE.MeshStandardMaterial({ color: 0x343c46, metalness: 0.8, roughness: 0.3 });
+  const beamMesh = new THREE.Mesh(beamGeo, beamMat);
+  beamMesh.position.set(tr.X[0], tr.Y[0] + 6.3, tr.Z[0]);
+  beamMesh.rotation.set(0, heading0 + Math.PI / 2, 0);
+  beamMesh.castShadow = !!q.shadows;
+  scene.add(beamMesh);
+
+  // Semáforo de salida: 5 luces rojas bajo el pórtico
+  const lightHousing = new THREE.Mesh(
+    new THREE.BoxGeometry(2.8, 0.42, 0.32),
+    new THREE.MeshStandardMaterial({ color: 0x111317, roughness: 0.8 })
+  );
+  lightHousing.position.set(tr.X[0], tr.Y[0] + 5.65, tr.Z[0]);
+  lightHousing.rotation.set(0, heading0 + Math.PI / 2, 0);
+  scene.add(lightHousing);
+
+  const startLightGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.1, 12).rotateX(Math.PI / 2);
+  const redLightMat = new THREE.MeshStandardMaterial({
+    color: 0xff1a1a,
+    emissive: 0xff0000,
+    emissiveIntensity: 0.9,
+    roughness: 0.2
+  });
+  const startLights = new THREE.InstancedMesh(startLightGeo, redLightMat, 5);
+  for (let k = 0; k < 5; k++) {
+    const xOff = (k - 2) * 0.52;
+    const lx = tr.X[0] - tz0 * xOff, lz = tr.Z[0] + tx0 * xOff;
+    dummy.position.set(lx, tr.Y[0] + 5.65, lz);
+    dummy.rotation.set(0, heading0, 0);
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    startLights.setMatrixAt(k, dummy.matrix);
+  }
+  scene.add(startLights);
+
+  // 2. Gran tribuna principal de espectadores a lo largo de la recta principal (s = 18 a 68)
+  const standLength = 52, standTiers = 6, standTierDepth = 0.72, standTierH = 0.42;
+  const sMid = 44;
+  const iMid = Math.floor(sMid / tr.ds) % N;
+  const txM = tr.TX[iMid], tzM = tr.TZ[iMid];
+  const headingM = Math.atan2(txM, tzM);
+  const standLat = WALL + 4.2;
+  const standX = tr.X[iMid] + -tzM * standLat;
+  const standZ = tr.Z[iMid] + txM * standLat;
+  const standY = tr.Y[iMid] + bankOff(tr, iMid, standLat);
+
+  // Gradas escalonadas
+  const bleachersGroup = new THREE.Group();
+  bleachersGroup.position.set(standX, standY, standZ);
+  bleachersGroup.rotation.set(0, headingM, 0);
+
+  const concMat = new THREE.MeshStandardMaterial({ color: 0x8a9098, roughness: 0.88 });
+  for (let t = 0; t < standTiers; t++) {
+    const stepDepth = (standTiers - t) * standTierDepth;
+    const tierMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(standTierDepth, standTierH * (t + 1), standLength),
+      concMat
+    );
+    tierMesh.position.set(t * standTierDepth, (standTierH * (t + 1)) * 0.5, 0);
+    tierMesh.receiveShadow = !!q.shadows;
+    tierMesh.castShadow = !!q.shadows;
+    bleachersGroup.add(tierMesh);
+  }
+
+  // Techo cubierta volada sobre la tribuna
+  const roofMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(standTiers * standTierDepth + 1.2, 0.22, standLength + 2.0),
+    new THREE.MeshStandardMaterial({ color: 0x3d444e, metalness: 0.65, roughness: 0.4 })
+  );
+  roofMesh.position.set((standTiers * standTierDepth) * 0.45, standTiers * standTierH + 2.5, 0);
+  roofMesh.rotation.set(0, 0, 0.12);
+  roofMesh.castShadow = !!q.shadows;
+  bleachersGroup.add(roofMesh);
+
+  // Asientos coloridos de espectadores (rojo, azul, amarillo, blanco)
+  const seatGeo = new THREE.BoxGeometry(0.38, 0.28, 0.35);
+  const seatColors = [0xdf2626, 0x1e60c4, 0xf5b800, 0xf0f3f8].map(col);
+  const seatMesh = new THREE.InstancedMesh(
+    seatGeo,
+    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 }),
+    standTiers * 28
+  );
+  let seatIdx = 0;
+  for (let t = 0; t < standTiers; t++) {
+    for (let r = 0; r < 28; r++) {
+      const zSeat = (r - 13.5) * 1.8;
+      dummy.position.set(t * standTierDepth + 0.12, standTierH * (t + 1) + 0.15, zSeat);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      seatMesh.setMatrixAt(seatIdx, dummy.matrix);
+      seatMesh.setColorAt(seatIdx, seatColors[(t * 7 + r * 3) % seatColors.length]);
+      seatIdx++;
+    }
+  }
+  if (seatMesh.instanceColor) seatMesh.instanceColor.needsUpdate = true;
+  bleachersGroup.add(seatMesh);
+  scene.add(bleachersGroup);
+
+  // 3. Muro de boxes (Pit Wall) en el lado interior de la recta principal
+  const pitWallLength = 65;
+  const pitLat = -(WALL + 0.35);
+  const pitWallGeo = new THREE.BoxGeometry(0.42, 0.95, pitWallLength);
+  const pitWallMat = new THREE.MeshStandardMaterial({ color: 0x767d86, roughness: 0.82 });
+  const pitWallMesh = new THREE.Mesh(pitWallGeo, pitWallMat);
+  pitWallMesh.position.set(tr.X[0] + -tz0 * pitLat, tr.Y[0] + bankOff(tr, 0, pitLat) + 0.48, tr.Z[0] + tx0 * pitLat);
+  pitWallMesh.rotation.set(0, heading0, 0);
+  pitWallMesh.receiveShadow = !!q.shadows;
+  pitWallMesh.castShadow = !!q.shadows;
+  scene.add(pitWallMesh);
+
+  // Puestos de ingenieros en el muro de boxes (pit perches) con monitores
+  const perchMat = new THREE.MeshStandardMaterial({ color: 0x1f242b, metalness: 0.7, roughness: 0.35 });
+  const monitorMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00b4d8, emissiveIntensity: 0.6, roughness: 0.2 });
+  for (let p = 0; p < 4; p++) {
+    const sP = (p - 1.5) * 14;
+    const px = (tr.X[0] + -tz0 * (pitLat - 0.65)) + tx0 * sP;
+    const pz = (tr.Z[0] + tx0 * (pitLat - 0.65)) + tz0 * sP;
+    const py = tr.Y[0] + bankOff(tr, 0, pitLat);
+    const perch = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.4, 1.6), perchMat);
+    perch.position.set(px, py + 0.7, pz);
+    perch.rotation.set(0, heading0, 0);
+    scene.add(perch);
+
+    const mon = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.55), monitorMat);
+    mon.position.set(px + tz0 * 0.48, py + 1.25, pz - tx0 * 0.48);
+    mon.rotation.set(0, heading0, 0);
+    scene.add(mon);
+  }
+
+  // 4. Puestos elevados de comisarios de pista (Marshal posts) en 4 curvas
+  const marshalPositions = [
+    Math.floor(N * 0.18),
+    Math.floor(N * 0.42),
+    Math.floor(N * 0.65),
+    Math.floor(N * 0.88),
+  ];
+  const postHutGeo = new THREE.BoxGeometry(1.9, 1.6, 1.9);
+  const hutMat = new THREE.MeshStandardMaterial({ color: 0xe5e8ec, roughness: 0.8 });
+  const hutRoofMat = new THREE.MeshStandardMaterial({ color: 0x2264d8, roughness: 0.4 });
+  const stiltsGeo = new THREE.CylinderGeometry(0.045, 0.045, 1.8, 6);
+  const stiltsMat = new THREE.MeshStandardMaterial({ color: 0x4d535b, metalness: 0.8, roughness: 0.3 });
+
+  marshalPositions.forEach((mIdx) => {
+    const tx = tr.TX[mIdx], tz = tr.TZ[mIdx];
+    const heading = Math.atan2(tx, tz);
+    const side = tr.kap[mIdx] > 0 ? 1 : -1;
+    const mLat = side * (WALL + 3.2);
+    const mx = tr.X[mIdx] + -tz * mLat;
+    const mz = tr.Z[mIdx] + tx * mLat;
+    const my = tr.Y[mIdx] + bankOff(tr, mIdx, mLat);
+
+    const hut = new THREE.Mesh(postHutGeo, hutMat);
+    hut.position.set(mx, my + 2.5, mz);
+    hut.rotation.set(0, heading, 0);
+    hut.castShadow = !!q.shadows;
+    scene.add(hut);
+
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(1.6, 0.65, 4).rotateY(Math.PI / 4), hutRoofMat);
+    roof.position.set(mx, my + 3.6, mz);
+    roof.castShadow = !!q.shadows;
+    scene.add(roof);
+
+    for (const sx of [-0.75, 0.75]) {
+      for (const sz of [-0.75, 0.75]) {
+        const stilt = new THREE.Mesh(stiltsGeo, stiltsMat);
+        stilt.position.set(mx + sx, my + 0.9, mz + sz);
+        scene.add(stilt);
+      }
+    }
+  });
+}
+
+function sponsorHoardings(tr, th, scene) {
+  if (th.deco === 'kart') return;
+  // 1. Envoltorios de patrocinadores integrados directamente en el guardarraíl
+  sponsorBarrierDecals(tr, th, scene);
+  // 2. Cuñas de espuma de perfil bajo en arcenes y escapatorias
+  sponsorFoamWedges(tr, th, scene);
 }
 
 // tira que sigue la carretera (turbos y luces de neón)
@@ -1465,33 +1795,50 @@ function scenery(tr, th, scene, rng, q) {
   if (th.deco === 'pine' || th.deco === 'snowpine') {
     const snow = th.deco === 'snowpine';
     const treeTransform = (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2] * s[5], s[2] * s[6], s[2] * s[5]); d.rotation.set(0, s[3], 0); };
-    const trunk = inst(new THREE.CylinderGeometry(0.22, 0.38, 5.2, 9, 2).translate(0, 2.6, 0), lam(0x594331), spots, treeTransform);
-    spots.forEach((_, k) => trunk.setColorAt(k, col(0x594331).multiplyScalar(0.78 + ((k * 19) % 8) * 0.055)));
+    const trunk = inst(new THREE.CylinderGeometry(0.24, 0.44, 5.8, 14, 3).translate(0, 2.9, 0), lam(0x4c3524), spots, treeTransform);
+    spots.forEach((_, k) => trunk.setColorAt(k, col(0x4c3524).multiplyScalar(0.78 + ((k * 19) % 8) * 0.055)));
     if (snow) {
-      for (const [geo, mat] of [[new THREE.ConeGeometry(2.6, 5.2, 12).translate(0, 4.6, 0), lam(th.treeCol)], [new THREE.ConeGeometry(2.0, 4.2, 12).translate(0, 7.4, 0), lam(0xf2f8ff)]]) {
-        const mesh = inst(geo, mat, spots, treeTransform);
-        windMeshes.push({ mesh, spots, kind: 'tree' });
+      // Pinos alpinos con nieve acumulada en capas superiores de 4 niveles
+      const snowSets = [
+        { bough: new THREE.ConeGeometry(2.85, 3.6, 24, 2).translate(0, 3.6, 0), snow: new THREE.ConeGeometry(2.7, 1.4, 24).translate(0, 4.6, 0), shade: 0.72 },
+        { bough: new THREE.ConeGeometry(2.32, 3.2, 24, 2).translate(0, 5.2, 0), snow: new THREE.ConeGeometry(2.18, 1.3, 24).translate(0, 6.1, 0), shade: 0.88 },
+        { bough: new THREE.ConeGeometry(1.78, 2.8, 24, 2).translate(0, 6.6, 0), snow: new THREE.ConeGeometry(1.65, 1.2, 24).translate(0, 7.4, 0), shade: 1.04 },
+        { bough: new THREE.ConeGeometry(1.18, 2.4, 24, 2).translate(0, 7.9, 0), snow: new THREE.ConeGeometry(1.08, 1.1, 24).translate(0, 8.5, 0), shade: 1.18 },
+      ];
+      for (const set of snowSets) {
+        const bMesh = inst(set.bough, lam(th.treeCol), spots, treeTransform);
+        spots.forEach((_, k) => bMesh.setColorAt(k, col(th.treeCol).multiplyScalar(set.shade * (0.92 + ((k * 13) % 7) * 0.02))));
+        if (bMesh.instanceColor) bMesh.instanceColor.needsUpdate = true;
+        windMeshes.push({ mesh: bMesh, spots, kind: 'tree' });
+
+        const sMesh = inst(set.snow, new THREE.MeshStandardMaterial({ color: 0xf4f9ff, roughness: 0.82 }), spots, treeTransform);
+        windMeshes.push({ mesh: sMesh, spots, kind: 'tree' });
       }
     } else {
       const conifers = spots.filter((s) => s[7] >= 0.48), deciduous = spots.filter((s) => s[7] < 0.48);
+      // Pinos de alta definición: 4 niveles escalonados con 24 segmentos radiales
       const crownSets = [
-        { geo: new THREE.ConeGeometry(2.65, 5.6, 16, 2).translate(0, 3.45, 0), shade: 0.72 },
-        { geo: new THREE.ConeGeometry(2.02, 4.8, 16, 2).translate(0, 5.45, 0), shade: 0.92 },
-        { geo: new THREE.ConeGeometry(1.42, 4.0, 16, 2).translate(0, 7.35, 0), shade: 1.14 },
+        { geo: new THREE.ConeGeometry(2.85, 3.8, 24, 2).translate(0, 3.6, 0), shade: 0.70 },
+        { geo: new THREE.ConeGeometry(2.35, 3.4, 24, 2).translate(0, 5.2, 0), shade: 0.85 },
+        { geo: new THREE.ConeGeometry(1.80, 3.0, 24, 2).translate(0, 6.7, 0), shade: 1.02 },
+        { geo: new THREE.ConeGeometry(1.20, 2.6, 24, 2).translate(0, 8.1, 0), shade: 1.18 },
       ];
       for (const { geo, shade } of crownSets) {
-        const mesh = inst(geo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.96, flatShading: true }), conifers, treeTransform);
+        const mesh = inst(geo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.94, flatShading: true }), conifers, treeTransform);
         conifers.forEach((_, k) => { mesh.setColorAt(k, col(th.treeCol).multiplyScalar(shade * (0.9 + ((k * 17) % 9) * 0.018))); });
         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
         windMeshes.push({ mesh, spots: conifers, kind: 'tree' });
       }
+      // Árboles caducifolios frondosos: 5 lóbulos esféricos que forman copas orgánicas y densas
       const leafSets = [
-        { geo: new THREE.SphereGeometry(1, 10, 7).scale(2.25, 1.9, 2.15).translate(0, 5.1, 0), shade: 1 },
-        { geo: new THREE.SphereGeometry(1, 9, 6).scale(1.55, 1.45, 1.55).translate(-1.15, 4.55, 0.3), shade: 0.88 },
-        { geo: new THREE.SphereGeometry(1, 9, 6).scale(1.55, 1.45, 1.55).translate(1.1, 4.6, -0.25), shade: 1.08 },
+        { geo: new THREE.SphereGeometry(1, 14, 10).scale(2.3, 2.1, 2.3).translate(0, 5.7, 0), shade: 0.98 },
+        { geo: new THREE.SphereGeometry(1, 12, 8).scale(1.7, 1.5, 1.7).translate(0, 4.7, 1.25), shade: 0.86 },
+        { geo: new THREE.SphereGeometry(1, 12, 8).scale(1.7, 1.5, 1.7).translate(0, 4.6, -1.25), shade: 1.04 },
+        { geo: new THREE.SphereGeometry(1, 12, 8).scale(1.6, 1.45, 1.6).translate(-1.3, 4.8, 0), shade: 0.88 },
+        { geo: new THREE.SphereGeometry(1, 12, 8).scale(1.6, 1.45, 1.6).translate(1.3, 4.8, 0), shade: 1.06 },
       ];
       for (const { geo, shade } of leafSets) {
-        const mesh = inst(geo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.94, flatShading: true }), deciduous, treeTransform);
+        const mesh = inst(geo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, flatShading: true }), deciduous, treeTransform);
         deciduous.forEach((_, k) => {
           const autumnTint = (k * 11) % 7 === 0 ? 0.22 : 0;
           mesh.setColorAt(k, col(th.treeCol).lerp(col(0x777849), autumnTint).multiplyScalar(shade * (0.9 + ((k * 13) % 9) * 0.018)));
@@ -1501,10 +1848,10 @@ function scenery(tr, th, scene, rng, q) {
       }
     }
   } else if (th.deco === 'kart') {
-    const trunks = inst(new THREE.CylinderGeometry(0.48, 0.62, 4.3, 8).translate(0, 2.15, 0), lam(0x82572f), spots, (d, s) => {
+    const trunks = inst(new THREE.CylinderGeometry(0.48, 0.62, 4.3, 10).translate(0, 2.15, 0), lam(0x82572f), spots, (d, s) => {
       d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0);
     });
-    const crowns = inst(new THREE.SphereGeometry(1, 9, 7).scale(2.8, 2.35, 2.65).translate(0, 5.1, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), spots, (d, s) => {
+    const crowns = inst(new THREE.SphereGeometry(1, 12, 9).scale(2.8, 2.35, 2.65).translate(0, 5.1, 0), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), spots, (d, s) => {
       d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2] * s[5], s[2] * s[6], s[2] * s[5]); d.rotation.set(0, s[3], 0);
     });
     spots.forEach((_, k) => crowns.setColorAt(k, col([0x38a438, 0x55ba3d, 0x2e8e40, 0x70c94a][k % 4])));
@@ -1513,9 +1860,14 @@ function scenery(tr, th, scene, rng, q) {
     trunks.castShadow = !!q.shadows;
   } else if (th.deco === 'cactus') {
     const half = spots.length >> 1;
-    inst(new THREE.CylinderGeometry(0.45, 0.55, 4.2, 7).translate(0, 2.1, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2] * 1.1, s[2]); d.rotation.set(0, s[3], 0); });
-    inst(new THREE.CylinderGeometry(0.28, 0.28, 1.6, 6).rotateZ(Math.PI / 2).translate(0.9, 2.6, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
-    inst(new THREE.DodecahedronGeometry(2.2, 0).translate(0, 1.0, 0), lam(0xa65f35), spots.slice(half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2] * 1.4, s[2] * 0.9, s[2] * 1.2); d.rotation.set(0, s[3], 0); });
+    // Cactus saguaro de alta definición: tronco acanalado con 16 segmentos y dos brazos curvados
+    inst(new THREE.CylinderGeometry(0.48, 0.58, 5.2, 16, 4).translate(0, 2.6, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2] * 1.1, s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.28, 0.28, 2.2, 10).rotateZ(Math.PI / 2).translate(1.0, 3.2, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.26, 0.26, 1.8, 10).translate(1.9, 4.1, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.26, 0.26, 2.0, 10).rotateZ(-Math.PI / 2).translate(-0.9, 2.5, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.24, 0.24, 1.6, 10).translate(-1.7, 3.3, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    // Rocas estratificadas del desierto
+    inst(new THREE.IcosahedronGeometry(2.2, 1).translate(0, 1.0, 0), lam(0xa65f35), spots.slice(half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2] * 1.4, s[2] * 0.9, s[2] * 1.2); d.rotation.set(0, s[3], 0); });
   } else if (th.deco === 'toy') {
     const pal = (th.palette || [0xff3b3b, 0x3bb0ff, 0xffd23b, 0x4cd964, 0xb36bff, 0xff8a3b]).map(col);
     const half = th.urban ? 0 : th.harbor ? spots.length : spots.length >> 1;
@@ -1738,8 +2090,8 @@ export function buildWorld(tr, th, opt = {}) {
   if (opt.shadows) {
     sun.castShadow = true;
     const ms = opt.mobile ? 1024 : 2048; sun.shadow.mapSize.set(ms, ms);
-    const c = sun.shadow.camera; c.left = -38; c.right = 38; c.top = 38; c.bottom = -38; c.near = 1; c.far = 280; c.updateProjectionMatrix();
-    sun.shadow.bias = -0.0002; sun.shadow.normalBias = 0.035; sun.shadow.radius = 2.0;
+    const c = sun.shadow.camera; c.left = -45; c.right = 45; c.top = 45; c.bottom = -45; c.near = 1; c.far = 320; c.updateProjectionMatrix();
+    sun.shadow.bias = -0.00015; sun.shadow.normalBias = 0.025; sun.shadow.radius = 2.2;
   }
   const ambientRain = th.weather === 'rain', ambientSnow = th.surface === 'snow';
   let weatherMesh = null, weatherDrops = [];
@@ -1793,6 +2145,7 @@ export function buildWorld(tr, th, opt = {}) {
   } else {
     distanceMarkers(tr, th, scene);
     sponsorHoardings(tr, th, scene);
+    motorsportAmbiance(tr, th, scene, q);
   }
   if (th.oil) {
     const oilMat = new THREE.MeshPhysicalMaterial({
