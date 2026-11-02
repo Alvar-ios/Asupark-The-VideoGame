@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { ROAD_HALF, WALL, setRoad } from './track.js';
 import { SURF, zoneAt, smoothstep, patchBoundary, puddleParams, mudParams, MARIO_OIL_PATCHES } from './surface.js';
 import { rngFromSeed } from './rng.js';
-import { getSponsorTexture, SPONSOR_COLORS } from './sponsors.js';
+import { getSponsorTexture } from './sponsors.js';
 
 const col = (hex) => new THREE.Color(hex);
 
