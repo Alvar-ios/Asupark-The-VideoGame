@@ -2057,7 +2057,107 @@ function scenery(tr, th, scene, rng, q) {
       mm.frustumCulled = false; scene.add(mm);
     }
   }
+  outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R);
   return { cx: cxm, cz: czm, R, windMeshes };
+}
+
+// Elementos fuera de las vallas, según el paisaje de cada circuito: relieves, rocas, mesetas, cactus, bosques y pequeños poblados.
+// Se añade después de la decoración existente, así que no altera la colocación de árboles ni montañas.
+function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
+  const id = th.id, dens = q.density, dummy = new THREE.Object3D();
+  const n = (v) => Math.max(1, Math.round(v * dens));
+  const lam = (c, rough = 0.92) => new THREE.MeshStandardMaterial({ color: c, roughness: rough, flatShading: true });
+  const pick = (arr, s) => arr[Math.abs(Math.floor(s[0] * 7.31 + s[1] * 3.17)) % arr.length];
+  const put = (geo, mat, list, place, tint) => {
+    if (!list.length) return;
+    const m = new THREE.InstancedMesh(geo, mat, list.length);
+    list.forEach((s, k) => { place(dummy, s, k); dummy.updateMatrix(); m.setMatrixAt(k, dummy.matrix); if (tint) m.setColorAt(k, col(tint(s, k))); });
+    if (tint && m.instanceColor) m.instanceColor.needsUpdate = true;
+    m.frustumCulled = false; m.castShadow = false; m.receiveShadow = !!q.shadows; scene.add(m);
+  };
+  // altura del terreno junto a la pista (la misma aproximación que usan los árboles junto a la valla)
+  const groundAt = (i, l) => Math.max(0, tr.Y[i] * (1 - (l - WALL) / (2.5 + 1.1 * tr.Y[i])));
+  // puntos junto a la pista, fuera de la valla: [x, z, giro, escala, altura]
+  const nearPts = (count, lMin, lMax) => {
+    const out = [];
+    for (let g = 0; out.length < count && g < count * 30; g++) {
+      const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1, l = lMin + rng() * (lMax - lMin);
+      const x = tr.X[i] + -tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side;
+      if (clearance(x, z, WALL + 4)) out.push([x, z, rng() * 6.283, 0.75 + rng() * 0.55, groundAt(i, l)]);
+    }
+    return out;
+  };
+  // puntos lejanos, en el anillo exterior (más allá del radio del circuito, nunca sobre el trazado)
+  const farPts = (count, d0, d1) => {
+    const out = [];
+    for (let k = 0; k < count; k++) { const a = rng() * 6.283, d = R + d0 + rng() * (d1 - d0); out.push([cxm + Math.cos(a) * d, czm + Math.sin(a) * d, rng() * 6.283, 0.75 + rng() * 0.55, 0]); }
+    return out;
+  };
+  // pequeños poblados junto a la pista: 3-6 casas en un solar, sin tocar el trazado. Cada casa: [x, z, giro, ancho, alto, fondo, muro, tejado, altura tejado, y]
+  const villages = (count, walls, roofs, roofH) => {
+    const houses = []; let made = 0;
+    for (let g = 0; made < count && g < 80; g++) {
+      const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1, l = WALL + 50 + rng() * 110;
+      const cx = tr.X[i] + -tr.TZ[i] * l * side, cz = tr.Z[i] + tr.TX[i] * l * side;
+      if (!clearance(cx, cz, WALL + 40)) continue;
+      made++; const hn = 3 + Math.floor(rng() * 4), rot = (rng() - 0.5) * 0.6, gy = groundAt(i, l);
+      for (let k = 0; k < hn; k++) {
+        const hx = cx + (rng() - 0.5) * 48, hz = cz + (rng() - 0.5) * 48;
+        if (!clearance(hx, hz, WALL + 9)) continue;
+        houses.push([hx, hz, rot + (rng() - 0.5) * 0.3, 5 + rng() * 3, 3.4 + rng() * 1.6, 5 + rng() * 3, walls[k % walls.length], roofs[k % roofs.length], roofH, gy]);
+      }
+    }
+    return houses;
+  };
+  const renderHouses = (list) => {
+    put(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), lam(0xffffff, 0.88), list, (d, s) => { d.position.set(s[0], s[9], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[4], s[5]); }, (s) => s[6]);
+    // tejado a cuatro aguas: un cono de cuatro lados girado 45° encaja exactamente con la casa
+    put(new THREE.ConeGeometry(0.707, 1, 4).translate(0, 0.5, 0), lam(0xffffff, 0.9), list, (d, s) => { d.position.set(s[0], s[9] + s[4], s[1]); d.rotation.set(0, s[2] + Math.PI / 4, 0); d.scale.set(s[3] * 1.05, s[8], s[5] * 1.05); }, (s) => s[7]);
+  };
+
+  // relieves: colinas redondeadas en el anillo exterior
+  const hillPal = { desierto: [0xc27a4a, 0xb86b3e, 0xd08a55], spa: [0x2f4f2c, 0x3a5a33, 0x284428], valle: [0x5aa54e, 0x4f9a46, 0x6cb55a], nieve: [0xe9f2fa, 0xdce9f5, 0xf4f9ff], pruebas: [0x5f8a4e, 0x6b9455, 0x557b48] }[id];
+  if (hillPal) {
+    const hills = farPts(n(id === 'spa' ? 46 : 30), 120, 440).map((s) => [s[0], s[1], s[2], 80 + rng() * 170, 14 + rng() * 40]);
+    put(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), lam(0xffffff, 1), hills, (d, s) => { d.position.set(s[0], -2, s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[4], s[3] * 0.82); }, (s) => pick(hillPal, s));
+  }
+
+  // bosques de coníferas más allá de la valla (Spa y Cumbre Nevada)
+  if (id === 'spa' || id === 'nieve') {
+    const crown = mergeBufferGeometries([new THREE.ConeGeometry(2.4, 4.2, 7).translate(0, 3.6, 0), new THREE.ConeGeometry(1.8, 3.4, 7).translate(0, 5.6, 0), new THREE.ConeGeometry(1.1, 2.6, 7).translate(0, 7.2, 0)]);
+    const pines = farPts(n(id === 'spa' ? 520 : 260), 25, 240).concat(nearPts(n(id === 'spa' ? 160 : 90), WALL + 25, WALL + 150));
+    const place = (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[3], s[3]); };
+    put(new THREE.CylinderGeometry(0.22, 0.36, 2.5, 6).translate(0, 1.25, 0), lam(0x4c3524), pines, place);
+    put(crown, lam(0xffffff, 0.94), pines, place, (s, k) => col(th.treeCol).multiplyScalar(0.9 + (k % 7) * 0.02).getHex());
+  }
+
+  // desierto: mesetas, cactus saguaro y barril, y un pequeño poblado de adobe
+  if (id === 'desierto') {
+    const mesas = farPts(n(12), 60, 360).map((s) => [s[0], s[1], s[2], 16 + rng() * 26, 14 + rng() * 30]);
+    put(new THREE.CylinderGeometry(0.8, 1, 1, 14).translate(0, 0.5, 0), lam(0xffffff), mesas, (d, s) => { d.position.set(s[0], -1, s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[4], s[3]); }, (s) => pick([0xb8653a, 0xc97d4c, 0x9c5232, 0xd58b5b], s));
+    const saguaro = mergeBufferGeometries([
+      new THREE.CylinderGeometry(0.48, 0.58, 5.2, 16, 4).translate(0, 2.6, 0),
+      new THREE.CylinderGeometry(0.28, 0.28, 2.2, 10).rotateZ(Math.PI / 2).translate(1.0, 3.2, 0),
+      new THREE.CylinderGeometry(0.26, 0.26, 1.8, 10).translate(1.9, 4.1, 0),
+      new THREE.CylinderGeometry(0.26, 0.26, 2.0, 10).rotateZ(-Math.PI / 2).translate(-0.9, 2.5, 0),
+      new THREE.CylinderGeometry(0.24, 0.24, 1.6, 10).translate(-1.7, 3.3, 0),
+    ]);
+    const saguaros = nearPts(n(120), WALL + 6, WALL + 130).concat(farPts(n(60), 30, 200));
+    put(saguaro, lam(0xffffff, 0.85), saguaros, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 1.15, s[3] * 1.15, s[3] * 1.15); }, (s) => pick([0x4a8a3a, 0x3f7d33, 0x5a9742], s));
+    put(new THREE.SphereGeometry(1, 12, 8).scale(1, 0.85, 1).translate(0, 0.8, 0), lam(0xffffff, 0.85), nearPts(n(60), WALL + 6, WALL + 100), (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 0.9, s[3] * 0.9, s[3] * 0.9); }, (s) => pick([0x3f7d33, 0x4f8b3c], s));
+    renderHouses(villages(2, [0xefe3c8, 0xe6cfa6, 0xd9b38c], [0x8a4a2b, 0x7a3e22], 1.7));
+  }
+  // poblados de montaña, valle y nieve
+  if (id === 'spa') renderHouses(villages(1, [0x6f4f2e, 0x8a6a44, 0x5b4128], [0x2f2f33, 0x3c3a36], 3.4));
+  if (id === 'valle') renderHouses(villages(2, [0xf3f1e8, 0xf6d9a8, 0xe8c8b0], [0xb84a2a, 0xa23e24], 2.2));
+  if (id === 'nieve') renderHouses(villages(2, [0x6b4b30, 0x7a5a3a], [0xe8f0f7, 0xdfe9f2], 3.4));
+
+  // rocas sueltas junto a la pista y en el paisaje
+  if (hillPal) {
+    const rockPal = id === 'desierto' ? [0xa65f35, 0x8c4a2a, 0xc0764a] : id === 'nieve' ? [0x9aa6b2, 0xb8c3cc, 0x7f8b97] : [0x7d7a72, 0x8f8a80, 0x6b675f];
+    const rocks = nearPts(n(id === 'desierto' ? 60 : 40), WALL + 5, WALL + 110).concat(farPts(n(60), 40, 300));
+    put(new THREE.IcosahedronGeometry(1, 0), lam(0xffffff, 0.98), rocks, (d, s) => { const r = 1.2 + s[3] * 2.2; d.position.set(s[0], s[4] + r * 0.2, s[1]); d.rotation.set(s[2], s[2] * 1.7, s[2] * 0.6); d.scale.set(r * 1.25, r * 0.8, r); }, (s) => pick(rockPal, s));
+  }
 }
 
 // con lluvia el día se queda cubierto: colores, niebla y luz más oscuros (se aplica a todos los circuitos con lluvia)

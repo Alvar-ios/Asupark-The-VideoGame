@@ -28,8 +28,15 @@ export class Leaderboard {
       const t = await r.text(); return t ? JSON.parse(t) : null;
     } finally { clearTimeout(to); }
   }
-  // Envía un tiempo (ms). Si falla la red, queda en cola y se reintenta después.
-  async submit(trackId, carId, ms) {
+  // Envía un tiempo (ms). Con fantasma (ghost) lo guarda junto al tiempo si la base de datos ya tiene la función submit_lap_ghost
+  // (supabase/ghost-migration.sql). Si no, o si falla la red, se envía solo el tiempo y queda en cola.
+  async submit(trackId, carId, ms, ghost) {
+    if (ghost && this.remote && this.ghostOk !== false) {
+      try {
+        await this.call('rpc/submit_lap_ghost', { method: 'POST', body: JSON.stringify({ p_player: this.player.id, p_name: this.player.name, p_track: trackId, p_car: carId, p_ms: ms, p_ghost: ghost }) });
+        this.ghostOk = true; return true;
+      } catch (e) { this.ghostOk = false; }
+    }
     const q = load(KEY_QUEUE, []).filter((e) => !(e.trackId === trackId && e.carId === carId && e.ms >= ms));
     q.push({ trackId, carId, ms }); save(KEY_QUEUE, q.slice(-60));
     return this.flush();
@@ -46,6 +53,17 @@ export class Leaderboard {
       }
       return true;
     } catch (e) { return false; } finally { this.sending = false; }
+  }
+  // Fantasma del mejor tiempo del circuito entre todos los jugadores: { time (s), car, ghost } o null si no hay datos a tiempo
+  async bestGhost(trackId) {
+    if (!this.remote) return null;
+    try {
+      const q = this.call(`lap_times?select=car_id,lap_ms,ghost&track_id=eq.${encodeURIComponent(trackId)}&ghost=not.is.null&order=lap_ms.asc&limit=1`);
+      const wait = new Promise((_, rej) => setTimeout(() => rej(new Error('lento')), 2500));
+      const rows = await Promise.race([q, wait]);
+      const r = rows && rows[0];
+      return r && Array.isArray(r.ghost) && r.ghost.length > 8 ? { time: r.lap_ms / 1000, car: r.car_id, ghost: r.ghost } : null;
+    } catch (e) { return null; }
   }
   // Todas las filas de un circuito (mejor tiempo de cada piloto con cada coche); el juego las agrupa por categoría
   async all(trackId) {

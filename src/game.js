@@ -205,6 +205,11 @@ function buildMenu() {
   $('autoGas').classList.toggle('on', sel.autoGas); $('autoGas').textContent = 'Acelerador automático: ' + (sel.autoGas ? 'SÍ' : 'NO');
 }
 $('raceMusicBtn').onclick = () => { sel.raceMusic = !sel.raceMusic; store.set('sel', sel); buildMenu(); };
+// fantasmas de la contrarreloj: gris (tu mejor vuelta) y dorado (la mejor del circuito), activables por separado (por defecto, activados)
+$('ghostMineBtn').classList.toggle('on', sel.ghostMine !== false); $('ghostMineBtn').textContent = 'Fantasma gris (tu mejor vuelta): ' + (sel.ghostMine !== false ? 'SÍ' : 'NO');
+$('ghostBestBtn').classList.toggle('on', sel.ghostBest !== false); $('ghostBestBtn').textContent = 'Fantasma dorado (mejor del circuito): ' + (sel.ghostBest !== false ? 'SÍ' : 'NO');
+$('ghostMineBtn').onclick = () => { sel.ghostMine = sel.ghostMine === false; store.set('sel', sel); buildMenu(); };
+$('ghostBestBtn').onclick = () => { sel.ghostBest = sel.ghostBest === false; store.set('sel', sel); buildMenu(); };
 $('sndBtn').onclick = () => { sel.mute = !sel.mute; store.set('sel', sel); buildMenu(); };
 function buildPaints() {
   const box = $('paints'); box.innerHTML = '';
@@ -219,12 +224,22 @@ const applyCtl = () => { document.body.classList.toggle('halves-mode', halvesOn(
 $('ctlMode').onclick = () => { sel.touchMode = sel.touchMode === 'halves' ? 'buttons' : 'halves'; store.set('sel', sel); applyCtl(); };
 applyCtl();
 {
-  const hz = $('halves'), hold = new Map(), hx = new Map();
-  const hUpd = () => { let l = 0, r = 0; for (const [id, v] of hold) { if (v < 0) l = 1; else r = 1; const x = hx.get(id); if (x != null) $(v < 0 ? 'hL' : 'hR').style.setProperty('--x', (v < 0 ? x : x - window.innerWidth / 2) + 'px'); } input.touch.l = l; input.touch.r = r; $('hL').classList.toggle('on', !!l); $('hR').classList.toggle('on', !!r); };
-  hz.addEventListener('pointerdown', (e) => { e.preventDefault(); hold.set(e.pointerId, e.clientX < window.innerWidth / 2 ? -1 : 1); hx.set(e.pointerId, e.clientX); try { hz.setPointerCapture(e.pointerId); } catch (_) { /* sin captura */ } sound.init(CARS[sel.car].id); hUpd(); });
+  // el freno (#hB) es un pulsador aparte: se puede mantener mientras se gira con la otra mano
+  const hz = $('halves'), hb = $('hB'), hold = new Map(), hx = new Map(), hbrk = new Set();
+  const hUpd = () => { let l = 0, r = 0; for (const [id, v] of hold) { if (v < 0) l = 1; else r = 1; const x = hx.get(id); if (x != null) $(v < 0 ? 'hL' : 'hR').style.setProperty('--x', (v < 0 ? x : x - window.innerWidth / 2) + 'px'); } input.touch.l = l; input.touch.r = r; input.touch.b = hbrk.size ? 1 : 0; $('hL').classList.toggle('on', !!l); $('hR').classList.toggle('on', !!r); hb.classList.toggle('on', hbrk.size > 0); };
+  hz.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); sound.init(CARS[sel.car].id);
+    if (e.target.closest && e.target.closest('#hB')) hbrk.add(e.pointerId);
+    else { hold.set(e.pointerId, e.clientX < window.innerWidth / 2 ? -1 : 1); hx.set(e.pointerId, e.clientX); }
+    try { hz.setPointerCapture(e.pointerId); } catch (_) { /* sin captura */ }
+    hUpd();
+  });
   hz.addEventListener('pointermove', (e) => { if (hold.has(e.pointerId)) { hold.set(e.pointerId, e.clientX < window.innerWidth / 2 ? -1 : 1); hx.set(e.pointerId, e.clientX); hUpd(); } });
-  const up = (e) => { hold.delete(e.pointerId); hx.delete(e.pointerId); hUpd(); };
+  const up = (e) => { hold.delete(e.pointerId); hx.delete(e.pointerId); hbrk.delete(e.pointerId); hUpd(); };
   hz.addEventListener('pointerup', up); hz.addEventListener('pointercancel', up); hz.addEventListener('lostpointercapture', up);
+  // iPhone: sin menú «Copiar», lupa ni selección al mantener el dedo
+  for (const ev of ['touchstart', 'touchmove']) hz.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+  for (const ev of ['selectstart', 'gesturestart', 'contextmenu']) hz.addEventListener(ev, (e) => e.preventDefault());
 }
 $('fsBtn').onclick = () => { try { const e = document.documentElement; (e.requestFullscreen || e.webkitRequestFullscreen).call(e); } catch (_) {} try { screen.orientation.lock('landscape').catch(() => {}); } catch (_) {} };
 $('modeSel').onclick = (e) => { if (e.target.dataset.v) { sel.mode = e.target.dataset.v; buildMenu(); } };
@@ -410,9 +425,10 @@ async function startRace(restart = false) {
     status.hidden = false; button.disabled = false; button.textContent = previousLabel; return;
   }
   S.ghostRecs = null;
-  if (S.mode === 'tt') { // fantasmas: el mejor de tu grupo (azul) y el mejor de la pista (dorado), con la forma del coche que los hizo
+  if (S.mode === 'tt') { // fantasmas: tu mejor vuelta del circuito (gris) y la mejor de todos los jugadores (dorado), con la forma del coche que las hizo
     const tiG = tracks[sel.track], gk = tiG.key + '.' + tiG.tr.seed; migrateGroupBest(gk, pt.group);
-    S.ghostRecs = { g: store.get('best.' + gk + '.g:' + pt.group), t: trackBestGhost(gk) };
+    const own = trackBestGhost(gk), remote = sel.ghostBest !== false ? await lb.bestGhost(trackIdOf(tiG)) : null;
+    S.ghostRecs = { g: own, t: remote && (!own || remote.time < own.time - 1e-6) ? remote : own };
     for (const r of [S.ghostRecs.g, S.ghostRecs.t]) { const ct = r && r.car && CARS.find((c) => c.id === r.car); if (ct && !carAssetReady(ct, 'lo')) await loadCarAsset(ct, false).catch(() => {}); }
   }
   button.disabled = false; button.textContent = previousLabel;
@@ -502,9 +518,11 @@ async function startRace(restart = false) {
   } else {
     placeCar(player, tr, -260, 0, 18); S.auto = true; S.autoAi = { lane: 0, skill: AI_TOP * 0.5 }; flashCount(''); showMsg('PILOTO AUTOMÁTICO', 4200, 'cy'); // contrarreloj: salida lanzada, el crono arranca al cruzar la meta
     migrateGroupBest(ti.key + '.' + tr.seed, type.group);
-    const rec = S.ghostRecs && S.ghostRecs.g, trec = S.ghostRecs && S.ghostRecs.t; // fantasma de tu grupo + el de la pista
-    S.ghostBest = rec && rec.ghost ? Float32Array.from(rec.ghost) : null;
-    S.ghostBestGold = trec && trec.ghost && !(rec && Math.abs(rec.time - trec.time) < 1e-6) ? Float32Array.from(trec.ghost) : null;
+    const rec = S.ghostRecs && S.ghostRecs.g, trec = S.ghostRecs && S.ghostRecs.t; // gris: tu mejor vuelta · dorado: la mejor del circuito
+    const sameG = !!(rec && trec && Math.abs(rec.time - trec.time) < 1e-6), showGray = sel.ghostMine !== false, showGold = sel.ghostBest !== false;
+    S.goldTime = trec ? trec.time : null;
+    S.ghostBest = (sameG ? showGray || showGold : showGray) && rec && rec.ghost ? Float32Array.from(rec.ghost) : null; // si la tuya es la mejor, solo sale un fantasma (dorado)
+    S.ghostBestGold = showGold && !sameG && trec && trec.ghost ? Float32Array.from(trec.ghost) : null;
     if (reuse) { // al reiniciar se reutiliza la escena: se ajustan los fantasmas a los récords actuales
       const ctOf = (r) => (r && r.car && CARS.find((c) => c.id === r.car)) || type, same = rec && trec && Math.abs(rec.time - trec.time) < 1e-6;
       setGhost('ghostMesh', ctOf(same ? trec : rec), !!same); setGhost('ghostGold', S.ghostBestGold ? ctOf(trec) : null, true);
@@ -569,6 +587,7 @@ const holdBtn = (id, key) => {
 };
 holdBtn('tG', 'g'); holdBtn('tB', 'b'); holdBtn('tD', 'd');
 holdBtn('tL', 'l'); holdBtn('tR', 'r');
+for (const el of document.querySelectorAll('#touch .t')) el.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false }); // sin menú «Copiar» en iPhone
 
 function readInput(o) {
   const k = input.keys, t = input.touch;
@@ -811,24 +830,31 @@ function onPlayerLap(c, lt, done) {
   let newPB = false; const previousPB = S.lapPB;
   if (valid) {
     { const ck = 'pb.' + S.trackInfo.key + '.' + S.tr.seed + '.' + c.type.id, cr = store.get(ck); // tu mejor con este coche (clasificación online y local por coche)
-      if (!cr || cr.lap == null || lt < cr.lap) { store.set(ck, { ...(cr || { sec: [null, null, null], prof: null }), lap: lt }); lb.submit(trackIdOf(S.trackInfo), c.type.id, Math.round(lt * 1000)).catch(() => {}); } }
+      if (!cr || cr.lap == null || lt < cr.lap) { store.set(ck, { ...(cr || { sec: [null, null, null], prof: null }), lap: lt }); lb.submit(trackIdOf(S.trackInfo), c.type.id, Math.round(lt * 1000), S.mode === 'tt' ? Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) : null).catch(() => {}); } }
     if (S.lapPB == null || lt < S.lapPB) {
       newPB = true; S.lapPB = lt; S.bestLap = lt;
       S.pbRec.lap = lt; S.pbRec.prof = Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000));
       store.set('pb.' + S.skey, S.pbRec);
       S.refProf = S.pbRec.prof; S.refName = 'PB'; S.refFill = fillProf(S.refProf);
       if (S.mode === 'tt') {
-        S.ghostBest = Float32Array.from(S.ghostRec);
-        store.set(key, { time: lt, ghost: Array.from(S.ghostBest, (v) => Math.round(v * 100) / 100), car: c.type.id });
+        store.set(key,{ time: lt, ghost: Array.from(S.ghostBest, (v) => Math.round(v * 100) / 100), car: c.type.id });
       }
       markDaily();
     }
     if (lt < S.lapRec) { S.lapRec = lt; S.recReal = true; S.recWho = 'Tú'; updateRecPanel(); }
     if (lt < S.trkLap) { S.trkLap = lt; S.trkWho = 'Tú'; S.trkGroup = c.type.group; updateRecPanel(); }
     if (S.mode === 'tt') { const tk = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.track', tb = store.get(tk); if (!tb || lt < tb.time) store.set(tk, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id }); } // y el mejor de la pista, para el fantasma dorado
-    if (S.mode === 'tt' && newPB) { // el fantasma se actualiza al momento: tu nueva vuelta pasa a ser el de tu grupo (o el dorado si también es el mejor de la pista)
-      const tb2 = store.get('best.' + S.trackInfo.key + '.' + S.tr.seed + '.track'), isTrack = tb2 && Math.abs(tb2.time - lt) < 1e-6;
-      setGhost('ghostMesh', c.type, !!isTrack); if (isTrack) { setGhost('ghostGold', null); S.ghostBestGold = null; }
+    if (S.mode === 'tt' && newPB) { // el fantasma se actualiza al momento: si tu vuelta es ya tu mejor del circuito pasa a gris, y a dorado si supera a todos
+      const tb2 = store.get('best.' + S.trackInfo.key + '.' + S.tr.seed + '.track');
+      if (tb2 && Math.abs(tb2.time - lt) < 1e-6) {
+        const showGray = sel.ghostMine !== false, showGold = sel.ghostBest !== false, isGold = S.goldTime == null || lt < S.goldTime - 1e-6;
+        if (isGold) { // tu vuelta es la mejor de todos: un solo fantasma dorado
+          S.goldTime = lt; setGhost('ghostMesh', c.type, true); setGhost('ghostGold', null); S.ghostBestGold = null;
+          S.ghostBest = (showGray || showGold) ? Float32Array.from(S.ghostRec) : null;
+        } else { // sigue existiendo un dorado de otro jugador: el gris es tu vuelta
+          setGhost('ghostMesh', c.type, false); S.ghostBest = showGray ? Float32Array.from(S.ghostRec) : null;
+        }
+      }
     }
     setTimeout(() => refreshOnlineRecords(S.raceNo), 2500); // por si otros jugadores han marcado mejores tiempos
   }
@@ -1129,7 +1155,7 @@ async function renderBoard() {
   $('boardTable').innerHTML = html;
 }
 function openBoard(trackKey) {
-  BD.track = Math.max(0, tracks.findIndex((t) => t.key === (trackKey || tracks[sel.track].key))); BD.group = 'all';
+  BD.track = Math.max(0, tracks.findIndex((t) => t.key === (trackKey || tracks[sel.track].key))); BD.group = groupIdOfCar(CARS[sel.car].id); // se abre en la categoría del coche que usas
   $('board').classList.remove('hidden'); renderBoard();
   setTimeout(() => { const on = $('boardTracks').querySelector('.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' }); }, 30);
 }

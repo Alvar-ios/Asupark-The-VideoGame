@@ -530,11 +530,17 @@ body.mobile #raceBanner strong{font-size:22px;margin:0}
 #board .tabs button{flex:none;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#c8d0dc;border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
 #board .tabs button.on{background:#ffc928;border-color:#ffc928;color:#111;font-weight:700}
 #board .tabs .flag{width:18px;height:12px;border-radius:2px;overflow:hidden;display:inline-block}#board .tabs .flag svg{display:block;width:100%;height:100%}
-#boardGroups button{font-size:11px;padding:5px 11px}
+/* categorías: cuadrícula de botones grandes, sin deslizar, para ver de un vistazo en qué grupo estás */
+#boardGroups{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;overflow:visible;margin:0 0 10px;padding:0}
+#boardGroups button{justify-content:center;text-align:center;border-radius:10px;padding:9px 6px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;line-height:1.15;white-space:normal;min-width:0}
+#boardGroups button.on{box-shadow:0 0 0 2px rgba(255,201,40,.35)}
+#board .lbwrap{max-height:min(56vh,440px);overflow:auto}
+#board .lbt td,#board .lbt th{padding:6px 8px}
+.lbt tr.gh td{font-size:14px;color:#111;background:#ffc928;letter-spacing:.1em;padding:8px 10px;border-bottom:0}.lbt tr.gh small{color:#3a3a3a;font-weight:700}
+@media (max-width:600px){#boardGroups{grid-template-columns:repeat(3,minmax(0,1fr))}#boardGroups button{font-size:11px;padding:8px 4px}}
 .lbt td.rk{width:34px;color:#8e98a8;font-weight:800}.lbt tr.me td.rk{color:#ffc928}
 .lbt td.tm{font-weight:700;font-variant-numeric:tabular-nums}.lbt td.gp{color:#8e98a8;font-size:12px;text-align:right;width:62px}
 .lbt td.car small{color:#6f7b8e;font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-right:4px}
-.lbt tr.gh td{background:rgba(255,201,40,.08);padding-top:10px}.lbt tr.gh small{color:#8e98a8;font-weight:500;letter-spacing:0;text-transform:none;margin-left:6px}
 .lbt td:last-child,.lbt th:last-child{text-align:right}
 #menu .track-env.zone{background:rgba(255,255,255,.1);color:#d7dee9}
 /* ===== sectores estilo retransmisión de F1: barra fina arriba y aviso compacto bajo el cronómetro (sin tapar la carretera) ===== */
@@ -717,11 +723,15 @@ body.mobile #menu .links{gap:6px;margin-top:6px}body.mobile #menu .link{padding:
   #menu .daily-big{min-height:88px}
 }
 /* control táctil por mitades de pantalla (acelerador automático) */
-#halves{position:fixed;inset:0;z-index:2;display:none;touch-action:none}
+#halves{position:fixed;inset:0;z-index:2;display:none;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 body.racing.halves-mode #halves{display:flex}body.halves-mode #touch{display:none!important}
-#halves>div{position:relative;flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7vh;font-size:30px;font-weight:900;color:rgba(255,255,255,.14)}
+#halves>div{position:relative;flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:7vh}
 #halves>div::after{content:'';position:absolute;bottom:4vh;left:var(--x,50%);width:58px;height:58px;margin-left:-29px;border-radius:50%;background:rgba(255,255,255,.16);opacity:0;transition:opacity .07s}
-#halves>div.on::after{opacity:1}#halves>div.on{color:rgba(255,255,255,.3)}
+#halves>div.on::after{opacity:1}
+/* freno lateral: se pulsa a la vez que se gira, con el pulgar de la otra mano */
+#halves>#hB{position:absolute;flex:none;right:max(14px,env(safe-area-inset-right));bottom:calc(max(12px,env(safe-area-inset-bottom)) + 3vh);width:clamp(80px,17vh,112px);height:clamp(80px,17vh,112px);margin:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,70,70,.22);border:2px solid rgba(255,255,255,.42);color:#fff;font:inherit;font-size:clamp(12px,2.6vh,15px);font-weight:900;letter-spacing:.12em;backdrop-filter:blur(3px);-webkit-touch-callout:none;user-select:none}
+#halves>#hB.on{background:rgba(255,70,70,.6);border-color:#fff}
+#touch .t{-webkit-touch-callout:none;user-select:none}
 
 /* récord de la pista (todos los grupos), en dorado y aparte del récord del grupo (morado) */
 #hud #h-rec .trk{margin-top:5px;padding-top:4px;border-top:1px solid rgba(255,201,40,.45)}
@@ -807,7 +817,7 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
   <div id="help"><b>↑/W</b> acelerar · <b>↓/S</b> frenar · <b>←→</b> girar<br><b>ESPACIO</b> freno de mano · <b>R</b> volver a pista · <b>C</b> cámara · <b>M</b> sonido · <b>ESC</b> pausa</div>
 </div>
 <button id="pbtn" class="hidden" aria-label="Pausa">❚❚</button><button id="rbtn" class="hidden" aria-label="Reiniciar (T)">↺</button>
-<div id="halves"><div id="hL"><span>◀</span></div><div id="hR"><span>▶</span></div></div>
+<div id="halves"><div id="hL"></div><div id="hR"></div><div id="hB">FRENO</div></div>
 <div id="touch" class="hidden"><div class="t" id="tL">◀</div><div class="t" id="tR">▶</div><div class="t" id="tG">ACEL</div><div class="t" id="tB">FRENO</div><div class="t" id="tD">F.M.</div></div>
 <div id="rotate"><div>↻<br>Gira el móvil<br><small>El juego se disfruta en horizontal</small></div></div>
 
@@ -843,7 +853,7 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
 <div id="board" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="max-width:680px;text-align:left"><h1 style="font-size:30px">CLASIFICACIÓN</h1>
   <div id="boardTracks" class="tabs"></div><div id="boardGroups" class="tabs"></div>
   <div id="boardStatus" class="keys" style="display:block;margin:4px 0 8px"></div>
-  <div style="max-height:50vh;overflow:auto"><table id="boardTable" class="lbt"></table></div>
+  <div class="lbwrap"><table id="boardTable" class="lbt"></table></div>
   <button id="boardClose" class="big">CERRAR</button></div></div>
 <div id="musicPick" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="text-align:left;max-width:520px"><h1 style="font-size:32px">MÚSICA</h1><p class="keys" style="display:block;margin:0 0 8px">Toca una canción para escucharla. Al terminar, el resto suena en aleatorio.</p><div id="songList"></div><button id="musicClose" class="big">LISTO</button></div></div>
 <div id="settings" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="text-align:left;max-width:520px"><h1 style="font-size:32px">AJUSTES</h1>
@@ -852,7 +862,7 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
   <div class="row"><label style="flex:1">Música del menú <b id="vt_music"></b><input id="v_music" type="range" min="0" max="100" style="width:100%"></label></div>
   <div class="row"><label style="flex:1">Motor <b id="vt_engine"></b><input id="v_engine" type="range" min="0" max="100" style="width:100%"></label></div>
   <h3>Opciones</h3>
-  <div class="row" style="gap:8px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="ctlMode" class="tog">Control: BOTONES</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="raceMusicBtn" class="tog">Música al conducir: NO</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
+  <div class="row" style="gap:8px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="ctlMode" class="tog">Control: BOTONES</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="raceMusicBtn" class="tog">Música al conducir: NO</button><button id="ghostMineBtn" class="tog">Fantasma gris (tu mejor vuelta): SÍ</button><button id="ghostBestBtn" class="tog">Fantasma dorado (mejor del circuito): SÍ</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
   <p class="keys" style="display:block;margin-top:8px"><b>WASD</b> o flechas para conducir · <b>ESPACIO</b> freno de mano · <b>R</b> recolocar · <b>T</b> reiniciar · <b>C</b> cámara · <b>ESC</b> pausa · también con mando</p>
   <h3>Piloto</h3>
   <div class="row"><label style="flex:1">Nombre en la clasificación<input id="pname" maxlength="20" class="sel" style="width:100%;margin-top:4px"></label></div>

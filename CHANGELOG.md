@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.35
+- Móvil: el control por mitades ya no muestra iconos, y aparece un botón de FRENO en un lateral para frenar mientras giras. Se bloquea el menú «Copiar» de iPhone.
+- Clasificación: se abre en la categoría de tu coche, con las categorías como botones grandes en cuadrícula y sin deslizar.
+- Contrarreloj: el fantasma gris es tu mejor vuelta del circuito y el dorado la mejor de todos los jugadores. Ajustes permite desactivar cada uno. Para el dorado online hay que ejecutar `supabase/ghost-migration.sql`.
+- Paisaje fuera de las vallas: colinas, rocas, mesetas y cactus en el desierto, bosques y colinas en Spa y Cumbre Nevada, y pequeños poblados.
+
 ## 0.0.34
 - Corregida la orientación del Ford GT Heritage: ya no aparece circulando marcha atrás.
 - Cañón Prisma sustituido por un trazado compacto original, con una vuelta exterior y una sección interior de curvas enlazadas; asfalto más neutro.
