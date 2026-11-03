@@ -105,6 +105,7 @@ button.ghost{background:rgba(255,255,255,.08);color:var(--txt);box-shadow:none;f
 #tR{left:calc(max(16px,env(safe-area-inset-left)) + 118px);bottom:22px;width:104px;height:104px;font-size:34px}
 #tG{right:max(16px,env(safe-area-inset-right));bottom:20px;width:112px;height:112px;font-size:19px}
 #tB{right:140px;bottom:20px;width:82px;height:82px;font-size:14px}
+#tL,#tR,body.mobile #tL,body.mobile #tR{font-size:14px!important;letter-spacing:.08em}
 #tD{right:max(16px,env(safe-area-inset-right));bottom:144px;width:64px;height:64px;font-size:12px}
 #rotate{display:none;position:fixed;inset:0;z-index:20;background:rgba(6,8,16,.96);align-items:center;justify-content:center;text-align:center;font-size:26px;font-weight:800;line-height:1.5}
 #rotate small{font-size:14px;color:var(--dim);font-weight:500}
@@ -824,7 +825,7 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
 </div>
 <button id="pbtn" class="hidden" aria-label="Pausa">❚❚</button><button id="rbtn" class="hidden" aria-label="Reiniciar (T)">↺</button>
 <div id="halves"><div id="hL"></div><div id="hR"></div><div id="hB">FRENO</div></div>
-<div id="touch" class="hidden"><div class="t" id="tL">◀</div><div class="t" id="tR">▶</div><div class="t" id="tG">ACEL</div><div class="t" id="tB">FRENO</div><div class="t" id="tD">F.M.</div></div>
+<div id="touch" class="hidden"><div class="t" id="tL">IZQ</div><div class="t" id="tR">DER</div><div class="t" id="tG">ACEL</div><div class="t" id="tB">FRENO</div><div class="t" id="tD">F.M.</div></div>
 <div id="rotate"><div>↻<br>Gira el móvil<br><small>El juego se disfruta en horizontal</small></div></div>
 
 <div id="menu" class="overlay" data-view="home">

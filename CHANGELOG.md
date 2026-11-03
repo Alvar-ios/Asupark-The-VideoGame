@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.37
+- Móvil: el control vuelve a mitades (sin flechas) una vez para todos los dispositivos que tenían guardado el modo de botones; los botones de girar muestran IZQ/DER en vez de flechas.
+- Cactus: textura con costillas, espinas y tonos de sol, y puntas y codos redondeados.
+
 ## 0.0.36
 - Clasificación: nombres más grandes, diferencias desde el segundo puesto y el primero marcado en dorado (las cabeceras de categoría quedan neutras).
 - Fantasmas por categoría: gris = tu mejor vuelta de tu categoría, dorado = la mejor de tu categoría entre todos los jugadores (requiere ghost-migration.sql).

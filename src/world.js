@@ -322,6 +322,25 @@ function distanceBoardTex(num) {
   distBoardCaches[num] = tex;
   return tex;
 }
+// Cactus: textura con costillas verticales, espinas y tonos de sol. Se comparte entre todos los cactus.
+let cactusTexCache = null;
+function cactusMat(color = 0xffffff) {
+  if (!cactusTexCache) {
+    const cv = document.createElement('canvas'); cv.width = 128; cv.height = 256; const g = cv.getContext('2d');
+    const base = g.createLinearGradient(0, 0, 128, 0);
+    base.addColorStop(0, '#2c6328'); base.addColorStop(0.45, '#5ea047'); base.addColorStop(0.7, '#78b657'); base.addColorStop(1, '#2c6328');
+    g.fillStyle = base; g.fillRect(0, 0, 128, 256);
+    for (let r = 0; r < 12; r++) { // costillas: sombra a un lado y luz al otro
+      const x = (r + 0.5) * 128 / 12;
+      g.fillStyle = 'rgba(16,44,16,.5)'; g.fillRect(x - 2, 0, 4, 256);
+      g.fillStyle = 'rgba(205,255,160,.28)'; g.fillRect(x + 2.5, 0, 2, 256);
+    }
+    for (let k = 0; k < 520; k++) { g.fillStyle = 'rgba(248,242,214,.9)'; g.fillRect(Math.random() * 128, Math.random() * 256, 1.6, 1.6); } // espinas
+    for (let k = 0; k < 60; k++) { g.fillStyle = `rgba(70,52,20,${0.05 + Math.random() * 0.12})`; g.beginPath(); g.arc(Math.random() * 128, Math.random() * 256, 2 + Math.random() * 6, 0, Math.PI * 2); g.fill(); } // polvo y manchas
+    cactusTexCache = new THREE.CanvasTexture(cv); cactusTexCache.colorSpace = THREE.SRGBColorSpace; cactusTexCache.wrapS = THREE.RepeatWrapping;
+  }
+  return new THREE.MeshStandardMaterial({ color, map: cactusTexCache, roughness: 0.62 });
+}
 function glowTex(inner = 'rgba(255,255,255,1)') {
   const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
   const g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, inner); g.addColorStop(0.25, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
@@ -1921,11 +1940,11 @@ function scenery(tr, th, scene, rng, q) {
   } else if (th.deco === 'cactus') {
     const half = spots.length >> 1;
     // Cactus saguaro de alta definición: tronco acanalado con 16 segmentos y dos brazos curvados
-    inst(new THREE.CylinderGeometry(0.48, 0.58, 5.2, 16, 4).translate(0, 2.6, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2] * 1.1, s[2]); d.rotation.set(0, s[3], 0); });
-    inst(new THREE.CylinderGeometry(0.28, 0.28, 2.2, 10).rotateZ(Math.PI / 2).translate(1.0, 3.2, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
-    inst(new THREE.CylinderGeometry(0.26, 0.26, 1.8, 10).translate(1.9, 4.1, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
-    inst(new THREE.CylinderGeometry(0.26, 0.26, 2.0, 10).rotateZ(-Math.PI / 2).translate(-0.9, 2.5, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
-    inst(new THREE.CylinderGeometry(0.24, 0.24, 1.6, 10).translate(-1.7, 3.3, 0), lam(th.treeCol), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.48, 0.58, 5.2, 16, 4).translate(0, 2.6, 0), cactusMat(), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2] * 1.1, s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.28, 0.28, 2.2, 10).rotateZ(Math.PI / 2).translate(1.0, 3.2, 0), cactusMat(), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.26, 0.26, 1.8, 10).translate(1.9, 4.1, 0), cactusMat(), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.26, 0.26, 2.0, 10).rotateZ(-Math.PI / 2).translate(-0.9, 2.5, 0), cactusMat(), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
+    inst(new THREE.CylinderGeometry(0.24, 0.24, 1.6, 10).translate(-1.7, 3.3, 0), cactusMat(), spots.slice(0, half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2], s[2], s[2]); d.rotation.set(0, s[3], 0); });
     // Rocas estratificadas del desierto
     inst(new THREE.IcosahedronGeometry(2.2, 1).translate(0, 1.0, 0), lam(0xa65f35), spots.slice(half), (d, s) => { d.position.set(s[0], s[4] || 0, s[1]); d.scale.set(s[2] * 1.4, s[2] * 0.9, s[2] * 1.2); d.rotation.set(0, s[3], 0); });
   } else if (th.deco === 'toy') {
@@ -2140,15 +2159,21 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
   if (id === 'desierto') {
     const mesas = farPts(n(12), 60, 360).map((s) => [s[0], s[1], s[2], 16 + rng() * 26, 14 + rng() * 30]);
     put(new THREE.CylinderGeometry(0.8, 1, 1, 14).translate(0, 0.5, 0), lam(0xffffff), mesas, (d, s) => { d.position.set(s[0], -1, s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[4], s[3]); }, (s) => pick([0xb8653a, 0xc97d4c, 0x9c5232, 0xd58b5b], s));
+    // saguaro con puntas y codos redondeados (esferas en las juntas) en vez de cilindros con cortes planos
     const saguaro = mergeBufferGeometries([
-      new THREE.CylinderGeometry(0.48, 0.58, 5.2, 16, 4).translate(0, 2.6, 0),
-      new THREE.CylinderGeometry(0.28, 0.28, 2.2, 10).rotateZ(Math.PI / 2).translate(1.0, 3.2, 0),
-      new THREE.CylinderGeometry(0.26, 0.26, 1.8, 10).translate(1.9, 4.1, 0),
-      new THREE.CylinderGeometry(0.26, 0.26, 2.0, 10).rotateZ(-Math.PI / 2).translate(-0.9, 2.5, 0),
-      new THREE.CylinderGeometry(0.24, 0.24, 1.6, 10).translate(-1.7, 3.3, 0),
+      new THREE.CylinderGeometry(0.46, 0.56, 5.2, 18, 4).translate(0, 2.6, 0),
+      new THREE.SphereGeometry(0.46, 16, 8).translate(0, 5.2, 0),
+      new THREE.CylinderGeometry(0.27, 0.27, 2.2, 12).rotateZ(Math.PI / 2).translate(1.0, 3.2, 0),
+      new THREE.SphereGeometry(0.27, 12, 8).translate(2.1, 3.2, 0),
+      new THREE.CylinderGeometry(0.25, 0.25, 1.8, 12).translate(1.9, 4.1, 0),
+      new THREE.SphereGeometry(0.25, 12, 8).translate(1.9, 5.0, 0),
+      new THREE.CylinderGeometry(0.25, 0.25, 2.0, 12).rotateZ(-Math.PI / 2).translate(-0.9, 2.5, 0),
+      new THREE.SphereGeometry(0.25, 12, 8).translate(-1.9, 2.5, 0),
+      new THREE.CylinderGeometry(0.23, 0.23, 1.6, 12).translate(-1.7, 3.3, 0),
+      new THREE.SphereGeometry(0.23, 12, 8).translate(-1.7, 4.1, 0),
     ]);
     const saguaros = nearPts(n(120), WALL + 6, WALL + 130).concat(farPts(n(60), 30, 200));
-    put(saguaro, lam(0xffffff, 0.85), saguaros, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 1.15, s[3] * 1.15, s[3] * 1.15); }, (s) => pick([0x4a8a3a, 0x3f7d33, 0x5a9742], s));
+    put(saguaro, cactusMat(), saguaros, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 1.15, s[3] * 1.15, s[3] * 1.15); }, (s) => pick([0x4a8a3a, 0x3f7d33, 0x5a9742], s));
     put(new THREE.SphereGeometry(1, 12, 8).scale(1, 0.85, 1).translate(0, 0.8, 0), lam(0xffffff, 0.85), nearPts(n(60), WALL + 6, WALL + 100), (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 0.9, s[3] * 0.9, s[3] * 0.9); }, (s) => pick([0x3f7d33, 0x4f8b3c], s));
     renderHouses(villages(3, [0xefe3c8, 0xe6cfa6, 0xd9b38c], [0x8a4a2b, 0x7a3e22], 1.7));
   }
