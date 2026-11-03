@@ -54,11 +54,12 @@ export class Leaderboard {
       return true;
     } catch (e) { return false; } finally { this.sending = false; }
   }
-  // Fantasma del mejor tiempo del circuito entre todos los jugadores: { time (s), car, ghost } o null si no hay datos a tiempo
-  async bestGhost(trackId) {
-    if (!this.remote) return null;
+  // Fantasma del mejor tiempo de una categoría (coches carIds) en el circuito, entre todos los jugadores: { time (s), car, ghost } o null
+  async bestGhost(trackId, carIds) {
+    if (!this.remote || !carIds || !carIds.length) return null;
     try {
-      const q = this.call(`lap_times?select=car_id,lap_ms,ghost&track_id=eq.${encodeURIComponent(trackId)}&ghost=not.is.null&order=lap_ms.asc&limit=1`);
+      const cars = carIds.map((c) => encodeURIComponent(c)).join(',');
+      const q = this.call(`lap_times?select=car_id,lap_ms,ghost&track_id=eq.${encodeURIComponent(trackId)}&car_id=in.(${cars})&ghost=not.is.null&order=lap_ms.asc&limit=1`);
       const wait = new Promise((_, rej) => setTimeout(() => rej(new Error('lento')), 2500));
       const rows = await Promise.race([q, wait]);
       const r = rows && rows[0];

@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.36
+- Clasificación: nombres más grandes, diferencias desde el segundo puesto y el primero marcado en dorado (las cabeceras de categoría quedan neutras).
+- Fantasmas por categoría: gris = tu mejor vuelta de tu categoría, dorado = la mejor de tu categoría entre todos los jugadores (requiere ghost-migration.sql).
+- Mónaco: las ventanas sobresalen de la fachada con marco y alféizar.
+- Exteriores: más poblados y casas, árboles de copa redonda, palmeras y arbustos, y sombras proyectadas.
+
 ## 0.0.35
 - Móvil: el control por mitades ya no muestra iconos, y aparece un botón de FRENO en un lateral para frenar mientras giras. Se bloquea el menú «Copiar» de iPhone.
 - Clasificación: se abre en la categoría de tu coche, con las categorías como botones grandes en cuadrícula y sin deslizar.

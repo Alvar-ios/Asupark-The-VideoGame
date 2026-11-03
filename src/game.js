@@ -206,8 +206,8 @@ function buildMenu() {
 }
 $('raceMusicBtn').onclick = () => { sel.raceMusic = !sel.raceMusic; store.set('sel', sel); buildMenu(); };
 // fantasmas de la contrarreloj: gris (tu mejor vuelta) y dorado (la mejor del circuito), activables por separado (por defecto, activados)
-$('ghostMineBtn').classList.toggle('on', sel.ghostMine !== false); $('ghostMineBtn').textContent = 'Fantasma gris (tu mejor vuelta): ' + (sel.ghostMine !== false ? 'SÍ' : 'NO');
-$('ghostBestBtn').classList.toggle('on', sel.ghostBest !== false); $('ghostBestBtn').textContent = 'Fantasma dorado (mejor del circuito): ' + (sel.ghostBest !== false ? 'SÍ' : 'NO');
+$('ghostMineBtn').classList.toggle('on', sel.ghostMine !== false); $('ghostMineBtn').textContent = 'Fantasma gris (tu mejor de la categoría): ' + (sel.ghostMine !== false ? 'SÍ' : 'NO');
+$('ghostBestBtn').classList.toggle('on', sel.ghostBest !== false); $('ghostBestBtn').textContent = 'Fantasma dorado (mejor de la categoría): ' + (sel.ghostBest !== false ? 'SÍ' : 'NO');
 $('ghostMineBtn').onclick = () => { sel.ghostMine = sel.ghostMine === false; store.set('sel', sel); buildMenu(); };
 $('ghostBestBtn').onclick = () => { sel.ghostBest = sel.ghostBest === false; store.set('sel', sel); buildMenu(); };
 $('sndBtn').onclick = () => { sel.mute = !sel.mute; store.set('sel', sel); buildMenu(); };
@@ -425,9 +425,10 @@ async function startRace(restart = false) {
     status.hidden = false; button.disabled = false; button.textContent = previousLabel; return;
   }
   S.ghostRecs = null;
-  if (S.mode === 'tt') { // fantasmas: tu mejor vuelta del circuito (gris) y la mejor de todos los jugadores (dorado), con la forma del coche que las hizo
+  if (S.mode === 'tt') { // fantasmas por categoría: tu mejor vuelta de la categoría (gris) y la mejor de la categoría entre todos los jugadores (dorado)
     const tiG = tracks[sel.track], gk = tiG.key + '.' + tiG.tr.seed; migrateGroupBest(gk, pt.group);
-    const own = trackBestGhost(gk), remote = sel.ghostBest !== false ? await lb.bestGhost(trackIdOf(tiG)) : null;
+    const own = store.get('best.' + gk + '.g:' + pt.group) || null, carIds = CARS.filter((c) => c.group === pt.group).map((c) => c.id);
+    const remote = sel.ghostBest !== false ? await lb.bestGhost(trackIdOf(tiG), carIds) : null;
     S.ghostRecs = { g: own, t: remote && (!own || remote.time < own.time - 1e-6) ? remote : own };
     for (const r of [S.ghostRecs.g, S.ghostRecs.t]) { const ct = r && r.car && CARS.find((c) => c.id === r.car); if (ct && !carAssetReady(ct, 'lo')) await loadCarAsset(ct, false).catch(() => {}); }
   }
@@ -844,16 +845,13 @@ function onPlayerLap(c, lt, done) {
     if (lt < S.lapRec) { S.lapRec = lt; S.recReal = true; S.recWho = 'Tú'; updateRecPanel(); }
     if (lt < S.trkLap) { S.trkLap = lt; S.trkWho = 'Tú'; S.trkGroup = c.type.group; updateRecPanel(); }
     if (S.mode === 'tt') { const tk = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.track', tb = store.get(tk); if (!tb || lt < tb.time) store.set(tk, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id }); } // y el mejor de la pista, para el fantasma dorado
-    if (S.mode === 'tt' && newPB) { // el fantasma se actualiza al momento: si tu vuelta es ya tu mejor del circuito pasa a gris, y a dorado si supera a todos
-      const tb2 = store.get('best.' + S.trackInfo.key + '.' + S.tr.seed + '.track');
-      if (tb2 && Math.abs(tb2.time - lt) < 1e-6) {
-        const showGray = sel.ghostMine !== false, showGold = sel.ghostBest !== false, isGold = S.goldTime == null || lt < S.goldTime - 1e-6;
-        if (isGold) { // tu vuelta es la mejor de todos: un solo fantasma dorado
-          S.goldTime = lt; setGhost('ghostMesh', c.type, true); setGhost('ghostGold', null); S.ghostBestGold = null;
-          S.ghostBest = (showGray || showGold) ? Float32Array.from(S.ghostRec) : null;
-        } else { // sigue existiendo un dorado de otro jugador: el gris es tu vuelta
-          setGhost('ghostMesh', c.type, false); S.ghostBest = showGray ? Float32Array.from(S.ghostRec) : null;
-        }
+    if (S.mode === 'tt' && newPB) { // el fantasma gris pasa a ser esta vuelta (mejor de la categoría); si además es la mejor de todos, pasa a dorado
+      const showGray = sel.ghostMine !== false, showGold = sel.ghostBest !== false, isGold = S.goldTime == null || lt < S.goldTime - 1e-6;
+      if (isGold) { // tu vuelta es la mejor de la categoría entre todos: un solo fantasma dorado
+        S.goldTime = lt; setGhost('ghostMesh', c.type, true); setGhost('ghostGold', null); S.ghostBestGold = null;
+        S.ghostBest = (showGray || showGold) ? Float32Array.from(S.ghostRec) : null;
+      } else { // sigue existiendo un dorado de otro jugador: el gris es tu vuelta
+        setGhost('ghostMesh', c.type, false); S.ghostBest = showGray ? Float32Array.from(S.ghostRec) : null;
       }
     }
     setTimeout(() => refreshOnlineRecords(S.raceNo), 2500); // por si otros jugadores han marcado mejores tiempos
@@ -1135,7 +1133,7 @@ window.addEventListener('pointerdown', firstGesture); window.addEventListener('k
 
 // ---------- clasificación ----------
 const BD = { track: 0, group: 'all' };
-const boardRow2 = (r, best) => `<tr class="${r.you ? 'me' : ''}"><td class="rk">${r.rank}</td><td>${r.you ? drvIc(playerDrv(), 1) : ''}${esc(r.name)}</td><td class="car"><small>${esc((CARS.find((c) => c.id === r.carId) || {}).brand || '')}</small> ${esc(carName(r.carId))}</td><td class="tm">${fmt(r.ms / 1000)}</td><td class="gp">${r.rank === 1 ? '' : '+' + ((r.ms - best) / 1000).toFixed(2)}</td></tr>`;
+const boardRow2 = (r, best) => `<tr class="${r.you ? 'me' : ''}${r.rank === 1 ? ' first' : ''}"><td class="rk">${r.rank}</td><td class="nm">${r.you ? drvIc(playerDrv(), 1) : ''}${esc(r.name)}</td><td class="car"><small>${esc((CARS.find((c) => c.id === r.carId) || {}).brand || '')}</small> ${esc(carName(r.carId))}</td><td class="tm">${fmt(r.ms / 1000)}</td><td class="gp">${r.rank === 1 ? '' : '+' + ((r.ms - best) / 1000).toFixed(2)}</td></tr>`;
 async function renderBoard() {
   const ti = tracks[BD.track], st = $('boardStatus');
   $('boardTracks').innerHTML = tracks.map((t, i) => `<button type="button" class="${i === BD.track ? 'on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span>${t.key === 'daily' ? 'Del día' : esc(t.name.replace(/ · .*$/, ''))}</button>`).join('');

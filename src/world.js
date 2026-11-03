@@ -423,18 +423,20 @@ function urbanMesh(tr, th) {
       items.push({ x, z, ry: Math.atan2(tr.TX[i], tr.TZ[i]), side, d, w: step + 0.6, h: tr.Y[i] + 6 + hsh * 9 + (Math.floor(s / step) % 3) * 2.5, c: pal[Math.floor(hsh * 997) % pal.length] });
     }
   }
-  const group = new THREE.Group(), D = new THREE.Object3D(), frames = [], panes = [], balconies = [], rails = [], roofs = [], awnings = [];
+  const group = new THREE.Group(), D = new THREE.Object3D(), frames = [], panes = [], sills = [], balconies = [], rails = [], roofs = [], awnings = [];
   const m = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true }), items.length);
   items.forEach((b, k) => {
     D.position.set(b.x, -1, b.z); D.scale.set(b.d, b.h + 1, b.w); D.rotation.set(0, b.ry, 0); D.updateMatrix(); m.setMatrixAt(k, D.matrix); m.setColorAt(k, b.c);
     roofs.push({ x: b.x, y: b.h, z: b.z, d: b.d, w: b.w, ry: b.ry });
     const floors = Math.max(2, Math.floor((b.h + 1) / 3.8));
     for (const face of [-1, 1]) for (let floor = 1; floor < floors; floor++) for (let column = 0; column < 2; column++) {
-      const localX = face * (b.d * 0.5 + 0.08), localZ = (column ? 1 : -1) * b.w * 0.2;
+      // las ventanas sobresalen de la fachada (marco y alféizar) en vez de quedar pegadas al muro
+      const localX = face * (b.d * 0.5 + 0.2), localZ = (column ? 1 : -1) * b.w * 0.2;
       const x = b.x + localX * Math.cos(b.ry) + localZ * Math.sin(b.ry), z = b.z - localX * Math.sin(b.ry) + localZ * Math.cos(b.ry);
       const y = -1 + (floor + 0.52) * (b.h + 1) / floors, width = b.w * 0.21, height = Math.min(1.7, (b.h + 1) / floors * 0.52);
       frames.push({ x, y, z, ry: b.ry + Math.PI / 2, width: width + 0.18, height: height + 0.2 });
       panes.push({ x, y, z, ry: b.ry + Math.PI / 2, width, height, shade: (k * 5 + floor * 3 + column) % 7 });
+      sills.push({ x, y: y - height / 2 - 0.06, z, ry: b.ry + Math.PI / 2, width: width + 0.35 });
       if (face === -b.side && floor > 1 && column === 0) {
         const bx = b.x + (localX + face * 0.52) * Math.cos(b.ry) + localZ * Math.sin(b.ry);
         const bz = b.z - (localX + face * 0.52) * Math.sin(b.ry) + localZ * Math.cos(b.ry);
@@ -453,11 +455,14 @@ function urbanMesh(tr, th) {
   roofs.forEach((b, k) => { D.position.set(b.x, b.y - 0.1, b.z); D.scale.set(b.d + 0.5, 0.3, b.w + 0.5); D.rotation.set(0, b.ry, 0); D.updateMatrix(); roof.setMatrixAt(k, D.matrix); });
   roof.frustumCulled = false; group.add(roof);
   const frame = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xf0e4d0, roughness: 0.84 }), frames.length);
-  frames.forEach((b, k) => { D.position.set(b.x, b.y, b.z); D.scale.set(0.12, b.height, b.width); D.rotation.set(0, b.ry, 0); D.updateMatrix(); frame.setMatrixAt(k, D.matrix); });
+  frames.forEach((b, k) => { D.position.set(b.x, b.y, b.z); D.scale.set(0.24, b.height, b.width); D.rotation.set(0, b.ry, 0); D.updateMatrix(); frame.setMatrixAt(k, D.matrix); });
   frame.frustumCulled = false; group.add(frame);
+  const sill = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xe6ddcb, roughness: 0.8 }), sills.length);
+  sills.forEach((b, k) => { D.position.set(b.x, b.y, b.z); D.scale.set(0.34, 0.1, b.width); D.rotation.set(0, b.ry, 0); D.updateMatrix(); sill.setMatrixAt(k, D.matrix); });
+  sill.frustumCulled = false; group.add(sill);
   const glass = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.32, metalness: 0.2, emissive: 0x121c25, emissiveIntensity: 0.25 }), panes.length);
   const glassPalette = [0x344c5c, 0x3c5965, 0x526a72, 0x65777b, 0x314251, 0x9a8b71, 0x5b6d77].map(col);
-  panes.forEach((b, k) => { D.position.set(b.x, b.y, b.z); D.scale.set(0.15, b.height, b.width); D.rotation.set(0, b.ry, 0); D.updateMatrix(); glass.setMatrixAt(k, D.matrix); glass.setColorAt(k, glassPalette[b.shade]); });
+  panes.forEach((b, k) => { D.position.set(b.x, b.y, b.z); D.scale.set(0.1, b.height, b.width); D.rotation.set(0, b.ry, 0); D.updateMatrix(); glass.setMatrixAt(k, D.matrix); glass.setColorAt(k, glassPalette[b.shade]); });
   glass.frustumCulled = false; group.add(glass);
   const balcony = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xb5b0a7, roughness: 0.78 }), balconies.length);
   balconies.forEach((b, k) => { D.position.set(b.x, b.y, b.z); D.scale.set(0.9, 0.12, 1.8); D.rotation.set(0, b.ry, 0); D.updateMatrix(); balcony.setMatrixAt(k, D.matrix); });
@@ -2073,7 +2078,7 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     const m = new THREE.InstancedMesh(geo, mat, list.length);
     list.forEach((s, k) => { place(dummy, s, k); dummy.updateMatrix(); m.setMatrixAt(k, dummy.matrix); if (tint) m.setColorAt(k, col(tint(s, k))); });
     if (tint && m.instanceColor) m.instanceColor.needsUpdate = true;
-    m.frustumCulled = false; m.castShadow = false; m.receiveShadow = !!q.shadows; scene.add(m);
+    m.frustumCulled = false; m.castShadow = !!q.shadows; m.receiveShadow = !!q.shadows; scene.add(m);
   };
   // altura del terreno junto a la pista (la misma aproximación que usan los árboles junto a la valla)
   const groundAt = (i, l) => Math.max(0, tr.Y[i] * (1 - (l - WALL) / (2.5 + 1.1 * tr.Y[i])));
@@ -2100,7 +2105,7 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
       const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1, l = WALL + 50 + rng() * 110;
       const cx = tr.X[i] + -tr.TZ[i] * l * side, cz = tr.Z[i] + tr.TX[i] * l * side;
       if (!clearance(cx, cz, WALL + 40)) continue;
-      made++; const hn = 3 + Math.floor(rng() * 4), rot = (rng() - 0.5) * 0.6, gy = groundAt(i, l);
+      made++; const hn = 4 + Math.floor(rng() * 5), rot = (rng() - 0.5) * 0.6, gy = groundAt(i, l);
       for (let k = 0; k < hn; k++) {
         const hx = cx + (rng() - 0.5) * 48, hz = cz + (rng() - 0.5) * 48;
         if (!clearance(hx, hz, WALL + 9)) continue;
@@ -2145,11 +2150,11 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     const saguaros = nearPts(n(120), WALL + 6, WALL + 130).concat(farPts(n(60), 30, 200));
     put(saguaro, lam(0xffffff, 0.85), saguaros, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 1.15, s[3] * 1.15, s[3] * 1.15); }, (s) => pick([0x4a8a3a, 0x3f7d33, 0x5a9742], s));
     put(new THREE.SphereGeometry(1, 12, 8).scale(1, 0.85, 1).translate(0, 0.8, 0), lam(0xffffff, 0.85), nearPts(n(60), WALL + 6, WALL + 100), (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 0.9, s[3] * 0.9, s[3] * 0.9); }, (s) => pick([0x3f7d33, 0x4f8b3c], s));
-    renderHouses(villages(2, [0xefe3c8, 0xe6cfa6, 0xd9b38c], [0x8a4a2b, 0x7a3e22], 1.7));
+    renderHouses(villages(3, [0xefe3c8, 0xe6cfa6, 0xd9b38c], [0x8a4a2b, 0x7a3e22], 1.7));
   }
   // poblados de montaña, valle y nieve
-  if (id === 'spa') renderHouses(villages(1, [0x6f4f2e, 0x8a6a44, 0x5b4128], [0x2f2f33, 0x3c3a36], 3.4));
-  if (id === 'valle') renderHouses(villages(2, [0xf3f1e8, 0xf6d9a8, 0xe8c8b0], [0xb84a2a, 0xa23e24], 2.2));
+  if (id === 'spa') renderHouses(villages(2, [0x6f4f2e, 0x8a6a44, 0x5b4128], [0x2f2f33, 0x3c3a36], 3.4));
+  if (id === 'valle') renderHouses(villages(3, [0xf3f1e8, 0xf6d9a8, 0xe8c8b0], [0xb84a2a, 0xa23e24], 2.2));
   if (id === 'nieve') renderHouses(villages(2, [0x6b4b30, 0x7a5a3a], [0xe8f0f7, 0xdfe9f2], 3.4));
 
   // rocas sueltas junto a la pista y en el paisaje
@@ -2157,6 +2162,28 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     const rockPal = id === 'desierto' ? [0xa65f35, 0x8c4a2a, 0xc0764a] : id === 'nieve' ? [0x9aa6b2, 0xb8c3cc, 0x7f8b97] : [0x7d7a72, 0x8f8a80, 0x6b675f];
     const rocks = nearPts(n(id === 'desierto' ? 60 : 40), WALL + 5, WALL + 110).concat(farPts(n(60), 40, 300));
     put(new THREE.IcosahedronGeometry(1, 0), lam(0xffffff, 0.98), rocks, (d, s) => { const r = 1.2 + s[3] * 2.2; d.position.set(s[0], s[4] + r * 0.2, s[1]); d.rotation.set(s[2], s[2] * 1.7, s[2] * 0.6); d.scale.set(r * 1.25, r * 0.8, r); }, (s) => pick(rockPal, s));
+  }
+
+  // más variedad y frondosidad: árboles de copa redonda, palmeras y arbustos junto a la valla y en el paisaje
+  if (id === 'spa' || id === 'valle' || id === 'pruebas') {
+    const crownG = mergeBufferGeometries([0, 1, 2, 3].map((k) => new THREE.SphereGeometry(1, 9, 7).scale(2.2 - (k % 2) * 0.3, 1.9, 2.2 - (k % 2) * 0.3).translate(Math.cos(k * 1.57) * 1.2, 5.2 + (k % 2) * 0.9, Math.sin(k * 1.57) * 1.2)));
+    const trunkG = new THREE.CylinderGeometry(0.28, 0.44, 4.6, 7).translate(0, 2.3, 0);
+    const broad = farPts(n(id === 'valle' ? 160 : 380), 30, 220).concat(nearPts(n(id === 'valle' ? 80 : 120), WALL + 22, WALL + 140));
+    const place = (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[3], s[3]); };
+    put(trunkG, lam(0x5b4128), broad, place);
+    put(crownG, lam(0xffffff, 0.9), broad, place, (s, k) => col(th.treeCol).multiplyScalar(0.85 + ((k * 13) % 9) * 0.03).getHex());
+  }
+  if (id === 'valle' || id === 'desierto') {
+    const frond = (k) => colorGeometry(new THREE.ConeGeometry(0.7, 4.2, 3).rotateZ(-Math.PI / 2 + 0.45).translate(2.0, 8.4, 0).rotateY((k * Math.PI) / 3), 0.42, 0.74, 0.34);
+    const palmG = mergeBufferGeometries([colorGeometry(new THREE.CylinderGeometry(0.22, 0.38, 8, 6).translate(0, 4, 0), 0.42, 0.3, 0.18), ...[0, 1, 2, 3, 4, 5].map(frond)]);
+    const palms = nearPts(n(id === 'valle' ? 70 : 50), WALL + 8, WALL + 120).concat(farPts(n(id === 'valle' ? 60 : 40), 60, 260));
+    put(palmG, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true }), palms, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[3], s[3]); });
+  }
+  if (id !== 'monaco' && id !== 'neon' && id !== 'prisma') {
+    const shrubG = mergeBufferGeometries([new THREE.SphereGeometry(1, 8, 6).scale(1.3, 0.8, 1.3).translate(0, 0.7, 0), new THREE.SphereGeometry(1, 7, 5).scale(0.9, 0.7, 0.9).translate(1.1, 0.5, 0.4), new THREE.SphereGeometry(1, 7, 5).scale(0.8, 0.6, 0.8).translate(-0.9, 0.45, -0.5)]);
+    const shrubCol = id === 'desierto' ? [0x8a7a4a, 0x7c8a4f, 0x9a8456] : id === 'nieve' ? [0xdbe8f2, 0xc8d9e8] : [th.treeCol, 0x4f8a3c, 0x5e9a46];
+    const shrubs = nearPts(n(240), WALL + 4, WALL + 70).concat(farPts(n(120), 30, 260));
+    put(shrubG, lam(0xffffff, 0.95), shrubs, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 1.1, s[3] * 1.1, s[3] * 1.1); }, (s) => pick(shrubCol, s));
   }
 }
 
