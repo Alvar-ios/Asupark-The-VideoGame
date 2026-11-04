@@ -95,8 +95,27 @@ export const THEMES = {
     palette: [0xe52521, 0xf8d028, 0x1b75d0, 0x2bb830],
     oil: true, night: false, temp: 24, humidity: 0.25, wind: [2, 0.5], gripMul: 1, offroad: 0.58,
   },
+  // Selva amazónica (Perú): figura de ocho con un cruce en puente sobre sí misma, curvas rápidas, dos eses, horquillas más anchas y un chaparrón local
+  amazonas: {
+    id: 'amazonas', name: 'Selva Amazónica · Perú', sub: 'Lagos, árboles gigantes, cruce en puente y un chaparrón local', seed: 'amazonas-v1',
+    style: {
+      fixedNodes: [
+        [-95, 95], [-40, 38], [0, 0], [45, -40], [100, -85], [170, -105], [250, -108], [330, -100], [395, -70], [430, -15], [415, 45], [360, 75],
+        [300, 62], [255, 88], [205, 118], [140, 112], [85, 72], [40, 32], [-5, -4], [-45, -38], [-105, -80], [-175, -105], [-250, -100], [-320, -70],
+        [-360, -15], [-345, 50], [-285, 88], [-245, 70], [-205, 110], [-150, 140],
+      ],
+      startNear: [200, -105], scale: 1.35, half: 5, widthMax: 8.8, wall: 15.5, minR: 12, sep: 30,
+      cross: [0, 0, 75], bridgeH: 8.5, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0,
+      hillPts: [[0, 0], [0.08, 3], [0.18, 7], [0.28, 4], [0.34, 0], [0.47, 0], [0.55, 3], [0.65, 8], [0.74, 5], [0.82, 0], [0.94, 0], [1, 0]],
+      runoff: { gravel: 4, open: [] }, rainZones: [[0.48, 0.72]], zones: [],
+    },
+    skyTop: 0x2d7ccc, skyHor: 0xd8ead2, fog: 0xa9cfb0, fogNear: 90, fogFar: 760,
+    ground: 0x2c5a28, grass: 0x3b7a33, dirt: 0x6a5a3a, road: 0x2b2d31, kerb1: 0xd91e18, kerb2: 0xf4f4f4,
+    wall1: 0xf4f4f4, wall2: 0xd91e18, mount: 0x2f6a3e, sun: 0xfff1c9, sunDir: [-0.42, 0.6, 0.45],
+    hemiSky: 0xd3ecff, hemiGround: 0x2b4a26, hemiI: 1.0, sunI: 1.25, deco: 'jungle', treeCount: 40, treeCol: 0x1f6a2a, night: false, temp: 31, humidity: 0.85, wind: [2, 0.8], gripMul: 1, offroad: 0.62, wetGrip: 0.8, brakeForce: 24,
+  },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

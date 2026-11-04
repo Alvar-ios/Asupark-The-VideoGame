@@ -1,6 +1,6 @@
 // Construcción de la escena 3D de una pista (three.js)
 import * as THREE from 'three';
-import { ROAD_HALF, WALL, setRoad } from './track.js';
+import { ROAD_HALF, WALL, setRoad, rainAt } from './track.js';
 import { SURF, zoneAt, smoothstep, patchBoundary, puddleParams, mudParams, MARIO_OIL_PATCHES } from './surface.js';
 import { rngFromSeed } from './rng.js';
 import { getSponsorTexture } from './sponsors.js';
@@ -101,25 +101,7 @@ const windU = { uTime: { value: 0 } };
 const windLeaves = [];
 let lastWindT = 0;
 // material con balanceo de copa: los vértices altos se desplazan con una onda que depende de la posición de cada árbol
-export function windy(mat, amp = 1) {
-  mat.onBeforeCompile = (sh) => {
-    sh.uniforms.uTime = windU.uTime; sh.uniforms.uAmp = { value: amp };
-    sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime;\nuniform float uAmp;')
-      .replace('#include <begin_vertex>', `#include <begin_vertex>
-#ifdef USE_INSTANCING
-  float wph = instanceMatrix[3].x * 0.11 + instanceMatrix[3].z * 0.07;
-#else
-  float wph = 0.0;
-#endif
-  float wh = smoothstep(0.5, 7.0, position.y);
-  float wsw = sin(uTime * 1.6 + wph) * 0.6 + sin(uTime * 3.3 + wph * 1.9 + position.x * 0.9) * 0.3;
-  transformed.x += wsw * wh * 0.32 * uAmp;
-  transformed.z += cos(uTime * 1.2 + wph * 1.3) * wh * 0.22 * uAmp;`);
-  };
-  mat.customProgramCacheKey = () => 'wind' + amp;
-  return mat;
-}
+export function windy(mat) { return mat; } // sin balanceo de copas: se quitó por rendimiento
 // textura de follaje: manchas de luz y sombra que rompen el color plano de las copas
 let foliageTexCache = null;
 function foliageTex() {
@@ -203,7 +185,7 @@ function asphaltTex(th) {
   const ctx = canvas.getContext('2d'), im = ctx.createImageData(size, size);
   let baseLum = 120, noiseAmp = 30, speckRatio = 0.11, warmR = 0, coolB = 0;
   if (th.id === 'spa') {
-    baseLum = 72; noiseAmp = 40; speckRatio = 0.18; coolB = 10;
+    baseLum = 54; noiseAmp = 34; speckRatio = 0.16; coolB = 3;
   } else if (th.id === 'monaco') {
     baseLum = 108; noiseAmp = 26; speckRatio = 0.12; warmR = 5;
   } else if (th.id === 'desierto') {
@@ -228,6 +210,11 @@ function asphaltTex(th) {
     im.data[idx + 3] = 255;
   }
   ctx.putImageData(im, 0, 0);
+  // parches de reparación y grietas: rompen la uniformidad y dan aspecto de carretera real (aleatorio fijo por circuito)
+  { let sd = 12345 + String(th.id || 'x').split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 977; const rn = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    for (let k = 0; k < 7; k++) { const w = 30 + rn() * 70, h = 18 + rn() * 60, x = rn() * (size - w), y = rn() * (size - h); ctx.fillStyle = rn() < 0.5 ? 'rgba(0,0,0,0.11)' : 'rgba(255,255,255,0.05)'; ctx.fillRect(x, y, w, h); }
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(15,15,18,0.34)';
+    for (let k = 0; k < 5; k++) { let x = rn() * size, y = rn() * size; ctx.beginPath(); ctx.moveTo(x, y); for (let n = 0; n < 6; n++) { x += (rn() - 0.5) * 40; y += 10 + rn() * 26; ctx.lineTo(x, y); } ctx.stroke(); } }
   if (th.id === 'desierto' || th.id === 'monaco') {
     ctx.strokeStyle = 'rgba(25, 25, 30, 0.38)'; ctx.lineWidth = 1.3;
     ctx.beginPath(); ctx.moveTo(size * 0.22, 0); ctx.bezierCurveTo(size * 0.27, size * 0.45, size * 0.16, size * 0.72, size * 0.24, size); ctx.stroke();
@@ -242,44 +229,6 @@ function asphaltTex(th) {
 }
 
 let marioTarmacTextureCache = null;
-let BUILD_MOBILE = false; // lo fija buildWorld según el dispositivo
-// Relieve del asfalto: mapa de normales (grano fino y áridos) y de rugosidad (zonas más mates y charcos en lluvia), generados en código.
-const asphaltDetailCache = new Map();
-function asphaltDetail(th, wet, repeat) {
-  const key = (th.id || 'default') + (wet ? ':wet' : '');
-  if (!asphaltDetailCache.has(key)) {
-    const size = 256, n = size * size, raw = new Float32Array(n);
-    for (let i = 0; i < n; i++) raw[i] = Math.random() - 0.5;
-    const box = (src, r) => { // desenfoque separable con repetición (la textura se repite sin costuras)
-      const tmp = new Float32Array(n), out = new Float32Array(n), k = 2 * r + 1;
-      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) { let s = 0; for (let d = -r; d <= r; d++) s += src[y * size + ((x + d + size) % size)]; tmp[y * size + x] = s / k; }
-      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) { let s = 0; for (let d = -r; d <= r; d++) s += tmp[((y + d + size) % size) * size + x]; out[y * size + x] = s / k; }
-      return out;
-    };
-    const mid = box(raw, 2), big = box(raw, 7), h = new Float32Array(n);
-    for (let i = 0; i < n; i++) h[i] = raw[i] * 0.45 + (mid[i] - big[i]) * 2.2;
-    const mk = () => { const c = document.createElement('canvas'); c.width = c.height = size; return [c, c.getContext('2d').createImageData(size, size)]; };
-    const [nc, nd] = mk(), [rc, rd] = mk(), strength = 2.6;
-    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-      const i = y * size + x, o = i * 4;
-      const hl = h[y * size + ((x - 1 + size) % size)], hr = h[y * size + ((x + 1) % size)], hu = h[((y - 1 + size) % size) * size + x], hd = h[((y + 1) % size) * size + x];
-      let nx = (hl - hr) * strength, ny = (hu - hd) * strength, nz = 1; const len = Math.hypot(nx, ny, nz); nx /= len; ny /= len; nz /= len;
-      nd.data[o] = (nx * 0.5 + 0.5) * 255; nd.data[o + 1] = (ny * 0.5 + 0.5) * 255; nd.data[o + 2] = (nz * 0.5 + 0.5) * 255; nd.data[o + 3] = 255;
-      // multiplicador de rugosidad (verde): el grano es algo más mate; en lluvia las zonas bajas retienen agua y brillan
-      let m = Math.max(0.6, Math.min(1, 0.94 + h[i] * 0.5));
-      if (wet) { m = Math.max(0.6, Math.min(1, 0.97 + h[i] * 0.3)); if (big[i] > 0.035) m = 0.32; }
-      rd.data[o] = rd.data[o + 1] = rd.data[o + 2] = Math.round(m * 255); rd.data[o + 3] = 255;
-    }
-    nc.getContext('2d').putImageData(nd, 0, 0); rc.getContext('2d').putImageData(rd, 0, 0);
-    const normal = new THREE.CanvasTexture(nc), rough = new THREE.CanvasTexture(rc);
-    normal.colorSpace = rough.colorSpace = THREE.NoColorSpace;
-    asphaltDetailCache.set(key, { normal, rough });
-  }
-  const d = asphaltDetailCache.get(key);
-  d.normal.wrapS = d.normal.wrapT = d.rough.wrapS = d.rough.wrapT = THREE.RepeatWrapping;
-  d.normal.repeat.copy(repeat); d.rough.repeat.copy(repeat);
-  return d;
-}
 function marioTarmacTex() {
   if (marioTarmacTextureCache) return marioTarmacTextureCache;
   const size = 32, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
@@ -769,6 +718,8 @@ function tunnelMesh(tr, t, th) {
 }
 function roadMesh(tr, th, stride = 1) {
   const N = tr.N, hw = ROAD_HALF, L = WALL, isKart = th.deco === 'kart';
+  const cycD = (a, b) => { const d = Math.abs(a - b); return Math.min(d, N - d); };
+  const wetZone = !!(tr.rain && tr.rain.length), cWet = col(0x1a2430), cConcrete = col(0x9b988f); // microclima de lluvia: asfalto más oscuro y húmedo en esos tramos
   const effectiveStride = stride;
   const roadData = { pos: [], colors: [], uvs: [] };
   const kerbData = { pos: [], colors: [], uvs: [] };
@@ -800,13 +751,16 @@ function roadMesh(tr, th, stride = 1) {
   for (let i = 0; i < N; i += effectiveStride) {
     const j = (i + effectiveStride) % N, s = i * tr.ds;
     const hi = tr.Y[i], hj = tr.Y[j];
-    const eoI = L + 2.5 + hi * 1.1, eoJ = L + 2.5 + hj * 1.1;
-    const KW = isKart ? 1.4 : Math.min(1.9, L - hw - 0.2);
-    const GW = tr.rg ? hw + tr.rg[i] : hw + KW + 0.02, GWj = tr.rg ? hw + tr.rg[j] : hw + KW + 0.02;
+    const hwI = tr.hw ? tr.hw[i] : hw, hwJ = tr.hw ? tr.hw[j] : hw; // semianchura del asfalto (variable en algunos circuitos)
+    const brI = !!tr.bridge && cycD(i, tr.bridge.i) < tr.bridge.span, brJ = !!tr.bridge && cycD(j, tr.bridge.i) < tr.bridge.span; // sobre el cruce: laterales verticales de hormigón en vez de talud
+    const eoI = brI ? L + 0.35 : L + 2.5 + hi * 1.1, eoJ = brJ ? L + 0.35 : L + 2.5 + hj * 1.1;
+    const KWI = isKart ? 1.4 : Math.min(1.9, L - hwI - 0.2), KWJ = isKart ? 1.4 : Math.min(1.9, L - hwJ - 0.2);
+    const GW = tr.rg ? hwI + tr.rg[i] : hwI + KWI + 0.02, GWj = tr.rg ? hwJ + tr.rg[j] : hwJ + KWJ + 0.02;
 
-    const lat = (k, h, eo, krL, krR, gw) => isKart
+    // br: bajo el tablero del puente los bordes laterales solo bajan 1,4 m (canto del tablero) para dejar libre el paso de la pista inferior
+    const lat = (k, h, eo, krL, krR, gw, hw, KW, br) => isKart
       ? [[-eo, 0], [-L, h - 0.04], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + 0.2), h + krL * 0.9], [-hw, h + 0.005], [-0.22, h], [0.22, h], [hw, h + 0.005], [hw + 0.2, h + krR * 0.9], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.04], [eo, 0]][k]
-      : [[-eo, 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + KW * 0.45), h + krL * 0.75], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw + KW * 0.45, h + krR * 0.75], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, 0]][k];
+      : [[-eo, br ? h - 1.4 : 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + KW * 0.45), h + krL * 0.75], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw + KW * 0.45, h + krR * 0.75], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, br ? h - 1.4 : 0]][k];
 
     const sLen = isKart ? 3.2 : 3.0, s2k = (i + effectiveStride) * tr.ds;
     const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]);
@@ -817,8 +771,8 @@ function roadMesh(tr, th, stride = 1) {
     const stripeN = Math.floor(s / sLen), stripe = stripeN % 2 === 0;
 
     for (let b = 0; b < 15; b++) {
-      const [l0, y0i] = lat(b, hi, eoI, krLi, krRi, GW), [l1, y1i] = lat(b + 1, hi, eoI, krLi, krRi, GW);
-      const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj, GWj), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj, GWj);
+      const [l0, y0i] = lat(b, hi, eoI, krLi, krRi, GW, hwI, KWI, brI), [l1, y1i] = lat(b + 1, hi, eoI, krLi, krRi, GW, hwI, KWI, brI);
+      const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj, GWj, hwJ, KWJ, brJ), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj, GWj, hwJ, KWJ, brJ);
 
       const P = (idx, l, y) => {
         const posX = tr.X[idx], posZ = tr.Z[idx];
@@ -831,7 +785,9 @@ function roadMesh(tr, th, stride = 1) {
       let color;
       let outerColor = null;
 
-      if (b === 0 || b === 14) {
+      if (brI && (b <= 2 || b >= 12)) {
+        color = cConcrete; outerColor = cConcrete;
+      } else if (b === 0 || b === 14) {
         color = cGrass; outerColor = cDirt;
       } else if (b === 1 || b === 13) {
         color = tr.rg ? cGrass.clone().multiplyScalar(Math.floor(s / 14) % 2 ? 1 : 0.93) : cGrass;
@@ -854,6 +810,7 @@ function roadMesh(tr, th, stride = 1) {
             : col(0x363941);
         } else {
           color = Math.floor(s / 24) % 2 ? cRoad : cRoad2;
+          if (wetZone) { const rk = rainAt(tr, s); if (rk > 0.02) color = color.clone().lerp(cWet, 0.5 * rk).multiplyScalar(1 - 0.28 * rk); }
           const zn = zoneAt(tr, s);
           if (zn && zn.w > 0.5 && zn.key !== 'asphalt') {
             const zc = SURF[zn.key].col;
@@ -893,7 +850,7 @@ function roadMesh(tr, th, stride = 1) {
   if (isKart) {
     roadRough = 0.85; roadMetal = 0.01; envInt = 0.15;
   } else if (th.id === 'spa') {
-    roadRough = 0.44; roadMetal = 0.02; envInt = 0.72;
+    roadRough = 0.68; roadMetal = 0.01; envInt = 0.3;
   } else if (th.id === 'neon') {
     roadRough = 0.40; roadMetal = 0.05; envInt = 0.88;
   } else if (th.id === 'nieve') {
@@ -904,15 +861,10 @@ function roadMesh(tr, th, stride = 1) {
     roadRough = 0.74; roadMetal = 0.02; envInt = 0.32;
   }
 
-  // asfalto con relieve (normales y rugosidad generadas); en lluvia, capa de barniz húmedo que refleja el cielo
-  const detail = asphaltDetail(th, wet, rTex.repeat);
-  const roadOpts = {
+  const roadMaterial = new THREE.MeshStandardMaterial({
     vertexColors: true, side: THREE.DoubleSide,
-    roughness: roadRough, metalness: roadMetal, envMapIntensity: wet ? envInt * 1.15 : envInt, map: rTex,
-    normalMap: detail.normal, normalScale: new THREE.Vector2(wet ? 0.75 : 0.9, wet ? 0.75 : 0.9), roughnessMap: detail.rough,
-  };
-  // la capa brillante del asfalto mojado solo en escritorio: en móvil basta el material estándar con los mapas
-  const roadMaterial = wet && !BUILD_MOBILE ? new THREE.MeshPhysicalMaterial({ ...roadOpts, clearcoat: 0.45, clearcoatRoughness: 0.1 }) : new THREE.MeshStandardMaterial(roadOpts);
+    roughness: roadRough, metalness: roadMetal, envMapIntensity: envInt, map: rTex
+  });
 
   const kerbMaterial = new THREE.MeshStandardMaterial({
     vertexColors: true, side: THREE.DoubleSide,
@@ -1725,6 +1677,7 @@ function sponsorHoardings(tr, th, scene) {
 }
 
 // tira que sigue la carretera (turbos y luces de neón)
+const roadHalfAt = (tr) => (i, j, t) => (tr.hw ? tr.hw[i] + (tr.hw[j] - tr.hw[i]) * t : ROAD_HALF); // semianchura del asfalto en un punto
 function stripGeom(tr, s0, s1, l0, l1, lift) {
   const pos = [], idx = [];
   const n = Math.max(2, Math.round((s1 - s0) / tr.ds));
@@ -1732,7 +1685,8 @@ function stripGeom(tr, s0, s1, l0, l1, lift) {
     const s = s0 + (k / n) * (s1 - s0), f = (((s / tr.ds) % tr.N) + tr.N) % tr.N, i = Math.floor(f), j = (i + 1) % tr.N, t = f - i;
     const tx = tr.TX[i] + (tr.TX[j] - tr.TX[i]) * t, tz = tr.TZ[i] + (tr.TZ[j] - tr.TZ[i]) * t, tl = Math.hypot(tx, tz);
     const nx = -tz / tl, nz = tx / tl, x = tr.X[i] + (tr.X[j] - tr.X[i]) * t, z = tr.Z[i] + (tr.Z[j] - tr.Z[i]) * t, y = tr.Y[i] + (tr.Y[j] - tr.Y[i]) * t + lift;
-    pos.push(x + nx * l0, y + bankOff(tr, i, l0), z + nz * l0, x + nx * l1, y + bankOff(tr, i, l1), z + nz * l1);
+    const a0 = typeof l0 === 'function' ? l0(i, j, t) : l0, a1 = typeof l1 === 'function' ? l1(i, j, t) : l1; // el borde lateral puede depender del ancho de la pista en ese punto
+    pos.push(x + nx * a0, y + bankOff(tr, i, a0), z + nz * a0, x + nx * a1, y + bankOff(tr, i, a1), z + nz * a1);
   }
   const uv = [];
   for (let k = 0; k <= n; k++) uv.push(0, k / n, 1, k / n);
@@ -2260,15 +2214,36 @@ function scenery(tr, th, scene, rng, q) {
 function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
   const id = th.id, dens = q.density, dummy = new THREE.Object3D();
   windLeaves.length = 0; // cada circuito construido empieza sin hojas de la carrera anterior
+  // Amazonas: lagos junto a la pista. Se colocan antes que nada y el resto de elementos los esquiva
+  const lakes = [];
+  if (id === 'amazonas') {
+    const base = clearance;
+    for (let g = 0; lakes.length < (dens < 1 ? 3 : 4) && g < 300; g++) {
+      const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1, rx = 38 + rng() * 40, rz = 24 + rng() * 22, rmax = Math.max(rx, rz), l = WALL + 20 + rmax + rng() * 30;
+      const x = tr.X[i] + -tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side;
+      if (tr.Y[i] > 2.5) continue; // en terreno bajo
+      if (!base(x, z, rmax + WALL + 6)) continue; // sin tocar ninguna parte del trazado
+      if (lakes.some((k) => (k.x - x) ** 2 + (k.z - z) ** 2 < (k.r + rmax + 20) ** 2)) continue;
+      lakes.push({ x, z, rx, rz, r: rmax, a: Math.atan2(tr.TX[i], tr.TZ[i]) });
+    }
+    clearance = (x, z, r) => base(x, z, r) && lakes.every((k) => (k.x - x) ** 2 + (k.z - z) ** 2 > (k.r + r * 0.5 + 3) ** 2);
+    const disc = new THREE.CircleGeometry(1, 44).rotateX(-Math.PI / 2);
+    const shoreMat = new THREE.MeshStandardMaterial({ color: 0x4a5a30, roughness: 1 });
+    const waterMat = new THREE.MeshStandardMaterial({ color: 0x2e6f6a, roughness: 0.06, metalness: 0.15, envMapIntensity: 1.5, transparent: true, opacity: 0.93 });
+    for (const k of lakes) {
+      const shore = new THREE.Mesh(disc, shoreMat); shore.scale.set(k.rx * 1.12, 1, k.rz * 1.12); shore.position.set(k.x, 0.03, k.z); shore.rotation.y = k.a; shore.receiveShadow = !!q.shadows; scene.add(shore);
+      const water = new THREE.Mesh(disc, waterMat); water.scale.set(k.rx, 1, k.rz); water.position.set(k.x, 0.07, k.z); water.rotation.y = k.a; scene.add(water);
+    }
+  }
   const n = (v) => Math.max(1, Math.round(v * dens));
   const lam = (c, rough = 0.92) => new THREE.MeshStandardMaterial({ color: c, roughness: rough, flatShading: true });
   const pick = (arr, s) => arr[Math.abs(Math.floor(s[0] * 7.31 + s[1] * 3.17)) % arr.length];
-  const put = (geo, mat, list, place, tint) => {
+  const put = (geo, mat, list, place, tint, cast = true) => {
     if (!list.length) return;
     const m = new THREE.InstancedMesh(geo, mat, list.length);
     list.forEach((s, k) => { place(dummy, s, k); dummy.updateMatrix(); m.setMatrixAt(k, dummy.matrix); if (tint) m.setColorAt(k, col(tint(s, k))); });
     if (tint && m.instanceColor) m.instanceColor.needsUpdate = true;
-    m.frustumCulled = false; m.castShadow = !!q.shadows; m.receiveShadow = !!q.shadows; scene.add(m);
+    m.frustumCulled = false; m.castShadow = cast && !!q.shadows; m.receiveShadow = !!q.shadows; scene.add(m);
   };
   // altura del terreno junto a la pista (la misma aproximación que usan los árboles junto a la valla)
   const groundAt = (i, l) => Math.max(0, tr.Y[i] * (1 - (l - WALL) / (2.5 + 1.1 * tr.Y[i])));
@@ -2311,7 +2286,7 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
   };
 
   // relieves: colinas redondeadas en el anillo exterior
-  const hillPal = { desierto: [0xc27a4a, 0xb86b3e, 0xd08a55], spa: [0x2f4f2c, 0x3a5a33, 0x284428], valle: [0x5aa54e, 0x4f9a46, 0x6cb55a], nieve: [0xe9f2fa, 0xdce9f5, 0xf4f9ff], pruebas: [0x5f8a4e, 0x6b9455, 0x557b48] }[id];
+  const hillPal = { desierto: [0xc27a4a, 0xb86b3e, 0xd08a55], spa: [0x2f4f2c, 0x3a5a33, 0x284428], valle: [0x5aa54e, 0x4f9a46, 0x6cb55a], nieve: [0xe9f2fa, 0xdce9f5, 0xf4f9ff], pruebas: [0x5f8a4e, 0x6b9455, 0x557b48], amazonas: [0x2e6a38, 0x2a5f34, 0x347a40] }[id];
   if (hillPal) {
     // la base de cada colina (radio w) queda siempre fuera del círculo que contiene el circuito: nunca lo atraviesa
     const hills = Array.from({ length: n(id === 'spa' ? 46 : 30) }, () => { const w = 80 + rng() * 170, a = rng() * 6.283, d = R + w + 40 + rng() * 260; return [cxm + Math.cos(a) * d, czm + Math.sin(a) * d, rng() * 6.283, w, 14 + rng() * 40]; });
@@ -2383,8 +2358,46 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     put(shrubG, foliage(0.35, 0xffffff, 0.95), shrubs, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 1.1, s[3] * 1.1, s[3] * 1.1); }, (s) => pick(shrubCol, s));
   }
 
+  // Amazonas: selva muy alta y frondosa
+  if (id === 'amazonas') {
+    const farOk = (pts) => pts.filter((p) => clearance(p[0], p[1], 6)); // fuera de los lagos
+    const place = (d, s2) => { d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); d.scale.set(s2[3], s2[3], s2[3]); };
+    const tintG = (pal) => (s2) => pick(pal, s2);
+    // árboles gigantes (30-45 m): tronco con base ancha y copa de varias masas aplanadas, como los emergentes de la selva
+    const giantTrunk = new THREE.CylinderGeometry(0.9, 1.9, 38, 9).translate(0, 19, 0);
+    const blob = (rx, ry, rz, x, y, z) => new THREE.SphereGeometry(1, 9, 7).scale(rx, ry, rz).translate(x, y, z);
+    const giantCrown = mergeBufferGeometries([blob(7.5, 3.2, 7.5, 0, 36, 0), blob(5.5, 2.6, 5.5, 5, 34, 2), blob(5.2, 2.4, 5.2, -4.5, 34.5, -3), blob(5, 2.4, 5, 2, 39, -4), blob(5, 2.4, 5, -3, 33, 4.5), blob(4.5, 2.2, 4.5, 0, 42, 0.5)]);
+    const gScale = (s2) => 0.8 + (s2[3] - 0.75) * 0.75; // 0.8-1.2: unos 30-45 m
+    const giantsNear = nearPts(n(150), WALL + 4, WALL + 120), giantsFar = farOk(farPts(n(240), 25, 260));
+    const gPlace = (d, s2) => { const k = gScale(s2); d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); d.scale.set(k, k, k); };
+    const barkMat = lam(0x5a4632, 0.95);
+    for (const [list, cast] of [[giantsNear, true], [giantsFar, false]]) {
+      put(giantTrunk, barkMat, list, gPlace, null, cast);
+      put(giantCrown, foliage(1, 0xffffff, 0.92), list, gPlace, tintG([0x2a7a30, 0x1f6a2a, 0x38853a, 0x2a6a38, 0x34803a]), cast);
+    }
+    // árboles medios (12-18 m) en segundo plano
+    const midTrunk = new THREE.CylinderGeometry(0.35, 0.6, 9, 7).translate(0, 4.5, 0);
+    const midCrown = mergeBufferGeometries([blob(3.8, 2.8, 3.8, 0, 11, 0), blob(2.8, 2.2, 2.8, 2.4, 9.5, 1), blob(2.8, 2.2, 2.8, -2.2, 9.8, -1.2), blob(2.6, 2, 2.6, 0.5, 13.2, -0.5)]);
+    const mids = nearPts(n(220), WALL + 3, WALL + 90).concat(farOk(farPts(n(380), 20, 240)));
+    const mPlace = (d, s2) => { const k = 0.9 + (s2[3] - 0.75) * 0.9; d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); d.scale.set(k, k, k); };
+    put(midTrunk, barkMat, mids, mPlace, null, false);
+    put(midCrown, foliage(1, 0xffffff, 0.9), mids, mPlace, tintG([0x3b8a3c, 0x2f7a35, 0x4a9a44, 0x33803a]), false);
+    // palmeras altas (aguaje): tronco fino y penacho de hojas
+    const frondG = (k) => colorGeometry(new THREE.ConeGeometry(0.9, 5, 3).rotateZ(-Math.PI / 2 + 0.5).translate(2.6, 14.2, 0).rotateY((k * Math.PI) / 4), 0.36, 0.7, 0.3);
+    const palmTall = mergeBufferGeometries([colorGeometry(new THREE.CylinderGeometry(0.26, 0.42, 14, 6).translate(0, 7, 0), 0.42, 0.32, 0.2), ...[0, 1, 2, 3, 4, 5, 6, 7].map(frondG)]);
+    put(palmTall, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true }), nearPts(n(110), WALL + 3, WALL + 70), place, null, false);
+    // sotobosque: helechos y plantas de hoja ancha, muy densos junto a la valla
+    const fernG = mergeBufferGeometries([0, 1, 2, 3, 4, 5].map((k) => new THREE.ConeGeometry(0.28, 2.6, 3).rotateZ(1.0).translate(0.9, 0.9, 0).rotateY((k * Math.PI) / 3)));
+    const ferns = nearPts(n(520), WALL + 1.5, WALL + 40);
+    put(fernG, lam(0xffffff, 0.95), ferns, (d, s2) => { d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); const k = 0.8 + s2[3] * 0.6; d.scale.set(k, k, k); }, tintG([0x3f8a34, 0x4f9a3a, 0x2f7a2c, 0x5aa040]), false);
+    // nenúfares sobre los lagos
+    const pads = [];
+    for (const k of lakes) for (let q2 = 0; q2 < 16; q2++) { const a = rng() * 6.283, d = Math.sqrt(rng()) * 0.82, ex = Math.cos(a) * d * k.rx, ez = Math.sin(a) * d * k.rz; pads.push([k.x + ex * Math.cos(k.a) + ez * Math.sin(k.a), k.z - ex * Math.sin(k.a) + ez * Math.cos(k.a), rng() * 6.283, 0.7 + rng() * 0.8, 0.09]); }
+    put(new THREE.CircleGeometry(0.55, 9).rotateX(-Math.PI / 2), lam(0x3e8a3a, 0.9), pads, (d, s2) => { d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); d.scale.set(s2[3], 1, s2[3]); }, null, false);
+  }
+
   // hojas al viento: en los circuitos de bosque y valle, con pocas hojas en móvil
-  if (id === 'spa' || id === 'valle' || id === 'pruebas') makeLeaves(tr, scene, Math.max(40, Math.round((id === 'spa' ? 240 : 150) * dens)), id === 'valle' ? [0x6fa83a, 0x8cc04a, 0xc9a23a, 0x5e9a32] : [0x4f8a2e, 0x6e9b2f, 0x8f6a2a, 0x3f7a2a]);
+  if (id === 'spa' || id === 'valle' || id === 'pruebas' || id === 'amazonas') makeLeaves(tr, scene, Math.max(30, Math.round((id === 'spa' ? 110 : 70) * dens)), id === 'valle' ? [0x6fa83a, 0x8cc04a, 0xc9a23a, 0x5e9a32] : [0x4f8a2e, 0x6e9b2f, 0x8f6a2a, 0x3f7a2a]);
 }
 
 // con lluvia el día se queda cubierto: colores, niebla y luz más oscuros (se aplica a todos los circuitos con lluvia)
@@ -2458,7 +2471,6 @@ function brakingMarks(tr, th) {
 }
 
 export function buildWorld(tr, th, opt = {}) {
-  BUILD_MOBILE = !!opt.mobile;
   th = rainTheme(th);
   setRoad(tr);
   const q = opt.mobile ? { stride: 2, density: 0.5, mountains: 22, shadows: !!opt.shadows } : { stride: 1, density: 1, mountains: 46, shadows: !!opt.shadows };
@@ -2476,11 +2488,12 @@ export function buildWorld(tr, th, opt = {}) {
     const c = sun.shadow.camera; c.left = -45; c.right = 45; c.top = 45; c.bottom = -45; c.near = 1; c.far = 320; c.updateProjectionMatrix();
     sun.shadow.bias = -0.00015; sun.shadow.normalBias = 0.025; sun.shadow.radius = 2.2;
   }
-  const ambientRain = th.weather === 'rain', ambientSnow = th.surface === 'snow';
+  const microRain = !!(tr.rain && tr.rain.length); // chaparrón local: la lluvia solo se ve (y se oye) dentro de su tramo
+  const ambientRain = th.weather === 'rain' || microRain, ambientSnow = th.surface === 'snow';
   let weatherMesh = null, weatherDrops = [];
   if (ambientRain || ambientSnow) {
     // lluvia: muchas más gotas, finas y alargadas; nieve: copos algo mayores y más numerosos
-    const count = ambientRain ? (opt.mobile ? 360 : 900) : (opt.mobile ? 240 : 560);
+    const count = ambientRain ? (opt.mobile ? 220 : 520) : (opt.mobile ? 160 : 380);
     const geo = ambientRain ? new THREE.CylinderGeometry(0.009, 0.009, 1, 4) : new THREE.SphereGeometry(0.09, 6, 4);
     const mat = new THREE.MeshBasicMaterial({ color: ambientRain ? 0xd3e6f7 : 0xf4f9ff, transparent: true, opacity: ambientRain ? 0.5 : 0.85, depthWrite: false });
     weatherMesh = new THREE.InstancedMesh(geo, mat, count); weatherMesh.frustumCulled = false;
@@ -2492,8 +2505,10 @@ export function buildWorld(tr, th, opt = {}) {
     scene.add(weatherMesh);
   }
   const weatherDummy = new THREE.Object3D();
-  const updateWeather = (dt, x = 0, y = 0, z = 0) => {
+  const updateWeather = (dt, x = 0, y = 0, z = 0, k = microRain && th.weather !== 'rain' ? 0 : 1) => {
     if (!weatherMesh) return;
+    weatherMesh.visible = k > 0.03; if (!weatherMesh.visible) return;
+    weatherMesh.material.opacity = (ambientRain ? 0.5 : 0.85) * Math.min(1, k); // k: intensidad de la lluvia en el punto (microclima)
     const fall = ambientRain ? 38 : 2.4;
     for (let i = 0; i < weatherDrops.length; i++) {
       const p = weatherDrops[i]; p.y -= fall * p.spd * Math.min(dt, 0.05);
@@ -2582,7 +2597,7 @@ export function buildWorld(tr, th, opt = {}) {
     const c = document.createElement('canvas'); c.width = 256; c.height = 32; const x = c.getContext('2d');
     for (let i = 0; i < 16; i++) for (let j = 0; j < 2; j++) { x.fillStyle = (i + j) % 2 ? '#111' : '#f4f4f4'; x.fillRect(i * 16, j * 16, 16, 16); }
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-    const g = stripGeom(tr, 0, 1.0, -ROAD_HALF, ROAD_HALF, 0.05), uv = g.attributes.uv;
+    const hwf = roadHalfAt(tr), g = stripGeom(tr, 0, 1.0, (i, j, t) => -hwf(i, j, t), hwf, 0.05), uv = g.attributes.uv;
     for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k), uv.getY(k));
     const fl = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: t, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); fl.receiveShadow = true; scene.add(fl);
   }
@@ -2590,7 +2605,7 @@ export function buildWorld(tr, th, opt = {}) {
   if (th.deco !== 'kart') {
     const edgeMat = new THREE.MeshBasicMaterial({ color: th.surface === 'snow' ? 0xd7e9ff : 0xf5f2e9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     for (const side of [-1, 1]) {
-      const edge = new THREE.Mesh(stripGeom(tr, 0, tr.len - 1, side * (ROAD_HALF - 0.24) - 0.075, side * (ROAD_HALF - 0.24) + 0.075, 0.075), edgeMat);
+      const hwf = roadHalfAt(tr), edge = new THREE.Mesh(stripGeom(tr, 0, tr.len - 1, (i, j, t) => side * (hwf(i, j, t) - 0.24) - 0.075, (i, j, t) => side * (hwf(i, j, t) - 0.24) + 0.075, 0.075), edgeMat);
       edge.frustumCulled = false; scene.add(edge);
     }
   }
@@ -2630,7 +2645,7 @@ export function buildWorld(tr, th, opt = {}) {
 
   // líneas de sector
   const lm = new THREE.MeshBasicMaterial({ color: 0x66e8ff, transparent: true, opacity: 0.55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide });
-  for (const f of [1 / 3, 2 / 3]) { const m = new THREE.Mesh(stripGeom(tr, tr.len * f, tr.len * f + 1.4, -ROAD_HALF, ROAD_HALF, 0.07), lm); m.frustumCulled = false; scene.add(m); }
+  for (const f of [1 / 3, 2 / 3]) { const hwf = roadHalfAt(tr), m = new THREE.Mesh(stripGeom(tr, tr.len * f, tr.len * f + 1.4, (i, j, t) => -hwf(i, j, t), hwf, 0.07), lm); m.frustumCulled = false; scene.add(m); }
   // luces de borde en pista nocturna
   if (th.night) {
     for (const [a, b, c] of [[-(ROAD_HALF - 0.35), -(ROAD_HALF - 0.05), 0x19e3ff], [ROAD_HALF - 0.05, ROAD_HALF - 0.35, 0xff2fb9]]) {

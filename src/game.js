@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { THEMES, THEME_LIST, dailyInfo } from './themes.js';
-import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt } from './track.js';
+import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo } from './car.js';
 import { hashStr } from './rng.js';
 import { buildSpeedProfile, aiInput, benchmark, aiType, AI_TOP } from './ai.js';
@@ -129,6 +129,7 @@ const FLAGS = {
   se: '<rect width="30" height="20" fill="#006aa7"/><rect x="8" width="4" height="20" fill="#fecc00"/><rect y="8" width="30" height="4" fill="#fecc00"/>',
   pt: '<rect width="12" height="20" fill="#006600"/><rect x="12" width="18" height="20" fill="#ff0000"/><circle cx="12" cy="10" r="3.4" fill="#ffcc00"/>',
   ch: '<rect width="30" height="20" fill="#da291c"/><rect x="13" y="4" width="4" height="12" fill="#f4f4f4"/><rect x="9" y="8" width="12" height="4" fill="#f4f4f4"/>',
+  pe: '<rect width="10" height="20" fill="#d91023"/><rect x="10" width="10" height="20" fill="#f4f4f4"/><rect x="20" width="10" height="20" fill="#d91023"/><circle cx="15" cy="10" r="1.7" fill="#c8a24a"/>',
 };
 const flagSvg = (c) => `<svg viewBox="0 0 30 20" aria-hidden="true">${FLAGS[c] || FLAGS.es}</svg>`;
 // ----- cascos (SVG propio): base|franja|visera|dibujo, colores en hexadecimal sin # -----
@@ -147,8 +148,8 @@ const helmetSvg = (h) => {
 const playerDrv = () => ({ flag: lb.flag, helm: lb.helmet });
 const drvOf = (c) => (c && c.isPlayer ? playerDrv() : c && c.driver) || null;
 const drvIc = (d, sm) => d ? `<span class="flag${sm ? ' sm' : ''}">${flagSvg(d.flag)}</span><span class="hel${sm ? ' sm' : ''}">${helmetSvg(d.helm)}</span>` : '';
-const FLAG_NAMES = { es: 'España', pt: 'Portugal', fr: 'Francia', de: 'Alemania', it: 'Italia', gb: 'Reino Unido', ie: 'Irlanda', nl: 'Países Bajos', be: 'Bélgica', ch: 'Suiza', at: 'Austria', pl: 'Polonia', ro: 'Rumanía', ua: 'Ucrania', se: 'Suecia', mc: 'Mónaco', us: 'Estados Unidos', mx: 'México', co: 'Colombia', ar: 'Argentina', br: 'Brasil', ma: 'Marruecos', jp: 'Japón', pr: 'Orgullo' };
-const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'] };
+const FLAG_NAMES = { es: 'España', pt: 'Portugal', fr: 'Francia', de: 'Alemania', it: 'Italia', gb: 'Reino Unido', ie: 'Irlanda', nl: 'Países Bajos', be: 'Bélgica', ch: 'Suiza', at: 'Austria', pl: 'Polonia', ro: 'Rumanía', ua: 'Ucrania', se: 'Suecia', mc: 'Mónaco', us: 'Estados Unidos', mx: 'México', co: 'Colombia', ar: 'Argentina', br: 'Brasil', pe: 'Perú', ma: 'Marruecos', jp: 'Japón', pr: 'Orgullo' };
+const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'] };
 const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
 function drawPreview(cv, tr, th) {
   const w = 300, h = 130, dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
@@ -1014,8 +1015,9 @@ function emitFx(dt) {
       P.emit(ex, c.y + 0.42, ez, -sn * 0.9 + (Math.random() - 0.5) * 0.35, 0.6 + Math.random() * 0.6, -cs * 0.9 + (Math.random() - 0.5) * 0.35, 0.32, 0.46, 1.6, tint[0], tint[1], tint[2], 0.22, 1.2);
     }
   }
-  if (th.weather === 'rain' || th.surface === 'snow') {
-    const rain = th.weather === 'rain', count = rain ? (MOBILE ? 8 : 16) : (MOBILE ? 7 : 14), tint = rain ? [0.68, 0.8, 0.96] : [0.88, 0.94, 1];
+  const rainK = th.weather === 'rain' ? 1 : rainAt(S.tr, pl.D); // lluvia general o microclima por tramos
+  if (rainK > 0.05 || th.surface === 'snow') {
+    const rain = rainK > 0.05, count = Math.max(1, Math.round((rain ? (MOBILE ? 8 : 16) * rainK : (MOBILE ? 7 : 14)))), tint = rain ? [0.68, 0.8, 0.96] : [0.88, 0.94, 1];
     for (let i = 0; i < count; i++) {
       const x = pl.x + (Math.random() - 0.5) * 34, z = pl.z + (Math.random() - 0.5) * 34;
       P.emit(x, pl.y + 7 + Math.random() * 11, z, rain ? -pl.vx * 0.1 : 0.1, rain ? -18 : -1.5 - Math.random() * 2.5, rain ? -pl.vz * 0.1 : 0.1, rain ? 0.36 : 1.8, rain ? 0.035 : 0.09, rain ? 0.022 : 0.045, tint[0], tint[1], tint[2], rain ? 0.25 : 0.52, rain ? 0.15 : 0.35, 0);
@@ -1326,7 +1328,7 @@ function frame(now) {
     updateCamera(dt, false);
     S.world.sky.rotation.y += dt * 0.004;
     S.world.updateWind(dt);
-    S.world.updateWeather(dt, p.x, p.y, p.z);
+    S.world.updateWeather(dt, p.x, p.y, p.z, S.th.weather === 'rain' ? 1 : rainAt(S.tr, p.D)); // microclima: la lluvia depende del tramo
     if (p.onKerb && p.speed > 10) S.shake = Math.max(S.shake, S.th && S.th.kerbRough ? 0.2 : 0.09);
     followSun(S.world, lerp(p.px, p.x, S.alpha), lerp(p.py, p.y, S.alpha), lerp(p.pz, p.z, S.alpha));
     // fantasma
@@ -1352,7 +1354,7 @@ function frame(now) {
     const gi = gearInfo(p.speed, p.type.vmax);
     if (S.lastAudioGear && gi.gear !== S.lastAudioGear && p.speed > 8) sound.play('shift');
     S.lastAudioGear = gi.gear;
-    sound.update({ carId: p.type.id, speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas || halvesOn() ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), onKerb: p.onKerb, weather: S.th.weather, surface: p.surf || S.th.surface, air: p.air, offroad: p.offroad, offroadFactor: p.offroadFactor, puddleWater: p.puddleWater });
+    sound.update({ carId: p.type.id, speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas || halvesOn() ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), onKerb: p.onKerb, weather: (S.th.weather === 'rain' || rainAt(S.tr, p.D) > 0.5) ? 'rain' : S.th.weather, surface: p.surf || S.th.surface, air: p.air, offroad: p.offroad, offroadFactor: p.offroadFactor, puddleWater: p.puddleWater });
     updateHud(dt);
   }
   updateWind(performance.now() / 1000); // copas y hojas al viento (también en el menú)

@@ -2,6 +2,13 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.40
+- Nuevo circuito: Selva Amazónica (Perú). Figura de ocho con un puente del propio circuito sobre sí mismo, curvas rápidas y dos eses, horquillas más anchas y tramos normales más estrechos, lagos, árboles gigantes y selva muy frondosa. Sin barro ni charcos y con un chaparrón local en un tramo.
+- Ancho de pista variable (más ancho en curvas cerradas) y microclima de lluvia por tramos como nuevas capacidades del trazado.
+- Se quitan el balanceo de copas y los mapas de relieve de la carretera (no se apreciaban) y baja la densidad de lluvia y hojas para ir más fluido.
+- Spa: asfalto más oscuro y mate en vez de gris brillante; parches y grietas en el asfalto de todos los circuitos.
+- Faros: haz largo y estrecho y charco intenso justo delante del coche; foco real más potente.
+
 ## 0.0.39
 - Mejor vuelta en directo: un error de la última versión cortaba la actualización del récord en el HUD. Corregido.
 - Delta: la referencia es la mejor vuelta guardada con su perfil de tiempos, y los tiempos empiezan en 0 en meta.

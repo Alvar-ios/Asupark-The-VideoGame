@@ -1,5 +1,5 @@
 // Física arcade del coche (sin dependencias de three)
-import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi } from './track.js';
+import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi, rainAt } from './track.js';
 import { puddleAt, mudAt, oilAt, smoothstep, surfaceAt, applyRunoff } from './surface.js';
 const SP = { key: 'asphalt', g: 1, b: 1, d: 0, s: 1, a: 1 };
 
@@ -117,12 +117,14 @@ export function stepCar(c, inp, dt, tr, env) {
   let vf = c.vx * fx + c.vz * fz, vl = c.vx * rx + c.vz * rz;
   const speed = Math.hypot(c.vx, c.vz);
   const ground = !c.air;
-  const curbWidth = Math.min(1.9, WALL - ROAD_HALF - 0.2), curbSide = loc.lat >= 0 ? 1 : -1;
+  const HW = loc.hw || ROAD_HALF; // semianchura del asfalto en este punto (puede variar a lo largo de la vuelta)
+  const wetK = env.weather === 'rain' ? 1 : (tr.rain ? rainAt(tr, loc.s) : 0); // humedad: lluvia general o microclima por tramos
+  const curbWidth = Math.min(1.9, WALL - HW - 0.2), curbSide = loc.lat >= 0 ? 1 : -1;
   const absLat = Math.abs(loc.lat);
   const onPavedKerb = ground && tr.kerb && tr.kerb[loc.i] === curbSide
-    && absLat > ROAD_HALF - 0.15 && absLat < ROAD_HALF + curbWidth + 0.15;
-  const offroadBlend = onPavedKerb ? 0 : smoothstep(ROAD_HALF - 0.7, ROAD_HALF + 2.4, absLat);
-  surfaceAt(tr, env, loc.s, SP); applyRunoff(tr, env, loc.i, loc.lat, ROAD_HALF, offroadBlend, SP); c.surf = SP.key; // superficie bajo el coche (zonas mixtas + temperatura y humedad)
+    && absLat > HW - 0.15 && absLat < HW + curbWidth + 0.15;
+  const offroadBlend = onPavedKerb ? 0 : smoothstep(HW - 0.7, HW + 2.4, absLat);
+  surfaceAt(tr, env, loc.s, SP); applyRunoff(tr, env, loc.i, loc.lat, HW, offroadBlend, SP); c.surf = SP.key; // superficie bajo el coche (zonas mixtas + temperatura y humedad)
   const off = offroadBlend > 0.5;
   c.offroadFactor = ground ? offroadBlend : 0;
   c.offroad = off && ground;
@@ -154,7 +156,7 @@ export function stepCar(c, inp, dt, tr, env) {
   const yaw = c.yawRate;
 
   // motor y freno
-  const vmaxE = T.vmax * (1 - offroadBlend * (1 - (env.offroad || 0.62))) * (env.weather === 'rain' ? 0.97 : 1);
+  const vmaxE = T.vmax * (1 - offroadBlend * (1 - (env.offroad || 0.62))) * (1 - 0.03 * wetK);
   c.throttle = inp.throttle; c.brake = inp.brake;
   if (ground) {
     if (inp.brake > 0.05) {
@@ -178,7 +180,7 @@ export function stepCar(c, inp, dt, tr, env) {
       vf += (wx * fx + wz * fz) * 0.05 * sp * dt; const wl = wx * rx + wz * rz; vl += wl * 0.25 * sp * dt / mf; c.psi += wl * 0.0035 * sp * dt / mf;
     }
     const soilGrip = env.offroadGrip || 0.68;
-    const surfaceGrip = (1 - offroadBlend * (1 - soilGrip)) * (env.weather === 'rain' ? (env.wetGrip || 0.78) : 1) * SP.g;
+    const surfaceGrip = (1 - offroadBlend * (1 - soilGrip)) * (1 - wetK * (1 - (env.wetGrip || 0.78))) * SP.g;
     const puddleWater = env.weather === 'rain' ? puddleAt(loc.s, loc.lat) : 0;
     c.puddleWater = puddleWater;
     c.inPuddle = puddleWater > 0.12;
@@ -243,7 +245,7 @@ export function stepCar(c, inp, dt, tr, env) {
 
   // pianos (bordillos): solo existen en el interior de las curvas. Al ser más altos por dentro, te lanzan suavemente hacia fuera (hacia el centro de la pista), sin frenar:
   // ayudan a cerrar la curva si los pisas con ganas y vibran un poco.
-  const KW = Math.min(1.9, WALL - ROAD_HALF - 0.2), side = loc.lat >= 0 ? 1 : -1, over = Math.abs(loc.lat) - (ROAD_HALF - 0.15);
+  const KW = Math.min(1.9, WALL - HW - 0.2), side = loc.lat >= 0 ? 1 : -1, over = Math.abs(loc.lat) - (HW - 0.15);
   c.onKerb = !c.air && over > 0 && over < KW + 0.15 && tr.kerb && tr.kerb[loc.i] === side;
   if (c.onKerb && c.speed > 8) {
     const depth = clamp(over / 1.2, 0, 1), push = 5.5 * depth * clamp(c.speed / 32, 0.3, 1.3); // m/s² hacia el centro
@@ -281,7 +283,7 @@ export function stepCar(c, inp, dt, tr, env) {
   if (dS < -tr.len / 2) c.lap++; else if (dS > tr.len / 2) c.lap--;
   c.lastS = loc.s;
   c.D = c.lap * tr.len + loc.s;
-  if (ground && Math.abs(loc.lat) < ROAD_HALF) { c.safeT += dt; if (c.safeT > 0.6) { c.safeT = 0; c.safeD = c.D; } }
+  if (ground && Math.abs(loc.lat) < HW) { c.safeT += dt; if (c.safeT > 0.6) { c.safeT = 0; c.safeD = c.D; } }
   if (c.speed < 1.5) c.stuckT += dt; else c.stuckT = 0;
 }
 

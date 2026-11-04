@@ -112,11 +112,13 @@ function generate(seed, style, attempt) {
   let maxK = 0;
   for (let i = 0; i < N; i++) maxK = Math.max(maxK, Math.abs(kap[i]));
   if (1 / maxK < (style.minR || 30)) return null;
-  // separación entre tramos no contiguos
+  // separación entre tramos no contiguos (salvo en un cruce deliberado: style.cross = [x, z, radio], donde un tramo pasa por encima del otro)
+  const cr = style.cross ? [style.cross[0] * sc, style.cross[1] * sc, style.cross[2] * sc] : null;
   for (let i = 0; i < N; i += 2) {
     for (let j = i + 1; j < N; j += 2) {
       const gap = Math.min(j - i, N - (j - i)) * ds;
       if (gap < 90) continue;
+      if (cr && (P[i][0] - cr[0]) ** 2 + (P[i][1] - cr[1]) ** 2 < cr[2] * cr[2] && (P[j][0] - cr[0]) ** 2 + (P[j][1] - cr[1]) ** 2 < cr[2] * cr[2]) continue;
       const dx = P[i][0] - P[j][0], dz = P[i][1] - P[j][1];
       const sp = style.sep || 55;
       if (dx * dx + dz * dz < sp * sp) return null;
@@ -218,6 +220,17 @@ export function buildTrack(seed, style) {
     for (let n = 0; n < 2; n++) { const w = 0.05 + rng() * 0.04; tr.zones.push({ s0: u * len, s1: (u + w) * len, type: k[Math.floor(rng() * k.length)] }); u += 0.38 + rng() * 0.2; if (u + w > 0.95) break; }
   }
   tr.tunnels = (style.tunnels || []).map(([u0, u1]) => ({ s0: u0 * len, s1: u1 * len }));
+  tr.rain = (style.rainZones || []).map(([u0, u1]) => ({ s0: u0 * len, s1: u1 * len })); // microclima: tramos donde llueve
+  // ancho variable del asfalto: el normal (style.half) en rectas y rápidas, hasta style.widthMax en las curvas cerradas
+  if (style.widthMax) {
+    const wmin = style.half || 5, wmax = style.widthMax, tight = new Float32Array(N);
+    for (let i = 0; i < N; i++) { const t = (absK[i] - 0.007) / 0.012; tight[i] = t < 0 ? 0 : t > 1 ? 1 : t; }
+    let src = tight; // suavizado largo (±40 m, dos pasadas): el ensanche empieza antes de la curva y acaba después
+    for (let pass = 0; pass < 2; pass++) { const out = new Float32Array(N); for (let i = 0; i < N; i++) { let s = 0; for (let d = -40; d <= 40; d += 4) s += src[(i + d + N) % N]; out[i] = s / 21; } src = out; }
+    let mx = 0; for (let i = 0; i < N; i++) mx = Math.max(mx, src[i]);
+    tr.hw = new Float32Array(N);
+    for (let i = 0; i < N; i++) { const f = mx > 0 ? Math.min(1, src[i] / (mx * 0.6)) : 0; tr.hw[i] = wmin + (wmax - wmin) * f * f * (3 - 2 * f); }
+  }
   tr.bank = new Float32Array(N); // ángulo de peralte (rad) en cada muestra; positivo = sube el lado derecho
   for (const [u0, u1, deg] of style.banks || []) {
     const a = Math.floor(u0 * N), b = Math.floor(u1 * N); let km = 0; for (let i = a; i < b; i++) km += kap[i % N]; const sg = km >= 0 ? 1 : -1;
@@ -241,6 +254,24 @@ export function buildTrack(seed, style) {
       const t = b[0] === a[0] ? 0 : (uu - a[0]) / (b[0] - a[0]); base[i] = a[1] + (b[1] - a[1]) * (0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, t))));
     }
     minBase = Math.min(minBase, base[i]);
+  }
+  // cruce con puente: el segundo paso por el punto de cruce se eleva sobre el primero (rampas suaves de subida y bajada)
+  if (style.cross) {
+    const sc2 = style.scale || 1, cx = style.cross[0] * sc2, cz = style.cross[1] * sc2, r = style.cross[2] * sc2 * 0.8, near = [];
+    for (let i = 0; i < N; i++) if ((X[i] - cx) ** 2 + (Z[i] - cz) ** 2 < r * r) near.push(i);
+    const groups = [];
+    for (const i of near) { const g = groups[groups.length - 1]; if (g && i - g[g.length - 1] < 60) g.push(i); else groups.push([i]); }
+    if (groups.length >= 2) {
+      const up = groups[1]; let iB = up[0], bd = 1e18;
+      for (const i of up) { const d = (X[i] - cx) ** 2 + (Z[i] - cz) ** 2; if (d < bd) { bd = d; iB = i; } }
+      const H = style.bridgeH || 9, PLAT = 34, RAMP = 190;
+      for (let k = -(PLAT + RAMP); k <= PLAT + RAMP; k++) {
+        const a = Math.abs(k), w = a <= PLAT ? 1 : (() => { const x = 1 - (a - PLAT) / RAMP; return x * x * (3 - 2 * x); })();
+        base[(iB + k + N) % N] += H * w;
+      }
+      let iA = groups[0][0], bd0 = 1e18; for (const i of groups[0]) { const d = (X[i] - cx) ** 2 + (Z[i] - cz) ** 2; if (d < bd0) { bd0 = d; iA = i; } }
+      tr.bridge = { i: iB, iLow: iA, span: 40 };
+    }
   }
   // antes de cada rampa la pista se aplana (si bajaba, la rampa solo frenaba la bajada y el coche no despegaba)
   for (const r of tr.ramps) {
@@ -295,9 +326,18 @@ export function locate(tr, x, z, hint, out) {
   out.h = Y[sg.a] + (Y[sg.b] - Y[sg.a]) * sg.t;
   out.tx = tx; out.tz = tz;
   out.bank = tr.bank ? tr.bank[sg.a] + (tr.bank[sg.b] - tr.bank[sg.a]) * sg.t : 0;
+  out.hw = tr.hw ? tr.hw[sg.a] + (tr.hw[sg.b] - tr.hw[sg.a]) * sg.t : ROAD_HALF; // semianchura del asfalto en este punto
   out.lat = (x - sg.px) * -tz + (z - sg.pz) * tx; // + = derecha
   if (out.bank) out.h += Math.tan(out.bank) * (out.lat > WALL ? WALL : out.lat < -WALL ? -WALL : out.lat); // la superficie peraltada sube hacia fuera
   return out;
+}
+
+// humedad (0-1) en la distancia s: microclima de lluvia por tramos, con entrada y salida suaves de unos 90 m
+export function rainAt(tr, s) {
+  if (!tr.rain || !tr.rain.length) return 0;
+  s = ((s % tr.len) + tr.len) % tr.len; let k = 0;
+  for (const z of tr.rain) { const e = 90, a = Math.min(1, Math.max(0, (s - (z.s0 - e)) / (2 * e))), b = Math.min(1, Math.max(0, (z.s1 + e - s) / (2 * e))); k = Math.max(k, Math.min(a, b)); }
+  return k;
 }
 
 export function pointAt(tr, s, lat, out) {

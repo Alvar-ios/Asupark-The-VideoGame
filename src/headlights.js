@@ -17,10 +17,11 @@ const beamTex = () => beamT || (beamT = mkTex(128, 256, (g, w, h) => {
 
 // cuatro estilos de iluminación
 export const HEAD_STYLES = {
-  halogen: { name: 'Halógeno clásico', color: 0xffdfa0, beams: [{ len: 24, w0: 0.9, w1: 8, op: 0.5 }], glow: 1.0, spread: 1 },
-  led: { name: 'LED afilado', color: 0xeef6ff, beams: [{ len: 34, w0: 1.1, w1: 6.5, op: 0.55 }], glow: 0.55, strip: true, spread: 1 },
-  xenon: { name: 'Xenón azulado', color: 0xbcd6ff, beams: [{ len: 30, w0: 1, w1: 8, op: 0.5 }, { len: 46, w0: 0.6, w1: 3.4, op: 0.32 }], glow: 1.15, flare: true, spread: 1 },
-  rally: { name: 'Faros de rally', color: 0xffd070, beams: [{ len: 26, w0: 1.2, w1: 11, op: 0.42 }, { len: 48, w0: 0.5, w1: 3, op: 0.5 }], glow: 0.85, extra: true, spread: 1 },
+  // cada estilo: un charco intenso justo delante del morro (len corto) y un haz largo y estrecho que alcanza lejos
+  halogen: { name: 'Halógeno clásico', color: 0xffdfa0, beams: [{ len: 16, w0: 1.4, w1: 6, op: 0.6 }, { len: 38, w0: 0.8, w1: 4.2, op: 0.42 }], glow: 1.0, spread: 1 },
+  led: { name: 'LED afilado', color: 0xeef6ff, beams: [{ len: 18, w0: 1.4, w1: 5.5, op: 0.62 }, { len: 52, w0: 0.9, w1: 3.8, op: 0.5 }], glow: 0.55, strip: true, spread: 1 },
+  xenon: { name: 'Xenón azulado', color: 0xbcd6ff, beams: [{ len: 18, w0: 1.4, w1: 6, op: 0.6 }, { len: 46, w0: 0.8, w1: 4, op: 0.48 }, { len: 66, w0: 0.5, w1: 2.8, op: 0.34 }], glow: 1.15, flare: true, spread: 1 },
+  rally: { name: 'Faros de rally', color: 0xffd070, beams: [{ len: 20, w0: 1.6, w1: 8, op: 0.55 }, { len: 40, w0: 0.9, w1: 4.5, op: 0.5 }, { len: 68, w0: 0.5, w1: 2.6, op: 0.5 }], glow: 0.85, extra: true, spread: 1 },
 };
 // qué estilo lleva cada coche (los clásicos, halógeno; los modernos, LED o xenón; los más bestias, rally)
 const STYLE_OF = { mini: 'halogen', minitoon: 'halogen', golf: 'halogen', mx5: 'halogen', mustang: 'halogen', stradale: 'halogen', clubman: 'halogen',
@@ -62,8 +63,9 @@ export function addHeadlights(mesh, carId, k, real) {
   mesh.tilt.add(group); mesh.root.add(ground);
   let spot = null;
   if (real) {
-    spot = new THREE.SpotLight(st.color, 55 * k, 60, 0.55, 0.65, 1.2); spot.position.set(0, ly + 0.1, zf - 0.3);
-    const tg = new THREE.Object3D(); tg.position.set(0, 0, zf + 16); mesh.tilt.add(tg); spot.target = tg; mesh.tilt.add(spot);
+    // foco real: más potente y más estrecho, apuntando lejos para iluminar justo delante del coche
+    spot = new THREE.SpotLight(st.color, 130 * k, 95, 0.42, 0.5, 1.1); spot.position.set(0, ly + 0.1, zf - 0.3);
+    const tg = new THREE.Object3D(); tg.position.set(0, 0, zf + 26); mesh.tilt.add(tg); spot.target = tg; mesh.tilt.add(spot);
   }
   mesh.hl = { group, ground, tails, spot, k, fl: fl.map((m) => ({ m, o: m.opacity })) };
 }
