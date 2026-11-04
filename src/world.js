@@ -242,6 +242,44 @@ function asphaltTex(th) {
 }
 
 let marioTarmacTextureCache = null;
+let BUILD_MOBILE = false; // lo fija buildWorld según el dispositivo
+// Relieve del asfalto: mapa de normales (grano fino y áridos) y de rugosidad (zonas más mates y charcos en lluvia), generados en código.
+const asphaltDetailCache = new Map();
+function asphaltDetail(th, wet, repeat) {
+  const key = (th.id || 'default') + (wet ? ':wet' : '');
+  if (!asphaltDetailCache.has(key)) {
+    const size = 256, n = size * size, raw = new Float32Array(n);
+    for (let i = 0; i < n; i++) raw[i] = Math.random() - 0.5;
+    const box = (src, r) => { // desenfoque separable con repetición (la textura se repite sin costuras)
+      const tmp = new Float32Array(n), out = new Float32Array(n), k = 2 * r + 1;
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) { let s = 0; for (let d = -r; d <= r; d++) s += src[y * size + ((x + d + size) % size)]; tmp[y * size + x] = s / k; }
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) { let s = 0; for (let d = -r; d <= r; d++) s += tmp[((y + d + size) % size) * size + x]; out[y * size + x] = s / k; }
+      return out;
+    };
+    const mid = box(raw, 2), big = box(raw, 7), h = new Float32Array(n);
+    for (let i = 0; i < n; i++) h[i] = raw[i] * 0.45 + (mid[i] - big[i]) * 2.2;
+    const mk = () => { const c = document.createElement('canvas'); c.width = c.height = size; return [c, c.getContext('2d').createImageData(size, size)]; };
+    const [nc, nd] = mk(), [rc, rd] = mk(), strength = 2.6;
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      const i = y * size + x, o = i * 4;
+      const hl = h[y * size + ((x - 1 + size) % size)], hr = h[y * size + ((x + 1) % size)], hu = h[((y - 1 + size) % size) * size + x], hd = h[((y + 1) % size) * size + x];
+      let nx = (hl - hr) * strength, ny = (hu - hd) * strength, nz = 1; const len = Math.hypot(nx, ny, nz); nx /= len; ny /= len; nz /= len;
+      nd.data[o] = (nx * 0.5 + 0.5) * 255; nd.data[o + 1] = (ny * 0.5 + 0.5) * 255; nd.data[o + 2] = (nz * 0.5 + 0.5) * 255; nd.data[o + 3] = 255;
+      // multiplicador de rugosidad (verde): el grano es algo más mate; en lluvia las zonas bajas retienen agua y brillan
+      let m = Math.max(0.6, Math.min(1, 0.94 + h[i] * 0.5));
+      if (wet) { m = Math.max(0.6, Math.min(1, 0.97 + h[i] * 0.3)); if (big[i] > 0.035) m = 0.32; }
+      rd.data[o] = rd.data[o + 1] = rd.data[o + 2] = Math.round(m * 255); rd.data[o + 3] = 255;
+    }
+    nc.getContext('2d').putImageData(nd, 0, 0); rc.getContext('2d').putImageData(rd, 0, 0);
+    const normal = new THREE.CanvasTexture(nc), rough = new THREE.CanvasTexture(rc);
+    normal.colorSpace = rough.colorSpace = THREE.NoColorSpace;
+    asphaltDetailCache.set(key, { normal, rough });
+  }
+  const d = asphaltDetailCache.get(key);
+  d.normal.wrapS = d.normal.wrapT = d.rough.wrapS = d.rough.wrapT = THREE.RepeatWrapping;
+  d.normal.repeat.copy(repeat); d.rough.repeat.copy(repeat);
+  return d;
+}
 function marioTarmacTex() {
   if (marioTarmacTextureCache) return marioTarmacTextureCache;
   const size = 32, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
@@ -866,10 +904,15 @@ function roadMesh(tr, th, stride = 1) {
     roadRough = 0.74; roadMetal = 0.02; envInt = 0.32;
   }
 
-  const roadMaterial = new THREE.MeshStandardMaterial({
+  // asfalto con relieve (normales y rugosidad generadas); en lluvia, capa de barniz húmedo que refleja el cielo
+  const detail = asphaltDetail(th, wet, rTex.repeat);
+  const roadOpts = {
     vertexColors: true, side: THREE.DoubleSide,
-    roughness: roadRough, metalness: roadMetal, envMapIntensity: envInt, map: rTex
-  });
+    roughness: roadRough, metalness: roadMetal, envMapIntensity: wet ? envInt * 1.15 : envInt, map: rTex,
+    normalMap: detail.normal, normalScale: new THREE.Vector2(wet ? 0.75 : 0.9, wet ? 0.75 : 0.9), roughnessMap: detail.rough,
+  };
+  // la capa brillante del asfalto mojado solo en escritorio: en móvil basta el material estándar con los mapas
+  const roadMaterial = wet && !BUILD_MOBILE ? new THREE.MeshPhysicalMaterial({ ...roadOpts, clearcoat: 0.45, clearcoatRoughness: 0.1 }) : new THREE.MeshStandardMaterial(roadOpts);
 
   const kerbMaterial = new THREE.MeshStandardMaterial({
     vertexColors: true, side: THREE.DoubleSide,
@@ -1918,6 +1961,47 @@ function turnSigns(tr, th, scene, mobile) {
 }
 
 // Decoración: se coloca fuera de la carretera usando una malla espacial
+// Elementos de diseño del circuito: un puente de carretera que cruza la pista (campo) y torres de focos (noche).
+// Cada pieza se comprueba contra el resto del trazado: si tocara otra parte de la pista, se omite.
+function trackFeatures(tr, th, scene, q) {
+  const N = tr.N, dummy = new THREE.Object3D();
+  const offTrack = (x, z, r, skipFrom, skipTo) => { // true si el punto queda lejos de cualquier tramo del circuito fuera de [skipFrom, skipTo]
+    for (let j = 0; j < N; j += 3) { const s = j * tr.ds; if (skipFrom != null && s > skipFrom && s < skipTo) continue; if ((tr.X[j] - x) ** 2 + (tr.Z[j] - z) ** 2 < r * r) return false; }
+    return true;
+  };
+  const tunnelAt = (s, pad) => (tr.tunnels || []).some((t) => s > t.s0 - pad && s < t.s1 + pad);
+  if (th.id === 'valle' || th.id === 'desierto' || th.id === 'pruebas') { // puente de carretera sobre la pista, con pilares fuera de las vallas
+    const i = Math.floor(N * 0.42), s = i * tr.ds, lx = -tr.TZ[i], lz = tr.TX[i]; // vector lateral
+    const pad = WALL + 6, px = [tr.X[i] + lx * pad, tr.X[i] - lx * pad], pz = [tr.Z[i] + lz * pad, tr.Z[i] - lz * pad];
+    const ok = !tunnelAt(s, 60) && px.every((x, k) => offTrack(x, pz[k], 4, s - 70, s + 70));
+    if (ok) {
+      const theta = Math.atan2(-tr.TX[i], -tr.TZ[i]), g = new THREE.Group();
+      const concrete = new THREE.MeshStandardMaterial({ color: th.id === 'desierto' ? 0xc9b59a : 0xb7b5ad, roughness: 0.9 });
+      const deck = new THREE.Mesh(new THREE.BoxGeometry(pad * 2 + 2, 1.1, 9), concrete); deck.position.set(0, 8.2, 0); deck.castShadow = !!q.shadows; deck.receiveShadow = true; g.add(deck);
+      for (const sd of [-1, 1]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(pad * 2 + 2, 0.9, 0.3), concrete); rail.position.set(0, 9.3, sd * 4.35); rail.castShadow = !!q.shadows; g.add(rail); }
+      for (const sd of [-1, 1]) { const pil = new THREE.Mesh(new THREE.BoxGeometry(1.6, 8.2, 2.6), concrete); pil.position.set(sd * pad, 4.1, 0); pil.castShadow = !!q.shadows; pil.receiveShadow = true; g.add(pil); }
+      g.position.set(tr.X[i], tr.Y[i], tr.Z[i]); g.rotation.set(0, theta, 0);
+      scene.add(g);
+    }
+  }
+  if (th.night && th.id === 'neon') { // torres de focos a los lados de la pista: luz cálida en la noche
+    const poles = [], heads = [];
+    for (let s = 60; s < tr.len - 60; s += 150) {
+      const i = Math.floor(s / tr.ds) % N, side = poles.length % 2 ? -1 : 1, l = WALL + 16;
+      const x = tr.X[i] + -tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side;
+      if (!offTrack(x, z, WALL + 8, s - 60, s + 60)) continue;
+      poles.push([x, tr.Y[i], z]); heads.push([x, tr.Y[i] + 22, z, Math.atan2(tr.TX[i], tr.TZ[i]) + side * 0.6]);
+    }
+    if (poles.length) {
+      const pm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.9, 22, 0.9).translate(0, 11, 0), new THREE.MeshStandardMaterial({ color: 0x5a6068, roughness: 0.7, metalness: 0.4 }), poles.length);
+      poles.forEach((p, k) => { dummy.position.set(p[0], p[1], p[2]); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); pm.setMatrixAt(k, dummy.matrix); });
+      pm.frustumCulled = false; scene.add(pm);
+      const hm = new THREE.InstancedMesh(new THREE.BoxGeometry(5.5, 1.6, 0.6), new THREE.MeshBasicMaterial({ color: 0xfff1c9 }), heads.length);
+      heads.forEach((h, k) => { dummy.position.set(h[0], h[1], h[2]); dummy.rotation.set(0, h[3], 0.35); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); hm.setMatrixAt(k, dummy.matrix); });
+      hm.frustumCulled = false; scene.add(hm);
+    }
+  }
+}
 function scenery(tr, th, scene, rng, q) {
   const cell = 40, grid = new Map(), key = (cx, cz) => cx * 73856093 ^ cz * 19349663;
   let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9;
@@ -2374,6 +2458,7 @@ function brakingMarks(tr, th) {
 }
 
 export function buildWorld(tr, th, opt = {}) {
+  BUILD_MOBILE = !!opt.mobile;
   th = rainTheme(th);
   setRoad(tr);
   const q = opt.mobile ? { stride: 2, density: 0.5, mountains: 22, shadows: !!opt.shadows } : { stride: 1, density: 1, mountains: 46, shadows: !!opt.shadows };
@@ -2394,13 +2479,14 @@ export function buildWorld(tr, th, opt = {}) {
   const ambientRain = th.weather === 'rain', ambientSnow = th.surface === 'snow';
   let weatherMesh = null, weatherDrops = [];
   if (ambientRain || ambientSnow) {
-    const count = Math.round((opt.mobile ? 110 : 230) * (ambientSnow ? 0.82 : 1));
-    const geo = ambientRain ? new THREE.CylinderGeometry(0.012, 0.012, 0.72, 4).rotateX(0.2) : new THREE.SphereGeometry(0.065, 5, 4);
-    const mat = new THREE.MeshBasicMaterial({ color: ambientRain ? 0xb5d5eb : 0xf0f7ff, transparent: true, opacity: ambientRain ? 0.55 : 0.78, depthWrite: false });
+    // lluvia: muchas más gotas, finas y alargadas; nieve: copos algo mayores y más numerosos
+    const count = ambientRain ? (opt.mobile ? 360 : 900) : (opt.mobile ? 240 : 560);
+    const geo = ambientRain ? new THREE.CylinderGeometry(0.009, 0.009, 1, 4) : new THREE.SphereGeometry(0.09, 6, 4);
+    const mat = new THREE.MeshBasicMaterial({ color: ambientRain ? 0xd3e6f7 : 0xf4f9ff, transparent: true, opacity: ambientRain ? 0.5 : 0.85, depthWrite: false });
     weatherMesh = new THREE.InstancedMesh(geo, mat, count); weatherMesh.frustumCulled = false;
     const weatherRng = rngFromSeed('preview-weather:' + tr.seed), weatherDummy = new THREE.Object3D();
     for (let i = 0; i < count; i++) {
-      const drop = { x: (weatherRng() - 0.5) * 34, y: weatherRng() * 22, z: (weatherRng() - 0.5) * 34, scale: 0.55 + weatherRng() * 1.1, phase: weatherRng() * Math.PI * 2 };
+      const drop = { x: (weatherRng() - 0.5) * 48, y: weatherRng() * 30, z: (weatherRng() - 0.5) * 48, scale: 0.6 + weatherRng() * 0.9, phase: weatherRng() * Math.PI * 2, spd: 0.8 + weatherRng() * 0.5 };
       weatherDrops.push(drop); weatherDummy.position.set(drop.x, drop.y, drop.z); weatherDummy.scale.setScalar(drop.scale); weatherDummy.updateMatrix(); weatherMesh.setMatrixAt(i, weatherDummy.matrix);
     }
     scene.add(weatherMesh);
@@ -2408,18 +2494,22 @@ export function buildWorld(tr, th, opt = {}) {
   const weatherDummy = new THREE.Object3D();
   const updateWeather = (dt, x = 0, y = 0, z = 0) => {
     if (!weatherMesh) return;
-    const fall = ambientRain ? 24 : 2.1;
+    const fall = ambientRain ? 38 : 2.4;
     for (let i = 0; i < weatherDrops.length; i++) {
-      const p = weatherDrops[i]; p.y -= fall * Math.min(dt, 0.05);
+      const p = weatherDrops[i]; p.y -= fall * p.spd * Math.min(dt, 0.05);
       if (!ambientRain) { p.x += Math.sin(p.phase + p.y * 0.08) * dt * 0.8; p.z += Math.cos(p.phase + p.y * 0.06) * dt * 0.65; }
-      if (p.y < -4) { p.y = ambientRain ? 19 + Math.random() * 9 : 18 + Math.random() * 7; p.x = (Math.random() - 0.5) * 34; p.z = (Math.random() - 0.5) * 34; }
-      weatherDummy.position.set(x + p.x, y + p.y, z + p.z); weatherDummy.scale.setScalar(p.scale); weatherDummy.updateMatrix(); weatherMesh.setMatrixAt(i, weatherDummy.matrix);
+      else { p.x += 2.6 * p.spd * Math.min(dt, 0.05); } // lluvia algo inclinada por el viento
+      if (p.y < -4) { p.y = ambientRain ? 22 + Math.random() * 10 : 18 + Math.random() * 7; p.x = (Math.random() - 0.5) * 48; p.z = (Math.random() - 0.5) * 48; }
+      // la estela se alarga con la velocidad de caída: lluvia rápida y con trazos visibles
+      const streak = ambientRain ? 1.2 + p.spd * 1.1 : 1;
+      weatherDummy.position.set(x + p.x, y + p.y, z + p.z); weatherDummy.scale.set(p.scale, p.scale * streak, p.scale); weatherDummy.updateMatrix(); weatherMesh.setMatrixAt(i, weatherDummy.matrix);
     }
     weatherMesh.instanceMatrix.needsUpdate = true;
   };
 
   const road = roadMesh(tr, th, q.stride); scene.add(road);
   for (const t of tr.tunnels || []) scene.add(tunnelMesh(tr, t, th));
+  trackFeatures(tr, th, scene, q);
   if (th.urban) scene.add(urbanMesh(tr, th));
   if (th.harbor) scene.add(monacoHarbor(scene, !!q.shadows));
   // Marcas tenues de goma en la trazada: dos huellas de rueda, sin línea central de carretera.

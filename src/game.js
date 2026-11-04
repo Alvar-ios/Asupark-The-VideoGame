@@ -558,7 +558,7 @@ async function startRace(restart = false) {
   S.bestLap = S.mode === 'tt' ? S.lapPB : null;
   computeRecords(ti, type, bench);
   // la referencia propia solo se usa si su final coincide con el tiempo de esa vuelta; si no, se usa el perfil de la IA
-  const pbProfEnd = S.pbRec.prof && S.pbRec.prof.length ? Math.max(...S.pbRec.prof) : -1, pbOk = pbProfEnd >= 0 && S.pbRec.lap != null && Math.abs(pbProfEnd - S.pbRec.lap) < 1.5;
+  const pbProfEnd = S.pbRec.prof && S.pbRec.prof.length ? Math.max(...S.pbRec.prof) : -1, profLap = S.pbRec.profLap != null ? S.pbRec.profLap : S.pbRec.lap, pbOk = pbProfEnd >= 0 && profLap != null && Math.abs(pbProfEnd - profLap) < 1.5;
   S.refProf = pbOk ? S.pbRec.prof : bench ? bench.prof : null; S.refFill = fillProf(S.refProf); S.deltaS = null;
   S.refName = S.pbRec.prof && S.pbRec.prof.length ? 'PB' : 'RÉCORD';
   S.curProf = new Float32Array(Math.ceil(tr.len / 10) + 2).fill(-1);
@@ -854,11 +854,11 @@ function onPlayerLap(c, lt, done) {
       if (!cr || cr.lap == null || lt < cr.lap) { store.set(ck, { ...(cr || { sec: [null, null, null], prof: null }), lap: lt }); lb.submit(trackIdOf(S.trackInfo), c.type.id, Math.round(lt * 1000), S.mode === 'tt' ? Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) : null).catch(() => {}); } }
     if (S.lapPB == null || lt < S.lapPB) {
       newPB = true; S.lapPB = lt; S.bestLap = lt;
-      S.pbRec.lap = lt; S.pbRec.prof = Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000));
+      S.pbRec.lap = lt; S.pbRec.profLap = lt; S.pbRec.prof = Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000));
       store.set('pb.' + S.skey, S.pbRec);
       S.refProf = S.pbRec.prof; S.refName = 'PB'; S.refFill = fillProf(S.refProf);
       if (S.mode === 'tt') {
-        store.set(key,{ time: lt, ghost: Array.from(S.ghostBest, (v) => Math.round(v * 100) / 100), car: c.type.id });
+        store.set(key, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id }); // antes leía S.ghostBest, que puede ser null y cortaba el resto de la función (la mejor vuelta no se actualizaba en directo)
       }
       markDaily();
     }
@@ -915,6 +915,7 @@ function fillProf(prof) {
   for (let i = 0; i < a.length; i++) { if (!Number.isNaN(a[i])) { if (last >= 0 && i - last > 1) for (let k = last + 1; k < i; k++) a[k] = a[last] + (a[i] - a[last]) * ((k - last) / (i - last)); last = i; } }
   const first = a.findIndex((v) => !Number.isNaN(v)); if (first < 0) return null;
   for (let i = 0; i < first; i++) a[i] = a[first] * (i / first); for (let i = last + 1; i < a.length; i++) a[i] = a[last];
+  const a0 = a[0]; for (let i = 0; i < a.length; i++) a[i] -= a0; // la referencia empieza en 0 s en la línea de meta
   for (let i = 1; i < a.length; i++) if (a[i] < a[i - 1]) a[i] = a[i - 1]; // a lo largo de una vuelta el tiempo solo crece: se corrigen muestras desordenadas
   return a;
 }
@@ -1014,7 +1015,7 @@ function emitFx(dt) {
     }
   }
   if (th.weather === 'rain' || th.surface === 'snow') {
-    const rain = th.weather === 'rain', count = rain ? (MOBILE ? 4 : 7) : (MOBILE ? 5 : 9), tint = rain ? [0.68, 0.8, 0.96] : [0.88, 0.94, 1];
+    const rain = th.weather === 'rain', count = rain ? (MOBILE ? 8 : 16) : (MOBILE ? 7 : 14), tint = rain ? [0.68, 0.8, 0.96] : [0.88, 0.94, 1];
     for (let i = 0; i < count; i++) {
       const x = pl.x + (Math.random() - 0.5) * 34, z = pl.z + (Math.random() - 0.5) * 34;
       P.emit(x, pl.y + 7 + Math.random() * 11, z, rain ? -pl.vx * 0.1 : 0.1, rain ? -18 : -1.5 - Math.random() * 2.5, rain ? -pl.vz * 0.1 : 0.1, rain ? 0.36 : 1.8, rain ? 0.035 : 0.09, rain ? 0.022 : 0.045, tint[0], tint[1], tint[2], rain ? 0.25 : 0.52, rain ? 0.15 : 0.35, 0);

@@ -49,7 +49,8 @@ export class Sound {
       const nz = (type, f, q) => { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; const g = ctx.createGain(); g.gain.value = 0; s.connect(b); b.connect(g); g.connect(this.master); s.start(); return { g, b }; };
       this.skid = nz('bandpass', 1500, 4);
       this.wind = nz('lowpass', 400, 0.4);
-      this.rain = nz('lowpass', 1150, 0.35);
+      this.rain = nz('lowpass', 1150, 0.35); // cuerpo de la lluvia
+      this.rainHi = nz('highpass', 2400, 0.4); // siseo de las gotas al caer sobre el asfalto
       this.gravel = nz('bandpass', 850, 1.2);
       this.spray = nz('highpass', 720, 0.45);
       this.music = new Music(ctx, this.master, buf); this.applyVolumes();
@@ -110,7 +111,7 @@ export class Sound {
     if (this.engineGain) this.engineGain.gain.setTargetAtTime(on ? 0.6 * this.vol.engine : 0, t, on ? 0.08 : 0.04);
     if (!on) {
       if (this.engineSource) this.engineSource.gain.gain.setTargetAtTime(0, t, 0.04);
-      for (const n of [this.wind, this.rain, this.spray, this.gravel, this.skid]) if (n) n.g.gain.setTargetAtTime(0, t, 0.05);
+      for (const n of [this.wind, this.rain, this.rainHi, this.spray, this.gravel, this.skid]) if (n) n.g.gain.setTargetAtTime(0, t, 0.05);
     }
   }
   setMusicDuck(d) { if (this.duck !== d) { this.duck = d; this.applyVolumes(); } }
@@ -141,7 +142,10 @@ export class Sound {
     }
     const r = Math.min(1, p.speed / p.vmax);
     this.wind.g.gain.setTargetAtTime(r * r * 0.09, t, 0.15);
-    this.rain.g.gain.setTargetAtTime(p.weather === 'rain' ? 0.021 : 0, t, 0.3);
+    // lluvia: cuerpo y siseo de las gotas, más audibles a más velocidad (sin subir tanto que tape el motor)
+    const rainOn = p.weather === 'rain' ? 1 : 0;
+    this.rain.g.gain.setTargetAtTime(rainOn * (0.034 + r * 0.02), t, 0.3);
+    this.rainHi.g.gain.setTargetAtTime(rainOn * (0.022 + r * 0.02), t, 0.3);
     this.spray.g.gain.setTargetAtTime(p.weather === 'rain' ? Math.min(0.035, (p.puddleWater || 0) * 0.035 * r + (p.offroadFactor || 0) * 0.008 * r) : 0, t, 0.07);
     const tireTone = { snow: 850, ice: 2600, dirt: 1050, gravel: 950, grass: 700, sand: 800, wet: 2050 }[p.surface] || (p.weather === 'rain' ? 2050 : 1550);
     this.skid.b.frequency.setTargetAtTime(tireTone, t, 0.18);

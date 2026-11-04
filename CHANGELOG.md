@@ -2,6 +2,13 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.39
+- Mejor vuelta en directo: un error de la última versión cortaba la actualización del récord en el HUD. Corregido.
+- Delta: la referencia es la mejor vuelta guardada con su perfil de tiempos, y los tiempos empiezan en 0 en meta.
+- Lluvia: más gotas, más rápidas y con estela según la velocidad; más salpicaduras y sonido de lluvia más presente. Nieve más abundante.
+- Carretera: relieve de asfalto con mapas de normales y rugosidad generados, y capa brillante en lluvia (escritorio).
+- Diseño de circuito: puente de carretera sobre la pista en Valle, Desierto y Pruebas, y torres de focos en Neón.
+
 ## 0.0.38
 - Mario Circuit y Spa en F1: se ocultan los tiempos anteriores al cambio de trazado (y se borran los guardados en este navegador). Para borrar también los de la base de datos, ejecutar supabase/cleanup-layout-records.sql.
 - Colinas exteriores colocadas siempre fuera del circuito.
