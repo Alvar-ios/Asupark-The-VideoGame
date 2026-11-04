@@ -55,11 +55,12 @@ export class Leaderboard {
     } catch (e) { return false; } finally { this.sending = false; }
   }
   // Fantasma del mejor tiempo de una categoría (coches carIds) en el circuito, entre todos los jugadores: { time (s), car, ghost } o null
-  async bestGhost(trackId, carIds) {
+  async bestGhost(trackId, carIds, sinceIso) {
     if (!this.remote || !carIds || !carIds.length) return null;
     try {
       const cars = carIds.map((c) => encodeURIComponent(c)).join(',');
-      const q = this.call(`lap_times?select=car_id,lap_ms,ghost&track_id=eq.${encodeURIComponent(trackId)}&car_id=in.(${cars})&ghost=not.is.null&order=lap_ms.asc&limit=1`);
+      const since = sinceIso ? `&updated_at=gte.${encodeURIComponent(sinceIso)}` : '';
+      const q = this.call(`lap_times?select=car_id,lap_ms,ghost&track_id=eq.${encodeURIComponent(trackId)}&car_id=in.(${cars})&ghost=not.is.null${since}&order=lap_ms.asc&limit=1`);
       const wait = new Promise((_, rej) => setTimeout(() => rej(new Error('lento')), 2500));
       const rows = await Promise.race([q, wait]);
       const r = rows && rows[0];
@@ -71,8 +72,8 @@ export class Leaderboard {
     if (!this.remote) return { remote: false, rows: [] };
     try {
       await this.flush();
-      const rows = await this.call(`lap_times?select=player_id,name,car_id,lap_ms&track_id=eq.${encodeURIComponent(trackId)}&order=lap_ms.asc&limit=1000`);
-      return { remote: true, rows: (rows || []).map((r) => ({ key: r.player_id, name: r.name, carId: r.car_id, ms: r.lap_ms, you: r.player_id === this.player.id })) };
+      const rows = await this.call(`lap_times?select=player_id,name,car_id,lap_ms,updated_at&track_id=eq.${encodeURIComponent(trackId)}&order=lap_ms.asc&limit=1000`);
+      return { remote: true, rows: (rows || []).map((r) => ({ key: r.player_id, name: r.name, carId: r.car_id, ms: r.lap_ms, at: r.updated_at, you: r.player_id === this.player.id })) };
     } catch (e) { return { remote: true, error: true, rows: [] }; }
   }
 }

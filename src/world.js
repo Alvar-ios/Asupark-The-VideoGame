@@ -96,6 +96,92 @@ function mergeBufferGeometries(geos) {
   return merged;
 }
 
+// ---- viento: las copas se balancean en el vértice (sin físicas) y hojas sueltas recorren el circuito ----
+const windU = { uTime: { value: 0 } };
+const windLeaves = [];
+let lastWindT = 0;
+// material con balanceo de copa: los vértices altos se desplazan con una onda que depende de la posición de cada árbol
+export function windy(mat, amp = 1) {
+  mat.onBeforeCompile = (sh) => {
+    sh.uniforms.uTime = windU.uTime; sh.uniforms.uAmp = { value: amp };
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nuniform float uTime;\nuniform float uAmp;')
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+#ifdef USE_INSTANCING
+  float wph = instanceMatrix[3].x * 0.11 + instanceMatrix[3].z * 0.07;
+#else
+  float wph = 0.0;
+#endif
+  float wh = smoothstep(0.5, 7.0, position.y);
+  float wsw = sin(uTime * 1.6 + wph) * 0.6 + sin(uTime * 3.3 + wph * 1.9 + position.x * 0.9) * 0.3;
+  transformed.x += wsw * wh * 0.32 * uAmp;
+  transformed.z += cos(uTime * 1.2 + wph * 1.3) * wh * 0.22 * uAmp;`);
+  };
+  mat.customProgramCacheKey = () => 'wind' + amp;
+  return mat;
+}
+// textura de follaje: manchas de luz y sombra que rompen el color plano de las copas
+let foliageTexCache = null;
+function foliageTex() {
+  if (!foliageTexCache) {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d');
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, 256, 256);
+    for (let k = 0; k < 900; k++) {
+      g.fillStyle = Math.random() < 0.5 ? `rgba(0,0,0,${(0.1 + Math.random() * 0.2).toFixed(3)})` : `rgba(255,255,255,${(0.12 + Math.random() * 0.22).toFixed(3)})`;
+      g.beginPath(); g.arc(Math.random() * 256, Math.random() * 256, 2 + Math.random() * 9, 0, Math.PI * 2); g.fill();
+    }
+    foliageTexCache = new THREE.CanvasTexture(cv); foliageTexCache.colorSpace = THREE.SRGBColorSpace; foliageTexCache.wrapS = foliageTexCache.wrapT = THREE.RepeatWrapping;
+  }
+  return foliageTexCache;
+}
+export function foliage(amp = 1, color = 0xffffff, rough = 0.92) {
+  return windy(new THREE.MeshStandardMaterial({ color, roughness: rough, flatShading: true, map: foliageTex() }), amp);
+}
+// hoja: silueta ovalada con borde, pintada en una textura con transparencia
+let leafTexCache = null;
+function leafTex() {
+  if (!leafTexCache) {
+    const cv = document.createElement('canvas'); cv.width = 64; cv.height = 40; const g = cv.getContext('2d');
+    g.clearRect(0, 0, 64, 40); g.fillStyle = '#ffffff'; g.beginPath(); g.ellipse(32, 20, 30, 13, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(4, 20); g.lineTo(60, 20); g.stroke();
+    leafTexCache = new THREE.CanvasTexture(cv); leafTexCache.colorSpace = THREE.SRGBColorSpace;
+  }
+  return leafTexCache;
+}
+// hojas que se desprenden y van con el viento: una sola InstancedMesh con n hojas recicladas (coste fijo)
+function makeLeaves(tr, scene, n, palette) {
+  const mat = new THREE.MeshLambertMaterial({ map: leafTex(), transparent: true, alphaTest: 0.4, side: THREE.DoubleSide });
+  const m = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.42, 0.26), mat, n);
+  m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; scene.add(m);
+  const dummy = new THREE.Object3D(), pal = palette.map(col);
+  const pts = Array.from({ length: n }, () => ({}));
+  const spawn = (d) => {
+    const i = Math.floor(Math.random() * tr.N), side = Math.random() < 0.5 ? -1 : 1, l = WALL + 6 + Math.random() * 55;
+    d.x = tr.X[i] + -tr.TZ[i] * l * side; d.z = tr.Z[i] + tr.TX[i] * l * side; d.y = 3 + Math.random() * 10;
+    d.ph = Math.random() * 6.283; d.sp = 0.75 + Math.random() * 0.5; d.rs = Math.random() * 6.283; d.life = 5 + Math.random() * 7; d.age = 0;
+  };
+  pts.forEach((d, k) => { spawn(d); d.age = Math.random() * d.life; m.setColorAt(k, pal[k % pal.length]); });
+  if (m.instanceColor) m.instanceColor.needsUpdate = true;
+  windLeaves.push({
+    update(t, dt) {
+      const wx = 2.4, wz = 0.9;
+      for (let k = 0; k < n; k++) {
+        const d = pts[k]; d.age += dt;
+        if (d.age > d.life || d.y < 0.3) { spawn(d); }
+        d.x += (wx + Math.sin(t * 0.7 + d.ph) * 0.7) * dt * d.sp; d.z += (wz + Math.cos(t * 0.5 + d.ph) * 0.5) * dt * d.sp;
+        d.y += (-0.4 + Math.sin(t * 2.1 + d.ph) * 0.55) * dt;
+        dummy.position.set(d.x, d.y, d.z); dummy.rotation.set(t * 1.7 + d.rs, t * 1.1 + d.ph, Math.sin(t * 2.4 + d.ph) * 0.9); dummy.updateMatrix(); m.setMatrixAt(k, dummy.matrix);
+      }
+      m.instanceMatrix.needsUpdate = true;
+    },
+  });
+}
+// llamar en cada fotograma: mueve el viento y las hojas
+export function updateWind(t) {
+  const dt = Math.min(0.1, Math.max(0, t - lastWindT)); lastWindT = t;
+  windU.uTime.value = t;
+  for (const L of windLeaves) L.update(t, dt);
+}
 function colorGeometry(geo, r, g, b) {
   const nonIdx = geo.index ? geo.toNonIndexed() : geo;
   const count = nonIdx.attributes.position.count;
@@ -1893,7 +1979,7 @@ function scenery(tr, th, scene, rng, q) {
       ];
       const snowBoughGeo = mergeBufferGeometries(bTiers);
       const snowCapGeo = mergeBufferGeometries(sTiers);
-      const bMesh = inst(snowBoughGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 }), spots, treeTransform, true);
+      const bMesh = inst(snowBoughGeo, windy(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92 }), 0.9), spots, treeTransform, true);
       spots.forEach((_, k) => bMesh.setColorAt(k, col(th.treeCol).multiplyScalar(0.92 + ((k * 13) % 7) * 0.02)));
       if (bMesh.instanceColor) bMesh.instanceColor.needsUpdate = true;
 
@@ -1908,7 +1994,7 @@ function scenery(tr, th, scene, rng, q) {
         colorGeometry(new THREE.ConeGeometry(1.20, 2.6, 18, 1).translate(0, 8.1, 0), 1.18, 1.18, 1.18),
       ];
       const coniferCrownGeo = mergeBufferGeometries(cTiers);
-      const coniferMesh = inst(coniferCrownGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.94, flatShading: true }), conifers, treeTransform, true);
+      const coniferMesh = inst(coniferCrownGeo, windy(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.94, flatShading: true }), 0.9), conifers, treeTransform, true);
       conifers.forEach((_, k) => { coniferMesh.setColorAt(k, col(th.treeCol).multiplyScalar(0.9 + ((k * 17) % 9) * 0.018)); });
       if (coniferMesh.instanceColor) coniferMesh.instanceColor.needsUpdate = true;
 
@@ -1921,7 +2007,7 @@ function scenery(tr, th, scene, rng, q) {
         colorGeometry(new THREE.SphereGeometry(1, 8, 6).scale(1.6, 1.45, 1.6).translate(1.3, 4.8, 0), 1.06, 1.06, 1.06),
       ];
       const deciduousCrownGeo = mergeBufferGeometries(dSpheres);
-      const deciduousMesh = inst(deciduousCrownGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, flatShading: true }), deciduous, treeTransform, true);
+      const deciduousMesh = inst(deciduousCrownGeo, windy(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, flatShading: true }), 1.1), deciduous, treeTransform, true);
       deciduous.forEach((_, k) => {
         const autumnTint = (k * 11) % 7 === 0 ? 0.22 : 0;
         deciduousMesh.setColorAt(k, col(th.treeCol).lerp(col(0x777849), autumnTint).multiplyScalar(0.9 + ((k * 13) % 9) * 0.018));
@@ -2089,6 +2175,7 @@ function scenery(tr, th, scene, rng, q) {
 // Se añade después de la decoración existente, así que no altera la colocación de árboles ni montañas.
 function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
   const id = th.id, dens = q.density, dummy = new THREE.Object3D();
+  windLeaves.length = 0; // cada circuito construido empieza sin hojas de la carrera anterior
   const n = (v) => Math.max(1, Math.round(v * dens));
   const lam = (c, rough = 0.92) => new THREE.MeshStandardMaterial({ color: c, roughness: rough, flatShading: true });
   const pick = (arr, s) => arr[Math.abs(Math.floor(s[0] * 7.31 + s[1] * 3.17)) % arr.length];
@@ -2142,7 +2229,8 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
   // relieves: colinas redondeadas en el anillo exterior
   const hillPal = { desierto: [0xc27a4a, 0xb86b3e, 0xd08a55], spa: [0x2f4f2c, 0x3a5a33, 0x284428], valle: [0x5aa54e, 0x4f9a46, 0x6cb55a], nieve: [0xe9f2fa, 0xdce9f5, 0xf4f9ff], pruebas: [0x5f8a4e, 0x6b9455, 0x557b48] }[id];
   if (hillPal) {
-    const hills = farPts(n(id === 'spa' ? 46 : 30), 120, 440).map((s) => [s[0], s[1], s[2], 80 + rng() * 170, 14 + rng() * 40]);
+    // la base de cada colina (radio w) queda siempre fuera del círculo que contiene el circuito: nunca lo atraviesa
+    const hills = Array.from({ length: n(id === 'spa' ? 46 : 30) }, () => { const w = 80 + rng() * 170, a = rng() * 6.283, d = R + w + 40 + rng() * 260; return [cxm + Math.cos(a) * d, czm + Math.sin(a) * d, rng() * 6.283, w, 14 + rng() * 40]; });
     put(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), lam(0xffffff, 1), hills, (d, s) => { d.position.set(s[0], -2, s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[4], s[3] * 0.82); }, (s) => pick(hillPal, s));
   }
 
@@ -2152,7 +2240,7 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     const pines = farPts(n(id === 'spa' ? 520 : 260), 25, 240).concat(nearPts(n(id === 'spa' ? 160 : 90), WALL + 25, WALL + 150));
     const place = (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[3], s[3]); };
     put(new THREE.CylinderGeometry(0.22, 0.36, 2.5, 6).translate(0, 1.25, 0), lam(0x4c3524), pines, place);
-    put(crown, lam(0xffffff, 0.94), pines, place, (s, k) => col(th.treeCol).multiplyScalar(0.9 + (k % 7) * 0.02).getHex());
+    put(crown, foliage(0.8, 0xffffff, 0.94), pines, place, (s, k) => col(th.treeCol).multiplyScalar(0.9 + (k % 7) * 0.02).getHex());
   }
 
   // desierto: mesetas, cactus saguaro y barril, y un pequeño poblado de adobe
@@ -2196,20 +2284,23 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     const broad = farPts(n(id === 'valle' ? 160 : 380), 30, 220).concat(nearPts(n(id === 'valle' ? 80 : 120), WALL + 22, WALL + 140));
     const place = (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[3], s[3]); };
     put(trunkG, lam(0x5b4128), broad, place);
-    put(crownG, lam(0xffffff, 0.9), broad, place, (s, k) => col(th.treeCol).multiplyScalar(0.85 + ((k * 13) % 9) * 0.03).getHex());
+    put(crownG, foliage(1.0, 0xffffff, 0.9), broad, place, (s, k) => col(th.treeCol).multiplyScalar(0.85 + ((k * 13) % 9) * 0.03).getHex());
   }
   if (id === 'valle' || id === 'desierto') {
     const frond = (k) => colorGeometry(new THREE.ConeGeometry(0.7, 4.2, 3).rotateZ(-Math.PI / 2 + 0.45).translate(2.0, 8.4, 0).rotateY((k * Math.PI) / 3), 0.42, 0.74, 0.34);
     const palmG = mergeBufferGeometries([colorGeometry(new THREE.CylinderGeometry(0.22, 0.38, 8, 6).translate(0, 4, 0), 0.42, 0.3, 0.18), ...[0, 1, 2, 3, 4, 5].map(frond)]);
     const palms = nearPts(n(id === 'valle' ? 70 : 50), WALL + 8, WALL + 120).concat(farPts(n(id === 'valle' ? 60 : 40), 60, 260));
-    put(palmG, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true }), palms, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[3], s[3]); });
+    put(palmG, windy(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true }), 0.9), palms, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3], s[3], s[3]); });
   }
   if (id !== 'monaco' && id !== 'neon' && id !== 'prisma') {
     const shrubG = mergeBufferGeometries([new THREE.SphereGeometry(1, 8, 6).scale(1.3, 0.8, 1.3).translate(0, 0.7, 0), new THREE.SphereGeometry(1, 7, 5).scale(0.9, 0.7, 0.9).translate(1.1, 0.5, 0.4), new THREE.SphereGeometry(1, 7, 5).scale(0.8, 0.6, 0.8).translate(-0.9, 0.45, -0.5)]);
     const shrubCol = id === 'desierto' ? [0x8a7a4a, 0x7c8a4f, 0x9a8456] : id === 'nieve' ? [0xdbe8f2, 0xc8d9e8] : [th.treeCol, 0x4f8a3c, 0x5e9a46];
     const shrubs = nearPts(n(240), WALL + 4, WALL + 70).concat(farPts(n(120), 30, 260));
-    put(shrubG, lam(0xffffff, 0.95), shrubs, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 1.1, s[3] * 1.1, s[3] * 1.1); }, (s) => pick(shrubCol, s));
+    put(shrubG, foliage(0.35, 0xffffff, 0.95), shrubs, (d, s) => { d.position.set(s[0], s[4], s[1]); d.rotation.set(0, s[2], 0); d.scale.set(s[3] * 1.1, s[3] * 1.1, s[3] * 1.1); }, (s) => pick(shrubCol, s));
   }
+
+  // hojas al viento: en los circuitos de bosque y valle, con pocas hojas en móvil
+  if (id === 'spa' || id === 'valle' || id === 'pruebas') makeLeaves(tr, scene, Math.max(40, Math.round((id === 'spa' ? 240 : 150) * dens)), id === 'valle' ? [0x6fa83a, 0x8cc04a, 0xc9a23a, 0x5e9a32] : [0x4f8a2e, 0x6e9b2f, 0x8f6a2a, 0x3f7a2a]);
 }
 
 // con lluvia el día se queda cubierto: colores, niebla y luz más oscuros (se aplica a todos los circuitos con lluvia)

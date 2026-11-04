@@ -2,6 +2,13 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.38
+- Mario Circuit y Spa en F1: se ocultan los tiempos anteriores al cambio de trazado (y se borran los guardados en este navegador). Para borrar también los de la base de datos, ejecutar supabase/cleanup-layout-records.sql.
+- Colinas exteriores colocadas siempre fuera del circuito.
+- Delta de la cabecera: la referencia propia solo se usa si coincide con el tiempo de su vuelta, y los perfiles se corrigen para que no retrocedan.
+- HUD de escritorio más grande, con última vuelta y barra de progreso de la vuelta.
+- Exteriores: copas que se mueven con el viento, hojas sueltas en los bosques, textura de follaje y sombras.
+
 ## 0.0.37
 - Móvil: el control vuelve a mitades (sin flechas) una vez para todos los dispositivos que tenían guardado el modo de botones; los botones de girar muestran IZQ/DER en vez de flechas.
 - Cactus: textura con costillas, espinas y tonos de sol, y puntas y codos redondeados.

@@ -5,7 +5,7 @@ import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo } from './car.js';
 import { hashStr } from './rng.js';
 import { buildSpeedProfile, aiInput, benchmark, aiType, AI_TOP } from './ai.js';
-import { buildWorld, disposeScene } from './world.js';
+import { buildWorld, disposeScene, updateWind } from './world.js';
 import { Sound } from './audio.js';
 import { SONGS } from './music.js';
 import { addHeadlights, updateHeadlights } from './headlights.js';
@@ -29,6 +29,10 @@ const store = {
   set(k, v) { try { localStorage.setItem('dr.' + k, JSON.stringify(v)); } catch (e) { /* sin almacenamiento */ } },
 };
 const fmtS = (t) => (t == null ? '--' : t >= 60 ? fmt(t) : t.toFixed(3));
+// Mario Circuit (todas las categorías) y Spa en F1 cambiaron de trazado: sus tiempos anteriores a este cambio no cuentan
+const LAYOUT_CUT_ISO = '2026-11-04T00:00:00Z', LAYOUT_CUT = Date.parse(LAYOUT_CUT_ISO);
+const oldLayout = (trackKey, group, at) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1')) && (!at || Date.parse(at) < LAYOUT_CUT);
+const layoutSince = (trackKey, group) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1') ? LAYOUT_CUT_ISO : null);
 const fmt = (t) => { if (t == null || !isFinite(t)) return '--'; const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s < 10 ? '0' : ''}${s.toFixed(2)}`; };
 
 // ---------- renderer ----------
@@ -74,6 +78,19 @@ const sel = { track: Math.max(0, tracks.findIndex((t) => t.key === 'daily')), mo
 const paintOf = (c) => { const v = sel.colors[c.id]; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
 const halvesOn = () => MOBILE && sel.touchMode === 'halves'; // el control por mitades solo existe en pantallas táctiles
 const saved = store.get('sel'); if (saved) { const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.touchMode = saved.touchMode === 'buttons' && saved.ctlV === 2 ? 'buttons' : 'halves'; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
+// una sola vez: se borran los tiempos locales de Mario Circuit y de Spa en F1, hechos con el trazado anterior
+if (!store.get('purge.layout-2026-11-04')) {
+  try {
+    const f1Ids = new Set(CARS.filter((c) => c.group === 'f1').map((c) => c.id)), drop = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i); if (!k || !k.startsWith('dr.')) continue;
+      const s = k.slice(3), last = s.split('.').pop();
+      if (/^(pb|best)\.prisma\./.test(s) || (/^(pb|best)\.spa\./.test(s) && (last === 'track' || last === 'g:f1' || f1Ids.has(last)))) drop.push(k);
+    }
+    drop.forEach((k) => localStorage.removeItem(k));
+  } catch (e) { /* sin almacenamiento */ }
+  store.set('purge.layout-2026-11-04', true);
+}
 if (saved) { sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
 
 // ----- pilotos de la IA: nombre, país y nivel (de mejor a peor); en cada carrera se reparten al azar entre los coches rivales -----
@@ -368,8 +385,8 @@ function rankRows(rows, pred) {
 const boardRow = (r) => `<tr class="${r.you ? 'me' : ''}"><td>${r.rank}º</td><td>${r.you ? drvIc(playerDrv(), 1) : ''}${esc(r.name)}</td><td class="car">${esc(carName(r.carId))}</td><td>${fmt(r.ms / 1000)}</td></tr>`;
 async function getRows(ti) {
   const res = await lb.all(trackIdOf(ti));
-  if (!res.remote || res.error) return { rows: localRows(ti), online: false, error: !!res.error };
-  return { rows: res.rows, online: true };
+  if (!res.remote || res.error) return { rows: localRows(ti).filter((r) => !oldLayout(ti.key, groupIdOfCar(r.carId), null)), online: false, error: !!res.error };
+  return { rows: res.rows.filter((r) => !oldLayout(ti.key, groupIdOfCar(r.carId), r.at)), online: true };
 }
 const topWithMe = (list, n) => list.filter((r) => r.rank <= n || r.you);
 const benchFor = (ti, type) => benchmark(ti.tr, type, ti.th, ti.key + '.' + ti.tr.seed + '.' + type.id);
@@ -428,7 +445,7 @@ async function startRace(restart = false) {
   if (S.mode === 'tt') { // fantasmas por categoría: tu mejor vuelta de la categoría (gris) y la mejor de la categoría entre todos los jugadores (dorado)
     const tiG = tracks[sel.track], gk = tiG.key + '.' + tiG.tr.seed; migrateGroupBest(gk, pt.group);
     const own = store.get('best.' + gk + '.g:' + pt.group) || null, carIds = CARS.filter((c) => c.group === pt.group).map((c) => c.id);
-    const remote = sel.ghostBest !== false ? await lb.bestGhost(trackIdOf(tiG), carIds) : null;
+    const remote = sel.ghostBest !== false ? await lb.bestGhost(trackIdOf(tiG), carIds, layoutSince(tiG.key, pt.group)) : null;
     S.ghostRecs = { g: own, t: remote && (!own || remote.time < own.time - 1e-6) ? remote : own };
     for (const r of [S.ghostRecs.g, S.ghostRecs.t]) { const ct = r && r.car && CARS.find((c) => c.id === r.car); if (ct && !carAssetReady(ct, 'lo')) await loadCarAsset(ct, false).catch(() => {}); }
   }
@@ -504,7 +521,7 @@ async function startRace(restart = false) {
   }
   // ---- colocar coches y reiniciar estado ----
   const player = S.player;
-  S.finishOrder = []; S.t = 0; S.acc = 0; S.lastCount = 9; S.msgT = 0; S.wrongT = 0; S.step = 0; S.shake = 0; S.camKick = 0; S.lapInvalid = false;
+  S.finishOrder = []; S.lastLap = null; S.t = 0; S.acc = 0; S.lastCount = 9; S.msgT = 0; S.wrongT = 0; S.step = 0; S.shake = 0; S.camKick = 0; S.lapInvalid = false;
   if (S.mode === 'race') {
     // parrilla: en el Gran Premio manda la clasificación (tu mejor vuelta frente al tiempo de cada piloto); en carrera rápida sales último
     const rivals = S.cars.slice(1); let order;
@@ -540,7 +557,9 @@ async function startRace(restart = false) {
   S.lapPB = S.pbRec.lap; S.secPB = S.pbRec.sec.slice();
   S.bestLap = S.mode === 'tt' ? S.lapPB : null;
   computeRecords(ti, type, bench);
-  S.refProf = S.pbRec.prof && S.pbRec.prof.length ? S.pbRec.prof : bench ? bench.prof : null; S.refFill = fillProf(S.refProf); S.deltaS = null;
+  // la referencia propia solo se usa si su final coincide con el tiempo de esa vuelta; si no, se usa el perfil de la IA
+  const pbProfEnd = S.pbRec.prof && S.pbRec.prof.length ? Math.max(...S.pbRec.prof) : -1, pbOk = pbProfEnd >= 0 && S.pbRec.lap != null && Math.abs(pbProfEnd - S.pbRec.lap) < 1.5;
+  S.refProf = pbOk ? S.pbRec.prof : bench ? bench.prof : null; S.refFill = fillProf(S.refProf); S.deltaS = null;
   S.refName = S.pbRec.prof && S.pbRec.prof.length ? 'PB' : 'RÉCORD';
   S.curProf = new Float32Array(Math.ceil(tr.len / 10) + 2).fill(-1);
   S.secIdx = -1; S.secStart = 0; S.secInvalid = false;
@@ -827,6 +846,7 @@ function onPlayerLap(c, lt, done) {
   const key = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.g:' + c.type.group;
   const valid = !S.lapInvalid && (S.mode === 'tt' || done > 1) && (!S.bench || lt > S.bench.lap * 0.6);
   S.lapInvalid = false;
+  if (valid) S.lastLap = lt;
   const cls = valid ? classify(lt, S.lapPB, S.lapRec) : '';
   let newPB = false; const previousPB = S.lapPB;
   if (valid) {
@@ -894,7 +914,8 @@ function fillProf(prof) {
   const a = Float32Array.from(prof, (v) => (v >= 0 ? v : NaN)); let last = -1;
   for (let i = 0; i < a.length; i++) { if (!Number.isNaN(a[i])) { if (last >= 0 && i - last > 1) for (let k = last + 1; k < i; k++) a[k] = a[last] + (a[i] - a[last]) * ((k - last) / (i - last)); last = i; } }
   const first = a.findIndex((v) => !Number.isNaN(v)); if (first < 0) return null;
-  for (let i = 0; i < first; i++) a[i] = a[first] * (i / first); for (let i = last + 1; i < a.length; i++) a[i] = a[last] + (i - last) * 0.1 * 0 + 0;
+  for (let i = 0; i < first; i++) a[i] = a[first] * (i / first); for (let i = last + 1; i < a.length; i++) a[i] = a[last];
+  for (let i = 1; i < a.length; i++) if (a[i] < a[i - 1]) a[i] = a[i - 1]; // a lo largo de una vuelta el tiempo solo crece: se corrigen muestras desordenadas
   return a;
 }
 // podio: tres escalones (2º, 1º, 3º) con bandera, nombre, coche y tiempo
@@ -1100,6 +1121,7 @@ function updateHud(dt) {
   const done = Math.max(0, Math.floor(p.D / tr.len));
   setText('lap', S.mode === 'tt' ? (S.gp ? Math.min(3, done + 1) + '/3' : String(done + 1)) : Math.min(S.laps, done + 1) + '/' + S.laps);
   setText('time', S.state === 'countdown' || (S.mode === 'tt' && !p.crossed) ? fmt(0) : fmt(p.finished ? p.finishTime - p.lapStart : S.t - p.lapStart));
+  setText('lastLap', S.lastLap != null ? fmt(S.lastLap) : '--'); { const pb = $('progBar'); if (pb) pb.style.width = (p.D >= 0 ? ((p.D % tr.len) / tr.len) * 100 : 0).toFixed(1) + '%'; }
   { const lm = S.lapMsg && performance.now() < S.lapMsg.until ? S.lapMsg : null; setText('best', lm ? lm.text : (S.lapPB != null ? 'MEJOR ' + fmt(S.lapPB) : 'SIN TIEMPO')); $('best').className = lm ? 'lm ' + lm.cls : ''; }
   if (S.secIdx >= 0 && S.state === 'racing' && S.deltaS != null && S.t - (hudCache.sl || -1) > 0.25) { hudCache.sl = S.t; const cur = $('s' + S.secIdx); if (cur && !cur.classList.contains('done')) { const q = Math.round(S.deltaS * 100) / 100; cur.lastElementChild.innerHTML = `<small class="live ${q > 0.02 ? 'bad' : q < -0.02 ? 'good' : ''}">${(q > 0 ? '+' : q < 0 ? '−' : '') + Math.abs(q).toFixed(2)}</small>`; } }
   if (S.refFill && S.state === 'racing' && !p.finished && p.D >= 0) {
@@ -1332,6 +1354,7 @@ function frame(now) {
     sound.update({ carId: p.type.id, speed: p.speed, vmax: p.type.vmax, throttle: S.state === 'countdown' ? (input.keys.has('ArrowUp') || input.keys.has('KeyW') || input.touch.g || sel.autoGas || halvesOn() ? 1 : 0) : p.throttle, brake: p.brake, gear: gi.gear, rpm: S.state === 'countdown' ? 0.22 + (input.keys.has('ArrowUp') || input.touch.g ? 0.5 : 0) : gi.rpm, slip: Math.abs(p.vl), onKerb: p.onKerb, weather: S.th.weather, surface: p.surf || S.th.surface, air: p.air, offroad: p.offroad, offroadFactor: p.offroadFactor, puddleWater: p.puddleWater });
     updateHud(dt);
   }
+  updateWind(performance.now() / 1000); // copas y hojas al viento (también en el menú)
   renderer.render(S.scene, camera);
 }
 requestAnimationFrame(frame);
