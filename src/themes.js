@@ -112,9 +112,9 @@ export const THEMES = {
     wall1: 0xf4f4f4, wall2: 0xd91e18, mount: 0x2f6a3e, sun: 0xfff1c9, sunDir: [-0.42, 0.6, 0.45],
     hemiSky: 0xd3ecff, hemiGround: 0x2b4a26, hemiI: 1.0, sunI: 1.25, deco: 'jungle', treeCount: 40, treeCol: 0x1f6a2a, night: false, temp: 31, humidity: 0.85, wind: [2, 0.8], gripMul: 1, offroad: 0.62, wetGrip: 0.8, brakeForce: 24,
   },
-  // Kartódromo: pista estrecha y técnica, horquillas y eses, muros de neumáticos
+  // Fórmula 0 (kartódromo): pista estrecha y técnica, horquillas y eses, muros de neumáticos
   karting: {
-    id: 'karting', name: 'Kartódromo', sub: 'Pista corta y técnica: horquillas, eses y neumáticos', seed: 'karting-v1',
+    id: 'karting', name: 'Fórmula 0', sub: 'Pista corta y técnica de karts: horquillas, eses y muros de neumáticos', tireWalls: true, kerbH: 2.3, seed: 'karting-v1',
     style: {
       fixedNodes: [
         [-80, 0], [-40, 0], [0, 0], [50, 0], [100, 0], [140, -4], [170, -24], [176, -54], [158, -78], [128, -80], [110, -62], [88, -52], [66, -66], [44, -84],

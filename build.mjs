@@ -16,6 +16,7 @@ fs.mkdirSync('dist/lab', { recursive: true });
 fs.copyFileSync('tools/lab/engine-lab.html', 'dist/lab/index.html');
 fs.copyFileSync('src/engine-dsp.js', 'dist/lab/engine-dsp.js');
 fs.cpSync('src/assets/audio', 'dist/assets/audio', { recursive: true });
+if (fs.existsSync('src/assets/music')) fs.cpSync('src/assets/music', 'dist/assets/music', { recursive: true });
 if (fs.existsSync('src/assets/thumbs')) fs.cpSync('src/assets/thumbs', 'dist/assets/thumbs', { recursive: true });
 if (fs.existsSync('src/assets/sponsors')) fs.cpSync('src/assets/sponsors', 'dist/assets/sponsors', { recursive: true });
 console.log('v' + VERSION, 'dist/index.html', (fs.statSync('dist/index.html').size / 1024).toFixed(0) + ' KB', '| game.js', (fs.statSync('dist/game.js').size / 1024).toFixed(0) + ' KB', '| modelos bajo demanda');

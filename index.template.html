@@ -857,6 +857,7 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
 #profile .pf-riv tr.win td:nth-child(2),#profile .pf-riv tr.win td:nth-child(4){color:#7dffa0}#profile .pf-riv tr.lose td:nth-child(3){color:#7dffa0}#profile .pf-riv tr.lose td:nth-child(4){color:#ff8b8b}
 #profile .lbwrap{max-height:44vh;overflow:auto}
 @media (max-width:560px){#profile .pf-shelf{grid-template-columns:1fr}#profile .pf-stats{grid-template-columns:repeat(3,1fr)}}
+#kartCfg{display:flex;gap:14px;align-items:center;margin:10px 0 4px;flex-wrap:wrap}#kartCfg label{display:flex;align-items:center;gap:8px;font:700 15px "Jersey 10",sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#cfd6e6}#kartCfg input[type=color]{width:44px;height:34px;padding:0;border:2px solid #3a4258;border-radius:8px;background:none}#kartCfg input[type=number]{width:64px;height:34px;border-radius:8px;border:2px solid #3a4258;background:#10141f;color:#fff;font:700 18px "Jersey 10",sans-serif;text-align:center}
 </style>
 </head>
 <body>
@@ -912,6 +913,7 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
     <div id="viewGarage" hidden>
       <div id="groupTabs" class="tabs"></div><div id="carList" class="grid"></div>
       <h3 class="pt">Pintura · <span id="paintName">—</span></h3><div id="paints"></div>
+      <div id="kartCfg" hidden><label>Color <input type="color" id="kartColor" value="#d32a22"></label><label>Dorsal <input type="number" id="kartNum" min="0" max="99" value="7" inputmode="numeric"></label></div>
     </div>
   </aside>
 </div>

@@ -34,6 +34,7 @@ export const MODEL = {
   brawngp: { hi: './assets/car_brawngp_hi.glb.gz', lo: './assets/car_brawngp_lo.glb.gz', paint: /(?!)/, length: 4.7 },
   rx7toon: { hi: './assets/car_rx7toon_hi.glb.gz', lo: './assets/car_rx7toon_lo.glb.gz', paint: /(?!)/, length: 4.2, rotation: [0, Math.PI / 2, 0] },
   mp45: { hi: './assets/car_mp45_hi.glb.gz', lo: './assets/car_mp45_lo.glb.gz', paint: /(?!)/, length: 4.5 },
+  kart: { hi: './assets/car_kart_hi.glb.gz', lo: './assets/car_kart_lo.glb.gz', paint: /^body_color$/, length: 2.1, kart: true },
   minis: { hi: './assets/car_minis_hi.glb.gz', lo: './assets/car_minis_lo.glb.gz', paint: /(?!)/, length: 3.7 },
 };
 const cache = {}, pending = {};
@@ -53,7 +54,7 @@ export function loadModelCar(id, lods = ['hi', 'lo']) {
   return pending[key];
 }
 
-export function buildModelCar(id, color, lod = 'hi') {
+export function buildModelCar(id, color, lod = 'hi', num = 7) {
   const src = cache[id][lod] || cache[id].lo || cache[id].hi, cfg = MODEL[id];
   const model = src.clone(true);
   const root = new THREE.Group(), tilt = new THREE.Group(), orientation = new THREE.Group();
@@ -95,7 +96,8 @@ export function buildModelCar(id, color, lod = 'hi') {
     // brillos contenidos: los cromados y plásticos no deben deslumbrar; la pintura lleva laca suave
     m.envMapIntensity = isPaint ? 1.0 : 0.62;
     if (!isPaint && m.isMeshStandardMaterial) { m.metalness = Math.min(m.metalness, 0.8); m.roughness = Math.max(m.roughness, m.metalness > 0.5 ? 0.28 : 0.4); }
-    if (isPaint) { m.color = new THREE.Color(color); if (m.map) m.map = null; m.metalness = 0.32; m.roughness = 0.34; if ('clearcoat' in m) { m.clearcoat = 0.7; m.clearcoatRoughness = 0.12; } paints.add(m); }
+    if (isPaint && cfg.kart) { m.color = new THREE.Color(color); m.metalness = 0; m.roughness = 0.55; paints.add(m); }
+    else if (isPaint) { m.color = new THREE.Color(color); if (m.map) m.map = null; m.metalness = 0.32; m.roughness = 0.34; if ('clearcoat' in m) { m.clearcoat = 0.7; m.clearcoatRoughness = 0.12; } paints.add(m); }
   });
   const found = {};
   model.traverse((o) => { const k = /^wheel_(FL|FR|RL|RR)$/.exec(o.name); if (k) found[k[1]] = o; });
@@ -110,5 +112,22 @@ export function buildModelCar(id, color, lod = 'hi') {
   const fm = new THREE.MeshBasicMaterial({ color: 0x5ad0ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
   for (const s of [-1, 1]) flames.add(new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.4, 8).rotateX(-Math.PI / 2).translate(s * flameX, flameY, flameZ), fm));
   flames.visible = false; tilt.add(flames);
+  if (cfg.kart) addKartNumber(orientation, num);
   return { root, tilt, wheels, tail, flames, W, paint: [...paints][0] || { color: new THREE.Color() }, paints };
 }
+
+// dorsal del kart: placa blanca con el número en el morro y a cada lado (coordenadas en metros, morro +Z)
+const plateCache = {};
+function plateTex(n) {
+  if (plateCache[n]) return plateCache[n];
+  const cv = document.createElement('canvas'); cv.width = cv.height = 128; const x = cv.getContext('2d');
+  x.fillStyle = '#f6f6f2'; x.beginPath(); x.arc(64, 64, 62, 0, 7); x.fill(); x.lineWidth = 5; x.strokeStyle = '#16181d'; x.stroke();
+  x.fillStyle = '#16181d'; x.font = `900 ${String(n).length > 1 ? 70 : 88}px Impact,Arial Black,sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(n), 64, 70);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return (plateCache[n] = t);
+}
+function addKartNumber(parent, n) {
+  const m = new THREE.MeshBasicMaterial({ map: plateTex(n), transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  for (const d of KART_PLATES) { const nrm = new THREE.Vector3(...d.n).normalize(), q = new THREE.Mesh(new THREE.PlaneGeometry(d.s, d.s), m); q.position.set(...d.p).addScaledVector(nrm, 0.012); q.rotation.set(-Math.asin(nrm.y), Math.atan2(nrm.x, nrm.z), 0, 'YXZ'); parent.add(q); }
+}
+// justo encima de los dorsales pintados en la textura original (morro y trasera)
+const KART_PLATES = [{ p: [0, 0.455, 0.5], n: [0.01, 0.85, 0.44], s: 0.27 }, { p: [0, 0.155, -1.036], n: [0, 0.33, -0.84], s: 0.27 }];

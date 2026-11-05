@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.46
+- Música: 7 temas grabados de TeteCovers (Borja Riñón on the Piano, Calamare en la M40, Drifting after Baptism en dos versiones, Paco Galaxia, Roadtrip a la BoyBerry, Susurro de Bruno Pérez). Salen en el selector con autor y en la rotación aleatoria; se descargan solo al sonar.
+- Kart: nuevo modelo 3D de kart 125cc (optimizado de 103 MB a 3,5 MB). Un único kart, con color libre y dorsal (0-99) editables en el garaje. Suspensión rígida: no cabecea ni balancea.
+- Circuito Fórmula 0 (antes Kartódromo): guardarraíles de neumáticos apilados en rojo, blanco y negro, y pianos más altos.
+
 ## 0.0.45
 - Cuentas: nuevo botón Perfil en el menú. Crear cuenta o entrar con usuario y contraseña (sin correo). Con la sesión iniciada, tus tiempos, fantasmas, bandera y casco se guardan con tu cuenta y tu nombre es tu usuario. Requiere ejecutar supabase/accounts.sql y tener «Confirm email» desactivado.
 - Estadísticas: vueltas, circuitos, carreras, victorias, podios y récords. Las victorias y podios se registran al acabar cada carrera.

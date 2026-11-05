@@ -764,7 +764,7 @@ function roadMesh(tr, th, stride = 1) {
 
     const sLen = isKart ? 3.2 : 3.0, s2k = (i + effectiveStride) * tr.ds;
     const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]);
-    const wave = (x, e) => (isKart ? 0.22 : (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) : 0.048 + 0.024 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen))) * e;
+    const wave = (x, e) => (isKart ? 0.22 : (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) : (0.048 + 0.024 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen)) * (th.kerbH || 1))) * e;
     const krLi = kv === -1 ? wave(s, kEnv[i]) : 0, krRi = kv === 1 ? wave(s, kEnv[i]) : 0;
     const krLj = kvj === -1 ? wave(s2k, kEnv[j]) : 0, krRj = kvj === 1 ? wave(s2k, kEnv[j]) : 0;
     const inRamp = tr.ramps.some((r) => s >= r.s0 && s < r.s0 + r.len);
@@ -972,12 +972,32 @@ function marioTrackBlocks(tr, th) {
   return blocks;
 }
 
+// guardarraíl de neumáticos: dos alturas de ruedas apiladas a cada lado, pintadas a tramos de rojo y blanco
+function tireWallMesh(tr, th) {
+  const N = tr.N, L = WALL, gap = 0.6, per = Math.max(1, Math.round(tr.ds / gap)), tires = [];
+  for (const side of [-1, 1]) for (let i = 0; i < N; i++) for (let k = 0; k < per; k++) {
+    const f = (k / per) * tr.ds, l = (L + 0.34) * side, x = tr.X[i] + tr.TX[i] * f + -tr.TZ[i] * l, z = tr.Z[i] + tr.TZ[i] * f + tr.TX[i] * l;
+    tires.push([x, tr.Y[i] + bankOff(tr, i, l), z, Math.floor((i * per + k) / 9) % 3]);
+  }
+  const geo = new THREE.CylinderGeometry(0.3, 0.3, 0.3, 9); geo.translate(0, 0.15, 0);
+  const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), tires.length * 2);
+  const d = new THREE.Object3D(), cols = [col(0x17181b), col(0xd91e18), col(0xf2f2f2)], blk = col(0x17181b);
+  tires.forEach((t, n) => {
+    for (let h = 0; h < 2; h++) {
+      d.position.set(t[0], t[1] + h * 0.3, t[2]); d.rotation.set(0, (n * 0.7 + h) % 6.28, 0); d.updateMatrix(); m.setMatrixAt(n * 2 + h, d.matrix);
+      m.setColorAt(n * 2 + h, t[3] === 0 ? blk : cols[h === 0 ? t[3] : (t[3] === 1 ? 2 : 1)]); // franjas rojo/blanco alternadas con tramos negros
+    }
+  });
+  m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; m.frustumCulled = false; m.castShadow = false;
+  return m;
+}
 function wallMesh(tr, th, stride = 1) {
   const N = tr.N, L = WALL;
   const isKart = th.deco === 'kart';
   if (isKart) {
     return marioTrackBlocks(tr, th);
   }
+  if (th.tireWalls) return tireWallMesh(tr, th);
 
   const pos = [], colors = [], uvs = [];
   const c1 = col(th.wall1), c2 = col(th.wall2);
@@ -2632,7 +2652,7 @@ export function buildWorld(tr, th, opt = {}) {
   if (th.deco !== 'kart') {
     scene.add(gantry(tr, tr.len / 3, 'S2', '#66e8ff'));
     scene.add(gantry(tr, (tr.len * 2) / 3, 'S3', '#66e8ff'));
-    tyreStacks(tr, th, scene);
+    if (!th.tireWalls) tyreStacks(tr, th, scene);
     turnSigns(tr, th, scene, !!opt.mobile);
   }
 

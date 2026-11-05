@@ -51,7 +51,7 @@ Object.assign(PROFILES, {
 const thrFlut = (e) => Math.min(1, e.thrS); // la inestabilidad de régimen es mayor con gas
 // Karts: monocilíndrico agudo y vibrante (2 tiempos / 4 tiempos), mucho régimen
 const kartBase = { name: 'Kart monocilíndrico', cyl: 2, idle: 2400, redline: 11500, gain: 1.7, rough: 0.12, miss: 0.04, sub: 0.35, rumble: 0.12, crackle: 0.2, crkMin: 7000, thump: 0.2, burble: 0, tau: 0.3 };
-for (const [id, o] of Object.entries({ kart_ini: { redline: 9500, idle: 2200, gain: 1.5 }, kart_rent: { redline: 8500, idle: 2000, sub: 0.6, tau: 0.38 }, kart_comp: { redline: 13000, idle: 3000, gain: 1.8, crackle: 0.6, crkMin: 8000 }, kart_super: { redline: 12000, idle: 2600, gain: 1.9, sub: 0.5, crackle: 0.9, crkMin: 6000 } })) PROFILES[id] = derive('mx5', 2.1, { ...kartBase, ...o, name: 'Kart ' + id.slice(5) });
+PROFILES.kart = derive('mx5', 2.1, { ...kartBase, redline: 12000, idle: 2800, gain: 1.7, crackle: 0.22 });
 class SVF { // filtro de estado variable (paso banda)
   constructor() { this.l = 0; this.b = 0; }
   bp(x, f, q, sr) { const g = 2 * Math.sin(Math.PI * Math.min(f, sr * 0.25) / sr), k = 1 / q; this.l += g * this.b; const h = x - this.l - k * this.b; this.b += g * h; return this.b; }

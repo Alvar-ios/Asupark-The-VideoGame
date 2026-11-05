@@ -49,6 +49,9 @@ export const SONGS = [
     melody: [[[0, 79, 4], [6, 75, 2], [8, 77, 4], [14, 79, 2]], [[0, 80, 4], [6, 77, 2], [8, 75, 4], [14, 72, 2]], [[0, 77, 4], [6, 74, 2], [8, 77, 2], [10, 79, 2], [12, 82, 4]], [[0, 79, 3], [4, 74, 1], [6, 70, 2], [8, 74, 4], [14, 79, 2]], [[0, 84, 4], [6, 79, 2], [8, 75, 4], [14, 79, 2]], [[0, 77, 2], [3, 80, 1], [4, 84, 4], [10, 80, 2], [12, 77, 4]], [[0, 79, 3], [4, 82, 1], [6, 86, 2], [8, 82, 4], [14, 79, 2]], [[0, 83, 2], [3, 79, 1], [4, 74, 4], [8, 71, 2], [10, 74, 2], [12, 79, 4]]] },
 
 ];
+// Temas grabados de TeteCovers (mp3). Se descargan y decodifican solo cuando van a sonar.
+const COVERS = [['borja-rinon-piano', 'Borja Riñón on the Piano'], ['calamare-m40', 'Calamare en la M40'], ['drifting-baptism', 'Drifting after Baptism'], ['drifting-baptism-larga', 'Drifting after Baptism (versión larga)'], ['paco-galaxia', 'Paco Galaxia'], ['roadtrip-boyberry', 'Roadtrip a la BoyBerry'], ['susurro-bruno-perez', 'Susurro de Bruno Pérez']];
+for (const [f, name] of COVERS) SONGS.push({ tag: 'TeteCovers', name, author: 'TeteCovers', file: `assets/music/${f}.mp3` });
 
 export class Music {
   constructor(ctx, dest, noise) {
@@ -65,6 +68,7 @@ export class Music {
     if (this.bufs[idx]) return Promise.resolve(this.bufs[idx]);
     if (this.pend[idx]) return this.pend[idx];
     const OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!OC) return Promise.reject(new Error('sin OfflineAudioContext'));
+    if (SONGS[idx].file) { this.pend[idx] = fetch(SONGS[idx].file).then((r) => { if (!r.ok) throw new Error('mp3'); return r.arrayBuffer(); }).then((ab) => new Promise((ok, ko) => this.ctx.decodeAudioData(ab, ok, ko))).then((b) => (this.bufs[idx] = b)); this.pend[idx].catch(() => { delete this.pend[idx]; }); return this.pend[idx]; }
     const S = SONGS[idx], ST = 60 / S.bpm / 4, steps = 256, sr = this.ctx.sampleRate, loopN = Math.round(steps * ST * sr), tailN = Math.round(2.6 * sr);
     const oc = new OC(2, loopN + tailN, sr), m = new Music(oc, oc.destination, this.noise);
     m.song = S; m.stepDur = ST; m.out.gain.value = 1; m.delay.delayTime.value = (60 / S.bpm) * 0.75;
@@ -86,19 +90,19 @@ export class Music {
     if (!(idx >= 0 && idx < SONGS.length)) return; this.nextIdx = null;
     if (!this.playing) { this.nextIdx = idx; return; }
     if (this.src) { const o = this.src; this.src = null; o.onended = null; try { o.stop(); } catch (_) { /* ya parado */ } }
-    this.songIdx = idx; if (this.timer) { this.step = 0; return; } this.playNext();
+    this.songIdx = idx; if (this.timer && !SONGS[idx].file) { this.step = 0; return; } if (this.timer) { clearInterval(this.timer); this.timer = 0; } this.playNext();
   }
   pickNext(cur) { if (SONGS.length < 2) return 0; let n; do n = Math.floor(Math.random() * SONGS.length); while (n === cur); return n; } // siempre una canción al azar, distinta de la actual
   playNext() {
     if (!this.playing) return; const idx = this.songIdx, c = this.ctx;
-    const live = setTimeout(() => { if (this.playing && !this.src && !this.bufs[idx]) this.startLive(); }, 2500); // mientras se prepara el tema, suena en vivo
+    const live = SONGS[idx].file ? 0 : setTimeout(() => { if (this.playing && !this.src && !this.bufs[idx]) this.startLive(); }, 2500); // mientras se prepara el tema, suena en vivo
     this.render(idx).then((buf) => {
       clearTimeout(live); if (this.timer) { clearInterval(this.timer); this.timer = 0; }
       if (!this.playing || this.songIdx !== idx) return;
       const src = c.createBufferSource(); src.buffer = buf; src.connect(this.out); src.start(); this.src = src;
       src.onended = () => { if (this.src === src && this.playing) { this.songIdx = this.nextIdx != null ? this.nextIdx : this.pickNext(idx); this.nextIdx = null; this.playNext(); } };
       this.nextIdx = this.pickNext(idx); setTimeout(() => this.render(this.nextIdx).catch(() => {}), 2000); // el siguiente tema se prepara con calma
-    }).catch(() => this.startLive());
+    }).catch(() => { if (SONGS[this.songIdx].file) this.songIdx = 0; this.startLive(); });
   }
   startLive() { // respaldo si el navegador no puede pre-renderizar
     if (this.timer || !this.playing) return; this.step = 0; this.next = this.ctx.currentTime + 0.12;
@@ -118,7 +122,7 @@ export class Music {
     while (this.next < ctx.currentTime + 0.5) {
       if (this.step === 0) { this.song = SONGS[this.songIdx]; this.stepDur = 60 / this.song.bpm / 4; this.delay.delayTime.setValueAtTime((60 / this.song.bpm) * 0.75, this.next); }
       this.play(this.step, this.next); this.next += this.stepDur; this.step++;
-      if (this.step >= 256) { this.step = 0; this.songIdx = this.pickNext(this.songIdx); } // al acabar un tema, pasa al siguiente
+      if (this.step >= 256) { this.step = 0; do this.songIdx = this.pickNext(this.songIdx); while (SONGS[this.songIdx].file); } // al acabar un tema, pasa al siguiente
     }
   }
   play(step, t) {

@@ -32,6 +32,7 @@ insert into public.car_groups (car_id, grp) values
 ('kart_rent','karts'),
 ('kart_comp','karts'),
 ('kart_super','karts'),
+('kart','karts'),
 ('qashqai','cv100'),
 ('bora','cv100'),
 ('cupra','cv100'),

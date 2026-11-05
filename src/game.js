@@ -13,7 +13,6 @@ import { SURF } from './surface.js';
 import { Leaderboard } from './leaderboard.js';
 import { loadBora, buildBora, boraReady } from './bora.js';
 import { loadPorsche, buildPorsche, porscheReady } from './porsche.js';
-import { buildKart } from './kart.js';
 import { Account } from './account.js';
 import { initProfile } from './profile.js';
 import { loadModelCar, buildModelCar, modelCarReady, MODEL } from './modelcars.js';
@@ -78,9 +77,11 @@ for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco' && k !== 'spa'
 const DAILY_CAR = hashStr('dailycar-' + daily.key) % CARS.length; // el mismo coche y circuito para todos cada día
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
 const sel = { track: Math.max(0, tracks.findIndex((t) => t.key === 'daily')), mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, touchMode: 'halves', ctlV: 2, colors: {}, vol: { master: 1, music: 0.7, engine: 0.65 }, gfx: 'auto' };
-const paintOf = (c) => { const v = sel.colors[c.id]; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
+const paintOf = (c) => { const v = sel.colors[c.id]; if (v && c.freeColor && /^#[0-9a-f]{6}$/i.test(v)) return v; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
+const kartNum = () => { const n = parseInt(sel.kartNum, 10); return n >= 0 && n <= 99 ? n : 7; };
 const halvesOn = () => MOBILE && sel.touchMode === 'halves'; // el control por mitades solo existe en pantallas táctiles
-const saved = store.get('sel'); if (saved) { const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.touchMode = saved.touchMode === 'buttons' && saved.ctlV === 2 ? 'buttons' : 'halves'; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
+const saved = store.get('sel'); if (saved && /^kart_/.test(saved.carId || '')) saved.carId = 'kart';
+if (saved) { if (saved.kartNum != null) sel.kartNum = saved.kartNum; const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.touchMode = saved.touchMode === 'buttons' && saved.ctlV === 2 ? 'buttons' : 'halves'; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
 // una sola vez: se borran los tiempos locales de Mario Circuit y de Spa en F1, hechos con el trazado anterior
 if (!store.get('purge.layout-2026-11-04')) {
   try {
@@ -152,7 +153,7 @@ const playerDrv = () => ({ flag: lb.flag, helm: lb.helmet });
 const drvOf = (c) => (c && c.isPlayer ? playerDrv() : c && c.driver) || null;
 const drvIc = (d, sm) => d ? `<span class="flag${sm ? ' sm' : ''}">${flagSvg(d.flag)}</span><span class="hel${sm ? ' sm' : ''}">${helmetSvg(d.helm)}</span>` : '';
 const FLAG_NAMES = { es: 'España', pt: 'Portugal', fr: 'Francia', de: 'Alemania', it: 'Italia', gb: 'Reino Unido', ie: 'Irlanda', nl: 'Países Bajos', be: 'Bélgica', ch: 'Suiza', at: 'Austria', pl: 'Polonia', ro: 'Rumanía', ua: 'Ucrania', se: 'Suecia', mc: 'Mónaco', us: 'Estados Unidos', mx: 'México', co: 'Colombia', ar: 'Argentina', br: 'Brasil', pe: 'Perú', ma: 'Marruecos', jp: 'Japón', pr: 'Orgullo' };
-const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'Kartódromo'] };
+const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'Fórmula 0'] };
 const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
 function drawPreview(cv, tr, th) {
   const w = 300, h = 130, dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
@@ -235,6 +236,11 @@ $('sndBtn').onclick = () => { sel.mute = !sel.mute; store.set('sel', sel); build
 function buildPaints() {
   const box = $('paints'); box.innerHTML = '';
   const car = CARS[sel.car], cur = paintOf(car).toLowerCase();
+  const kc = $('kartCfg'); kc.hidden = !car.freeColor;
+  if (car.freeColor) { $('kartColor').value = cur; if (document.activeElement !== $('kartNum')) $('kartNum').value = kartNum();
+    $('kartColor').oninput = (e) => { sel.colors[car.id] = e.target.value; store.set('sel', sel); MP.key = ''; };
+    $('kartColor').onchange = () => buildMenu();
+    $('kartNum').oninput = (e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 2); e.target.value = v; sel.kartNum = v === '' ? 7 : +v; store.set('sel', sel); MP.key = ''; }; }
   if (car.nopaint || !car.paints) { $('paintName').textContent = 'Librea original'; return; }
   car.paints.forEach(([n, hex]) => { const b = document.createElement('button'); b.className = 'sw' + (hex.toLowerCase() === cur ? ' on' : ''); b.style.background = hex; b.title = n; b.setAttribute('aria-label', n); b.onclick = () => { sel.colors[car.id] = hex; store.set('sel', sel); buildMenu(); }; box.appendChild(b); });
   $('paintName').textContent = (car.paints.find((p) => p[1].toLowerCase() === cur) || car.paints[0])[0];
@@ -268,13 +274,11 @@ $('diffSel').onclick = (e) => { if (e.target.dataset.v) { sel.diff = +e.target.d
 
 // ---------- modelos de coche ----------
 const CARTOON = new Set(CARS.filter((c) => c.group === 'cartoon').map((c) => c.kind));
-function buildCarMesh(color, kind, lod = 'lo') {
+function buildCarMesh(color, kind, lod = 'lo', num = 7) {
   let b;
   if (MODEL[kind]) {
     if (!modelCarReady(kind, lod)) throw new Error(`El modelo ${kind} (${lod}) no est? cargado`);
-    b = buildModelCar(kind, color, lod);
-  } else if (kind === 'kart') {
-    b = buildKart(color);
+    b = buildModelCar(kind, color, lod, num);
   } else if (kind === 'porsche') {
     if (!porscheReady(lod)) throw new Error(`El modelo Porsche (${lod}) no est? cargado`);
     b = buildPorsche(color, lod);
@@ -282,7 +286,7 @@ function buildCarMesh(color, kind, lod = 'lo') {
     if (!boraReady(lod)) throw new Error(`El modelo VW Bora (${lod}) no est? cargado`);
     b = buildBora(color, lod);
   } else throw new Error(`No existe un modelo real para ${kind}`);
-  b.root.scale.setScalar(CS * (kind === 'bora' ? 0.97 : 0.98) * (CARTOON.has(kind) ? 0.8 : 1) * (kind === 'kart' ? 1.05 : 1)); // los cartoon, más chiquitillos
+  b.root.scale.setScalar(CS * (kind === 'bora' ? 0.97 : 0.98) * (CARTOON.has(kind) ? 0.8 : 1)); // los cartoon, más chiquitillos
   return b;
 }
 
@@ -412,14 +416,12 @@ const benchFor = (ti, type) => benchmark(ti.tr, type, ti.th, ti.key + '.' + ti.t
 function loadCarAsset(type, player) {
   const lods = player && !MOBILE ? ['hi', 'lo'] : ['lo'];
   if (MODEL[type.kind]) return loadModelCar(type.kind, lods);
-  if (type.kind === 'kart') return Promise.resolve();
   if (type.kind === 'porsche') return loadPorsche(lods);
   if (type.kind === 'bora') return loadBora(lods);
   return Promise.reject(new Error(`No hay un modelo real registrado para ${type.name}`));
 }
 function carAssetReady(type, lod) {
   if (MODEL[type.kind]) return modelCarReady(type.kind, lod);
-  if (type.kind === 'kart') return true;
   if (type.kind === 'porsche') return porscheReady(lod);
   if (type.kind === 'bora') return boraReady(lod);
   return false;
@@ -503,7 +505,7 @@ async function startRace(restart = false) {
     const blobTex = new THREE.CanvasTexture(bc), blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
     const mkCar = (ct, color, name, isPlayer) => {
       const c = makeCar(ct, name, isPlayer);
-      c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer ? (MOBILE ? 'lo' : 'hi') : 'lo'); scene.add(c.mesh.root);
+      c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer ? (MOBILE ? 'lo' : 'hi') : 'lo', isPlayer ? kartNum() : 2 + (hashStr(name + color) % 97)); scene.add(c.mesh.root);
       addHeadlights(c.mesh, ct.id, S.th.night ? 1 : S.th.weather === 'rain' ? 0.8 : 0, isPlayer && !MOBILE); // faros encendidos si está oscuro
       c.blob = new THREE.Mesh(blobGeo, new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
       c.blob.scale.set(3.6 * CS, 1, 5.4 * CS); scene.add(c.blob);
@@ -1085,15 +1087,16 @@ function updateCarVisual(c, dt) {
   m.root.position.set(x, y, z); m.root.rotation.set(0, psi, 0);
   const sf = clamp(c.speed / 40, 0, 1);
   const impact = clamp(c.impact / 22, 0, 1);
+  const ks = c.type.kind === 'kart' ? 0.1 : 1; // el kart no tiene suspensión: sin cabeceo ni balanceo
   let pitch = -Math.atan(c.grad) * 0.9;
   if (c.air) pitch = clamp(-Math.atan2(c.vy, Math.max(8, c.speed)) * 0.9, -0.45, 0.45);
-  else pitch += c.brake * sf * 0.075 - c.throttle * (1 - Math.min(1, c.speed / c.type.vmax)) * 0.045 + impact * 0.055;
-  const roll = -c.steer * sf * 0.075 - c.yawRate * 0.02 + clamp(c.vl * 0.022, -0.2, 0.2) + c.impactSide * impact * 0.11 - (c.loc.bank || 0) * 0.95; // y se inclina con el peralte
+  else pitch += (c.brake * sf * 0.075 - c.throttle * (1 - Math.min(1, c.speed / c.type.vmax)) * 0.045 + impact * 0.055) * ks;
+  const roll = (-c.steer * sf * 0.075 - c.yawRate * 0.02 + clamp(c.vl * 0.022, -0.2, 0.2) + c.impactSide * impact * 0.11) * ks - (c.loc.bank || 0) * 0.95; // y se inclina con el peralte
   c.impact *= Math.exp(-7 * dt);
   const kk = 1 - Math.exp(-8.5 * dt);
   c.visPitch += (pitch - c.visPitch) * kk; c.visRoll += (roll - c.visRoll) * kk;
-  if (c.onKerb && c.speed > 10) c.bounceV += Math.sin(c.wheelSpin * 1.8 + c.psi) * Math.min(5, c.speed * 0.075) * (S.th && S.th.kerbRough ? 3.4 : 1) * dt;
-  c.bounceV += (-c.bounce * 120 - c.bounceV * 9) * dt; c.bounce = clamp(c.bounce + c.bounceV * dt, -0.3, 0.3);
+  if (c.onKerb && c.speed > 10) c.bounceV += Math.sin(c.wheelSpin * 1.8 + c.psi) * Math.min(5, c.speed * 0.075) * (S.th && S.th.kerbRough ? 3.4 : 1) * (ks < 1 ? 0.45 : 1) * dt;
+  c.bounceV += (-c.bounce * (ks < 1 ? 420 : 120) - c.bounceV * (ks < 1 ? 26 : 9)) * dt; c.bounce = clamp(c.bounce + c.bounceV * dt, -0.3, 0.3);
   m.tilt.rotation.set(c.visPitch, 0, c.visRoll); m.tilt.position.y = c.bounce - (c.df || 0) * 0.07; // el efecto suelo aplasta el coche contra el asfalto
   c.wheelSpin += (c.vf / 0.4) * dt;
   for (const w of m.wheels) { w.spin.rotation.x = c.wheelSpin; if (w.front) w.pivot.rotation.y = -c.steer * 0.4; }
@@ -1247,7 +1250,7 @@ const openSettings = () => { buildSettings(); $('settings').classList.remove('hi
 let songTimer = 0;
 function renderSongs() {
   const cur = sound.music && sound.music.playing ? sound.music.songIdx : -1;
-  $('songList').innerHTML = SONGS.map((sg, i) => `<button type="button" data-i="${i}" class="${i === cur ? 'on' : ''}"><i>${i === cur ? '♪' : i + 1}</i><b>${sg.name}</b><small>${{ chill: 'Chill', house: 'House jazz', robots: 'Robots', synthwave: 'Synthwave' }[sg.tag] || 'Fusión 80s'}</small></button>`).join('');
+  $('songList').innerHTML = SONGS.map((sg, i) => `<button type="button" data-i="${i}" class="${i === cur ? 'on' : ''}"><i>${i === cur ? '♪' : i + 1}</i><b>${sg.name}</b><small>${sg.author ? sg.author : { chill: 'Chill', house: 'House jazz', robots: 'Robots', synthwave: 'Synthwave' }[sg.tag] || 'Fusión 80s'}</small></button>`).join('');
 }
 $('musicBtn').onclick = () => { sound.init(); renderSongs(); $('musicPick').classList.remove('hidden'); clearInterval(songTimer); songTimer = setInterval(renderSongs, 1500); };
 $('songList').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; sound.init(); if (sound.music) { sound.music.choose(+b.dataset.i); setTimeout(renderSongs, 120); } };
@@ -1293,10 +1296,10 @@ function menuPreviewFrame(dt) {
   MP.sk = !MP.sk; if (MP.sk && MP.car) return; // el menú se dibuja a 30 fps: menos batería y calor en el móvil
   const mpr = Math.min(pixelRatio, MOBILE ? 1.25 : 1.75); if (renderer.getPixelRatio() !== mpr) { renderer.setPixelRatio(mpr); renderer.setSize(window.innerWidth, window.innerHeight, false); }
   const hasWorld = menuWorldEnsure(), scn = hasWorld ? MW.scene : MP.scene;
-  const type = CARS[sel.car], color = paintOf(type), lod = MOBILE ? 'lo' : 'hi', key = type.id + color + lod;
+  const type = CARS[sel.car], color = paintOf(type), lod = MOBILE ? 'lo' : 'hi', key = type.id + color + lod + (type.kind === 'kart' ? kartNum() : '');
   if (MP.key !== key) {
     if (!carAssetReady(type, lod)) { if (MP.loading !== type.id) { MP.loading = type.id; loadCarAsset(type, true).then(() => { MP.loading = ''; }).catch(() => { MP.loading = ''; }); } }
-    else { try { if (MP.car) MP.car.root.removeFromParent(); MP.car = buildCarMesh(color, type.kind, lod); MP.key = key; } catch (e) { MP.key = key; } }
+    else { try { if (MP.car) MP.car.root.removeFromParent(); MP.car = buildCarMesh(color, type.kind, lod, kartNum()); MP.key = key; } catch (e) { MP.key = key; } }
   }
   if (MP.car && MP.car.root.parent !== scn) scn.add(MP.car.root);
   MP.ang += dt * 0.35; MP.t = (MP.t || 0) + dt;
@@ -1400,16 +1403,16 @@ requestAnimationFrame(frame);
 buildMenu();
 applyGfx(); sound.setVolumes(sel.vol); sound.setMuted(!!sel.mute);
 // miniaturas de los coches para el selector (se generan con tools/thumbs.cjs y se guardan en assets/thumbs)
-async function renderThumb(id, w = 420, h = 250) {
+async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62, fov = 24) {
   const type = CARS.find((c) => c.id === id); await loadCarAsset(type, true);
-  const b = buildCarMesh(paintOf(type), type.kind, 'hi'), sc = new THREE.Scene();
+  const b = buildCarMesh(paintOf(type), type.kind, 'hi', kartNum()), sc = new THREE.Scene();
   sc.add(new THREE.HemisphereLight(0xffffff, 0x303844, 0.9));
   const k = new THREE.DirectionalLight(0xfff2dd, 2.2); k.position.set(4, 6, 5); sc.add(k);
   const f = new THREE.DirectionalLight(0x9db8ff, 0.9); f.position.set(-6, 3, -3); sc.add(f);
   const pm = new THREE.PMREMGenerator(renderer); sc.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose();
   sc.add(b.root); b.root.rotation.y = 0.0;
   const rt = new THREE.WebGLRenderTarget(w, h, { samples: 4 }); rt.texture.colorSpace = THREE.SRGBColorSpace;
-  const cam = new THREE.PerspectiveCamera(24, w / h, 0.1, 100); cam.position.set(6.4, 2.4, 7.6); cam.lookAt(0, 0.62, 0);
+  const cam = new THREE.PerspectiveCamera(fov, w / h, 0.1, 100); cam.position.set(...cp); cam.lookAt(0, ly, 0);
   const prevT = renderer.getRenderTarget(), pc = new THREE.Color(); renderer.getClearColor(pc); const pa = renderer.getClearAlpha();
   renderer.setRenderTarget(rt); renderer.setClearColor(0x000000, 0); renderer.clear(); renderer.render(sc, cam);
   const px = new Uint8Array(w * h * 4); renderer.readRenderTargetPixels(rt, 0, 0, w, h, px);
