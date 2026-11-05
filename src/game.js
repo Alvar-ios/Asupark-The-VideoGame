@@ -96,6 +96,19 @@ if (!store.get('purge.layout-2026-11-04')) {
   } catch (e) { /* sin almacenamiento */ }
   store.set('purge.layout-2026-11-04', true);
 }
+// una sola vez: tiempos de karts y del Ford GT Heritage (cambian de stats o de grupo), y récords de Karting y Asupark (trazado modificado)
+if (!store.get('purge.records-2026-11-05')) {
+  try {
+    const drop = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i); if (!k || !k.startsWith('dr.')) continue;
+      const s = k.slice(3), last = s.split('.').pop();
+      if (/^(pb|best)\.(karting|asupark)\./.test(s) || /^(pb|best)\./.test(s) && (last === 'kart' || last === 'fordgt' || last === 'g:karts')) drop.push(k);
+    }
+    drop.forEach((k) => localStorage.removeItem(k));
+  } catch (e) { /* sin almacenamiento */ }
+  store.set('purge.records-2026-11-05', true);
+}
 if (saved) { for (const k of ['camDist', 'camH']) if (typeof saved[k] === 'number') sel[k] = Math.min(1.4, Math.max(0.3, saved[k])); sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
 
 // ----- pilotos de la IA: nombre, país y nivel (de mejor a peor); en cada carrera se reparten al azar entre los coches rivales -----

@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.55
+- Noche Neón (Tokyo): proyectores LED con halo de luz a lo largo del circuito y carteles de neón tipo Blade Runner junto a la pista (NIPPON, RAMEN, HOTEL…) con tiras de color en cada torre.
+- Coches: quitado el Mini Cooper S Clubman; karts un poco más lentos; Cupra León algo más equilibrado en su grupo; Ford GT Heritage pasa a Toon con su tamaño y stats; F1 Lotus, Ferrari 312 T, McLaren MP4/5 y MP4-23 y Renault R24 más pequeños; McLaren Toon más pequeño; E-Type y BMW E30 con la orientación corregida en la selección.
+- Tiempos de karts y del Ford GT Heritage reiniciados, y récords de Karting y Asupark borrados por el cambio de trazado.
+
 ## 0.0.54
 - Música: añadidas Disco Fever (musicmike), Tuber Groove (spudaimusic) y AMBER (trinity), con fade-out de 2 s.
 

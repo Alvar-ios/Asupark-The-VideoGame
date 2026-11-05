@@ -2086,6 +2086,48 @@ function turnSigns(tr, th, scene, mobile) {
 // Decoración: se coloca fuera de la carretera usando una malla espacial
 // Elementos de diseño del circuito: un puente de carretera que cruza la pista (campo) y torres de focos (noche).
 // Cada pieza se comprueba contra el resto del trazado: si tocara otra parte de la pista, se omite.
+// Carteles de neón tipo Blade Runner junto a la pista nocturna: postes, rótulos luminosos y tiras verticales
+function neonSignTex(label, color, bg = '#07060f') {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256; const x = c.getContext('2d');
+  x.fillStyle = bg; x.fillRect(0, 0, 512, 256);
+  x.shadowColor = color; x.shadowBlur = 30; x.fillStyle = color; x.font = 'bold 118px Impact,"Arial Black",sans-serif';
+  x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(label, 256, 132);
+  x.shadowBlur = 0; x.lineWidth = 8; x.strokeStyle = color; x.strokeRect(12, 12, 488, 232);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function neonBladeSigns(tr, scene, offTrack) {
+  const labels = ['NIPPON', 'RAMEN', 'HOTEL', 'ARCADE', 'NIGHT', 'SAKE BAR', 'DRIFT', 'NEON'];
+  const colors = ['#19e3ff', '#ff2fb9', '#ffb347', '#7dff6a'];
+  const texs = labels.map((l, j) => neonSignTex(l, colors[j % colors.length])); // 8 texturas compartidas
+  const post = new THREE.MeshStandardMaterial({ color: 0x1a1d2a, roughness: 0.6, metalness: 0.5 });
+  const tubeCols = [0x19e3ff, 0xff2fb9, 0xffb347];
+  const tubes = [], tubeCol = [];
+  let k = 0;
+  for (let s = 40; s < tr.len - 40; s += 95) {
+    const i = Math.floor(s / tr.ds) % tr.N, side = k % 2 ? -1 : 1, off = WALL + 9 + (k % 3) * 2.5;
+    const x = tr.X[i] + -tr.TZ[i] * off * side, z = tr.Z[i] + tr.TX[i] * off * side;
+    if (!offTrack(x, z, WALL + 6, s - 60, s + 60)) { k++; continue; }
+    const g = new THREE.Group(), y0 = tr.Y[i], yaw = Math.atan2(tr.TZ[i] * side, -tr.TX[i] * side); // el rótulo mira hacia la pista
+    const h = 9 + (k % 4) * 1.6;
+    const pole = new THREE.Mesh(new THREE.BoxGeometry(0.5, h, 0.5).translate(0, h / 2, 0), post); g.add(pole);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(11, 5.5), new THREE.MeshBasicMaterial({ map: texs[k % texs.length], side: THREE.DoubleSide, toneMapped: false }));
+    sign.position.set(0, h + 1.6, 0); g.add(sign);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(11.2, 5.7, 0.2), post); back.position.set(0, h + 1.6, -0.12); g.add(back);
+    g.position.set(x, y0, z); g.rotation.set(0, yaw, 0); scene.add(g);
+    // tiras verticales de neón en la fachada de la torre (una a cada lado del rótulo)
+    for (const ex of [-5.9, 5.9]) {
+      const lx = ex * Math.cos(yaw), lz = -ex * Math.sin(yaw);
+      tubes.push([x + lx * 0.2, y0 + 1.5, z + lz * 0.2, h + 1.6, yaw]); tubeCol.push(tubeCols[(k + (ex > 0 ? 1 : 0)) % tubeCols.length]);
+    }
+    k++;
+  }
+  if (tubes.length) {
+    const tm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.22, 1, 0.22).translate(0, 0.5, 0), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), tubes.length);
+    const d = new THREE.Object3D();
+    tubes.forEach((t, j) => { d.position.set(t[0], t[1], t[2]); d.rotation.set(0, t[4], 0); d.scale.set(1, t[3] * 0.85, 1); d.updateMatrix(); tm.setMatrixAt(j, d.matrix); tm.setColorAt(j, new THREE.Color(tubeCol[j])); });
+    tm.frustumCulled = false; scene.add(tm);
+  }
+}
 function trackFeatures(tr, th, scene, q) {
   const N = tr.N, dummy = new THREE.Object3D();
   const offTrack = (x, z, r, skipFrom, skipTo) => { // true si el punto queda lejos de cualquier tramo del circuito fuera de [skipFrom, skipTo]
@@ -2119,10 +2161,16 @@ function trackFeatures(tr, th, scene, q) {
       const pm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.9, 22, 0.9).translate(0, 11, 0), new THREE.MeshStandardMaterial({ color: 0x5a6068, roughness: 0.7, metalness: 0.4 }), poles.length);
       poles.forEach((p, k) => { dummy.position.set(p[0], p[1], p[2]); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); pm.setMatrixAt(k, dummy.matrix); });
       pm.frustumCulled = false; scene.add(pm);
-      const hm = new THREE.InstancedMesh(new THREE.BoxGeometry(5.5, 1.6, 0.6), new THREE.MeshBasicMaterial({ color: 0xfff1c9 }), heads.length);
-      heads.forEach((h, k) => { dummy.position.set(h[0], h[1], h[2]); dummy.rotation.set(0, h[3], 0.35); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); hm.setMatrixAt(k, dummy.matrix); });
+      // proyectores LED: panel de cuatro focos inclinado hacia la pista + halo de luz
+      const hm = new THREE.InstancedMesh(new THREE.BoxGeometry(3.6, 2.4, 0.4), new THREE.MeshBasicMaterial({ color: 0xfff4da }), heads.length);
+      const glowMat = new THREE.SpriteMaterial({ map: glowTex(), color: 0xffe6b0, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.85 });
+      heads.forEach((h, k) => {
+        dummy.position.set(h[0], h[1], h[2]); dummy.rotation.set(0, h[3], 0.35); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); hm.setMatrixAt(k, dummy.matrix);
+        const sp = new THREE.Sprite(glowMat); sp.position.set(h[0], h[1] - 0.4, h[2]); sp.scale.set(16, 16, 1); sp.renderOrder = 2; scene.add(sp);
+      });
       hm.frustumCulled = false; scene.add(hm);
     }
+    neonBladeSigns(tr, scene, offTrack);
   }
 }
 function scenery(tr, th, scene, rng, q) {
