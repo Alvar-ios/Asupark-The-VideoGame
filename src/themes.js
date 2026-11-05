@@ -117,7 +117,7 @@ export const THEMES = {
     id: 'karting', name: 'Fórmula 0', sub: 'Muy revirado: recta diagonal, eses y horquillas entre muros de neumáticos', tireWalls: true, logo: 'formula0', surround: 'f0', kerbH: 2.3, seed: 'karting-v2',
     style: {
       fixedNodes: [[35.0,37.0],[75.0,56.0],[115.0,76.0],[142.5,91.2],[150.0,103.5],[160.0,97.4],[171.2,105.4],[173.8,119.7],[165.0,128.2],[158.0,140.6],[163.8,152.9],[176.2,151.0],[192.5,142.5],[207.5,124.4],[221.2,133.0],[222.5,152.0],[210.0,163.9],[190.0,162.4],[172.5,163.9],[150.0,166.2],[140.0,159.1],[138.8,142.5],[130.0,125.9],[120.0,114.0],[110.0,121.1],[107.5,137.8],[97.5,144.9],[82.5,142.5],[65.0,133.9],[40.0,135.4],[25.0,125.9],[27.5,113.0],[47.5,117.8],[72.5,122.5],[92.5,121.1],[105.0,109.2],[105.0,92.6],[90.0,90.2],[72.5,83.1],[55.0,76.0],[43.8,64.1],[27.5,71.2],[12.5,64.1],[15.0,52.2],[25.0,46.5]],
-      startNear: [58, 120], scale: 1, half: 3.4, wall: 7.0, minR: 4.5, sep: 10.5, extraSmooth: 3,
+      startNear: [58, 120], scale: 1, half: 3.4, wall: 7.0, minR: 4.5, sep: 10.5, extraSmooth: 3, wallMode: 'all',
       chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], hillPts: [[0, 0], [1, 0]], runoff: { gravel: 0, open: [] },
     },
     skyTop: 0x3a8ee0, skyHor: 0xdfeefa, fog: 0xcfe3ef, fogNear: 200, fogFar: 1300,
@@ -129,7 +129,7 @@ export const THEMES = {
     id: 'asupark', name: 'Asupark', sub: 'Karting Asupark: un laberinto de eses, horquillas y rectas cortas', tireWalls: true, logo: 'asupark', surround: 'asu', kerbH: 2.3, seed: 'asupark-v1',
     style: {
       fixedNodes: [[19.2,111.6],[34.1,105.4],[55.8,107.3],[80.6,108.8],[108.5,109.4],[136.4,107.3],[151.9,98.6],[142.6,85.6],[120.9,90.5],[93.0,86.8],[69.8,81.8],[46.5,93.6],[32.5,90.5],[34.7,80.0],[46.5,70.7],[59.5,63.5],[60.5,49.6],[49.6,40.3],[41.9,27.9],[51.1,18.6],[68.8,22.3],[78.1,32.5],[81.2,46.5],[88.3,59.5],[100.8,64.2],[114.7,60.5],[119.3,46.5],[128.7,33.5],[145.7,31.0],[165.8,34.1],[176.7,46.5],[181.7,67.0],[189.7,81.8],[207.1,80.0],[198.4,66.7],[203.1,54.6],[219.5,52.1],[231.9,60.5],[232.5,76.9],[218.6,91.1],[198.4,99.2],[177.3,100.4],[163.7,107.3],[157.5,118.4],[139.5,123.4],[93.0,125.2],[46.5,126.5],[29.4,122.5]],
-      startNear: [93.0, 125.2], scale: 1, half: 3.4, wall: 7.0, minR: 4.5, sep: 10.5, extraSmooth: 3,
+      startNear: [93.0, 125.2], scale: 1, half: 3.4, wall: 7.0, minR: 4.5, sep: 10.5, extraSmooth: 3, wallMode: 'curves',
       chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], hillPts: [[0, 0], [1, 0]], runoff: { gravel: 0, open: [] },
     },
     skyTop: 0x3a8ee0, skyHor: 0xdfeefa, fog: 0xcfe3ef, fogNear: 200, fogFar: 1300,

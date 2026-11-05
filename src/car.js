@@ -226,7 +226,7 @@ export function stepCar(c, inp, dt, tr, env) {
   c.hint = loc.i;
 
   // vallas
-  const lim = WALL - T.radius;
+  const lim = (tr.wallEdge ? tr.wallEdge[loc.lat < 0 ? 0 : 1][loc.i] + 0.3 : WALL) - T.radius; // valla: en karts, pegada al piano o a la pista según el tramo
   if (Math.abs(loc.lat) > lim) {
     const side = Math.sign(loc.lat), over = Math.abs(loc.lat) - lim;
     const nx = side * -loc.tz, nz = side * loc.tx;

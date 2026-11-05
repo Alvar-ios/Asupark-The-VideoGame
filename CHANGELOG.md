@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.53
+- Fórmula 0: los muros de neumáticos rodean todo el trazado, pegados al borde del piano en las curvas y a la pista en las rectas. El choque con la valla sigue esa misma línea.
+- Asupark: en las curvas los neumáticos se pegan al borde donde termina el piano; las rectas quedan como estaban.
+
 ## 0.0.52
 - Asupark y Fórmula 0: las curvas cerradas tienen los vértices más suaves (un suavizado extra del trazado, con radio mínimo de 5,4 m y 6,2 m).
 - Pianos interiores de las curvas: el doble de ancho (2,8 m), con transición suave y mismo ancho en la física del kart.

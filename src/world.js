@@ -1076,7 +1076,7 @@ function tireWallMesh(tr, th) {
   const nearest = (x, z) => { let b = 1e9; const cx = Math.floor(x / cs), cz = Math.floor(z / cs); for (let a = -1; a <= 1; a++) for (let c = -1; c <= 1; c++) { const l = grid.get((cx + a) + ',' + (cz + c)); if (l) for (const i of l) { const d = Math.hypot(tr.X[i] - x, tr.Z[i] - z); if (d < b) b = d; } } return b; };
   const half = th.half || 3.4;
   for (const side of [-1, 1]) for (let i = 0; i < N; i++) for (let k = 0; k < per; k++) {
-    const f = (k / per) * tr.ds + (rnd() - 0.5) * 0.08, l = (L + 0.3 + (rnd() - 0.5) * 0.1) * side, x = tr.X[i] + tr.TX[i] * f + -tr.TZ[i] * l, z = tr.Z[i] + tr.TZ[i] * f + tr.TX[i] * l;
+    const f = (k / per) * tr.ds + (rnd() - 0.5) * 0.08, l = ((tr.wallEdge ? tr.wallEdge[side < 0 ? 0 : 1][i] : L) + 0.3 + (rnd() - 0.5) * 0.1) * side, x = tr.X[i] + tr.TX[i] * f + -tr.TZ[i] * l, z = tr.Z[i] + tr.TZ[i] * f + tr.TX[i] * l;
     if (nearest(x, z) < half + 0.75) continue; // en el interior de una curva cerrada los neumáticos caerían dentro de la pista: se omiten
     const kp = tr.kap[i], outer = (kp > 0 && side > 0) || (kp < 0 && side < 0), a = Math.abs(kp);
     tires.push([x, tr.Y[i] + bankOff(tr, i, l), z, outer && a > 0.04 ? 4 : outer && a > 0.022 ? 3 : 2]); // el doble de alto en las curvas, por el lado exterior

@@ -241,6 +241,18 @@ export function buildTrack(seed, style) {
   tr.kerb = new Int8Array(N); { const raw = new Int8Array(N);
     for (let i = 0; i < N; i++) { let km = 0; for (let d = -10; d <= 10; d++) km += kap[(i + d + N) % N]; km /= 21; if (Math.abs(km) > 0.0075) raw[i] = km > 0 ? -1 : 1; }
     for (let i = 0; i < N; i++) if (raw[i]) for (let d = -14; d <= 14; d++) { const j = (i + d + N) % N; if (!tr.kerb[j]) tr.kerb[j] = raw[i]; } }
+  // muros de neumáticos de los karts: pegados al borde del piano (en curvas) o a la pista (en rectas)
+  // style.wallMode: 'all' = en todo el trazado; 'curves' = en las curvas, y en rectas a la distancia normal de la valla
+  if (style.wallMode) {
+    const kE = new Float32Array(N);
+    for (let i = 0; i < N; i++) { const v = tr.kerb[i]; if (!v) continue; let d = 14; for (let k = 1; k < 14; k++) if (tr.kerb[(i + k) % N] !== v || tr.kerb[(i - k + N) % N] !== v) { d = k; break; } kE[i] = Math.min(1, d / 9); }
+    tr.wallEdge = [new Float32Array(N), new Float32Array(N)];
+    for (let i = 0; i < N; i++) for (let s = 0; s < 2; s++) {
+      const sideV = s ? 1 : -1, kv = tr.kerb[i], inside = kv === sideV;
+      const edge = (tr.half || 3.4) + 1.4 + (inside ? 1.4 * kE[i] : 0); // borde del piano en ese lado
+      tr.wallEdge[s][i] = style.wallMode === 'curves' && kv === 0 ? tr.wall : edge;
+    }
+  }
   // --- perfil de altura ---
   const A1 = style.hill || 0, ph = [rng() * TAU, rng() * TAU, rng() * TAU];
   const k1 = 1 + Math.floor(rng() * 2), k2 = 3 + Math.floor(rng() * 2), k3 = 6 + Math.floor(rng() * 2);
