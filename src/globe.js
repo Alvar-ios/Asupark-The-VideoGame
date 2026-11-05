@@ -31,13 +31,13 @@ export function createGlobe(host) {
     uniforms: {}, vertexShader: 'varying vec3 n;void main(){n=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     fragmentShader: 'varying vec3 n;void main(){float i=pow(.72-dot(n,vec3(0,0,1.)),3.);gl_FragColor=vec4(.3,.6,1.,1.)*i*1.6;}' })); scene.add(glow);
   scene.add(new THREE.AmbientLight(0xaac4ff, .75)); const sun = new THREE.DirectionalLight(0xffffff, 2.1); sun.position.set(-2.5, 1.6, 3); scene.add(sun);
-  const st = { lat: 30, lon: 10, zoom: 0, pins: [], t0: performance.now(), yawOff: 0, latOff: 0, drag: null, vis: false, cur: { a: 0, b: 0, z: 4.4 }, w: 0, h: 0 };
+  const st = { lat: 30, lon: 10, zCam: 4.4, pins: [], t0: performance.now(), yawOff: 0, latOff: 0, drag: null, vis: false, cur: { a: 0, b: 0, z: 4.4 }, w: 0, h: 0 };
   const pinLayer = document.createElement('div'); pinLayer.className = 'gl-pins'; host.appendChild(pinLayer);
 
   const resize = () => { const w = host.clientWidth, h = host.clientHeight; if (!w || !h || (w === st.w && h === st.h)) return; st.w = w; st.h = h; R.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); };
   new ResizeObserver(resize).observe(host);
 
-  const tgt = () => { const sway = Math.sin((performance.now() - st.t0) / 1000 * .55) * (st.drag ? 0 : .3); return { a: -(90 + st.lon) * D + st.yawOff + sway, b: Math.max(-1.2, Math.min(1.2, (st.lat + st.latOff) * D)), z: st.zoom ? 3.0 : 4.4 }; };
+  const tgt = () => { const sway = Math.sin((performance.now() - st.t0) / 1000 * .55) * (st.drag ? 0 : .3); return { a: -(90 + st.lon) * D + st.yawOff + sway, b: Math.max(-1.2, Math.min(1.2, (st.lat + st.latOff) * D)), z: st.zCam }; };
   const proj = new THREE.Vector3(), nrm = new THREE.Vector3();
   function frame(now) {
     requestAnimationFrame(frame);
@@ -61,11 +61,11 @@ export function createGlobe(host) {
   requestAnimationFrame(frame);
 
   host.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; st.drag = { x: e.clientX, y: e.clientY, yo: st.yawOff, lo: st.latOff }; host.setPointerCapture(e.pointerId); });
-  host.addEventListener('pointermove', (e) => { if (!st.drag) return; st.yawOff = st.drag.yo + (e.clientX - st.drag.x) * .008; st.latOff = st.drag.lo - (e.clientY - st.drag.y) * .25; });
+  host.addEventListener('pointermove', (e) => { if (!st.drag) return; st.yawOff = st.drag.yo + (e.clientX - st.drag.x) * .008; st.latOff = st.drag.lo + (e.clientY - st.drag.y) * .25; });
   const up = () => { st.drag = null; }; host.addEventListener('pointerup', up); host.addEventListener('pointercancel', up);
 
   return {
-    focus(lat, lon, zoom) { if (st.lat !== lat || st.lon !== lon || st.zoom !== zoom) { st.yawOff = 0; st.latOff = 0; } st.lat = lat; st.lon = lon; st.zoom = zoom; },
+    focus(lat, lon, zCam) { if (st.lat !== lat || st.lon !== lon) { st.yawOff = 0; st.latOff = 0; } st.lat = lat; st.lon = lon; st.zCam = zCam || 4.4; },
     setPins(list) {
       pinLayer.innerHTML = ''; st.pins = list.map((p) => { const el = document.createElement('button'); el.type = 'button'; el.className = 'gl-pin' + (p.on ? ' on' : ''); el.title = p.title; el.setAttribute('aria-label', p.title); el.innerHTML = p.html; el.onclick = p.onClick; pinLayer.appendChild(el); return { el, on: p.on, base: ll2v(p.lat, p.lon, 1.005), v: new THREE.Vector3() }; });
     },

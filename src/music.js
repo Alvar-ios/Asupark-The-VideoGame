@@ -1,7 +1,25 @@
 // Música del juego: temas grabados de TeteCovers (mp3). Se descargan al abrir el juego (el primero) y el siguiente se prepara mientras suena el actual.
 // El volumen baja muy suave al final de cada tema y el siguiente entra solapado, sin silencios. Al entrar o salir de un circuito la música no se corta: solo se atenúa.
-const COVERS = [['borja-rinon-piano', 'Borja Riñón on the Piano'], ['calamare-m40', 'Calamare en la M40'], ['drifting-baptism', 'Drifting after Baptism'], ['paco-galaxia', 'Paco Galaxia'], ['roadtrip-boyberry', 'Roadtrip a la BoyBerry'], ['susurro-bruno-perez', 'Susurro de Bruno Pérez']];
-export const SONGS = COVERS.map(([f, name]) => ({ tag: 'TeteCovers', name, author: 'TeteCovers', file: `assets/music/${f}.mp3` }));
+// [archivo, título, autor]. Sin autor conocido => TeteCovers. Todas llevan un fade-out de 2 s grabado en el propio mp3.
+const COVERS = [
+  ['borja-rinon-piano', 'Borja Riñón on the Piano', 'TeteCovers'],
+  ['calamare-m40', 'Calamare en la M40', 'El Patica'],
+  ['drifting-baptism', 'Drifting after Baptism', 'TeteCovers'],
+  ['paco-galaxia', 'Paco Galaxia', 'TeteCovers'],
+  ['roadtrip-boyberry', 'Roadtrip a la BoyBerry', 'Trakatrá'],
+  ['susurro-bruno-perez', 'Susurro de Bruno Pérez', 'TeteCovers'],
+  ['night-abalos', 'Night with Ábalos', 'Koldo'],
+  ['green-machine', 'My Green Machine', 'TeteCovers'],
+  ['jalando-arepas', 'Jalando Arepas en el Carro', 'Federico Cojones'],
+  ['i-love-mal', 'I Love Mal', 'TeteCovers'],
+  ['fan-bokeron', 'Fan del Bokerón', 'TeteCovers'],
+  ['coffee-cigarette', 'Coffee and Cigarette Clay Puppet', 'TeteCovers'],
+  ['ceuta-beat', 'Ceuta Beat', 'Peter Sánchez'],
+  ['aitana-intermitentes', 'Aitana No Pone Intermitentes', 'TeteCovers'],
+  ['upshifting-2-3', 'Upshifting from 2 to 3', 'TeteCovers'],
+  ['summer-chipiona', 'Summer in Chipiona', 'El Cigala'],
+];
+export const SONGS = COVERS.map(([f, name, author]) => ({ tag: 'TeteCovers', name, author, file: `assets/music/${f}.mp3` }));
 const raw = {}; // arrayBuffers ya pedidos (promesas)
 const fetchRaw = (idx) => raw[idx] || (raw[idx] = fetch(SONGS[idx].file).then((r) => { if (!r.ok) throw new Error('mp3'); return r.arrayBuffer(); }).catch((e) => { delete raw[idx]; throw e; }));
 const FIRST = Math.floor(Math.random() * SONGS.length);

@@ -125,7 +125,8 @@ export class Sound {
     const send = (rpm, thr) => this.synth.port.postMessage({ rpm, throttle: thr, boost: thr * Math.min(1, Math.max(0.15, (rpm / pr.redline - 0.25) * 1.8)), limiter: false });
     const span = pr.redline - pr.idle, R = Math.random;
     const p1 = 0.22 + R() * 0.2, d1 = 0.55 + R() * 0.3, p2 = Math.min(0.92, p1 + 0.25 + R() * 0.3), d2 = 0.4 + R() * 0.2;
-    const T = [0.4, 0.55]; T[2] = T[1] + d1; T[3] = T[2] + 0.12; T[4] = T[3] + 1.15; T[5] = T[4] + 0.12; T[6] = T[5] + d2; T[7] = T[6] + 0.18; T[8] = T[7] + 1.7; // fases del arranque
+    // fases: arranque, prende, acelerón suave (sube a p1), cae un instante y, justo al empezar a bajar, el acelerón fuerte (sube a p2), y baja a ralentí
+    const T = [0.4, 0.55]; T[2] = T[1] + d1; T[3] = T[2] + 0.08; T[4] = T[3] + 0.28; T[5] = T[4] + d2; T[6] = T[5] + 0.18; T[7] = T[6] + 1.8;
     clearInterval(this.prevTimer);
     this.prevTimer = setInterval(() => {
       const t = (performance.now() - t0) / 1000;
@@ -134,12 +135,11 @@ export class Sound {
       if (t < T[0]) { rpm = pr.idle * (0.22 + 0.5 * R() * (t / T[0])); } // el motor de arranque gira y tose
       else if (t < T[1]) { rpm = pr.idle * (1.5 + (t - T[0]) * 6); thr = 0.5; } // prende
       else if (t < T[2]) { const k = (t - T[1]) / d1; rpm = pr.idle + span * p1 * Math.sin(k * Math.PI * 0.5); thr = 0.5; } // acelerón suave
-      else if (t < T[3]) { rpm = pr.idle + span * p1; thr = 0.25; }
-      else if (t < T[4]) { const k = (t - T[3]) / 1.15; rpm = pr.idle + span * p1 * Math.exp(-3.4 * k); } // baja hasta ralentí
-      else if (t < T[5]) { rpm = pr.idle * 1.02; }
-      else if (t < T[6]) { const k = (t - T[5]) / d2; rpm = pr.idle + span * p2 * Math.sin(k * Math.PI * 0.5); thr = 1; } // acelerón fuerte: más vueltas
-      else if (t < T[7]) { rpm = pr.idle + span * p2; thr = 0.7; }
-      else if (t < T[8]) { const k = (t - T[7]) / 1.7; rpm = pr.idle + span * p2 * Math.exp(-3.2 * k); }
+      else if (t < T[3]) { rpm = pr.idle + span * p1; thr = 0.25; } // breve meseta en el pico
+      else if (t < T[4]) { const k = (t - T[3]) / 0.28; rpm = pr.idle + span * p1 * (1 - 0.3 * k); thr = 0.15; } // empieza a bajar revoluciones
+      else if (t < T[5]) { const k = (t - T[4]) / d2, base = p1 * 0.7; rpm = pr.idle + span * (base + (p2 - base) * Math.sin(k * Math.PI * 0.5)); thr = 1; } // acelerón fuerte justo al bajar
+      else if (t < T[6]) { rpm = pr.idle + span * p2; thr = 0.7; }
+      else if (t < T[7]) { const k = (t - T[6]) / 1.8; rpm = pr.idle + span * p2 * Math.exp(-3.2 * k); } // baja hasta ralentí
       else { rpm = pr.idle * (1 + 0.012 * Math.sin(t * 9)); if (!this.prevIdle) { this.prevIdle = true; this.engineGain.gain.setTargetAtTime(lvl * 0.3, this.ctx.currentTime, 0.5); } } // ralentí bajito
       send(rpm, thr); this.lastMsg = null;
     }, 28);

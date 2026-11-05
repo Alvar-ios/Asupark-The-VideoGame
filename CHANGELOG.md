@@ -2,6 +2,14 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.50
+- Música: 10 canciones nuevas (Koldo, Federico Cojones, El Cigala, Peter Sánchez, El Patica y más), con fade-out de 2 s en todas. Autores mostrados en el selector y en el aviso.
+- Calamare en la M40 atribuida a El Patica y Roadtrip a la BoyBerry a Trakatrá.
+- Barra "sonando ahora" fija en el menú principal, con el título, el autor y un ecualizador animado.
+- Motor al elegir coche: el segundo acelerón arranca justo al empezar a bajar el primero.
+- Humo en el escape de todos los coches (más denso al acelerar, bocanada al soltar el gas).
+- Selector de circuitos: zoom más cercano al elegir Europa, móvil a pantalla completa (también la selección de coche), minimapa con trazado en una sola línea sin bordes, y el arrastre vertical del globo corregido.
+
 ## 0.0.49
 - Selector de circuitos: globo terráqueo 3D que oscila de lado a lado (también se arrastra). Pines con la bandera de cada circuito y panel por continente (Europa, América, Asia) con la lista de circuitos; al elegir continente el globo gira y se acerca.
 - Corregido el ancho del selector en pantallas medianas (se salía por la derecha).

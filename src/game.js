@@ -188,7 +188,7 @@ $('flyClose').onclick = () => setView('home');
 window.addEventListener('keydown', (e) => { if (S.state === 'menu' && $('menu').dataset.view === 'tracks' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { $(e.code === 'ArrowLeft' ? 'stPrev' : 'stNext').click(); e.preventDefault(); e.stopPropagation(); } }, true);
 window.addEventListener('keydown', (e) => { if (e.code === 'Escape' && S.state === 'menu' && $('menu').dataset.view !== 'home') { setView('home'); e.stopPropagation(); } }, true);
 const MAP_LL = { pruebas: [36.7, -6.0], monaco: [43.74, 7.42], spa: [51.0, 5.6], valle: [-23.7, -46.7], desierto: [19.4, -99.1], neon: [35.7, 139.7], prisma: [34.7, 135.5], nieve: [47.1, 8.6], amazonas: [-12.0, -77.0], karting: [42.4, -1.2], asupark: [38.4, -3.2] };
-const CONTS = [{ id: 'eu', name: 'Europa', ll: [46, 8], ids: ['pruebas', 'monaco', 'spa', 'nieve', 'karting', 'asupark'] }, { id: 'am', name: 'América', ll: [-2, -72], ids: ['valle', 'desierto', 'amazonas'] }, { id: 'as', name: 'Asia', ll: [34, 133], ids: ['neon', 'prisma'] }];
+const CONTS = [{ id: 'eu', name: 'Europa', ll: [46, 8], z: 2.35, ids: ['pruebas', 'monaco', 'spa', 'nieve', 'karting', 'asupark'] }, { id: 'am', name: 'América', ll: [-2, -72], z: 3.0, ids: ['valle', 'desierto', 'amazonas'] }, { id: 'as', name: 'Asia', ll: [34, 133], z: 2.9, ids: ['neon', 'prisma'] }];
 const contOf = (t) => CONTS.find((c) => c.ids.includes(t.th.id)) || CONTS[0];
 let globe = null, wmCont = null, wmWorld = false;
 function buildMap() {
@@ -196,7 +196,7 @@ function buildMap() {
   if (!globe) globe = createGlobe($('worldMap'));
   const pick = (i) => { sel.track = i; sel.carId = CARS[sel.car].id; wmCont = contOf(tracks[i]).id; store.set('sel', sel); buildMenu(); };
   const here = tracks.map((t, i) => [t, i]).filter(([t]) => contOf(t) === activeC);
-  globe.focus(activeC.ll[0], activeC.ll[1], 1);
+  globe.focus(activeC.ll[0], activeC.ll[1], activeC.z);
   globe.setPins(tracks.map((t, i) => { const ll = MAP_LL[t.th.id] || MAP_LL.pruebas, daily = t.key === 'daily'; return { lat: ll[0] + (daily ? .7 : 0), lon: ll[1] + (daily ? .9 : 0), on: i === sel.track, title: t.name, html: flagSvg(countryOf(t)[0]), onClick: () => pick(i) }; }));
   $('contPanel').innerHTML = `<div class="cp-tabs">${CONTS.map((c) => `<button type="button" data-c="${c.id}" class="${c === activeC ? 'on' : ''}">${c.name}</button>`).join('')}</div>` + here.map(([t, i]) => `<button type="button" class="cp-row${i === sel.track ? ' on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span><span>${t.key === 'daily' ? 'Pista del día' : t.name}<small>${countryOf(t)[1]} · ${(t.tr.len / 1000).toFixed(1)} km</small></span>${t.key === 'daily' ? '<b>★</b>' : ''}</button>`).join('');
   $('contPanel').querySelectorAll('.cp-tabs button').forEach((b) => { b.onclick = () => { wmCont = b.dataset.c; buildMap(); }; });
@@ -215,7 +215,7 @@ function buildMenu() {
     $('dcTrack').innerHTML = `<span class="flag sm">${flagSvg(dcc)}</span>${dt.th.name.replace(/ · .*$/, '')} · ${(dt.tr.len / 1000).toFixed(1)} km`; $('dcCar').textContent = dc.brand + ' ' + dc.name.replace(dc.brand, '').trim();
     $('dcStatus').textContent = st.done ? 'Hecho hoy · racha ' + st.n + ' d' : st.n ? 'Racha de ' + st.n + ' días · mismo coche y pista para todos' : 'Mismo coche y pista para todos los jugadores';
     $('dcImg').src = `./assets/thumbs/${dc.id}.webp`; drawPreview($('dcCanvas'), dt.tr, dt.th); }
-  buildMap();
+  buildMap(); updateNowPlaying();
   const tl = $('trackList'); tl.innerHTML = '';
   $('stPrev').onclick = () => { sel.track = (sel.track + tracks.length - 1) % tracks.length; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
   $('stNext').onclick = () => { sel.track = (sel.track + 1) % tracks.length; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
@@ -559,8 +559,8 @@ async function startRace(restart = false) {
     const sc = Math.min(260 / (mxx - mnx), 260 / (mxz - mnz)), ox = (300 - (mxx - mnx) * sc) / 2 - mnx * sc, oz = (300 - (mxz - mnz) * sc) / 2 - mnz * sc;
     mx.lineJoin = mx.lineCap = 'round';
     const path = () => { mx.beginPath(); for (let i = 0; i < tr.N; i += 3) { const px = tr.X[i] * sc + ox, pz = tr.Z[i] * sc + oz; i ? mx.lineTo(px, pz) : mx.moveTo(px, pz); } mx.closePath(); };
-    mx.strokeStyle = 'rgba(4,8,16,.9)'; mx.lineWidth = 15; path(); mx.stroke(); mx.strokeStyle = '#e8eef9'; mx.lineWidth = 11; path(); mx.stroke(); mx.strokeStyle = '#3b4358'; mx.lineWidth = 7; path(); mx.stroke();
-    mx.fillStyle = '#ffc928'; mx.beginPath(); mx.arc(tr.X[0] * sc + ox, tr.Z[0] * sc + oz, 6.5, 0, 7); mx.fill(); mx.strokeStyle = '#000'; mx.lineWidth = 1.5; mx.stroke();
+    mx.strokeStyle = 'rgba(232,238,250,.95)'; mx.lineWidth = 7; path(); mx.stroke(); // trazado minimalista: una sola línea, sin bordes
+    mx.fillStyle = '#ffc928'; mx.beginPath(); mx.arc(tr.X[0] * sc + ox, tr.Z[0] * sc + oz, 6, 0, 7); mx.fill();
     for (const f of [1 / 3, 2 / 3]) { const i = Math.floor(tr.N * f); mx.fillStyle = '#66e8ff'; mx.beginPath(); mx.arc(tr.X[i] * sc + ox, tr.Z[i] * sc + oz, 4.5, 0, 7); mx.fill(); }
     S.mini = { cv: mc, sc, ox, oz };
     S.sig = sig; S.raceScene = true;
@@ -1056,10 +1056,10 @@ function emitFx(dt) {
       const sn = Math.sin(c.psi), cs = Math.cos(c.psi), spray = Math.max(0.24, c.puddleWater || c.offroadFactor * 0.55 || (Math.abs(c.vl) > 2.5 ? 0.45 : 0));
       for (const side of [-1, 1]) { wheelPos(c, side, -1, wp); if (Math.random() < 0.72) P.emit(wp.x, wp.y + 0.12, wp.z, -sn * 1.5 + (Math.random() - 0.5) * 2, 1.4 + Math.random() * 2.4, -cs * 1.5 + (Math.random() - 0.5) * 2, 0.42, 0.5, 1.6, 0.62, 0.78, 0.9, 0.32 * spray, 1.4, 1.2); }
     }
-    if (c.throttle > 0.52 && c.speed > 5 && Math.random() < 0.22) {
-      const sn = Math.sin(c.psi), cs = Math.cos(c.psi), ex = c.x - sn * 2.7 * CS, ez = c.z - cs * 2.7 * CS;
-      const tint = [0.42, 0.44, 0.48];
-      P.emit(ex, c.y + 0.42, ez, -sn * 0.9 + (Math.random() - 0.5) * 0.35, 0.6 + Math.random() * 0.6, -cs * 0.9 + (Math.random() - 0.5) * 0.35, 0.32, 0.46, 1.6, tint[0], tint[1], tint[2], 0.22, 1.2);
+    if (!c.air) { // humo del tubo de escape en todos los coches: leve al ralentí, más y más oscuro al acelerar, y una bocanada al soltar el gas
+      const sn = Math.sin(c.psi), cs = Math.cos(c.psi), ex = c.x - sn * 2.7 * CS, ez = c.z - cs * 2.7 * CS, ey = c.y + 0.34, thr = c.throttle || 0, lift = (c.exThr || 0) - thr; c.exThr = thr;
+      if (Math.random() < 0.12 + thr * 0.55) { const g = 0.56 - thr * 0.22; P.emit(ex + (Math.random() - 0.5) * 0.2, ey, ez + (Math.random() - 0.5) * 0.2, -sn * 0.7 + (Math.random() - 0.5) * 0.4, 0.6 + Math.random() * 0.8 + thr * 0.6, -cs * 0.7 + (Math.random() - 0.5) * 0.4, 0.5 + thr * 0.5, 0.26 + thr * 0.22, 1.7 + thr * 0.9, g, g, g + 0.03, 0.26 + thr * 0.2, 1.25); }
+      if (lift > 0.35 && c.speed > 8) for (let i = 0; i < 3; i++) P.emit(ex + (Math.random() - 0.5) * 0.25, ey, ez + (Math.random() - 0.5) * 0.25, -sn * 0.9 + (Math.random() - 0.5) * 0.6, 0.6 + Math.random() * 0.9, -cs * 0.9 + (Math.random() - 0.5) * 0.6, 0.5, 0.22, 1.6, 0.34, 0.34, 0.36, 0.3, 1.2);
     }
   }
   const rainK = th.weather === 'rain' ? 1 : rainAt(S.tr, pl.D); // lluvia general o microclima por tramos
@@ -1275,7 +1275,7 @@ function buildSettings() {
   for (const b of $('gfxSel').children) b.classList.toggle('on', b.dataset.v === sel.gfx);
 }
 for (const k of ['camDist', 'camH']) { const dv = { camDist: 0.82, camH: 0.72 }[k]; $('v_' + k).value = Math.round((sel[k] == null ? dv : sel[k]) * 100); $('vt_' + k).textContent = $('v_' + k).value + '%'; $('v_' + k).oninput = (e) => { sel[k] = e.target.value / 100; $('vt_' + k).textContent = e.target.value + '%'; store.set('sel', sel); }; }
-for (const k of ['master', 'music', 'engine']) $('v_' + k).oninput = (e) => { sel.vol[k] = e.target.value / 100; $('vt_' + k).textContent = e.target.value + '%'; sound.init(); sound.setVolumes(sel.vol); store.set('sel', sel); };
+for (const k of ['master', 'music', 'engine']) $('v_' + k).oninput = (e) => { sel.vol[k] = e.target.value / 100; $('vt_' + k).textContent = e.target.value + '%'; sound.init(); sound.setVolumes(sel.vol); store.set('sel', sel); if (k === 'music') updateNowPlaying(); };
 $('gfxSel').onclick = (e) => { if (e.target.dataset.v) { sel.gfx = e.target.dataset.v; store.set('sel', sel); applyGfx(); buildSettings(); } };
 const openSettings = () => { buildSettings(); $('settings').classList.remove('hidden'); };
 // selector de música
@@ -1284,8 +1284,10 @@ function renderSongs() {
   const cur = sound.music && sound.music.playing ? sound.music.songIdx : -1;
   $('songList').innerHTML = SONGS.map((sg, i) => `<button type="button" data-i="${i}" class="${i === cur ? 'on' : ''}"><i>${i === cur ? '♪' : i + 1}</i><b>${sg.name}</b><small>${sg.author ? sg.author : { chill: 'Chill', house: 'House jazz', robots: 'Robots', synthwave: 'Synthwave' }[sg.tag] || 'Fusión 80s'}</small></button>`).join('');
 }
-let songToastT = 0;
-sound.onSong = (sg) => { if (sel.mute || !(sel.vol.music > 0.001)) return; const t = $('songToast'); t.innerHTML = `<i>♪</i><b>${sg.name}</b><small>${sg.author}</small>`; t.classList.add('on'); clearTimeout(songToastT); songToastT = setTimeout(() => t.classList.remove('on'), 4200); if (!$('musicPick').classList.contains('hidden')) renderSongs(); };
+let songToastT = 0, curSong = null;
+function updateNowPlaying() { const el = $('nowPlaying'); if (!el) return; const show = curSong && !sel.mute && sel.vol.music > 0.001; el.hidden = !show; if (show) { el.querySelector('b').textContent = curSong.name; el.querySelector('small').textContent = curSong.author; } }
+sound.onSong = (sg) => { curSong = sg; updateNowPlaying(); if (sel.mute || !(sel.vol.music > 0.001)) return; const t = $('songToast'); t.innerHTML = `<i>♪</i><b>${sg.name}</b><small>${sg.author}</small>`; t.classList.add('on'); clearTimeout(songToastT); songToastT = setTimeout(() => t.classList.remove('on'), 4200); if (!$('musicPick').classList.contains('hidden')) renderSongs(); };
+$('nowPlaying').onclick = () => $('musicBtn').click();
 $('musicBtn').onclick = () => { sound.init(); renderSongs(); $('musicPick').classList.remove('hidden'); clearInterval(songTimer); songTimer = setInterval(renderSongs, 1500); };
 $('songList').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; sound.init(); if (sound.music) { sound.music.choose(+b.dataset.i); setTimeout(renderSongs, 120); } };
 $('musicClose').onclick = () => { $('musicPick').classList.add('hidden'); clearInterval(songTimer); };
