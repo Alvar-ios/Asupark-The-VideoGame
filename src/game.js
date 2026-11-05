@@ -286,10 +286,20 @@ function buildCarMesh(color, kind, lod = 'lo') {
 
 // fantasma: una sola silueta translúcida. Un pase previo escribe la profundidad sin pintar y el pase de color solo pinta la superficie más cercana,
 // así no se transparenta el interior (asientos, motor, cristales) de ningún modelo.
-function makeGhost(root, gold) {
+function ghostLabel(root, name, gold) { // nombre del piloto flotando translúcido sobre el fantasma
+  if (!name) return;
+  const cv = document.createElement('canvas'); cv.width = 320; cv.height = 64; const x = cv.getContext('2d');
+  x.font = '700 34px "Jersey 10",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  const txt = (gold ? '♛ ' : '') + String(name).slice(0, 20); x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,.55)'; x.strokeText(txt, 160, 34); x.fillStyle = gold ? '#ffd34e' : '#cfeaff'; x.fillText(txt, 160, 34);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6, depthWrite: false, fog: false }));
+  sp.scale.set(3.4, 0.68, 1); sp.position.set(0, 2.1, 0); sp.renderOrder = 5; sp.name = 'ghostLabel'; root.add(sp);
+}
+function makeGhost(root, gold, name) {
+  ghostLabel(root, name, gold);
   const color = new THREE.MeshLambertMaterial({ color: gold ? 0xffd34e : 0xbfe4ff, emissive: gold ? 0x7a5a10 : 0x2a4a66, transparent: true, opacity: gold ? 0.5 : 0.4, depthWrite: false });
   const pre = new THREE.MeshBasicMaterial({ colorWrite: false });
-  const meshes = []; root.traverse((o) => { if (o.isMesh) meshes.push(o); });
+  const meshes = []; root.traverse((o) => { if (o.isMesh && o.name !== 'ghostLabel') meshes.push(o); });
   for (const o of meshes) {
     o.castShadow = false; o.receiveShadow = false;
     const d = new THREE.Mesh(o.geometry, pre); d.renderOrder = 1; d.castShadow = false; d.position.copy(o.position); d.quaternion.copy(o.quaternion); d.scale.copy(o.scale); o.parent.add(d);
@@ -507,7 +517,7 @@ async function startRace(restart = false) {
     } else {
       const mkGhost = (rec, gold) => {
         const ct = (rec && rec.car && CARS.find((c) => c.id === rec.car && carAssetReady(c, 'lo'))) || type;
-        const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold); m.root.visible = false; scene.add(m.root); return m;
+        const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold, (rec && rec.name) || lb.name); m.root.visible = false; scene.add(m.root); return m;
       };
       const gr = S.ghostRecs && S.ghostRecs.g, tr2 = S.ghostRecs && S.ghostRecs.t, same = gr && tr2 && Math.abs(gr.time - tr2.time) < 1e-6;
       S.ghostMesh = mkGhost(same ? tr2 : gr, !!same); S.ghostGold = tr2 && !same ? mkGhost(tr2, true) : null; // si el mejor de tu grupo también es el de la pista, es uno solo (dorado)
@@ -549,7 +559,7 @@ async function startRace(restart = false) {
     S.ghostBestGold = showGold && !sameG && trec && trec.ghost ? Float32Array.from(trec.ghost) : null;
     if (reuse) { // al reiniciar se reutiliza la escena: se ajustan los fantasmas a los récords actuales
       const ctOf = (r) => (r && r.car && CARS.find((c) => c.id === r.car)) || type, same = rec && trec && Math.abs(rec.time - trec.time) < 1e-6;
-      setGhost('ghostMesh', ctOf(same ? trec : rec), !!same); setGhost('ghostGold', S.ghostBestGold ? ctOf(trec) : null, true);
+      setGhost('ghostMesh', ctOf(same ? trec : rec), !!same, ((same ? trec : rec) || {}).name); setGhost('ghostGold', S.ghostBestGold ? ctOf(trec) : null, true, (trec || {}).name);
     }
     if (S.ghostMesh) S.ghostMesh.root.visible = false; if (S.ghostGold) S.ghostGold.root.visible = false;
   }
@@ -841,10 +851,10 @@ function sectorDone(i, t) {
 }
 
 // cambia el fantasma de una ranura por otro con la forma del coche indicado (azul = tu grupo, dorado = récord de la pista)
-function setGhost(slot, ct, gold) {
+function setGhost(slot, ct, gold, name) {
   const old = S[slot]; if (old && old.root.parent) old.root.parent.remove(old.root);
   S[slot] = null; if (!ct || !S.scene || !carAssetReady(ct, 'lo')) return;
-  const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold); m.root.visible = false; S.scene.add(m.root); S[slot] = m;
+  const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold, name || lb.name); m.root.visible = false; S.scene.add(m.root); S[slot] = m;
 }
 function onPlayerLap(c, lt, done) {
   S.deltaS = null;
@@ -864,20 +874,20 @@ function onPlayerLap(c, lt, done) {
       store.set('pb.' + S.skey, S.pbRec);
       S.refProf = S.pbRec.prof; S.refName = 'PB'; S.refFill = fillProf(S.refProf);
       if (S.mode === 'tt') {
-        store.set(key, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id }); // antes leía S.ghostBest, que puede ser null y cortaba el resto de la función (la mejor vuelta no se actualizaba en directo)
+        store.set(key, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id, name: lb.name }); // antes leía S.ghostBest, que puede ser null y cortaba el resto de la función (la mejor vuelta no se actualizaba en directo)
       }
       markDaily();
     }
     if (lt < S.lapRec) { S.lapRec = lt; S.recReal = true; S.recWho = 'Tú'; updateRecPanel(); }
     if (lt < S.trkLap) { S.trkLap = lt; S.trkWho = 'Tú'; S.trkGroup = c.type.group; updateRecPanel(); }
-    if (S.mode === 'tt') { const tk = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.track', tb = store.get(tk); if (!tb || lt < tb.time) store.set(tk, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id }); } // y el mejor de la pista, para el fantasma dorado
+    if (S.mode === 'tt') { const tk = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.track', tb = store.get(tk); if (!tb || lt < tb.time) store.set(tk, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id, name: lb.name }); } // y el mejor de la pista, para el fantasma dorado
     if (S.mode === 'tt' && newPB) { // el fantasma gris pasa a ser esta vuelta (mejor de la categoría); si además es la mejor de todos, pasa a dorado
       const showGray = sel.ghostMine !== false, showGold = sel.ghostBest !== false, isGold = S.goldTime == null || lt < S.goldTime - 1e-6;
       if (isGold) { // tu vuelta es la mejor de la categoría entre todos: un solo fantasma dorado
-        S.goldTime = lt; setGhost('ghostMesh', c.type, true); setGhost('ghostGold', null); S.ghostBestGold = null;
+        S.goldTime = lt; setGhost('ghostMesh', c.type, true, lb.name); setGhost('ghostGold', null); S.ghostBestGold = null;
         S.ghostBest = (showGray || showGold) ? Float32Array.from(S.ghostRec) : null;
       } else { // sigue existiendo un dorado de otro jugador: el gris es tu vuelta
-        setGhost('ghostMesh', c.type, false); S.ghostBest = showGray ? Float32Array.from(S.ghostRec) : null;
+        setGhost('ghostMesh', c.type, false, lb.name); S.ghostBest = showGray ? Float32Array.from(S.ghostRec) : null;
       }
     }
     setTimeout(() => refreshOnlineRecords(S.raceNo), 2500); // por si otros jugadores han marcado mejores tiempos

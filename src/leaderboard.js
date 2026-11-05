@@ -35,7 +35,7 @@ export class Leaderboard {
       try {
         await this.call('rpc/submit_lap_ghost', { method: 'POST', body: JSON.stringify({ p_player: this.player.id, p_name: this.player.name, p_track: trackId, p_car: carId, p_ms: ms, p_ghost: ghost }) });
         this.ghostOk = true; return true;
-      } catch (e) { this.ghostOk = false; }
+      } catch (e) { if (/HTTP 404/.test(String(e && e.message))) this.ghostOk = false; /* solo se desactiva si la función no existe; un fallo de red no */ }
     }
     const q = load(KEY_QUEUE, []).filter((e) => !(e.trackId === trackId && e.carId === carId && e.ms >= ms));
     q.push({ trackId, carId, ms }); save(KEY_QUEUE, q.slice(-60));
@@ -54,17 +54,16 @@ export class Leaderboard {
       return true;
     } catch (e) { return false; } finally { this.sending = false; }
   }
-  // Fantasma del mejor tiempo de una categoría (coches carIds) en el circuito, entre todos los jugadores: { time (s), car, ghost } o null
+  // Mejor vuelta REAL de una categoría (coches carIds) en el circuito, entre todos los jugadores: { time (s), car, name, ghost|null } o null.
+  // La base de datos solo devuelve el fantasma si pertenece a esa misma vuelta (ghost_ms = lap_ms); si el mejor tiempo no tiene fantasma, ghost es null (no se enseña uno ajeno).
   async bestGhost(trackId, carIds, sinceIso) {
     if (!this.remote || !carIds || !carIds.length) return null;
     try {
-      const cars = carIds.map((c) => encodeURIComponent(c)).join(',');
-      const since = sinceIso ? `&updated_at=gte.${encodeURIComponent(sinceIso)}` : '';
-      const q = this.call(`lap_times?select=car_id,lap_ms,ghost&track_id=eq.${encodeURIComponent(trackId)}&car_id=in.(${cars})&ghost=not.is.null${since}&order=lap_ms.asc&limit=1`);
-      const wait = new Promise((_, rej) => setTimeout(() => rej(new Error('lento')), 2500));
+      const q = this.call('rpc/best_lap', { method: 'POST', body: JSON.stringify({ p_track: trackId, p_cars: carIds, p_since: sinceIso || null }) });
+      const wait = new Promise((_, rej) => setTimeout(() => rej(new Error('lento')), 3500));
       const rows = await Promise.race([q, wait]);
-      const r = rows && rows[0];
-      return r && Array.isArray(r.ghost) && r.ghost.length > 8 ? { time: r.lap_ms / 1000, car: r.car_id, ghost: r.ghost } : null;
+      const r = rows && rows[0]; if (!r) return null;
+      return { time: r.lap_ms / 1000, car: r.car_id, name: r.name, ghost: Array.isArray(r.ghost) && r.ghost.length > 8 ? r.ghost : null };
     } catch (e) { return null; }
   }
   // Todas las filas de un circuito (mejor tiempo de cada piloto con cada coche); el juego las agrupa por categoría

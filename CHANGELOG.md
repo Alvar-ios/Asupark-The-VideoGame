@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.44
+- Fantasma dorado online arreglado: la migración de Supabase nunca se había aplicado y la tabla no guardaba recorridos. Ahora se aplica (supabase/ghost-migration.sql, v2) y la base de datos solo da el fantasma si es EXACTAMENTE el de la mejor vuelta (guarda ghost_ms = lap_ms, comprueba que el recorrido dura lo mismo que la vuelta y borra el fantasma antiguo si el tiempo mejora sin él).
+- La mejor vuelta real de cada categoría se consulta con una función propia (best_lap): si el mejor tiempo no tiene fantasma todavía, no se enseña el de otro piloto.
+- El nombre del piloto flota translúcido sobre cada fantasma (dorado con corona = récord de la categoría; azul = tu mejor vuelta).
+- Un fallo de red ya no desactiva el envío de fantasmas durante toda la sesión.
+
 ## 0.0.43
 - Móvil: la tarjeta del reto del día ya no se solapa con la imagen del coche ni corta la fecha.
 - Clasificación: las categorías vuelven a ser una cuadrícula de botones grandes (antes se deslizaban y cortaban la última).
