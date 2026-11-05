@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.54
+- Música: añadidas Disco Fever (musicmike), Tuber Groove (spudaimusic) y AMBER (trinity), con fade-out de 2 s.
+
 ## 0.0.53
 - Fórmula 0: los muros de neumáticos rodean todo el trazado, pegados al borde del piano en las curvas y a la pista en las rectas. El choque con la valla sigue esa misma línea.
 - Asupark: en las curvas los neumáticos se pegan al borde donde termina el piano; las rectas quedan como estaban.

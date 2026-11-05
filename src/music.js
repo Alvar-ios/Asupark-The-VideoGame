@@ -18,6 +18,9 @@ const COVERS = [
   ['aitana-intermitentes', 'Aitana No Pone Intermitentes', 'TeteCovers'],
   ['upshifting-2-3', 'Upshifting from 2 to 3', 'TeteCovers'],
   ['summer-chipiona', 'Summer in Chipiona', 'El Cigala'],
+  ['disco-fever', 'Disco Fever', 'musicmike'],
+  ['tuber-groove', 'Tuber Groove', 'spudaimusic'],
+  ['amber', 'AMBER', 'trinity'],
 ];
 export const SONGS = COVERS.map(([f, name, author]) => ({ tag: 'TeteCovers', name, author, file: `assets/music/${f}.mp3` }));
 const raw = {}; // arrayBuffers ya pedidos (promesas)
