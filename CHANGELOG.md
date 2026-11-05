@@ -2,6 +2,16 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.56
+- Nuevo circuito de karts **Kartlos** (Asia · Emiratos): recreación del trazado real con su puente, en el que la recta diagonal pasa por encima de la pista; recta de meta, eses enlazadas y horquillas. Pabellón blanco, palmeras y logo propio.
+- Mazda MX-5: pilotos traseros (se encienden al frenar).
+- Mazda RX-7 Toon: las ruedas delanteras ya no van giradas.
+- McLaren Toon: librea más clara y motor más bajo de volumen.
+- VW Bora, Nissan Qashqai y Cupra León: pintura con más brillo y menos blanquecina. El Bora vuelve a mostrar los neumáticos.
+- AC Cobra con neumáticos; Mercedes SLR en plateado brillante; BMW E30 con blanco más cálido y sin reflejos raros.
+- Mini Cooper S: a elegir entre rojo y azul marino.
+- Miniaturas del selector actualizadas.
+
 ## 0.0.55
 - Noche Neón (Tokyo): proyectores LED con halo de luz a lo largo del circuito y carteles de neón tipo Blade Runner junto a la pista (NIPPON, RAMEN, HOTEL…) con tiras de color en cada torre.
 - Coches: quitado el Mini Cooper S Clubman; karts un poco más lentos; Cupra León algo más equilibrado en su grupo; Ford GT Heritage pasa a Toon con su tamaño y stats; F1 Lotus, Ferrari 312 T, McLaren MP4/5 y MP4-23 y Renault R24 más pequeños; McLaren Toon más pequeño; E-Type y BMW E30 con la orientación corregida en la selección.

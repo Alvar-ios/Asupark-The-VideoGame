@@ -489,7 +489,7 @@ function stripeTex(c1, c2, n) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; return t;
 }
 function kartSurroundings(tr, th, scene, anim) {
-  const N = tr.N, L = WALL, f0 = th.surround === 'f0', blue = 0x1a3778, red = 0xd91e18;
+  const N = tr.N, L = WALL, f0 = th.surround === 'f0', kl = th.surround === 'kl', blue = 0x1a3778, red = 0xd91e18;
   const grid = new Map(), cs = 8; for (let i = 0; i < N; i++) { const k = Math.floor(tr.X[i] / cs) + ',' + Math.floor(tr.Z[i] / cs); (grid.get(k) || grid.set(k, []).get(k)).push(i); }
   const nearest = (x, z) => { let b = 1e9; const cx = Math.floor(x / cs), cz = Math.floor(z / cs); for (let a = -4; a <= 4; a++) for (let c = -4; c <= 4; c++) { const l = grid.get((cx + a) + ',' + (cz + c)); if (l) for (const i of l) { const d = Math.hypot(tr.X[i] - x, tr.Z[i] - z); if (d < b) b = d; } } return b; };
   const at = (i, side, d) => { i = ((i % N) + N) % N; const l = d * side; return [tr.X[i] - tr.TZ[i] * l, tr.Z[i] + tr.TX[i] * l, tr.Y[i], Math.atan2(tr.TX[i], tr.TZ[i])]; };
@@ -504,7 +504,7 @@ function kartSurroundings(tr, th, scene, anim) {
   const G = new THREE.Group(); scene.add(G);
   // objetos alineados con la pista: eje X = dirección de la marcha, eje Z = lateral (+Z = derecha)
   const along = (p) => p[3] - Math.PI / 2;
-  const brand = localBrandTex(th), logo = logoTex(th.logo), logoAr = f0 ? 500 / 129 : 238 / 141;
+  const brand = localBrandTex(th), logo = logoTex(th.logo), logoAr = th.logoAr || (f0 ? 500 / 129 : 238 / 141);
   // vallas publicitarias sobre postes, mirando a la pista
   const bm = new THREE.MeshBasicMaterial({ map: brand, side: THREE.DoubleSide }); bm.map && (bm.map.repeat.set(1, 1));
   for (let i = 8, n = 0; i < N; i += 34, n++) { const side = n % 2 ? 1 : -1, m = spotRect(i, side, -3.8, 3.8, L + 1.0, 0.8); if (m == null) continue; const p = at(i, side, m + 0.4); const g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p) + (side > 0 ? Math.PI : 0);
@@ -521,7 +521,7 @@ function kartSurroundings(tr, th, scene, anim) {
   // edificio de boxes junto a la salida (fachada de 30 m a lo largo de la pista, 9 m de fondo)
   { let found = null; for (const sd of [1, -1]) { const m = spotRect(6, sd, -15.5, 15.5, L + 8, 11); if (m != null) { found = { sd, m }; break; } }
     if (found) { const { sd, m } = found, p = at(6, sd, m + 5.5), g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
-    const wall = f0 ? 0xf2f2f0 : 0xeaf0fa, roof = f0 ? red : blue;
+    const wall = f0 || kl ? 0xf2f2f0 : 0xeaf0fa, roof = f0 || kl ? red : blue;
     g.add(box(30, 4.6, 9, wall, 0, 2.3, 0), box(31.5, 0.5, 11, roof, 0, 4.85, 0), box(30.2, 1.1, 0.3, roof, 0, 3.7, -sd * 4.6));
     for (let k = -5; k <= 5; k++) g.add(box(1.9, 2.4, 0.2, 0x20242c, k * 2.6, 1.5, -sd * 4.55));
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(11, 11 / logoAr), new THREE.MeshBasicMaterial({ map: logo })); sign.position.set(0, 7.4, -sd * 4.2); sign.rotation.y = sd > 0 ? Math.PI : 0; g.add(sign); g.add(box(11.4, 11 / logoAr + 0.4, 0.2, 0x1c1f26, 0, 7.4, -sd * 4.0 + (sd > 0 ? 0.15 : -0.15)));
@@ -529,12 +529,14 @@ function kartSurroundings(tr, th, scene, anim) {
   // gradas escalonadas (filas que se alejan de la pista)
   { let found = null; for (const sd of [-1, 1]) { const m = spotRect(N - 30, sd, -11.5, 11.5, L + 5, 8); if (m != null) { found = { sd, m }; break; } }
     if (found) { const { sd, m } = found, p = at(N - 30, sd, m), g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
-    for (let k = 0; k < 5; k++) g.add(box(22, 0.9, 1.6, k % 2 ? (f0 ? red : blue) : 0xdadde4, 0, 0.5 + k * 0.9, sd * (k * 1.5)), box(22, 0.3, 0.2, 0x2a2d33, 0, 1 + k * 0.9, sd * (k * 1.5 - 0.7)));
+    for (let k = 0; k < 5; k++) g.add(box(22, 0.9, 1.6, k % 2 ? (f0 || kl ? red : blue) : 0xdadde4, 0, 0.5 + k * 0.9, sd * (k * 1.5)), box(22, 0.3, 0.2, 0x2a2d33, 0, 1 + k * 0.9, sd * (k * 1.5 - 0.7)));
     g.add(box(23, 0.3, 9, 0xcfd3da, 0, 6.2, sd * 3.2)); for (const dx of [-11, 11]) g.add(box(0.3, 6, 0.3, 0x555b66, dx, 3, sd * 7)); G.add(g); } }
   if (f0) { // contenedores apilados (rojo, blanco y negro) en las curvas más cerradas, tumbados a lo largo de la pista
     const peaks = []; for (let i = 0; i < N; i++) { const a = Math.abs(tr.kap[i]); if (a > 0.1 && !peaks.some((q) => Math.min(Math.abs(q - i), N - Math.abs(q - i)) < 90)) peaks.push(i); }
     peaks.slice(0, 4).forEach((i, n) => { const side = tr.kap[i] > 0 ? 1 : -1, m = spotRect(i, side, -10, 10, L + 6, 2.5); if (m == null) return; const p = at(i, side, m + 1.25); const g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
       const cc = [0xc8201a, 0xf0f0ee, 0x1b1d22]; for (let k = 0; k < 3; k++) { g.add(box(6, 2.5, 2.4, cc[(n + k) % 3], k * 6.2 - 6, 1.25, 0)); if (k !== 1) g.add(box(6, 2.5, 2.4, cc[(n + k + 1) % 3], k * 6.2 - 6, 3.75, 0)); } G.add(g); });
+  } else if (th.surround === 'kl') { // Kartlos: pabellón blanco de formas curvas y palmeras, como en el original
+    kartlosDecor(tr, G, spotRect, at, along, box, nearest);
   } else { // Asupark: noria, carpa de circo y globos aerostáticos
     const cx = tr.X.reduce((a, b) => a + b, 0) / N, cz = tr.Z.reduce((a, b) => a + b, 0) / N; let best = null, bd = 1e18;
     for (let dx = -200; dx <= 200; dx += 8) for (let dz = -200; dz <= 200; dz += 8) { const x = cx + dx, z = cz + dz, n = nearest(x, z); if (n > 30) { const d = dx * dx + dz * dz; if (d < bd) { bd = d; best = [x, z]; } } }
@@ -550,6 +552,26 @@ function kartSurroundings(tr, th, scene, anim) {
     for (let n = 0; n < 3; n++) { const i = Math.floor((n + 0.3) * N / 3), p = at(i, n % 2 ? 1 : -1, 70 + n * 25); const g = new THREE.Group(); g.position.set(p[0], 70 + n * 12, p[1]);
       const bt = stripeTex('#' + [0xd91e18, 0xf3c026, 0x1a3778][n].toString(16).padStart(6, '0'), '#f4f4f4', 12); const env = new THREE.Mesh(new THREE.SphereGeometry(8, 18, 14), new THREE.MeshLambertMaterial({ map: bt })); env.scale.y = 1.2; g.add(env, box(1.6, 1.1, 1.6, 0x7a5a34, 0, -11.5, 0)); for (const [dx, dz] of [[-.7, -.7], [.7, .7], [-.7, .7], [.7, -.7]]) g.add(box(0.05, 4.2, 0.05, 0x2a2d33, dx * 1.8, -8.3, dz * 1.8)); G.add(g); }
   }
+}
+
+// Kartlos: pabellón blanco de formas redondeadas junto a la recta y palmeras repartidas fuera de los muros
+function kartlosDecor(tr, G, spotRect, at, along, box, nearest) {
+  const N = tr.N, L = WALL, white = new THREE.MeshLambertMaterial({ color: 0xf4f4f2 }), glass = new THREE.MeshLambertMaterial({ color: 0x2a3644 });
+  let best = null; for (let k = 0; k < N && !best; k += 6) { const i = Math.floor(N * 0.12 + k) % N; if (Math.abs(tr.kap[i]) > 0.02) continue; for (const sd of [1, -1]) { const m = spotRect(i, sd, -22, 22, L + 10, 14, 30); if (m != null) { best = { i, sd, m }; break; } } }
+  if (best) { const { i, sd, m } = best, p = at(i, sd, m + 7), g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
+    for (const [y, h, w, d] of [[0, 4.2, 40, 12], [4.2, 3.6, 34, 10], [7.8, 0.5, 35, 11]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), white); b.position.y = y + h / 2; g.add(b);
+      for (const ex of [-w / 2, w / 2]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(d / 2, d / 2, h, 20), white); c.position.set(ex, y + h / 2, 0); g.add(c); } }
+    for (const [y, w] of [[2.3, 38], [6, 32]]) { const band = new THREE.Mesh(new THREE.BoxGeometry(w, 1.5, 0.2), glass); band.position.set(0, y, -sd * (y < 4 ? 6.02 : 5.02)); g.add(band); }
+    G.add(g); }
+  // palmeras: tronco ligeramente inclinado y copa de hojas largas
+  const trunkM = new THREE.MeshLambertMaterial({ color: 0x8a6a45 }), leafM = new THREE.MeshLambertMaterial({ color: 0x3f7a35, side: THREE.DoubleSide });
+  const leafG = new THREE.PlaneGeometry(0.9, 4.2).translate(0, 2.1, 0);
+  let n = 0;
+  for (let k = 0; k < N && n < 26; k += 23) { const sd = (k / 23) % 2 ? 1 : -1, p = at(k, sd, L + 4 + (k % 3) * 2); if (nearest(p[0], p[1]) < L + 2.5) continue;
+    const g = new THREE.Group(), h = 7 + (k % 4); g.position.set(p[0], p[2], p[1]); g.rotation.y = k;
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, h, 7).translate(0, h / 2, 0), trunkM); t.rotation.z = 0.08; g.add(t);
+    for (let j = 0; j < 8; j++) { const l = new THREE.Mesh(leafG, leafM); l.position.set(-h * 0.08, h, 0); l.rotation.set(0, j * Math.PI / 4, 1.15 + (j % 2) * 0.25, 'YXZ'); g.add(l); }
+    G.add(g); n++; }
 }
 
 // una sola bandera grande del país del circuito, a la izquierda de la salida: mástil alto y tela ondulada
@@ -851,7 +873,7 @@ function roadMesh(tr, th, stride = 1) {
 
     // br: bajo el tablero del puente los bordes laterales solo bajan 1,4 m (canto del tablero) para dejar libre el paso de la pista inferior
     const lat = (k, h, eo, krL, krR, gw, hw, KW, br, kwl, kwr) => isKart
-      ? [[-eo, 0], [-L, h - 0.04], [-(hw + kwl + 0.02), h - 0.02], [-(hw + kwl), h - 0.02], [-(hw + kwl), h + krL], [-(hw + 0.2), h + krL * 0.9], [-hw, h + 0.005], [-0.22, h], [0.22, h], [hw, h + 0.005], [hw + 0.2, h + krR * 0.9], [hw + kwr, h + krR], [hw + kwr, h - 0.02], [hw + kwr + 0.02, h - 0.02], [L, h - 0.04], [eo, 0]][k]
+      ? [[-eo, br ? h - 1.4 : 0], [-L, h - 0.04], [-(hw + kwl + 0.02), h - 0.02], [-(hw + kwl), h - 0.02], [-(hw + kwl), h + krL], [-(hw + 0.2), h + krL * 0.9], [-hw, h + 0.005], [-0.22, h], [0.22, h], [hw, h + 0.005], [hw + 0.2, h + krR * 0.9], [hw + kwr, h + krR], [hw + kwr, h - 0.02], [hw + kwr + 0.02, h - 0.02], [L, h - 0.04], [eo, br ? h - 1.4 : 0]][k]
       : [[-eo, br ? h - 1.4 : 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + KW * 0.45), h + krL * 0.75], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw + KW * 0.45, h + krR * 0.75], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, br ? h - 1.4 : 0]][k];
 
     const sLen = isKart ? 3.2 : 3.0, s2k = (i + effectiveStride) * tr.ds;
@@ -1452,7 +1474,7 @@ function createFoamWedgeGeometry() {
 const LOCAL_BRANDS = {
   pruebas: ['ESTRELLA GALICIA', '#c8102e', '#ffffff'], monaco: ['HÔTEL DE PARIS', '#0b1f3a', '#e8c872'], spa: ['SPA MONOPOLE', '#0a4d8c', '#ffffff'],
   valle: ['GUARANÁ ANTARCTICA', '#0a7a3c', '#ffe14d'], desierto: ['TEQUILA SAUZA', '#7a2a0a', '#ffd166'], neon: ['ASAHI SUPER DRY', '#101820', '#f2f2f2'],
-  nieve: ['RICOLA', '#00873c', '#ffffff'], amazonas: ['INCA KOLA', '#f6c600', '#c8102e'], karting: ['KARTING CLUB', '#d91e18', '#ffffff'], asupark: ['ASUPARK', '#1a3778', '#ffffff'],
+  nieve: ['RICOLA', '#00873c', '#ffffff'], amazonas: ['INCA KOLA', '#f6c600', '#c8102e'], karting: ['KARTING CLUB', '#d91e18', '#ffffff'], asupark: ['ASUPARK', '#1a3778', '#ffffff'], kartlos: ['KARTLOS', '#d21f26', '#ffffff'],
 };
 const localBrandCache = {};
 const logoImgs = {};

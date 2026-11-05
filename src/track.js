@@ -277,13 +277,13 @@ export function buildTrack(seed, style) {
     if (groups.length >= 2) {
       const up = groups[1]; let iB = up[0], bd = 1e18;
       for (const i of up) { const d = (X[i] - cx) ** 2 + (Z[i] - cz) ** 2; if (d < bd) { bd = d; iB = i; } }
-      const H = style.bridgeH || 9, PLAT = 34, RAMP = 190;
+      const H = style.bridgeH || 9, PLAT = style.bridgePlat || 34, RAMP = style.bridgeRamp || 190;
       for (let k = -(PLAT + RAMP); k <= PLAT + RAMP; k++) {
         const a = Math.abs(k), w = a <= PLAT ? 1 : (() => { const x = 1 - (a - PLAT) / RAMP; return x * x * (3 - 2 * x); })();
         base[(iB + k + N) % N] += H * w;
       }
       let iA = groups[0][0], bd0 = 1e18; for (const i of groups[0]) { const d = (X[i] - cx) ** 2 + (Z[i] - cz) ** 2; if (d < bd0) { bd0 = d; iA = i; } }
-      tr.bridge = { i: iB, iLow: iA, span: 40 };
+      tr.bridge = { i: iB, iLow: iA, span: style.bridgeSpan || 40 };
     }
   }
   // antes de cada rampa la pista se aplana (si bajaba, la rampa solo frenaba la bajada y el coche no despegaba)

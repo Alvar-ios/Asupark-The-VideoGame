@@ -22,9 +22,9 @@ export const BORA_WHEELS = [[0.769, 0.294, 1.345, true], [-0.769, 0.294, 1.345, 
 export function buildBora(color, lod = 'hi') {
   const src = cache[lod] || cache.mid || cache.hi || cache.lo, hi = lod === 'hi';
   const root = new THREE.Group(), tilt = new THREE.Group(); root.add(tilt);
-  const paintOpts = { color, metalness: 0.32, roughness: 0.3, envMapIntensity: 1.0 };
+  const paintOpts = { color, metalness: 0.08, roughness: 0.22, envMapIntensity: 0.85 };
   const mats = {
-    PAINT: hi ? new THREE.MeshPhysicalMaterial({ ...paintOpts, clearcoat: 1, clearcoatRoughness: 0.08 }) : new THREE.MeshStandardMaterial(paintOpts),
+    PAINT: hi ? new THREE.MeshPhysicalMaterial({ ...paintOpts, clearcoat: 1, clearcoatRoughness: 0.05 }) : new THREE.MeshStandardMaterial(paintOpts),
     CHROME: new THREE.MeshStandardMaterial({ color: 0xcfd4da, metalness: 1, roughness: 0.14, envMapIntensity: 1.2 }),
     GLASS: new THREE.MeshStandardMaterial({ color: 0x06090d, metalness: 0.7, roughness: 0.06, transparent: hi, opacity: hi ? 0.62 : 1, depthWrite: !hi, envMapIntensity: 1.7 }),
     LENS: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.2, roughness: 0.05, transparent: true, opacity: 0.32, depthWrite: false, envMapIntensity: 1.5 }),
@@ -38,7 +38,7 @@ export function buildBora(color, lod = 'hi') {
   };
   const apply = (obj) => obj.traverse((o) => { if (o.isMesh) { const m = mats[o.material.name] || mats.UNDER; o.material = m; o.castShadow = o.material !== mats.LENS && o.material !== mats.GLASS; } });
   const body = src.body.clone(true); apply(body); tilt.add(body);
-  const tire = new THREE.MeshStandardMaterial({ color: 0x0e0f12, roughness: 0.85, metalness: 0 });
+  const tire = new THREE.MeshStandardMaterial({ color: 0x0e0f12, roughness: 0.85, metalness: 0, side: THREE.DoubleSide }); // el torno sale con las caras hacia dentro
   const wheels = [];
   for (const [x, y, z, front] of BORA_WHEELS) {
     const pivot = new THREE.Group(), spin = new THREE.Group();

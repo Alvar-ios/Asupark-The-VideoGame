@@ -46,7 +46,7 @@ Object.assign(PROFILES, {
   slr: derive('m3', 0.85, { name: 'SLR (V8 sobrealimentado)', cyl: 8, idle: 750, redline: 6600, gain: 1.4, supercharger: 1, sub: 1.5, rumble: 1.0, crackle: 1.8, crkMin: 2300, thump: 1.5, burble: 1.0, rough: 0.2 }),
   aston: derive('porsche', 1.8, { name: 'F1 híbrido (V6 turbo)', cyl: 6, idle: 3500, redline: 13500, gain: 0.95, electric: 0.4, turboWhine: 0.8, turboNoise: 0.6, sub: 0.25, rumble: 0.15, crackle: 0.5, crkMin: 6000, thump: 0.3, burble: 0, rough: 0.04, miss: 0.02, tau: 0.25 }),
   lotus: derive('m3', 1.45, { name: 'Lotus 72 (Cosworth V8)', cyl: 8, idle: 2000, redline: 10500, gain: 1.05, sub: 0.9, rumble: 0.35, crackle: 0.9, crkMin: 4000, thump: 0.6, burble: 0.2, rough: 0.2, miss: 0.08, tau: 0.3 }),
-  mclaren: derive('m3', 1.6, { name: 'McLaren MP4-25 (V8 18000)', cyl: 8, idle: 3500, redline: 14500, gain: 0.95, sub: 0.2, rumble: 0.15, crackle: 0.6, crkMin: 6000, thump: 0.3, burble: 0, rough: 0.04, miss: 0.02, tau: 0.25 }),
+  mclaren: derive('m3', 1.6, { name: 'McLaren MP4-25 (V8 18000)', cyl: 8, idle: 3500, redline: 14500, gain: 0.6, sub: 0.2, rumble: 0.15, crackle: 0.6, crkMin: 6000, thump: 0.3, burble: 0, rough: 0.04, miss: 0.02, tau: 0.25 }),
 });
 const thrFlut = (e) => Math.min(1, e.thrS); // la inestabilidad de régimen es mayor con gas
 // Karts: monocilíndrico agudo y vibrante (2 tiempos / 4 tiempos), mucho régimen

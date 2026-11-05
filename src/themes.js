@@ -137,8 +137,21 @@ export const THEMES = {
     wall1: 0x17181b, wall2: 0x1a3778, mount: 0x56734a, sun: 0xfff3d6, sunDir: [-0.45, 0.62, 0.4],
     hemiSky: 0xe3efff, hemiGround: 0x4a5a3a, hemiI: 1.0, sunI: 1.25, deco: 'pine', treeCol: 0x3f7a3a, treeCount: 60, night: false, temp: 23, humidity: 0.3, wind: [2, 0.5], gripMul: 1, offroad: 0.6,
   },
+  kartlos: {
+    id: 'kartlos', name: 'Kartlos', sub: 'Karting urbano en el desierto: puente sobre la pista, eses enlazadas y horquillas', tireWalls: true, logo: 'kartlos', logoAr: 500 / 129, surround: 'kl', kerbH: 2.3, seed: 'kartlos-v1',
+    style: {
+      fixedNodes: [[105.3,212.0],[139.1,202.0],[178.2,186.3],[205.2,176.0],[232.2,168.8],[249.8,162.0],[255.2,154.4],[245.7,147.2],[232.2,141.8],[221.4,136.4],[218.7,128.2],[228.2,120.2],[237.1,110.7],[239.0,99.9],[232.2,90.5],[220.1,82.4],[213.8,74.2],[218.7,66.2],[234.9,61.6],[255.2,56.7],[267.3,50.8],[270.0,40.5],[261.9,32.4],[240.3,29.2],[205.2,27.5],[172.8,26.5],[140.4,26.5],[129.1,33.8],[133.7,45.9],[151.2,54.0],[167.4,62.1],[176.0,72.9],[176.9,83.7],[168.8,94.5],[156.6,103.1],[148.0,112.1],[143.6,122.9],[140.4,132.8],[132.3,138.2],[116.1,138.2],[99.9,135.8],[82.4,131.8],[62.1,121.5],[41.9,112.1],[29.7,99.9],[27.8,78.3],[29.2,56.7],[36.5,33.8],[50.0,21.6],[70.2,16.7],[87.8,18.4],[95.0,28.4],[91.3,40.5],[77.0,49.1],[59.4,57.2],[47.2,67.0],[47.2,77.0],[60.8,78.8],[79.7,80.5],[90.5,89.1],[94.0,104.0],[89.6,118.8],[82.4,132.3],[78.8,151.2],[73.4,168.8],[67.5,178.7],[58.1,179.6],[47.2,170.1],[36.5,159.3],[24.3,155.2],[16.7,164.7],[16.2,183.6],[21.1,201.2],[32.4,214.7],[51.3,220.1],[75.6,218.7]],
+      startNear: [140, 200], scale: 1, half: 3.4, wall: 7.0, minR: 4.5, sep: 10.5, extraSmooth: 3, wallMode: 'all',
+      cross: [82.4, 132.0, 14], bridgeH: 4.6, bridgePlat: 10, bridgeRamp: 48, bridgeSpan: 26,
+      chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], hillPts: [[0, 0], [1, 0]], runoff: { gravel: 0, open: [] },
+    },
+    skyTop: 0x4a9be0, skyHor: 0xf2e6cf, fog: 0xeadcc0, fogNear: 220, fogFar: 1400,
+    ground: 0xd9c49a, grass: 0xcfb788, dirt: 0xc4a77a, road: 0x34353a, kerb1: 0xd21f26, kerb2: 0xf4f4f4,
+    wall1: 0xf2f2f0, wall2: 0xd21f26, mount: 0xc9a77a, sun: 0xfff1d0, sunDir: [-0.35, 0.72, 0.3],
+    hemiSky: 0xf0f4ff, hemiGround: 0x9a8058, hemiI: 1.0, sunI: 1.35, deco: 'cactus', treeCol: 0x5b7a3a, treeCount: 40, night: false, temp: 31, humidity: 0.15, wind: [2, 0.4], gripMul: 1, offroad: 0.6,
+  },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {
