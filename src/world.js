@@ -859,6 +859,10 @@ function roadMesh(tr, th, stride = 1) {
     roadRough = 0.88; roadMetal = 0.01; envInt = 0.16;
   } else if (th.id === 'monaco') {
     roadRough = 0.74; roadMetal = 0.02; envInt = 0.32;
+  } else if (th.id === 'amazonas') {
+    roadRough = 0.58; roadMetal = 0.02; envInt = 0.46; // selva húmeda: asfalto con brillo suave del cielo
+  } else if (th.id === 'valle') {
+    roadRough = 0.7; roadMetal = 0.02; envInt = 0.34;
   }
 
   const roadMaterial = new THREE.MeshStandardMaterial({

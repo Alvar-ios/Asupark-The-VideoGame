@@ -826,6 +826,14 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
   #menu .link{min-height:64px;font-size:14px}
   #menu #flyout{background:rgba(5,12,21,.98)}
 }
+/* v0.0.43 móvil: tarjeta del reto sin solapes */
+@media (max-width:560px){#menu .dc-img{display:none!important}#menu .daily-big{grid-template-columns:auto 1fr auto}#menu .dc-txt small{white-space:normal}#menu .dc-txt b{font-size:16px;overflow-wrap:anywhere}}
+@media (max-height:520px) and (orientation:landscape){#menu .dc-txt small{white-space:normal;line-height:1.2}}
+/* v0.0.43: las categorías de la clasificación vuelven a ser una cuadrícula (la regla de .tabs pesaba más que #boardGroups) */
+#board #boardGroups{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;overflow:visible;padding:0;margin:0 0 10px}
+#board #boardGroups button{flex:none;justify-content:center;text-align:center;border-radius:10px;padding:9px 6px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;line-height:1.15;white-space:normal;min-width:0}
+@media (max-width:600px){#board #boardGroups{grid-template-columns:repeat(3,minmax(0,1fr))}#board #boardGroups button{font-size:11px;padding:8px 4px}#board #boardTracks{scroll-snap-type:x proximity}#board #boardTracks button{scroll-snap-align:center}}
+@media (max-height:520px) and (orientation:landscape){#board #boardGroups{grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin-bottom:6px}#board #boardGroups button{padding:6px 2px;font-size:10px}}
 </style>
 </head>
 <body>

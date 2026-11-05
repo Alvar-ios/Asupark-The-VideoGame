@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.43
+- Móvil: la tarjeta del reto del día ya no se solapa con la imagen del coche ni corta la fecha.
+- Clasificación: las categorías vuelven a ser una cuadrícula de botones grandes (antes se deslizaban y cortaban la última).
+- Asfalto: brillo húmedo suave en la Selva Amazónica y en Valle Verde, sin coste de rendimiento (solo parámetros del material).
+
 ## 0.0.42
 - Nueva categoría Karts con 4 karts (Iniciación 100cc, Alquiler 200cc, Competición KZ y Superkart 250): modelo 3D propio con piloto y casco, mucho agarre, giro rápido y motores monocilíndricos agudos.
 - Nuevo circuito: Kartódromo, pista estrecha y técnica (horquillas, eses y chicane) de unos 770 m con muros de neumáticos.
