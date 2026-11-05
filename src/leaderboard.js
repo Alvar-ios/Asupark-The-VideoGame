@@ -10,16 +10,20 @@ export class Leaderboard {
   constructor() {
     let p = load(KEY_PLAYER, null);
     if (!p || !p.id) { p = { id: uuid(), name: 'Piloto' + String(Math.floor(Math.random() * 900) + 100) }; save(KEY_PLAYER, p); }
-    this.player = p; this.sending = false;
+    this.player = p; this.sending = false; this.anon = p; this.account = false;
   }
+  persist() { if (!this.account) save(KEY_PLAYER, this.player); }
+  // Con sesión iniciada, los tiempos se guardan con el id de la cuenta (el perfil local anónimo no se toca)
+  useAccount(a) { this.account = true; this.player = { id: a.id, name: a.name, flag: a.flag, helmet: a.helmet }; }
+  leaveAccount() { this.account = false; this.player = this.anon; }
   get cfg() { return (typeof window !== 'undefined' && window.DRIFT_CONFIG) || {}; }
   get remote() { return !!(this.cfg.supabaseUrl && this.cfg.supabaseKey); }
   get name() { return this.player.name; }
   get flag() { return /^[a-z]{2}$/.test(this.player.flag || '') ? this.player.flag : 'es'; }
   get helmet() { return /^([0-9a-f]{6}\|){3}[0-9]$/i.test(this.player.helmet || '') ? this.player.helmet : 'e63946|ffffff|111827|1'; }
-  setFlag(f) { if (/^[a-z]{2}$/.test(f)) { this.player.flag = f; save(KEY_PLAYER, this.player); } return this.flag; }
-  setHelmet(h) { if (/^([0-9a-f]{6}\|){3}[0-9]$/i.test(h)) { this.player.helmet = h; save(KEY_PLAYER, this.player); } return this.helmet; }
-  setName(n) { const c = cleanName(n); if (c.length >= 2) { this.player.name = c; save(KEY_PLAYER, this.player); } return this.player.name; }
+  setFlag(f) { if (/^[a-z]{2}$/.test(f)) { this.player.flag = f; this.persist(); if (this.onChange) this.onChange(); } return this.flag; }
+  setHelmet(h) { if (/^([0-9a-f]{6}\|){3}[0-9]$/i.test(h)) { this.player.helmet = h; this.persist(); if (this.onChange) this.onChange(); } return this.helmet; }
+  setName(n) { if (this.account) return this.player.name; /* el nombre de una cuenta es su usuario */ const c = cleanName(n); if (c.length >= 2) { this.player.name = c; this.persist(); } return this.player.name; }
   async call(path, init = {}) {
     const c = this.cfg, ac = new AbortController(), to = setTimeout(() => ac.abort(), 7000);
     try {

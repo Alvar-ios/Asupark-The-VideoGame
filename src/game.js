@@ -14,6 +14,8 @@ import { Leaderboard } from './leaderboard.js';
 import { loadBora, buildBora, boraReady } from './bora.js';
 import { loadPorsche, buildPorsche, porscheReady } from './porsche.js';
 import { buildKart } from './kart.js';
+import { Account } from './account.js';
+import { initProfile } from './profile.js';
 import { loadModelCar, buildModelCar, modelCarReady, MODEL } from './modelcars.js';
 
 const $ = (id) => document.getElementById(id);
@@ -379,6 +381,7 @@ function markDaily() {
   showMsg('Reto diario completado', 1800, 'cy');
 }
 const lb = new Leaderboard();
+const acc = new Account(lb);
 const trackIdOf = (ti) => (ti.key === 'daily' ? 'daily:' + ti.tr.seed : ti.key);
 const carName = (id) => (CARS.find((c) => c.id === id) || { name: id }).name;
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -962,6 +965,7 @@ function showResults() {
     const all = fin.map((c) => ({ c, t: c.finishTime, est: false })).concat(rest.map((r) => ({ c: r.c, t: r.est, est: true })));
     all.forEach((r, i) => rows.push(`<tr class="${r.c === p ? 'me' : ''}"><td>${i + 1}º</td><td>${drvIc(drvOf(r.c), 1)}${esc(r.c.isPlayer ? 'TÚ' : r.c.name)} <small class="cartag">${esc(r.c.type.name)}</small></td><td>${r.est ? '~' : ''}${fmt(r.t)}</td></tr>`));
     const prank = all.findIndex((r) => r.c === p) + 1;
+    if (!(S.gp && S.gp.phase === 'quali')) acc.submitResult(trackIdOf(S.trackInfo), p.type.id, prank, all.length); // victorias y podios de la cuenta
     $('rBig').textContent = prank + 'º'; $('rTitle').textContent = prank === 1 ? '¡VICTORIA!' : prank <= 3 ? '¡PODIO!' : 'META';
     extra = podiumHtml(all.slice(0, 3), p) + (prank <= 3 ? confettiHtml() : '');
   } else {
@@ -1414,4 +1418,7 @@ async function renderThumb(id, w = 420, h = 250) {
   for (let y = 0; y < h; y++) img.data.set(px.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4);
   x.putImageData(img, 0, 0); return cv.toDataURL('image/png');
 }
-window.__dr = { placeCar, renderThumb, showRaceBanner, pointAt, makeGhost, lb, S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };
+initProfile({ $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt });
+acc.onChange(() => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; try { buildHelmetEditor(); } catch (_) {} });
+acc.restore();
+window.__dr = { acc, placeCar, renderThumb, showRaceBanner, pointAt, makeGhost, lb, S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };

@@ -2,6 +2,14 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.45
+- Cuentas: nuevo botón Perfil en el menú. Crear cuenta o entrar con usuario y contraseña (sin correo). Con la sesión iniciada, tus tiempos, fantasmas, bandera y casco se guardan con tu cuenta y tu nombre es tu usuario. Requiere ejecutar supabase/accounts.sql y tener «Confirm email» desactivado.
+- Estadísticas: vueltas, circuitos, carreras, victorias, podios y récords. Las victorias y podios se registran al acabar cada carrera.
+- Vitrina de logros: Rey de cada circuito y categoría, el más rápido en contrarreloj, jugador con más victorias, primera victoria, 10 victorias, trotamundos, etc.
+- Amigos: añadir por nombre de usuario, aceptar o rechazar solicitudes y quitar amigos.
+- Rivalidad: comparación circuito a circuito con un amigo (tu mejor tiempo por categoría contra el suyo, diferencia y marcador).
+- Salón de la fama: ranking global de más récords y más victorias.
+
 ## 0.0.44
 - Fantasma dorado online arreglado: la migración de Supabase nunca se había aplicado y la tabla no guardaba recorridos. Ahora se aplica (supabase/ghost-migration.sql, v2) y la base de datos solo da el fantasma si es EXACTAMENTE el de la mejor vuelta (guarda ghost_ms = lap_ms, comprueba que el recorrido dura lo mismo que la vuelta y borra el fantasma antiguo si el tiempo mejora sin él).
 - La mejor vuelta real de cada categoría se consulta con una función propia (best_lap): si el mejor tiempo no tiene fantasma todavía, no se enseña el de otro piloto.

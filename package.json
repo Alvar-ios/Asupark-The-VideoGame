@@ -1,6 +1,6 @@
 {
   "name": "drift-rush",
-  "version": "0.0.44",
+  "version": "0.0.45",
   "type": "module",
   "private": true,
   "dependencies": {
