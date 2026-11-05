@@ -919,6 +919,53 @@ body.mobile #songList>*{min-height:46px}
 body.mobile .stat{font-size:10px}
 body.mobile button,body.mobile .pick,body.mobile .cp-row{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 body.mobile input,body.mobile select,body.mobile textarea{font-size:16px}
+/* ===== v0.0.59: móvil vertical compacto — cabecera de circuito, mapa, coches, barra de pintura ===== */
+@media (max-width:760px) and (orientation:portrait){
+  #trHero{grid-template-columns:minmax(0,1fr) 42%;grid-template-areas:"flag logo" "name logo" "info map" "go go";gap:8px 10px;padding:10px;margin:0 0 8px;border-radius:14px;align-items:center}
+  #trHero .trh-info{display:contents}
+  #trHero em{grid-area:flag;align-self:end;font-size:10px;gap:6px;min-width:0}#trHero em .flag{width:20px}
+  #trHero h2{grid-area:name;align-self:start;font-size:19px;line-height:1.05}
+  #trHero .trh-logo{grid-area:logo;justify-self:end;align-self:center;max-width:100%;max-height:38px;padding:3px 6px;border-radius:6px}
+  #trHero .trh-map{grid-area:map;min-height:0;border-radius:10px;padding:4px}
+  #trHero .trh-map canvas{max-height:110px;object-fit:contain}
+  #trHero p{grid-area:info;align-self:start;font-size:11.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  #trHero .trh-chips{grid-area:info;align-self:end;gap:4px;margin:0}#trHero .trh-chips span{padding:3px 7px;font-size:10.5px}
+  #trHero #wmGo{grid-area:go;margin:0;padding:10px;font-size:13px}
+  #trHero{grid-template-rows:auto auto auto}
+  #worldMap{height:200px!important;border-radius:12px}
+  #globeSel{margin:0 0 8px}
+  #contPanel{margin-top:6px}
+  #contPanel .cp-tabs button{padding:7px 2px;font-size:13px}
+  #contPanel .cp-row{padding:6px 10px;font-size:16px;gap:8px}#contPanel .cp-row small{font-size:11px}
+  #menu #flyout{padding:14px 12px 18px}
+  #menu #flyout .vhead{top:-14px;margin:-14px -12px 8px;padding:12px 12px 8px}
+  #menu #flyout .vhead h2{font-size:26px}
+  #menu #flyout #trackList{grid-template-columns:1fr 1fr;gap:7px}
+  #menu #flyout #trackList .card{padding:8px 9px;gap:3px;border-radius:13px}
+  #menu #flyout #trackList .card canvas{height:44px}
+  #menu #flyout #trackList .card b{font-size:12.5px}
+  #menu #flyout #trackList .card .track-sub{font-size:10px;min-height:0;line-height:1.25}
+  /* garaje */
+  #menu #flyout #carList{grid-template-columns:1fr 1fr;gap:7px}
+  #menu #flyout #carList .card{padding:6px 8px 7px;border-radius:12px}
+  #menu .cthumb{height:52px;margin:0}
+  #menu #flyout #carList .card em.brand{font-size:9px;display:block;line-height:1.1}
+  #menu #flyout #carList .card b{font-size:12.5px;line-height:1.15}
+  #menu #flyout #carList .card small{display:none!important}
+  #menu #flyout #carList .card .stat{font-size:8px!important;margin:0!important;padding:0!important;gap:3px;line-height:1;min-height:0!important;height:11px}
+  #menu #flyout #carList .card .stat i{height:3px}
+  #groupTabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}#groupTabs>*{flex:0 0 auto}
+  #viewGarage h3.pt{position:sticky;bottom:34px;margin:8px -12px 0;padding:7px 12px 2px;background:rgba(5,10,18,.97);z-index:2;font-size:12px}
+  #viewGarage #paints{position:sticky;bottom:0;margin:0 -12px -18px;padding:4px 12px 10px;background:rgba(5,10,18,.97);z-index:2;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #viewGarage #paints>*{flex:0 0 auto}
+  #viewGarage #kartCfg{position:sticky;bottom:0;z-index:2;background:rgba(5,10,18,.97);margin:0 -12px -18px;padding:8px 12px 10px;display:flex;gap:12px}
+  #viewGarage #kartCfg[hidden]{display:none}
+  /* resto de pantallas */
+  body.mobile .overlay .panel.rbox{padding:14px 14px max(12px,env(safe-area-inset-bottom))}
+  body.mobile #settings h3{margin:10px 0 4px}
+  body.mobile #settings .panel h1,body.mobile #board .panel h1,body.mobile #musicPick .panel h1,body.mobile #profile .panel h1{font-size:24px!important;margin:0 0 6px}
+  body.mobile #helGrid{grid-template-columns:repeat(auto-fill,minmax(44px,1fr))!important;gap:6px}
+}
 </style>
 </head>
 <body>

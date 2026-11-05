@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.59
+- Móvil vertical compacto en todo: cabecera del circuito (bandera+nombre y logo arriba, info a un lado y trazado al otro, botón debajo), globo y lista de continentes más bajos, tarjetas de circuito y de coche mucho más pequeñas (2 columnas), barra de pintura/kart fija abajo en el garaje, pestañas de categoría con scroll lateral, ajustes/clasificación/perfil/música con menos relleno.
+
 ## 0.0.58
 - Móvil (Android e iPhone), revisado en vertical y horizontal y en pantallas pequeñas (360×640, 375×667, 390×844, 412×915, 844×390): en horizontal la selección de circuito y de coche ya no se sale de la pantalla y ocupa todo el alto.
 - Ajustes en horizontal: ya no se corta a la derecha (antes quedaban los cascos y los botones fuera de vista); los botones de opciones son más grandes y se reparten en varias líneas.
