@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.58
+- Móvil (Android e iPhone), revisado en vertical y horizontal y en pantallas pequeñas (360×640, 375×667, 390×844, 412×915, 844×390): en horizontal la selección de circuito y de coche ya no se sale de la pantalla y ocupa todo el alto.
+- Ajustes en horizontal: ya no se corta a la derecha (antes quedaban los cascos y los botones fuera de vista); los botones de opciones son más grandes y se reparten en varias líneas.
+- Botones «Listo/Cerrar» de Ajustes, Música, Clasificación y Perfil siempre visibles al final; campos de texto a 16 px para que iPhone no haga zoom al escribir; menos retardo al tocar.
+
 ## 0.0.57
 - Fórmula 0: el circuito se corre ahora en el sentido contrario, con la misma salida y línea de meta. Se borran los tiempos anteriores de este circuito.
 

@@ -902,6 +902,23 @@ body #hud #mini.follow{border-radius:0!important}
 #wmInfo{display:flex;align-items:center;gap:12px;margin:12px 0 4px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
 #wmInfo .flag{width:42px;flex:0 0 42px}#wmInfo b{display:block;font:800 18px/1.1 inherit;color:#fff}#wmInfo small{color:#aab4cc}#wmInfo button{margin-left:auto;padding:10px 16px;border:0;border-radius:9px;background:#ffc928;color:#111;font:800 14px inherit;letter-spacing:.08em;cursor:pointer}
 @media (max-width:760px){#menu[data-view="tracks"] #flyout{width:100%!important}#contPanel{position:static;transform:none;width:auto;margin-top:8px;max-height:none}#worldMap{height:300px}}
+/* ===== v0.0.58: móvil Android/iPhone — horizontal sin desbordes, botones táctiles, cierres siempre visibles ===== */
+@media (max-height:520px) and (orientation:landscape){
+  #menu[data-view="tracks"] #flyout,#menu[data-view="garage"] #flyout{position:absolute!important;left:0!important;top:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;border-radius:0!important;border:0!important;background:rgba(8,10,15,.98)!important;z-index:3;padding:12px calc(16px + env(safe-area-inset-right)) 16px calc(16px + env(safe-area-inset-left))}
+  #menu[data-view="tracks"] #flyout .vhead,#menu[data-view="garage"] #flyout .vhead{top:-12px;margin:-12px -16px 8px;padding:10px 16px 8px}
+  #menu #flyout #trackList,#menu #flyout #carList{grid-template-columns:repeat(3,1fr)}
+  body.mobile #settings .panel{column-count:auto!important;column-width:auto!important;max-width:min(96vw,560px)!important;overflow-y:auto;-webkit-overflow-scrolling:touch}
+}
+body.mobile #settings #setClose,body.mobile #musicClose,body.mobile #board .rbox>button.big,body.mobile #profile .rbox>button.big{position:sticky;bottom:0;z-index:2;box-shadow:0 -10px 14px rgba(8,10,15,.85)}
+body.mobile #settings .panel,body.mobile #musicPick .panel,body.mobile #board .panel,body.mobile #profile .panel{padding-bottom:max(12px,env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+body.mobile #settings .tog,body.mobile #settings #gfxSel button{min-height:40px;font-size:12px}
+body.mobile #settings label{font-size:14px}
+body.mobile #settings .row{flex-wrap:wrap}body.mobile #settings .panel{overflow-x:hidden}
+body.mobile #settings input[type=range]{height:30px;touch-action:pan-y}
+body.mobile #songList>*{min-height:46px}
+body.mobile .stat{font-size:10px}
+body.mobile button,body.mobile .pick,body.mobile .cp-row{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+body.mobile input,body.mobile select,body.mobile textarea{font-size:16px}
 </style>
 </head>
 <body>
