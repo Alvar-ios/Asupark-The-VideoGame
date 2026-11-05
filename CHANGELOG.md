@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.57
+- Fórmula 0: el circuito se corre ahora en el sentido contrario, con la misma salida y línea de meta. Se borran los tiempos anteriores de este circuito.
+
 ## 0.0.56
 - Nuevo circuito de karts **Kartlos** (Asia · Emiratos): recreación del trazado real con su puente, en el que la recta diagonal pasa por encima de la pista; recta de meta, eses enlazadas y horquillas. Pabellón blanco, palmeras y logo propio.
 - Mazda MX-5: pilotos traseros (se encienden al frenar).

@@ -109,6 +109,15 @@ if (!store.get('purge.records-2026-11-05')) {
   } catch (e) { /* sin almacenamiento */ }
   store.set('purge.records-2026-11-05', true);
 }
+// una sola vez: Fórmula 0 se corre ahora en el sentido contrario, los tiempos anteriores ya no valen
+if (!store.get('purge.f0-reverse-2026-11-05')) {
+  try {
+    const drop = [];
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('dr.') && /^(pb|best)\.karting\./.test(k.slice(3))) drop.push(k); }
+    drop.forEach((k) => localStorage.removeItem(k));
+  } catch (e) { /* sin almacenamiento */ }
+  store.set('purge.f0-reverse-2026-11-05', true);
+}
 if (saved) { for (const k of ['camDist', 'camH']) if (typeof saved[k] === 'number') sel[k] = Math.min(1.4, Math.max(0.3, saved[k])); sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
 
 // ----- pilotos de la IA: nombre, país y nivel (de mejor a peor); en cada carrera se reparten al azar entre los coches rivales -----
