@@ -248,7 +248,7 @@ export function stepCar(c, inp, dt, tr, env) {
 
   // pianos (bordillos): solo existen en el interior de las curvas. Al ser más altos por dentro, te lanzan suavemente hacia fuera (hacia el centro de la pista), sin frenar:
   // ayudan a cerrar la curva si los pisas con ganas y vibran un poco.
-  const KW = Math.min(1.9, WALL - HW - 0.2), side = loc.lat >= 0 ? 1 : -1, over = Math.abs(loc.lat) - (HW - 0.15);
+  const KW = c.type.kind === 'kart' ? 2.8 : Math.min(1.9, WALL - HW - 0.2), side = loc.lat >= 0 ? 1 : -1, over = Math.abs(loc.lat) - (HW - 0.15);
   c.onKerb = !c.air && over > 0 && over < KW + 0.15 && tr.kerb && tr.kerb[loc.i] === side;
   if (c.onKerb && c.speed > 8) {
     const kartK = c.type.kind === 'kart' ? 0.12 : 1; // el kart pasa por encima del piano sin que le empuje

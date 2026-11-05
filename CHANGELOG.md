@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.52
+- Asupark y Fórmula 0: las curvas cerradas tienen los vértices más suaves (un suavizado extra del trazado, con radio mínimo de 5,4 m y 6,2 m).
+- Pianos interiores de las curvas: el doble de ancho (2,8 m), con transición suave y mismo ancho en la física del kart.
+- Muros de los karts un poco más separados (7 m) para que quepa el piano doble, sin cambiar la separación entre tramos.
+- Las gradas de la tribuna principal (pensadas para circuitos normales) no se usan en Fórmula 0 ni Asupark: el decorado propio ya trae gradas. Quitan las butacas que quedaban dentro del asfalto.
+
 ## 0.0.51
 - Karts: los pianos ya no empujan al kart hacia fuera en las eses y horquillas; se pasan por encima sin pelear con la trayectoria.
 - Decorado de Fórmula 0 y Asupark: el edificio de boxes y las gradas estaban girados y atravesaban la pista; ahora van a lo largo de la recta, y cada pieza (vallas, cartel, contenedores, gradas) se coloca comprobando que toda su huella queda fuera del asfalto.

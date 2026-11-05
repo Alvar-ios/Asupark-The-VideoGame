@@ -106,6 +106,7 @@ function generate(seed, style, attempt) {
     k0 = curvatureOf(P, DS);
   }
   P = smoothClosed(P, 2);
+  if (style.extraSmooth) P = smoothClosed(P, style.extraSmooth); // curvas cerradas más suaves (karts)
   P = resampleClosed(P, DS);
   const N = P.length, ds = DS;
   const kap = curvatureOf(P, ds);

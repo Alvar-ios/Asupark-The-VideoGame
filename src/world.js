@@ -850,12 +850,15 @@ function roadMesh(tr, th, stride = 1) {
     const GW = tr.rg ? hwI + tr.rg[i] : hwI + KWI + 0.02, GWj = tr.rg ? hwJ + tr.rg[j] : hwJ + KWJ + 0.02;
 
     // br: bajo el tablero del puente los bordes laterales solo bajan 1,4 m (canto del tablero) para dejar libre el paso de la pista inferior
-    const lat = (k, h, eo, krL, krR, gw, hw, KW, br) => isKart
-      ? [[-eo, 0], [-L, h - 0.04], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + 0.2), h + krL * 0.9], [-hw, h + 0.005], [-0.22, h], [0.22, h], [hw, h + 0.005], [hw + 0.2, h + krR * 0.9], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.04], [eo, 0]][k]
+    const lat = (k, h, eo, krL, krR, gw, hw, KW, br, kwl, kwr) => isKart
+      ? [[-eo, 0], [-L, h - 0.04], [-(hw + kwl + 0.02), h - 0.02], [-(hw + kwl), h - 0.02], [-(hw + kwl), h + krL], [-(hw + 0.2), h + krL * 0.9], [-hw, h + 0.005], [-0.22, h], [0.22, h], [hw, h + 0.005], [hw + 0.2, h + krR * 0.9], [hw + kwr, h + krR], [hw + kwr, h - 0.02], [hw + kwr + 0.02, h - 0.02], [L, h - 0.04], [eo, 0]][k]
       : [[-eo, br ? h - 1.4 : 0], [-L, h - 0.05], [-gw, h - 0.02], [-(hw + KW), h - 0.02], [-(hw + KW), h + krL], [-(hw + KW * 0.45), h + krL * 0.75], [-hw, h + 0.004], [-0.22, h], [0.22, h], [hw, h + 0.004], [hw + KW * 0.45, h + krR * 0.75], [hw + KW, h + krR], [hw + KW, h - 0.02], [gw, h - 0.02], [L, h - 0.05], [eo, br ? h - 1.4 : 0]][k];
 
     const sLen = isKart ? 3.2 : 3.0, s2k = (i + effectiveStride) * tr.ds;
     const kv = (th.noKerbs ? 0 : tr.kerb[i]), kvj = (th.noKerbs ? 0 : tr.kerb[j]);
+    // karts: el piano interior es el doble de ancho (2,8 m) y el exterior 1,4 m; el ancho sube y baja con el mismo ramp que la altura
+    const kwL = (kv, e) => 1.4 + (kv === -1 ? 1.4 * e : 0), kwR = (kv, e) => 1.4 + (kv === 1 ? 1.4 * e : 0);
+    const kwLi = kwL(kv, kEnv[i]), kwRi = kwR(kv, kEnv[i]), kwLj = kwL(kvj, kEnv[j]), kwRj = kwR(kvj, kEnv[j]);
     const wave = (x, e) => (isKart ? 0.22 : (th.kerbRough ? 0.13 + 0.04 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen) : (0.048 + 0.024 * Math.sin(Math.PI * (((x % sLen) + sLen) % sLen) / sLen)) * (th.kerbH || 1))) * e;
     const krLi = kv === -1 ? wave(s, kEnv[i]) : 0, krRi = kv === 1 ? wave(s, kEnv[i]) : 0;
     const krLj = kvj === -1 ? wave(s2k, kEnv[j]) : 0, krRj = kvj === 1 ? wave(s2k, kEnv[j]) : 0;
@@ -863,8 +866,8 @@ function roadMesh(tr, th, stride = 1) {
     const stripeN = Math.floor(s / sLen), stripe = stripeN % 2 === 0;
 
     for (let b = 0; b < 15; b++) {
-      const [l0, y0i] = lat(b, hi, eoI, krLi, krRi, GW, hwI, KWI, brI), [l1, y1i] = lat(b + 1, hi, eoI, krLi, krRi, GW, hwI, KWI, brI);
-      const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj, GWj, hwJ, KWJ, brJ), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj, GWj, hwJ, KWJ, brJ);
+      const [l0, y0i] = lat(b, hi, eoI, krLi, krRi, GW, hwI, KWI, brI, kwLi, kwRi), [l1, y1i] = lat(b + 1, hi, eoI, krLi, krRi, GW, hwI, KWI, brI, kwLi, kwRi);
+      const [l0j, y0j] = lat(b, hj, eoJ, krLj, krRj, GWj, hwJ, KWJ, brJ, kwLj, kwRj), [l1j, y1j] = lat(b + 1, hj, eoJ, krLj, krRj, GWj, hwJ, KWJ, brJ, kwLj, kwRj);
 
       const P = (idx, l, y) => {
         const posX = tr.X[idx], posZ = tr.Z[idx];
@@ -1683,6 +1686,8 @@ function motorsportAmbiance(tr, th, scene, q) {
   }
   scene.add(startLights);
 
+  // 2. Gran tribuna principal (solo circuitos normales: en los karts ya hay gradas propias en el decorado)
+  if (!th.surround) {
   // 2. Gran tribuna principal de espectadores a lo largo de la recta principal (s = 18 a 68)
   const standLength = 52, standTiers = 6, standTierDepth = 0.72, standTierH = 0.42;
   const sMid = 44;
@@ -1748,6 +1753,7 @@ function motorsportAmbiance(tr, th, scene, q) {
   bleachersGroup.add(seatMesh);
   scene.add(bleachersGroup);
 
+  }
   // 3. Muro de boxes (Pit Wall) en el lado interior de la recta principal
   // solo donde la recta es de verdad recta: el muro no puede atravesar la curva siguiente
   const pitLat = -(WALL + 0.35);
