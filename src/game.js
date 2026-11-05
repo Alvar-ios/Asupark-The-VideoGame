@@ -29,10 +29,10 @@ const store = {
   set(k, v) { try { localStorage.setItem('dr.' + k, JSON.stringify(v)); } catch (e) { /* sin almacenamiento */ } },
 };
 const fmtS = (t) => (t == null ? '--' : t >= 60 ? fmt(t) : t.toFixed(3));
-// Mario Circuit (todas las categorías) y Spa en F1 cambiaron de trazado: sus tiempos anteriores a este cambio no cuentan
-const LAYOUT_CUT_ISO = '2026-11-04T00:00:00Z', LAYOUT_CUT = Date.parse(LAYOUT_CUT_ISO);
-const oldLayout = (trackKey, group, at) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1')) && (!at || Date.parse(at) < LAYOUT_CUT);
-const layoutSince = (trackKey, group) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1') ? LAYOUT_CUT_ISO : null);
+// Mario Circuit (todas las categorías), Spa en F1 y Selva Amazónica cambiaron de trazado: sus tiempos anteriores a cada cambio no cuentan
+const cutOf = (trackKey, group) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1') ? '2026-11-04T00:00:00Z' : trackKey === 'amazonas' ? '2026-11-05T16:00:00Z' : null);
+const oldLayout = (trackKey, group, at) => { const c = cutOf(trackKey, group); return !!c && (!at || Date.parse(at) < Date.parse(c)); };
+const layoutSince = (trackKey, group) => cutOf(trackKey, group);
 const fmt = (t) => { if (t == null || !isFinite(t)) return '--'; const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s < 10 ? '0' : ''}${s.toFixed(2)}`; };
 
 // ---------- renderer ----------
@@ -91,7 +91,7 @@ if (!store.get('purge.layout-2026-11-04')) {
   } catch (e) { /* sin almacenamiento */ }
   store.set('purge.layout-2026-11-04', true);
 }
-if (saved) { sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
+if (saved) { for (const k of ['camDist', 'camH']) if (typeof saved[k] === 'number') sel[k] = Math.min(1.4, Math.max(0.3, saved[k])); sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
 
 // ----- pilotos de la IA: nombre, país y nivel (de mejor a peor); en cada carrera se reparten al azar entre los coches rivales -----
 const DRIVERS = [
@@ -1049,7 +1049,8 @@ function updateCamera(dt, snap) {
   S.camY += (y - S.camY) * (snap ? 1 : 1 - Math.exp(-9 * dt));
   const sh = S.shake, rx = Math.sin(S.t * 47 + 0.7) * sh * 0.42, ry = Math.sin(S.t * 61 + 2.1) * sh * 0.34;
   const far = S.camMode === 1 ? 1.38 : 1;
-  const dist = (5.3 + speed * 0.02 + S.fovT * 0.7) * far, hgt = (3.6 + speed * 0.005) * far;
+  const cd = camera.aspect >= 1 ? (sel.camDist == null ? 0.82 : sel.camDist) : 1, ch = camera.aspect >= 1 ? (sel.camH == null ? 0.72 : sel.camH) : 1; // PC: más cerca y más baja (ajustable en Ajustes)
+  const dist = (5.3 + speed * 0.02 + S.fovT * 0.7) * far * cd, hgt = (3.6 + speed * 0.005) * far * ch;
   camera.position.set(x - sn * dist + rx, S.camY + hgt + ry, z - cs * dist);
   camera.lookAt(x + sn * 4.2, y + 0.35, z + cs * 4.2);
   if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix(); }
@@ -1088,6 +1089,8 @@ function updateCarVisual(c, dt) {
 const hudCache = {};
 function setText(id, v) { if (hudCache[id] !== v) { hudCache[id] = v; $(id).textContent = v; } }
 const miniCtx = $('mini').getContext('2d');
+$('mini').onclick = () => { sel.miniFollow = !(sel.miniFollow === true); store.set('sel', sel); }; // toca el minimapa: fijo ↔ gira contigo
+$('mini').style.pointerEvents = 'auto'; $('mini').style.cursor = 'pointer';
 const rpmSegs = [...$('rpmBar').children];
 let miniT = 0, lastFx = -1, lastRpm = -1;
 // torre de posiciones en tiempo real (estilo F1): puesto, bandera, código y diferencia con el líder
@@ -1144,12 +1147,24 @@ function updateHud(dt) {
   if (S.flash > 0) { S.flash = Math.max(0, S.flash - 0.03); $('fx-flash').style.opacity = S.flash.toFixed(2); }
   // minimapa (20 Hz)
   miniT += dt; if (miniT < 0.05) return; miniT = 0;
-  const m = S.mini; miniCtx.clearRect(0, 0, 300, 300); miniCtx.drawImage(m.cv, 0, 0);
-  for (const c of S.cars) {
-    miniCtx.fillStyle = c.isPlayer ? '#ffc928' : '#' + new THREE.Color(c.color).getHexString();
-    miniCtx.beginPath(); miniCtx.arc(c.x * m.sc + m.ox, c.z * m.sc + m.oz, c.isPlayer ? 9 : 6.5, 0, 7); miniCtx.fill();
-    if (c.isPlayer) { miniCtx.strokeStyle = '#000'; miniCtx.lineWidth = 3; miniCtx.stroke(); }
+  const m = S.mini, pl = S.cars.find((c) => c.isPlayer), fol = sel.miniFollow === true && pl;
+  miniCtx.clearRect(0, 0, 300, 300); miniCtx.save();
+  if (fol) { // modo seguimiento: el mapa gira con el coche (arriba = delante) y se acerca
+    const Z = 2.1; miniCtx.beginPath(); miniCtx.arc(150, 150, 146, 0, 7); miniCtx.clip();
+    miniCtx.translate(150, 150); miniCtx.rotate(pl.psi - Math.PI); miniCtx.scale(Z, Z); miniCtx.translate(-(pl.x * m.sc + m.ox), -(pl.z * m.sc + m.oz));
   }
+  miniCtx.drawImage(m.cv, 0, 0);
+  const dot = (c, r) => { miniCtx.beginPath(); miniCtx.arc(c.x * m.sc + m.ox, c.z * m.sc + m.oz, r / (fol ? 2.1 : 1), 0, 7); miniCtx.fill(); };
+  for (const c of S.cars) { // rivales primero, jugador encima
+    if (c.isPlayer) continue; miniCtx.fillStyle = '#' + new THREE.Color(c.color).getHexString(); dot(c, 6.5); miniCtx.strokeStyle = 'rgba(0,0,0,.7)'; miniCtx.lineWidth = 1.5 / (fol ? 2.1 : 1); miniCtx.stroke();
+  }
+  if (pl) { // flecha del jugador orientada con el coche
+    const px = pl.x * m.sc + m.ox, pz = pl.z * m.sc + m.oz, k = 1 / (fol ? 2.1 : 1);
+    miniCtx.save(); miniCtx.translate(px, pz); miniCtx.rotate(Math.PI - pl.psi); miniCtx.scale(k, k);
+    miniCtx.beginPath(); miniCtx.moveTo(0, -12); miniCtx.lineTo(8, 9); miniCtx.lineTo(0, 4); miniCtx.lineTo(-8, 9); miniCtx.closePath();
+    miniCtx.fillStyle = '#ffc928'; miniCtx.fill(); miniCtx.strokeStyle = '#000'; miniCtx.lineWidth = 2.5; miniCtx.stroke(); miniCtx.restore();
+  }
+  miniCtx.restore();
 }
 
 // el navegador solo deja sonar tras un gesto del usuario: el primero activa el audio (y la música del menú)
@@ -1205,6 +1220,7 @@ function buildSettings() {
   for (const k of ['master', 'music', 'engine']) { $('v_' + k).value = Math.round(sel.vol[k] * 100); $('vt_' + k).textContent = Math.round(sel.vol[k] * 100) + '%'; }
   for (const b of $('gfxSel').children) b.classList.toggle('on', b.dataset.v === sel.gfx);
 }
+for (const k of ['camDist', 'camH']) { const dv = { camDist: 0.82, camH: 0.72 }[k]; $('v_' + k).value = Math.round((sel[k] == null ? dv : sel[k]) * 100); $('vt_' + k).textContent = $('v_' + k).value + '%'; $('v_' + k).oninput = (e) => { sel[k] = e.target.value / 100; $('vt_' + k).textContent = e.target.value + '%'; store.set('sel', sel); }; }
 for (const k of ['master', 'music', 'engine']) $('v_' + k).oninput = (e) => { sel.vol[k] = e.target.value / 100; $('vt_' + k).textContent = e.target.value + '%'; sound.init(); sound.setVolumes(sel.vol); store.set('sel', sel); };
 $('gfxSel').onclick = (e) => { if (e.target.dataset.v) { sel.gfx = e.target.dataset.v; store.set('sel', sel); applyGfx(); buildSettings(); } };
 const openSettings = () => { buildSettings(); $('settings').classList.remove('hidden'); };

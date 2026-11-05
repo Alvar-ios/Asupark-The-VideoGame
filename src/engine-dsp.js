@@ -45,9 +45,10 @@ Object.assign(PROFILES, {
   stradale: derive('m3', 1.3, { name: 'Alfa 33 Stradale (V8 agudo)', cyl: 8, idle: 1100, redline: 9500, gain: 1.0, sub: 0.5, rumble: 0.4, crackle: 1.1, crkMin: 3500, thump: 0.8, burble: 0.3, rough: 0.1, tau: 0.34 }),
   slr: derive('m3', 0.85, { name: 'SLR (V8 sobrealimentado)', cyl: 8, idle: 750, redline: 6600, gain: 1.4, supercharger: 1, sub: 1.5, rumble: 1.0, crackle: 1.8, crkMin: 2300, thump: 1.5, burble: 1.0, rough: 0.2 }),
   aston: derive('porsche', 1.8, { name: 'F1 híbrido (V6 turbo)', cyl: 6, idle: 3500, redline: 13500, gain: 0.95, electric: 0.4, turboWhine: 0.8, turboNoise: 0.6, sub: 0.25, rumble: 0.15, crackle: 0.5, crkMin: 6000, thump: 0.3, burble: 0, rough: 0.04, miss: 0.02, tau: 0.25 }),
-  lotus: derive('m3', 1.45, { name: 'Lotus 72 (Cosworth V8)', cyl: 8, idle: 2000, redline: 10500, gain: 1.05, sub: 0.5, rumble: 0.35, crackle: 0.9, crkMin: 4000, thump: 0.6, burble: 0.2, rough: 0.2, miss: 0.08, tau: 0.3 }),
+  lotus: derive('m3', 1.45, { name: 'Lotus 72 (Cosworth V8)', cyl: 8, idle: 2000, redline: 10500, gain: 1.05, sub: 0.9, rumble: 0.35, crackle: 0.9, crkMin: 4000, thump: 0.6, burble: 0.2, rough: 0.2, miss: 0.08, tau: 0.3 }),
   mclaren: derive('m3', 1.6, { name: 'McLaren MP4-25 (V8 18000)', cyl: 8, idle: 3500, redline: 14500, gain: 0.95, sub: 0.2, rumble: 0.15, crackle: 0.6, crkMin: 6000, thump: 0.3, burble: 0, rough: 0.04, miss: 0.02, tau: 0.25 }),
 });
+const thrFlut = (e) => Math.min(1, e.thrS); // la inestabilidad de régimen es mayor con gas
 class SVF { // filtro de estado variable (paso banda)
   constructor() { this.l = 0; this.b = 0; }
   bp(x, f, q, sr) { const g = 2 * Math.sin(Math.PI * Math.min(f, sr * 0.25) / sr), k = 1 / q; this.l += g * this.b; const h = x - this.l - k * this.b; this.b += g * h; return this.b; }
@@ -57,11 +58,11 @@ export class EngineDSP {
     this.sr = sr; this.setProfile(profile); this.seed = seed >>> 0 || 1;
     this.phase = 0; this.cyl = 0; this.env = 0; this.hp = 0; this.hpIn = 0;
     this.limPh = 0; this.limHz = 9; this.limDepth = 0.05; this.limMix = 0; this.lastRpm = 0; this.rpmS = 900; this.thrS = 0; this.boostS = 0; this.pend = 0; this.pendEnv = 0; this.limT = 0; this.t = 0;
-    this.subLP = 0; this.rumLP = 0; this.lpS = 0; this.lpA = 1 - Math.exp(-6.2832 * 6000 / sr); this.wob = 0; this.wobT = 0; this.evS = 0;
+    this.subLP = 0; this.rumLP = 0; this.lpS = 0; this.lpA = 1 - Math.exp(-6.2832 * 3400 / sr); this.lpS2 = 0; this.flut = 0; this.flutT = 0; this.wob = 0; this.wobT = 0; this.evS = 0;
     this.nF = new SVF(); this.fanF = new SVF(); this.turF = new SVF(); this.crkF = new SVF(); this.crkF2 = new SVF(); this.thF = new SVF();
     this.turPh = 0; this.scPh = 0; this.evPh = 0; this.crk = 0; this.thump = 0; this.popsLeft = 0; this.popT = 0; this.popAmp = 0;
   }
-  resetState() { for (const f of this.f) { f.l = 0; f.b = 0; } for (const f of [this.nF, this.fanF, this.turF, this.crkF, this.crkF2, this.thF]) { f.l = 0; f.b = 0; } this.env = 0; this.hp = 0; this.hpIn = 0; this.subLP = 0; this.rumLP = 0; this.lpS = 0; this.crk = 0; this.thump = 0; this.popsLeft = 0; }
+  resetState() { for (const f of this.f) { f.l = 0; f.b = 0; } for (const f of [this.nF, this.fanF, this.turF, this.crkF, this.crkF2, this.thF]) { f.l = 0; f.b = 0; } this.env = 0; this.hp = 0; this.hpIn = 0; this.subLP = 0; this.rumLP = 0; this.lpS = 0; this.lpS2 = 0; this.crk = 0; this.thump = 0; this.popsLeft = 0; }
   setProfile(name) { this.P = PROFILES[name] || PROFILES.porsche; this.f = this.P.formants.map(() => new SVF()); }
   rnd() { this.seed ^= this.seed << 13; this.seed >>>= 0; this.seed ^= this.seed >>> 17; this.seed ^= this.seed << 5; this.seed >>>= 0; return this.seed / 4294967296; }
   pop(amp) { this.crk = Math.max(this.crk, amp); this.thump = Math.max(this.thump, amp * this.P.thump); }
@@ -74,7 +75,8 @@ export class EngineDSP {
       // ralentí inestable: el régimen "caza" arriba y abajo
       const lowRpm = Math.max(0, 1 - this.rpmS / 2800);
       this.wobT += 1 / sr; if (this.wobT > 0.05) { this.wobT = 0; this.wob += (this.rnd() - 0.5) * 0.02 - this.wob * 0.05; }
-      const rpm0 = this.rpmS * (1 + (this.wob + 0.012 * Math.sin(6.28 * 1.7 * this.t)) * lowRpm);
+      this.flutT += 1 / sr; if (this.flutT > 0.03) { this.flutT = 0; this.flut += (this.rnd() - 0.5) * 0.0025 - this.flut * 0.12; }
+      const rpm0 = this.rpmS * (1 + (this.wob + 0.012 * Math.sin(6.28 * 1.7 * this.t)) * lowRpm + this.flut * (0.4 + 0.6 * thrFlut(this)));
       // limitador real: corta el encendido, las vueltas caen un poco y vuelve a entrar; ritmo y profundidad irregulares
       this.limMix += ((p.limiter ? 1 : 0) - this.limMix) * 0.003;
       this.limPh += this.limHz / sr;
@@ -103,9 +105,9 @@ export class EngineDSP {
       const x = this.hp;
       // resonancias graves; los agudos solo se abren con carga
       let y = 0;
-      for (let k = 0; k < P.formants.length; k++) { const Fm = P.formants[k]; y += this.f[k].bp(x, Fm[0] * (1 + 0.22 * rpm / P.redline), Fm[1], sr) * Fm[2] * (Fm[3] > 0.3 ? 1.7 : 1) * ((1 - Fm[3]) + Fm[3] * (0.2 + 0.9 * load)); }
+      for (let k = 0; k < P.formants.length; k++) { const Fm = P.formants[k]; y += this.f[k].bp(x, Fm[0] * (1 + 0.22 * rpm / P.redline), Fm[1], sr) * Fm[2] * (Fm[3] > 0.3 ? 1.25 : 1) * (Fm[0] > 1500 ? 0.6 : 1) * ((1 - Fm[3]) + Fm[3] * (0.2 + 0.9 * load)); }
       // refuerzo de graves: pulso filtrado a ~130 Hz
-      this.subLP += (x - this.subLP) * (1 - Math.exp(-6.283 * 130 / sr)); y += this.subLP * P.sub * 1.6;
+      this.subLP += (x - this.subLP) * (1 - Math.exp(-6.283 * 130 / sr)); y += this.subLP * P.sub * 1.9;
       const nz = this.rnd() * 2 - 1;
       // rugido: ruido grave modulado por la carga
       this.rumLP += (nz - this.rumLP) * (1 - Math.exp(-6.283 * 110 / sr));
@@ -116,15 +118,15 @@ export class EngineDSP {
       let tur = 0;
       if (P.turboNoise || P.turboWhine) {
         const bo = this.boostS * Math.min(1, thr * 1.5 + 0.05);
-        tur += this.turF.bp(nz, 2200 + this.boostS * 3200 + rpm * 0.2, 1.6, sr) * P.turboNoise * 0.075 * bo;
+        tur += this.turF.bp(nz, 2200 + this.boostS * 3200 + rpm * 0.2, 1.6, sr) * P.turboNoise * 0.05 * bo;
         this.turPh += (2300 + this.boostS * 4200 + rpm * 0.3) / sr; if (this.turPh >= 1) this.turPh -= 1;
-        tur += Math.sin(6.2831853 * this.turPh) * P.turboWhine * 0.006 * bo;
+        tur += Math.sin(6.2831853 * this.turPh) * P.turboWhine * 0.003 * bo;
       }
       // compresor (Mini): silbido ligado a las vueltas, presente con el gas
       if (P.supercharger) {
         this.scPh += (rpm / 60 * 11.5) / sr; if (this.scPh >= 1) this.scPh -= 1;
         const sc = (Math.sin(6.2831853 * this.scPh) + 0.45 * Math.sin(12.566 * this.scPh) + 0.2 * Math.sin(18.85 * this.scPh));
-        tur += sc * 0.032 * (0.25 + 0.75 * thr) * Math.min(1, rpm / 2500);
+        tur += sc * 0.016 * (0.25 + 0.75 * thr) * Math.min(1, rpm / 2500);
       }
       // híbrido: zumbido del inversor eléctrico (sube con la velocidad)
       let evs = 0;
@@ -135,12 +137,12 @@ export class EngineDSP {
       else if (!overrun && thr > 0.25 && P.burble && this.popsLeft <= 0 && this.rnd() < (P.burble * 7 / sr) * (rpm / P.redline)) { this.popsLeft = 1; this.popT = 0; this.popAmp = 0.3 + this.rnd() * 0.25; }
       if (this.popsLeft > 0 && --this.popT <= 0) { this.pop(this.popAmp); this.popAmp *= 0.8; this.popsLeft--; this.popT = sr * (0.022 + this.rnd() * 0.05); }
       let crack = 0;
-      if (this.crk > 0.004) { crack = (this.crkF.bp(nz, 1300 + 1200 * this.rnd(), 1.2, sr) + this.crkF2.bp(nz, 420, 1.6, sr) * 0.7) * this.crk * 0.4; this.crk *= 0.9984; } else this.crk = 0;
+      if (this.crk > 0.004) { crack = (this.crkF.bp(nz, 1300 + 1200 * this.rnd(), 1.2, sr) + this.crkF2.bp(nz, 420, 1.6, sr) * 0.7) * this.crk * 0.26; this.crk *= 0.9984; } else this.crk = 0;
       if (this.thump > 0.004) { crack += this.thF.bp(nz, 150, 1.3, sr) * this.thump * 1.2; this.thump *= 0.9993; } else this.thump = 0;
       const engine = (y * 0.5 + rumble + intake + fan) * (1 - 0.88 * ev);
       let s = (engine + tur + evs + crack) * P.gain;
       s = Math.tanh(1.05 * s); // saturación muy suave (antes más agresiva: sonaba áspero)
-      this.lpS += (s - this.lpS) * this.lpA; s = this.lpS; // paso bajo ~6 kHz: quita el siseo y deja un timbre más redondo y limpio
+      this.lpS += (s - this.lpS) * this.lpA; this.lpS2 += (this.lpS - this.lpS2) * this.lpA; s = this.lpS2 * 0.5 + this.lpS * 0.5; // paso bajo ~6 kHz: quita el siseo y deja un timbre más redondo y limpio
       if (s !== s || s > 2 || s < -2) { s = 0; this.resetState(); } // red de seguridad: si un filtro se desbocara, se reinicia en vez de chillar
       out[i] = s * 0.62;
     }

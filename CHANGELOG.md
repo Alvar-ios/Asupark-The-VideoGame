@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.41
+- Cámara de PC más baja y más cerca del coche por defecto; en Ajustes hay dos deslizadores (distancia y altura). En móvil no cambia.
+- Motores menos estridentes: menos agudos, silbidos de turbo/compresor y petardeos más suaves, filtro más redondo y una ligera inestabilidad natural del régimen.
+- Minimapa: flecha del jugador orientada, rivales con borde y, al tocarlo o hacer clic, modo seguimiento (gira contigo y se acerca).
+- Selva Amazónica (Perú): curvas más cerradas y complicadas (horquilla doble a la derecha, eses a ambos lados) manteniendo las rectas largas. Los tiempos del trazado anterior no cuentan (supabase/cleanup-layout-records.sql los borra online).
+
 ## 0.0.40
 - Nuevo circuito: Selva Amazónica (Perú). Figura de ocho con un puente del propio circuito sobre sí mismo, curvas rápidas y dos eses, horquillas más anchas y tramos normales más estrechos, lagos, árboles gigantes y selva muy frondosa. Sin barro ni charcos y con un chaparrón local en un tramo.
 - Ancho de pista variable (más ancho en curvas cerradas) y microclima de lluvia por tramos como nuevas capacidades del trazado.
