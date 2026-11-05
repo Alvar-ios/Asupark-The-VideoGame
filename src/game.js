@@ -8,7 +8,7 @@ import { buildSpeedProfile, aiInput, benchmark, aiType, AI_TOP } from './ai.js';
 import { buildWorld, disposeScene, updateWind } from './world.js';
 import { Sound } from './audio.js';
 import { SONGS } from './music.js';
-import { WORLD_PATH, WORLD_PTS } from './worldmap.js';
+import { createGlobe } from './globe.js';
 import { addHeadlights, updateHeadlights } from './headlights.js';
 import { SURF } from './surface.js';
 import { Leaderboard } from './leaderboard.js';
@@ -187,20 +187,20 @@ $('pickCar').onclick = () => { if ($('menu').dataset.view === 'garage') { setVie
 $('flyClose').onclick = () => setView('home');
 window.addEventListener('keydown', (e) => { if (S.state === 'menu' && $('menu').dataset.view === 'tracks' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { $(e.code === 'ArrowLeft' ? 'stPrev' : 'stNext').click(); e.preventDefault(); e.stopPropagation(); } }, true);
 window.addEventListener('keydown', (e) => { if (e.code === 'Escape' && S.state === 'menu' && $('menu').dataset.view !== 'home') { setView('home'); e.stopPropagation(); } }, true);
-WORLD_PTS.asu = [WORLD_PTS.es[0] - 1.6, WORLD_PTS.es[1] + 2.2];
-const MAP_LOC = { pruebas: 'jerez', monaco: 'mc', spa: 'be', valle: 'br', desierto: 'mx', neon: 'jp', prisma: 'jpm', nieve: 'ch', amazonas: 'pe', karting: 'es', asupark: 'asu' };
-let wmEu = false;
+const MAP_LL = { pruebas: [36.7, -6.0], monaco: [43.74, 7.42], spa: [51.0, 5.6], valle: [-23.7, -46.7], desierto: [19.4, -99.1], neon: [35.7, 139.7], prisma: [34.7, 135.5], nieve: [47.1, 8.6], amazonas: [-12.0, -77.0], karting: [42.4, -1.2], asupark: [38.4, -3.2] };
+const CONTS = [{ id: 'eu', name: 'Europa', ll: [46, 8], ids: ['pruebas', 'monaco', 'spa', 'nieve', 'karting', 'asupark'] }, { id: 'am', name: 'América', ll: [-2, -72], ids: ['valle', 'desierto', 'amazonas'] }, { id: 'as', name: 'Asia', ll: [34, 133], ids: ['neon', 'prisma'] }];
+const contOf = (t) => CONTS.find((c) => c.ids.includes(t.th.id)) || CONTS[0];
+let globe = null, wmCont = null, wmWorld = false;
 function buildMap() {
-  if (!$('wmLand').getAttribute('d')) { $('wmLand').setAttribute('d', WORLD_PATH); $('wmZoom').onclick = () => { wmEu = !wmEu; buildMap(); }; }
-  { const ch = WORLD_PTS.ch, z = wmEu ? 4.2 : 1, w = $('worldMap'); w.style.setProperty('--z', z); $('wmInner').style.transform = `translate(${50 - z * ch[0] - (wmEu ? 3 : 0) * 0}%,${50 - z * (ch[1] + 1.5)}%) scale(${z})`; $('wmZoom').textContent = wmEu ? 'Ver mundo' : 'Zoom Europa'; }
-  const box = $('wmPins'); box.innerHTML = '';
-  tracks.forEach((t, i) => {
-    const loc = WORLD_PTS[MAP_LOC[t.th.id]] || WORLD_PTS.es, daily = t.key === 'daily', b = document.createElement('button'); b.type = 'button';
-    b.className = 'wm-pin' + (i === sel.track ? ' on' : '') + (daily ? ' daily' : ''); b.style.left = (loc[0] + (daily ? 1.6 : 0)) + '%'; b.style.top = (loc[1] + (daily ? -3.2 : 0)) + '%';
-    b.title = t.name; b.setAttribute('aria-label', b.title); b.innerHTML = flagSvg(countryOf(t)[0]);
-    b.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
-    box.appendChild(b);
-  });
+  const cur = tracks[sel.track], activeC = wmCont && CONTS.some((c) => c.id === wmCont) ? CONTS.find((c) => c.id === wmCont) : contOf(cur);
+  if (!globe) globe = createGlobe($('worldMap'));
+  const pick = (i) => { sel.track = i; sel.carId = CARS[sel.car].id; wmCont = contOf(tracks[i]).id; store.set('sel', sel); buildMenu(); };
+  const here = tracks.map((t, i) => [t, i]).filter(([t]) => contOf(t) === activeC);
+  globe.focus(activeC.ll[0], activeC.ll[1], 1);
+  globe.setPins(tracks.map((t, i) => { const ll = MAP_LL[t.th.id] || MAP_LL.pruebas, daily = t.key === 'daily'; return { lat: ll[0] + (daily ? .7 : 0), lon: ll[1] + (daily ? .9 : 0), on: i === sel.track, title: t.name, html: flagSvg(countryOf(t)[0]), onClick: () => pick(i) }; }));
+  $('contPanel').innerHTML = `<div class="cp-tabs">${CONTS.map((c) => `<button type="button" data-c="${c.id}" class="${c === activeC ? 'on' : ''}">${c.name}</button>`).join('')}</div>` + here.map(([t, i]) => `<button type="button" class="cp-row${i === sel.track ? ' on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span><span>${t.key === 'daily' ? 'Pista del día' : t.name}<small>${countryOf(t)[1]} · ${(t.tr.len / 1000).toFixed(1)} km</small></span>${t.key === 'daily' ? '<b>★</b>' : ''}</button>`).join('');
+  $('contPanel').querySelectorAll('.cp-tabs button').forEach((b) => { b.onclick = () => { wmCont = b.dataset.c; buildMap(); }; });
+  $('contPanel').querySelectorAll('.cp-row').forEach((b) => { b.onclick = () => pick(+b.dataset.i); });
   const t = tracks[sel.track], [cc, cname] = countryOf(t), env = envLabel(t); let best = null; for (const cc2 of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc2.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = r; }
   $('trHero').innerHTML = `<div class="trh-map"><canvas id="trCv"></canvas></div><div class="trh-info">${t.th.logo ? `<img class="trh-logo" src="./assets/logos/${t.th.logo}.webp" alt="${t.name}">` : ''}<em><span class="flag">${flagSvg(cc)}</span>${cname}</em><h2>${t.name}</h2><p>${t.sub}</p><div class="trh-chips"><span>${(t.tr.len / 1000).toFixed(2)} km</span><span>${env}</span>${best ? `<span class="pb">Tu mejor ${fmt(best.lap)}</span>` : ''}</div><button type="button" id="wmGo">ELEGIR ESTE CIRCUITO</button></div>`;
   drawPreview($('trCv'), t.tr, t.th, 520, 280, 1.5);

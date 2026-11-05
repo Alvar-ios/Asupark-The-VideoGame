@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.49
+- Selector de circuitos: globo terráqueo 3D que oscila de lado a lado (también se arrastra). Pines con la bandera de cada circuito y panel por continente (Europa, América, Asia) con la lista de circuitos; al elegir continente el globo gira y se acerca.
+- Corregido el ancho del selector en pantallas medianas (se salía por la derecha).
+
 ## 0.0.48
 - Garaje: cada stat lleva su número (km/h, aceleración, giro y agarre) para comparar. Kart algo más lento.
 - Fórmula 0: la salida está justo tras la horquilla donde empezaba el sector 3, con la bandera a la izquierda, y el primer giro es a izquierdas. Neumáticos hasta el doble de altos en las curvas, y ya no se colocan neumáticos dentro de la pista en las curvas cerradas.
