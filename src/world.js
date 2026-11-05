@@ -1319,6 +1319,22 @@ function createFoamWedgeGeometry() {
   return g;
 }
 
+// Marca local por circuito (rótulo en las barreras junto a los patrocinadores globales)
+const LOCAL_BRANDS = {
+  pruebas: ['ESTRELLA GALICIA', '#c8102e', '#ffffff'], monaco: ['HÔTEL DE PARIS', '#0b1f3a', '#e8c872'], spa: ['SPA MONOPOLE', '#0a4d8c', '#ffffff'],
+  valle: ['GUARANÁ ANTARCTICA', '#0a7a3c', '#ffe14d'], desierto: ['TEQUILA SAUZA', '#7a2a0a', '#ffd166'], neon: ['ASAHI SUPER DRY', '#101820', '#f2f2f2'],
+  nieve: ['RICOLA', '#00873c', '#ffffff'], amazonas: ['INCA KOLA', '#f6c600', '#c8102e'], karting: ['KARTING CLUB', '#d91e18', '#ffffff'],
+};
+const localBrandCache = {};
+function localBrandTex(th) {
+  const b = LOCAL_BRANDS[th.id]; if (!b || typeof document === 'undefined') return null;
+  if (localBrandCache[th.id]) return localBrandCache[th.id];
+  const c = document.createElement('canvas'); c.width = 1536; c.height = 128; const x = c.getContext('2d');
+  x.fillStyle = b[1]; x.fillRect(0, 0, 1536, 128); x.fillStyle = b[2]; x.fillRect(0, 0, 1536, 8); x.fillRect(0, 120, 1536, 8);
+  x.font = '900 84px "Jersey 10",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  for (const cx of [384, 1152]) x.fillText(b[0], cx, 66);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; localBrandCache[th.id] = t; return t;
+}
 function sponsorBarrierDecals(tr, th, scene) {
   if (th.deco === 'kart') return;
   const N = tr.N;
@@ -1329,16 +1345,16 @@ function sponsorBarrierDecals(tr, th, scene) {
     const i = Math.floor(s / tr.ds) % N;
     if (Math.abs(tr.kap[i]) < 0.0055 && s - lastS >= minSpacing) {
       if ((tr.tunnels || []).some((t) => s > t.s0 - 6 && s < t.s1 + 6)) continue;
-      sections.push({ s0: s, s1: s + 12.0, brandIdx: Math.floor(s / 32) % 4 });
+      sections.push({ s0: s, s1: s + 12.0, brandIdx: Math.floor(s / 32) % (localBrandTex(th) ? 5 : 4) });
       lastS = s;
     }
   }
   if (!sections.length) return;
 
-  for (let b = 0; b < 4; b++) {
+  for (let b = 0; b < 5; b++) {
     const group = sections.filter((sec) => sec.brandIdx === b);
     if (!group.length) continue;
-    const tex = getSponsorTexture(b);
+    const tex = b === 4 ? localBrandTex(th) : getSponsorTexture(b);
     const mat = new THREE.MeshStandardMaterial({
       map: tex,
       roughness: 0.35,
@@ -1377,7 +1393,7 @@ function sponsorBarrierDecals(tr, th, scene) {
           pos.push(px, py + 0.08, pz);
           pos.push(px, py + 0.58, pz);
 
-          const u = (k / stepN) * 2.0; // 2 repeticiones completas del logo por tramo de 12m
+          const u = (k / stepN) * (b === 4 ? 1.0 : 2.0); // 2 repeticiones del logo por tramo de 12 m (la marca local lleva 2 rótulos en su textura)
           uvs.push(u, 0.0, u, 1.0);
           vOffset += 2;
         }

@@ -13,6 +13,7 @@ import { SURF } from './surface.js';
 import { Leaderboard } from './leaderboard.js';
 import { loadBora, buildBora, boraReady } from './bora.js';
 import { loadPorsche, buildPorsche, porscheReady } from './porsche.js';
+import { buildKart } from './kart.js';
 import { loadModelCar, buildModelCar, modelCarReady, MODEL } from './modelcars.js';
 
 const $ = (id) => document.getElementById(id);
@@ -149,7 +150,7 @@ const playerDrv = () => ({ flag: lb.flag, helm: lb.helmet });
 const drvOf = (c) => (c && c.isPlayer ? playerDrv() : c && c.driver) || null;
 const drvIc = (d, sm) => d ? `<span class="flag${sm ? ' sm' : ''}">${flagSvg(d.flag)}</span><span class="hel${sm ? ' sm' : ''}">${helmetSvg(d.helm)}</span>` : '';
 const FLAG_NAMES = { es: 'España', pt: 'Portugal', fr: 'Francia', de: 'Alemania', it: 'Italia', gb: 'Reino Unido', ie: 'Irlanda', nl: 'Países Bajos', be: 'Bélgica', ch: 'Suiza', at: 'Austria', pl: 'Polonia', ro: 'Rumanía', ua: 'Ucrania', se: 'Suecia', mc: 'Mónaco', us: 'Estados Unidos', mx: 'México', co: 'Colombia', ar: 'Argentina', br: 'Brasil', pe: 'Perú', ma: 'Marruecos', jp: 'Japón', pr: 'Orgullo' };
-const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'] };
+const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'Kartódromo'] };
 const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
 function drawPreview(cv, tr, th) {
   const w = 300, h = 130, dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
@@ -270,6 +271,8 @@ function buildCarMesh(color, kind, lod = 'lo') {
   if (MODEL[kind]) {
     if (!modelCarReady(kind, lod)) throw new Error(`El modelo ${kind} (${lod}) no est? cargado`);
     b = buildModelCar(kind, color, lod);
+  } else if (kind === 'kart') {
+    b = buildKart(color);
   } else if (kind === 'porsche') {
     if (!porscheReady(lod)) throw new Error(`El modelo Porsche (${lod}) no est? cargado`);
     b = buildPorsche(color, lod);
@@ -277,7 +280,7 @@ function buildCarMesh(color, kind, lod = 'lo') {
     if (!boraReady(lod)) throw new Error(`El modelo VW Bora (${lod}) no est? cargado`);
     b = buildBora(color, lod);
   } else throw new Error(`No existe un modelo real para ${kind}`);
-  b.root.scale.setScalar(CS * (kind === 'bora' ? 0.97 : 0.98) * (CARTOON.has(kind) ? 0.8 : 1)); // los cartoon, más chiquitillos
+  b.root.scale.setScalar(CS * (kind === 'bora' ? 0.97 : 0.98) * (CARTOON.has(kind) ? 0.8 : 1) * (kind === 'kart' ? 1.05 : 1)); // los cartoon, más chiquitillos
   return b;
 }
 
@@ -396,12 +399,14 @@ const benchFor = (ti, type) => benchmark(ti.tr, type, ti.th, ti.key + '.' + ti.t
 function loadCarAsset(type, player) {
   const lods = player && !MOBILE ? ['hi', 'lo'] : ['lo'];
   if (MODEL[type.kind]) return loadModelCar(type.kind, lods);
+  if (type.kind === 'kart') return Promise.resolve();
   if (type.kind === 'porsche') return loadPorsche(lods);
   if (type.kind === 'bora') return loadBora(lods);
   return Promise.reject(new Error(`No hay un modelo real registrado para ${type.name}`));
 }
 function carAssetReady(type, lod) {
   if (MODEL[type.kind]) return modelCarReady(type.kind, lod);
+  if (type.kind === 'kart') return true;
   if (type.kind === 'porsche') return porscheReady(lod);
   if (type.kind === 'bora') return boraReady(lod);
   return false;

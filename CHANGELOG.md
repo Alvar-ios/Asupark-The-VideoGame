@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.42
+- Nueva categoría Karts con 4 karts (Iniciación 100cc, Alquiler 200cc, Competición KZ y Superkart 250): modelo 3D propio con piloto y casco, mucho agarre, giro rápido y motores monocilíndricos agudos.
+- Nuevo circuito: Kartódromo, pista estrecha y técnica (horquillas, eses y chicane) de unos 770 m con muros de neumáticos.
+- Carteles de patrocinio con una marca local por circuito junto a los patrocinadores globales (Estrella Galicia, Hôtel de Paris, Spa Monopole, Inca Kola…).
+
 ## 0.0.41
 - Cámara de PC más baja y más cerca del coche por defecto; en Ajustes hay dos deslizadores (distancia y altura). En móvil no cambia.
 - Motores menos estridentes: menos agudos, silbidos de turbo/compresor y petardeos más suaves, filtro más redondo y una ligera inestabilidad natural del régimen.
