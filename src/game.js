@@ -156,8 +156,8 @@ const drvIc = (d, sm) => d ? `<span class="flag${sm ? ' sm' : ''}">${flagSvg(d.f
 const FLAG_NAMES = { es: 'España', pt: 'Portugal', fr: 'Francia', de: 'Alemania', it: 'Italia', gb: 'Reino Unido', ie: 'Irlanda', nl: 'Países Bajos', be: 'Bélgica', ch: 'Suiza', at: 'Austria', pl: 'Polonia', ro: 'Rumanía', ua: 'Ucrania', se: 'Suecia', mc: 'Mónaco', us: 'Estados Unidos', mx: 'México', co: 'Colombia', ar: 'Argentina', br: 'Brasil', pe: 'Perú', ma: 'Marruecos', jp: 'Japón', pr: 'Orgullo' };
 const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'Fórmula 0'], asupark: ['es', 'Asupark'] };
 const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
-function drawPreview(cv, tr, th) {
-  const w = 300, h = 130, dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
+function drawPreview(cv, tr, th, w = 300, h = 130, kw = 1) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
   cv.width = w * dpr; cv.height = h * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
   let mnx = 1e9, mxx = -1e9, mnz = 1e9, mxz = -1e9;
   for (let i = 0; i < tr.N; i += 4) { mnx = Math.min(mnx, tr.X[i]); mxx = Math.max(mxx, tr.X[i]); mnz = Math.min(mnz, tr.Z[i]); mxz = Math.max(mxz, tr.Z[i]); }
@@ -165,9 +165,9 @@ function drawPreview(cv, tr, th) {
   const ox = (w - (mxx - mnx) * sc) / 2 - mnx * sc, oz = (h - (mxz - mnz) * sc) / 2 - mnz * sc;
   x.lineJoin = x.lineCap = 'round';
   const path = () => { x.beginPath(); for (let i = 0; i < tr.N; i += 3) { const px = tr.X[i] * sc + ox, pz = tr.Z[i] * sc + oz; i ? x.lineTo(px, pz) : x.moveTo(px, pz); } x.closePath(); };
-  x.strokeStyle = '#000'; x.lineWidth = 9; path(); x.stroke();
-  x.strokeStyle = '#' + new THREE.Color(th.night ? th.kerb1 : th.road).lerp(new THREE.Color(0xffffff), 0.55).getHexString(); x.lineWidth = 6; path(); x.stroke();
-  x.fillStyle = '#ffc928'; x.beginPath(); x.arc(tr.X[0] * sc + ox, tr.Z[0] * sc + oz, 4.5, 0, 7); x.fill();
+  x.strokeStyle = '#000'; x.lineWidth = 9 * kw; path(); x.stroke();
+  x.strokeStyle = '#' + new THREE.Color(th.night ? th.kerb1 : th.road).lerp(new THREE.Color(0xffffff), 0.55).getHexString(); x.lineWidth = 6 * kw; path(); x.stroke();
+  x.fillStyle = '#ffc928'; x.beginPath(); x.arc(tr.X[0] * sc + ox, tr.Z[0] * sc + oz, 4.5 * kw, 0, 7); x.fill();
   for (const r of tr.ramps) { const i = Math.floor(r.s0) % tr.N; x.fillStyle = '#ff8a00'; x.fillRect(tr.X[i] * sc + ox - 3, tr.Z[i] * sc + oz - 3, 6, 6); }
 }
 
@@ -185,6 +185,7 @@ function setView(v) {
 $('pickTrack').onclick = () => setView($('menu').dataset.view === 'tracks' ? 'home' : 'tracks');
 $('pickCar').onclick = () => { if ($('menu').dataset.view === 'garage') { setView('home'); return; } sel.group = groupOf(CARS[sel.car]).id; buildMenu(); setView('garage'); };
 $('flyClose').onclick = () => setView('home');
+window.addEventListener('keydown', (e) => { if (S.state === 'menu' && $('menu').dataset.view === 'tracks' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { $(e.code === 'ArrowLeft' ? 'stPrev' : 'stNext').click(); e.preventDefault(); e.stopPropagation(); } }, true);
 window.addEventListener('keydown', (e) => { if (e.code === 'Escape' && S.state === 'menu' && $('menu').dataset.view !== 'home') { setView('home'); e.stopPropagation(); } }, true);
 WORLD_PTS.asu = [WORLD_PTS.es[0] - 1.6, WORLD_PTS.es[1] + 2.2];
 const MAP_LOC = { pruebas: 'jerez', monaco: 'mc', spa: 'be', valle: 'br', desierto: 'mx', neon: 'jp', prisma: 'jpm', nieve: 'ch', amazonas: 'pe', karting: 'es', asupark: 'asu' };
@@ -200,8 +201,9 @@ function buildMap() {
     b.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
     box.appendChild(b);
   });
-  const t = tracks[sel.track], [cc, cname] = countryOf(t);
-  $('wmInfo').innerHTML = `<span class="flag">${flagSvg(cc)}</span><div><b>${t.name}</b><small>${cname} · ${(t.tr.len / 1000).toFixed(1)} km · ${envLabel(t)}</small></div><button type="button" id="wmGo">ELEGIR</button>`;
+  const t = tracks[sel.track], [cc, cname] = countryOf(t), env = envLabel(t); let best = null; for (const cc2 of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc2.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = r; }
+  $('trHero').innerHTML = `<div class="trh-map"><canvas id="trCv"></canvas></div><div class="trh-info">${t.th.logo ? `<img class="trh-logo" src="./assets/logos/${t.th.logo}.webp" alt="${t.name}">` : ''}<em><span class="flag">${flagSvg(cc)}</span>${cname}</em><h2>${t.name}</h2><p>${t.sub}</p><div class="trh-chips"><span>${(t.tr.len / 1000).toFixed(2)} km</span><span>${env}</span>${best ? `<span class="pb">Tu mejor ${fmt(best.lap)}</span>` : ''}</div><button type="button" id="wmGo">ELEGIR ESTE CIRCUITO</button></div>`;
+  drawPreview($('trCv'), t.tr, t.th, 520, 280, 1.5);
   $('wmGo').onclick = () => setView('home');
 }
 function buildMenu() {
@@ -215,6 +217,8 @@ function buildMenu() {
     $('dcImg').src = `./assets/thumbs/${dc.id}.webp`; drawPreview($('dcCanvas'), dt.tr, dt.th); }
   buildMap();
   const tl = $('trackList'); tl.innerHTML = '';
+  $('stPrev').onclick = () => { sel.track = (sel.track + tracks.length - 1) % tracks.length; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
+  $('stNext').onclick = () => { sel.track = (sel.track + 1) % tracks.length; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
   const dailyTrack = tracks.find((t) => t.key === 'daily');
   tracks.forEach((t, i) => {
     const d = document.createElement('div'); d.className = 'card track-card' + (i === sel.track ? ' on' : '');
@@ -226,6 +230,7 @@ function buildMenu() {
     d.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); if (narrowMenu()) setView('home'); };
     tl.appendChild(d);
   });
+  requestAnimationFrame(() => { const on = tl.querySelector('.on'); if (on && !$('viewTracks').hidden) tl.scrollTo({ left: on.offsetLeft - tl.clientWidth / 2 + on.clientWidth / 2, behavior: 'smooth' }); });
   const gt = $('groupTabs'); gt.innerHTML = '';
   for (const g of GROUPS) { const b = document.createElement('button'); b.type = 'button'; b.textContent = g.name; b.className = g.id === sel.group ? 'on' : ''; b.onclick = () => { sel.group = g.id; buildMenu(); }; gt.appendChild(b); }
   const cl = $('carList'); cl.innerHTML = '';
@@ -233,7 +238,7 @@ function buildMenu() {
     if (c.group !== sel.group) return;
     const d = document.createElement('div'); d.className = 'card car-card' + (i === sel.car ? ' on' : '');
     const hex = new THREE.Color(paintOf(c)).lerp(new THREE.Color(0xffffff), 0.32).getStyle();
-    d.innerHTML = `<img class="cthumb" src="./assets/thumbs/${c.id}.webp" alt=""><em class="brand">${c.brand || ''}</em><b style="color:${hex}">${c.name}</b><small>${c.desc}</small>` + [['VEL', (c.vmax - 44) / 32], ['ACEL', (c.accel - 11) / 11], ['GIRO', (c.yaw - 1.9) / 1.3], ['DESLIZ.', (15 - c.grip) / 5]].map(([n, v]) => `<div class="stat">${n}<i><s style="width:${clamp(v, 0.1, 1) * 100}%;background:${hex}"></s></i></div>`).join('');
+    d.innerHTML = `<img class="cthumb" src="./assets/thumbs/${c.id}.webp" alt=""><em class="brand">${c.brand || ''}</em><b style="color:${hex}">${c.name}</b><small>${c.desc}</small>` + [['VEL', c.vmax / 70, Math.round(c.vmax * 3.6) + ' km/h'], ['ACEL', c.accel / 18, c.accel.toFixed(1)], ['GIRO', c.yaw / 4.2, c.yaw.toFixed(1)], ['AGARRE', c.grip / 20, c.grip.toFixed(1)]].map(([n, v, num]) => `<div class="stat">${n}<i><s style="width:${clamp(v, 0.06, 1) * 100}%;background:${hex}"></s></i><b>${num}</b></div>`).join('');
     d.querySelector('img').onerror = (e) => { e.target.style.display = 'none'; };
     d.onclick = () => { sel.car = i; sel.carId = c.id; store.set('sel', sel); buildMenu(); sound.init(); sound.enginePreview(c.id); };
     cl.appendChild(d);
@@ -1124,7 +1129,7 @@ function updateCarVisual(c, dt) {
     if (c.throttle < 0.08 && c.speed > 12) { if (c.flameT < -0.05 && Math.random() < dt * 7) c.flameT = 0.05 + Math.random() * 0.06; if (c.thrPrev > 0.6 && c.flameT < 0) c.flameT = 0.1; }
     c.thrPrev = c.throttle; m.flames.visible = c.flameT > 0; if (m.flames.visible) m.flames.scale.setScalar(0.7 + Math.random() * 0.7);
   }
-  c.wheelSpin += (c.vf / 0.4) * dt;
+  c.wheelSpin += (c.vf / (ks < 1 ? 0.9 : 0.4)) * dt; // el kart gira más despacio visualmente: a su velocidad real los radios hacen efecto estroboscópico
   for (const w of m.wheels) { w.spin.rotation.x = c.wheelSpin; if (w.front) w.pivot.rotation.y = -c.steer * 0.4; }
   m.tail.color.setHex(c.brake > 0.1 ? 0xff2a2a : 0x8a0f0f);
   if (m.hl) updateHeadlights(m, c.brake);
@@ -1198,16 +1203,16 @@ function updateHud(dt) {
   const m = S.mini, pl = S.cars.find((c) => c.isPlayer), fol = sel.miniFollow !== false && pl; $('mini').classList.toggle('follow', !!fol);
   miniCtx.clearRect(0, 0, 300, 300); miniCtx.save();
   if (fol) { // modo seguimiento: el mapa gira con el coche (arriba = delante) y se acerca
-    const Z = 3.1; miniCtx.beginPath(); miniCtx.arc(150, 150, 148, 0, 7); miniCtx.clip();
+    const Z = 2.5;
     miniCtx.translate(150, 150); miniCtx.rotate(pl.psi - Math.PI); miniCtx.scale(Z, Z); miniCtx.translate(-(pl.x * m.sc + m.ox), -(pl.z * m.sc + m.oz));
   }
   miniCtx.drawImage(m.cv, 0, 0, 300, 300);
-  const dot = (c, r) => { miniCtx.beginPath(); miniCtx.arc(c.x * m.sc + m.ox, c.z * m.sc + m.oz, r / (fol ? 3.1 : 1), 0, 7); miniCtx.fill(); };
+  const dot = (c, r) => { miniCtx.beginPath(); miniCtx.arc(c.x * m.sc + m.ox, c.z * m.sc + m.oz, r / (fol ? 2.5 : 1), 0, 7); miniCtx.fill(); };
   for (const c of S.cars) { // rivales primero, jugador encima
-    if (c.isPlayer) continue; miniCtx.fillStyle = '#' + new THREE.Color(c.color).getHexString(); dot(c, 6.5); miniCtx.strokeStyle = 'rgba(0,0,0,.7)'; miniCtx.lineWidth = 1.5 / (fol ? 3.1 : 1); miniCtx.stroke();
+    if (c.isPlayer) continue; miniCtx.fillStyle = '#' + new THREE.Color(c.color).getHexString(); dot(c, 6.5); miniCtx.strokeStyle = 'rgba(0,0,0,.7)'; miniCtx.lineWidth = 1.5 / (fol ? 2.5 : 1); miniCtx.stroke();
   }
   if (pl) { // flecha del jugador orientada con el coche
-    const px = pl.x * m.sc + m.ox, pz = pl.z * m.sc + m.oz, k = 1 / (fol ? 3.1 : 1);
+    const px = pl.x * m.sc + m.ox, pz = pl.z * m.sc + m.oz, k = 1 / (fol ? 2.5 : 1);
     miniCtx.save(); miniCtx.translate(px, pz); miniCtx.rotate(Math.PI - pl.psi); miniCtx.scale(k, k);
     miniCtx.beginPath(); miniCtx.moveTo(0, -12); miniCtx.lineTo(8, 9); miniCtx.lineTo(0, 4); miniCtx.lineTo(-8, 9); miniCtx.closePath();
     miniCtx.fillStyle = '#ffc928'; miniCtx.fill(); miniCtx.strokeStyle = '#000'; miniCtx.lineWidth = 2.5; miniCtx.stroke(); miniCtx.restore();
@@ -1432,13 +1437,14 @@ requestAnimationFrame(frame);
 buildMenu();
 applyGfx(); sound.setVolumes(sel.vol); sound.setMuted(!!sel.mute);
 // miniaturas de los coches para el selector (se generan con tools/thumbs.cjs y se guardan en assets/thumbs)
-async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62, fov = 24) {
+async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62, fov = 24, pose = null) {
   const type = CARS.find((c) => c.id === id); await loadCarAsset(type, true);
   const b = buildCarMesh(paintOf(type), type.kind, 'hi', kartNum()), sc = new THREE.Scene();
   sc.add(new THREE.HemisphereLight(0xffffff, 0x303844, 0.9));
   const k = new THREE.DirectionalLight(0xfff2dd, 2.2); k.position.set(4, 6, 5); sc.add(k);
   const f = new THREE.DirectionalLight(0x9db8ff, 0.9); f.position.set(-6, 3, -3); sc.add(f);
   const pm = new THREE.PMREMGenerator(renderer); sc.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose();
+  if (pose) for (const w of b.wheels) { w.spin.rotation.x = pose.spin; if (w.front) w.pivot.rotation.y = pose.steer; }
   sc.add(b.root); b.root.rotation.y = 0.0;
   const rt = new THREE.WebGLRenderTarget(w, h, { samples: 4 }); rt.texture.colorSpace = THREE.SRGBColorSpace;
   const cam = new THREE.PerspectiveCamera(fov, w / h, 0.1, 100); cam.position.set(...cp); cam.lookAt(0, ly, 0);

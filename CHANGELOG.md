@@ -2,6 +2,18 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.48
+- Garaje: cada stat lleva su número (km/h, aceleración, giro y agarre) para comparar. Kart algo más lento.
+- Fórmula 0: la salida está justo tras la horquilla donde empezaba el sector 3, con la bandera a la izquierda, y el primer giro es a izquierdas. Neumáticos hasta el doble de altos en las curvas, y ya no se colocan neumáticos dentro de la pista en las curvas cerradas.
+- Asupark: invertido, ahora sale hacia la derecha.
+- Logos de Fórmula 0 y Asupark (mejorados de calidad) en la publicidad del trazado, en grandes carteles y en el selector.
+- Entorno propio: Fórmula 0 con boxes, gradas, torres de focos, contenedores apilados y cartel gigante; Asupark con noria giratoria, carpa de circo, globos aerostáticos, boxes y gradas.
+- Una sola bandera grande y elegante (mástil, tela ondulada) junto a la salida, en vez de varias.
+- Minimapa sin círculo: solo el trazado, con viñeta de transparencia.
+- Selector de circuitos rediseñado al estilo Gran Turismo: ficha grande con trazado, logo y récord, mapa mundi y carrusel con flechas (también teclado).
+- Motor al elegir coche: acelerón suave con revoluciones aleatorias y, al bajar, otro más fuerte.
+- Ruedas del kart: giro visual más lento para evitar el efecto estroboscópico.
+
 ## 0.0.47
 - Música: solo los 6 temas de TeteCovers (fuera los sintetizados y la versión larga de Drifting after Baptism). Fade out muy suave al final de cada tema, el siguiente entra solapado y aparece un aviso con el título al cambiar de canción (también conduciendo). La música ya no se corta al entrar o salir de un circuito (se atenúa y sigue) y el primer tema se descarga al abrir el juego.
 - Kart: miniatura nueva en el garaje; ruedas traseras corregidas (giraban descentradas); petardeo fuerte al soltar el gas con llamita en el escape.

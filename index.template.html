@@ -60,7 +60,7 @@ h3{margin:14px 0 8px;font-size:12px;letter-spacing:.18em;color:var(--dim);text-t
 .card b{display:block;margin-top:6px;font-size:15px}.card small{color:var(--dim);font-size:12px;display:block}
 .card .rec{color:var(--cy);font-size:11px;margin-top:3px}
 .stat{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--dim);margin-top:4px;letter-spacing:.08em}
-.stat i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.12);position:relative;overflow:hidden}.stat i s{position:absolute;left:0;top:0;bottom:0;background:var(--acc)}
+.stat i{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.12);position:relative;overflow:hidden}.stat b{min-width:34px;text-align:right;font-weight:700;color:#e4ebf8;letter-spacing:0}.stat i s{position:absolute;left:0;top:0;bottom:0;background:var(--acc)}
 .row{display:flex;gap:24px;flex-wrap:wrap}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .seg button{background:transparent;color:var(--txt);border:0;padding:9px 14px;font:inherit;font-size:14px;cursor:pointer;touch-action:manipulation}
@@ -860,14 +860,25 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
 #kartCfg{display:flex;gap:14px;align-items:center;margin:10px 0 4px;flex-wrap:wrap}#kartCfg label{display:flex;align-items:center;gap:8px;font:700 15px "Jersey 10",sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#cfd6e6}#kartCfg input[type=color]{width:44px;height:34px;padding:0;border:2px solid #3a4258;border-radius:8px;background:none}#kartCfg input[type=number]{width:64px;height:34px;border-radius:8px;border:2px solid #3a4258;background:#10141f;color:#fff;font:700 18px "Jersey 10",sans-serif;text-align:center}
 #songToast{position:fixed;left:50%;top:74px;transform:translate(-50%,-18px);z-index:60;display:flex;align-items:baseline;gap:10px;padding:8px 16px;border-radius:12px;background:rgba(10,13,22,.72);backdrop-filter:blur(6px);color:#fff;font:700 18px "Jersey 10",sans-serif;letter-spacing:.05em;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;max-width:90vw}
 #songToast.on{opacity:1;transform:translate(-50%,0)}#songToast i{color:#66e8ff;font-style:normal}#songToast small{color:#9aa6bf;font-size:14px}
-body #hud #mini{background:radial-gradient(circle at 50% 50%,rgba(22,30,48,.78),rgba(8,12,22,.78))!important;border:2px solid rgba(255,255,255,.28)!important;border-radius:18px!important;clip-path:none!important;box-shadow:0 8px 26px rgba(0,0,0,.45)!important;padding:0!important}
-body #hud #mini.follow{border-radius:50%!important;border-color:rgba(255,201,40,.7)!important;box-shadow:0 0 0 3px rgba(8,12,22,.6),0 8px 26px rgba(0,0,0,.5)!important}
+body #hud #mini{background:none!important;border:0!important;border-radius:0!important;clip-path:none!important;box-shadow:none!important;padding:0!important;backdrop-filter:none!important;-webkit-mask-image:radial-gradient(circle at 50% 50%,#000 46%,rgba(0,0,0,.75) 58%,transparent 73%);mask-image:radial-gradient(circle at 50% 50%,#000 46%,rgba(0,0,0,.75) 58%,transparent 73%);filter:drop-shadow(0 2px 5px rgba(0,0,0,.6))}
+body #hud #mini.follow{border-radius:0!important}
+#trHero{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin:0 0 12px;padding:14px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.12)}
+#trHero .trh-map{border-radius:12px;background:radial-gradient(circle at 50% 50%,rgba(60,80,120,.35),rgba(6,10,18,.55));display:grid;place-items:center;min-height:150px}#trHero canvas{width:100%;height:auto;display:block}
+#trHero .trh-info{display:flex;flex-direction:column;gap:6px;min-width:0}#trHero .trh-logo{max-width:210px;max-height:62px;object-fit:contain;background:#fff;border-radius:8px;padding:5px 8px;align-self:flex-start}
+#trHero em{display:flex;align-items:center;gap:8px;font-style:normal;font:700 12px inherit;letter-spacing:.14em;text-transform:uppercase;color:#9fb0cf}#trHero em .flag{width:26px}
+#trHero h2{margin:0;font:800 28px/1.05 inherit;color:#fff;font-style:italic}#trHero p{margin:0;color:#aab4cc;font-size:13px}
+#trHero .trh-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}#trHero .trh-chips span{padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.09);font:700 12px inherit;color:#e4ebf8}#trHero .trh-chips span.pb{background:rgba(255,201,40,.18);color:#ffd34e}
+#trHero #wmGo{margin-top:auto;padding:12px 16px;border:0;border-radius:10px;background:#ffc928;color:#111;font:800 15px inherit;letter-spacing:.1em;cursor:pointer}
+.strip-wrap{position:relative;margin-top:12px}.strip-wrap #trackList{display:flex!important;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 10px;scrollbar-width:thin}
+.strip-wrap #trackList .card{flex:0 0 210px;scroll-snap-align:center}
+.strip-wrap>button{position:absolute;top:42%;z-index:3;width:34px;height:44px;border:0;border-radius:10px;background:rgba(8,12,22,.82);color:#fff;font-size:26px;cursor:pointer}#stPrev{left:-6px}#stNext{right:-6px}
+@media (max-width:760px){#trHero{grid-template-columns:1fr}#trHero h2{font-size:23px}.strip-wrap #trackList .card{flex-basis:170px}}
 /* v0.0.47 mapa mundi, menú más transparente */
 #menu{background:linear-gradient(90deg,rgba(8,10,15,.55) 0,rgba(8,10,15,.38) 30%,rgba(8,10,15,0) 56%)!important}
 #menu .panel{background:rgba(9,13,22,.5)!important;backdrop-filter:blur(7px)!important;-webkit-backdrop-filter:blur(7px)!important}
 #menu #flyout{background:rgba(8,10,15,.52)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important}
 #menu[data-view="tracks"] #flyout{width:min(880px,66vw)!important}
-#worldMap{position:relative;width:100%;aspect-ratio:1000/520;border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,rgba(34,64,98,.55),rgba(10,18,32,.7));border:1px solid rgba(255,255,255,.12)}
+#worldMap{position:relative;width:100%;max-width:470px;margin:0 auto;aspect-ratio:1000/520;border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,rgba(34,64,98,.55),rgba(10,18,32,.7));border:1px solid rgba(255,255,255,.12)}
 #wmInner{position:absolute;inset:0;transform-origin:0 0;transition:transform .45s ease}#wmZoom{position:absolute;right:10px;top:10px;z-index:6;padding:7px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(8,12,22,.75);color:#fff;font:700 13px inherit;cursor:pointer}
 #worldMap svg{position:absolute;inset:0;width:100%;height:100%}#wmLand{fill:#2c4a5e;stroke:#4f7890;stroke-width:.8;opacity:.95}
 #wmPins{position:absolute;inset:0}
@@ -930,7 +941,7 @@ body #hud #mini.follow{border-radius:50%!important;border-color:rgba(255,201,40,
   </div>
   <aside id="flyout" hidden>
     <div class="vhead"><h2 id="flyTitle">Circuito</h2><button id="flyClose" class="back" type="button" aria-label="Cerrar">✕</button></div>
-    <div id="viewTracks" hidden><div id="worldMap"><div id="wmInner"><svg viewBox="0 0 1000 520" preserveAspectRatio="none" aria-hidden="true"><path id="wmLand"/></svg><div id="wmPins"></div></div><button type="button" id="wmZoom">Zoom Europa</button></div><div id="wmInfo"></div><h3 class="pt">Todos los circuitos</h3><div id="trackList" class="grid"></div></div>
+    <div id="viewTracks" hidden><div id="trHero"></div><div id="worldMap"><div id="wmInner"><svg viewBox="0 0 1000 520" preserveAspectRatio="none" aria-hidden="true"><path id="wmLand"/></svg><div id="wmPins"></div></div><button type="button" id="wmZoom">Zoom Europa</button></div><div class="strip-wrap"><button type="button" id="stPrev" aria-label="Anterior">‹</button><div id="trackList" class="grid"></div><button type="button" id="stNext" aria-label="Siguiente">›</button></div></div>
     <div id="viewGarage" hidden>
       <div id="groupTabs" class="tabs"></div><div id="carList" class="grid"></div>
       <h3 class="pt">Pintura · <span id="paintName">—</span></h3><div id="paints"></div>
