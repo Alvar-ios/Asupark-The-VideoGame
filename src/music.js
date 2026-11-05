@@ -1,218 +1,63 @@
-// Música original del menú, en estilo fusión japonés de los 80 (acordes de séptima/novena, bajo sincopado,
-// piano eléctrico, lead sintetizado con eco y batería). Se sintetiza con WebAudio: no usa grabaciones ni temas ajenos.
-const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
-// Tres temas originales (estilo fusión japonés de los 80), cada uno con su personalidad.
-export const SONGS = [
-  { tag: 'fusión', name: 'Fiesta en el Parking', bpm: 126, swing: 0.06, chords: [[53, 57, 60, 64], [55, 59, 64, 65], [52, 55, 59, 62], [57, 60, 64, 67], [53, 57, 60, 64], [55, 59, 65, 68], [55, 59, 62, 64], [55, 59, 62, 64]],
-    roots: [41, 43, 40, 45, 38, 43, 36, 36], bass: [[0, 0, 2], [3, 0, 1], [6, 12, 1], [8, 0, 2], [10, 7, 1], [12, 0, 1], [14, 12, 1]], stabs: [0, 3, 6, 10, 13],
-    kick: [0, 6, 10], kickOdd: [14], snare: [4, 12], hatEvery: 2, lead: 'saw',
-    melody: [[[0, 76, 3], [4, 77, 1], [6, 79, 2], [10, 81, 2], [13, 79, 1], [14, 76, 2]], [[0, 79, 2], [3, 81, 1], [4, 83, 3], [8, 81, 2], [11, 79, 1], [12, 77, 4]], [[0, 76, 2], [3, 79, 1], [4, 83, 2], [8, 81, 1], [9, 79, 1], [10, 76, 2], [14, 74, 2]], [[0, 72, 2], [3, 76, 1], [4, 79, 3], [8, 83, 2], [11, 81, 1], [12, 79, 4]], [[0, 77, 3], [4, 76, 1], [6, 74, 2], [8, 72, 2], [11, 74, 1], [12, 77, 2], [14, 79, 2]], [[0, 80, 2], [3, 79, 1], [4, 77, 2], [6, 74, 2], [8, 71, 3], [12, 74, 2], [14, 77, 2]], [[0, 76, 4], [6, 79, 2], [8, 83, 3], [12, 81, 1], [13, 79, 1], [14, 76, 2]], [[0, 74, 2], [3, 76, 1], [4, 79, 6], [12, 77, 2], [14, 74, 2]]] },
-  // Noche en autopista: más lento y melancólico, en La menor, con bajo pausado y melodía cantable
-  { tag: 'fusión', name: 'Peaje a las 3 AM', bpm: 104, swing: 0.11, chords: [[57, 60, 64, 67], [60, 66, 71, 64], [55, 59, 62, 66], [60, 64, 67, 71], [54, 57, 60, 64], [59, 63, 69, 72], [52, 55, 59, 62], [56, 62, 64, 68]],
-    roots: [45, 38, 43, 36, 42, 47, 40, 40], bass: [[0, 0, 3], [6, 0, 1], [8, 7, 2], [12, 0, 1], [14, 12, 1]], stabs: [0, 6, 10, 14],
-    kick: [0, 10], kickOdd: [7], snare: [4, 12], hatEvery: 2, lead: 'square',
-    melody: [[[0, 76, 4], [6, 79, 2], [8, 81, 4], [14, 79, 2]], [[0, 78, 3], [4, 81, 2], [8, 83, 4], [14, 81, 2]], [[0, 79, 4], [6, 78, 2], [8, 74, 4], [14, 76, 2]], [[0, 76, 3], [4, 74, 1], [6, 71, 2], [8, 72, 6], [14, 74, 2]], [[0, 72, 3], [4, 76, 2], [8, 78, 4], [14, 76, 2]], [[0, 75, 2], [3, 78, 1], [4, 81, 4], [10, 78, 2], [12, 75, 4]], [[0, 74, 4], [6, 71, 2], [8, 79, 6], [14, 76, 2]], [[0, 76, 2], [3, 80, 1], [4, 83, 8], [14, 80, 2]]] },
-  // Costa rápida: brillante y funky, en Re mayor, con bajo en semicorcheas
-  { tag: 'fusión', name: 'Spoiler Gigante', bpm: 138, swing: 0.04, chords: [[54, 57, 61, 64], [52, 57, 59, 62], [56, 59, 64, 68], [57, 61, 64, 66], [62, 66, 69, 73], [56, 62, 64, 66], [56, 61, 64, 68], [57, 61, 66, 69]],
-    roots: [38, 40, 37, 42, 47, 40, 45, 45], bass: [[0, 0, 1], [2, 0, 1], [3, 12, 1], [6, 0, 1], [8, 0, 1], [10, 7, 1], [11, 0, 1], [14, 12, 1]], stabs: [2, 4, 7, 10, 12, 15],
-    kick: [0, 3, 8, 11], kickOdd: [6], snare: [4, 12], hatEvery: 1, lead: 'saw',
-    melody: [[[0, 78, 2], [3, 81, 1], [4, 85, 3], [8, 83, 2], [11, 81, 1], [12, 78, 3]], [[0, 80, 2], [2, 83, 2], [4, 85, 2], [8, 83, 1], [9, 80, 1], [10, 76, 3], [14, 80, 2]], [[0, 80, 3], [4, 83, 1], [6, 85, 2], [8, 88, 3], [12, 85, 2], [14, 83, 2]], [[0, 81, 2], [3, 85, 1], [4, 84, 3], [8, 81, 2], [11, 78, 1], [12, 81, 4]], [[0, 85, 3], [4, 83, 1], [6, 81, 2], [8, 78, 3], [12, 81, 2], [14, 85, 2]], [[0, 83, 2], [3, 80, 1], [4, 78, 2], [6, 80, 2], [8, 83, 3], [12, 86, 2], [14, 83, 2]], [[0, 85, 4], [6, 88, 2], [8, 85, 3], [12, 84, 1], [13, 81, 1], [14, 80, 2]], [[0, 81, 2], [3, 85, 1], [4, 88, 6], [12, 85, 2], [14, 81, 2]]] },
-  // ----- temas tranquilos: jazz suave y aire de consola clásica -----
-  { tag: 'chill', name: 'Domingo de Sofá y Manta', bpm: 84, swing: 0.2, soft: 0.5, chords: [[53, 57, 60, 64], [53, 59, 62, 67], [52, 55, 59, 64], [55, 59, 60, 64], [53, 57, 60, 64], [53, 59, 64, 67], [52, 55, 59, 64], [55, 61, 64, 67]],
-    roots: [38, 43, 36, 45, 38, 43, 36, 45], bass: [[0, 0, 3], [6, 7, 1], [8, 0, 2], [12, 12, 1], [14, 7, 1]], stabs: [0, 6, 10],
-    kick: [0], kickOdd: [10], snare: [4, 12], hatEvery: 2, lead: 'tri',
-    melody: [[[0, 76, 2], [3, 74, 1], [4, 72, 3], [8, 69, 2], [11, 72, 1], [12, 74, 4]], [[0, 71, 3], [4, 74, 2], [7, 77, 1], [8, 76, 4], [14, 74, 2]], [[0, 72, 2], [3, 76, 1], [4, 79, 4], [10, 76, 2], [12, 74, 2], [14, 72, 2]], [[0, 76, 3], [4, 72, 1], [6, 69, 2], [8, 71, 2], [11, 72, 1], [12, 76, 4]], [[0, 77, 2], [3, 76, 1], [4, 74, 3], [8, 72, 2], [11, 74, 1], [12, 77, 4]], [[0, 79, 3], [4, 77, 1], [6, 76, 2], [8, 74, 3], [12, 71, 2], [14, 74, 2]], [[0, 72, 4], [6, 76, 2], [8, 79, 3], [12, 84, 1], [13, 83, 1], [14, 79, 2]], [[0, 76, 2], [3, 73, 1], [4, 76, 2], [8, 81, 3], [12, 80, 2], [14, 76, 2]]] },
-  { tag: 'chill', name: 'Cobrando Intereses en Bayas', bpm: 96, swing: 0.08, soft: 0.5, chords: [[53, 57, 60, 64], [50, 57, 60, 65], [55, 58, 62, 65], [52, 55, 58, 64], [57, 60, 64, 67], [53, 57, 60, 64], [53, 58, 62, 65], [52, 55, 58, 60]],
-    roots: [41, 38, 43, 36, 45, 38, 46, 36], bass: [[0, 0, 2], [4, 0, 1], [6, 7, 1], [8, 0, 2], [12, 7, 1], [14, 12, 1]], stabs: [2, 6, 10, 14],
-    kick: [0, 8], kickOdd: [], snare: [12], hatEvery: 4, lead: 'tri',
-    melody: [[[0, 81, 2], [2, 79, 1], [3, 77, 1], [4, 84, 3], [8, 81, 2], [10, 79, 2], [12, 77, 4]], [[0, 74, 2], [2, 77, 2], [4, 81, 3], [8, 79, 2], [10, 77, 1], [11, 74, 1], [12, 77, 4]], [[0, 79, 2], [2, 82, 2], [4, 86, 3], [8, 84, 2], [10, 82, 2], [12, 79, 4]], [[0, 76, 2], [2, 79, 1], [3, 82, 1], [4, 79, 2], [6, 76, 2], [8, 79, 4], [14, 76, 2]], [[0, 81, 2], [2, 84, 2], [4, 88, 3], [8, 84, 2], [10, 81, 2], [12, 84, 4]], [[0, 77, 2], [2, 81, 2], [4, 84, 3], [8, 81, 2], [10, 77, 1], [11, 76, 1], [12, 74, 4]], [[0, 82, 2], [2, 79, 1], [3, 77, 1], [4, 74, 3], [8, 77, 2], [10, 79, 2], [12, 82, 4]], [[0, 79, 2], [2, 76, 1], [3, 79, 1], [4, 82, 4], [10, 79, 2], [12, 76, 2], [14, 79, 2]]] },
-  { tag: 'chill', name: 'Cortado con Goteras', bpm: 72, swing: 0.22, soft: 0.5, chords: [[55, 59, 60, 64], [53, 57, 60, 64], [53, 59, 64, 67], [55, 59, 62, 64], [53, 57, 60, 64], [57, 59, 62, 65], [56, 59, 62, 64], [55, 59, 60, 64]],
-    roots: [45, 38, 43, 36, 41, 47, 40, 45], bass: [[0, 0, 4], [8, 0, 2], [12, 7, 2]], stabs: [0, 10],
-    kick: [0, 10], kickOdd: [6], snare: [4, 12], hatEvery: 2, lead: 'tri',
-    melody: [[[0, 76, 3], [4, 72, 2], [7, 71, 1], [8, 69, 4], [14, 71, 2]], [[0, 74, 3], [4, 77, 2], [8, 76, 3], [12, 72, 4]], [[0, 71, 2], [3, 74, 1], [4, 77, 3], [8, 76, 2], [10, 74, 2], [12, 71, 4]], [[0, 72, 4], [6, 76, 2], [8, 79, 4], [14, 76, 2]], [[0, 77, 3], [4, 76, 1], [6, 72, 2], [8, 69, 4], [12, 72, 4]], [[0, 74, 3], [4, 72, 1], [6, 71, 2], [8, 74, 3], [12, 77, 2], [14, 74, 2]], [[0, 76, 2], [3, 80, 1], [4, 83, 3], [8, 80, 2], [10, 76, 2], [12, 74, 4]], [[0, 72, 2], [3, 69, 1], [4, 76, 6], [12, 72, 4]]] },
-  { tag: 'chill', name: 'Siesta en la Isla Cutre', bpm: 112, swing: 0.1, soft: 0.5, chords: [[55, 59, 62, 66], [56, 59, 62, 64], [55, 60, 64, 67], [54, 57, 60, 62], [57, 59, 62, 66], [56, 59, 62, 64], [55, 60, 64, 67], [54, 57, 60, 62]],
-    roots: [43, 40, 45, 38, 47, 40, 45, 38], bass: [[0, 0, 3], [6, 7, 2], [8, 0, 2], [12, 7, 1], [14, 0, 1]], stabs: [0, 3, 6, 10, 12],
-    kick: [0, 6, 8, 14], kickOdd: [], snare: [10], hatEvery: 2, lead: 'sine',
-    melody: [[[0, 83, 2], [3, 79, 1], [4, 81, 3], [8, 86, 2], [10, 83, 2], [12, 79, 4]], [[0, 80, 2], [3, 83, 1], [4, 86, 3], [8, 83, 2], [10, 80, 2], [12, 76, 4]], [[0, 81, 2], [3, 84, 1], [4, 88, 3], [8, 84, 2], [10, 81, 2], [12, 79, 4]], [[0, 78, 3], [4, 81, 1], [6, 84, 2], [8, 81, 3], [12, 78, 2], [14, 74, 2]], [[0, 83, 3], [4, 86, 1], [6, 83, 2], [8, 79, 3], [12, 83, 4]], [[0, 80, 2], [3, 83, 1], [4, 86, 4], [10, 83, 2], [12, 80, 4]], [[0, 84, 3], [4, 81, 1], [6, 79, 2], [8, 76, 4], [14, 79, 2]], [[0, 78, 2], [3, 81, 1], [4, 84, 3], [8, 81, 2], [10, 78, 2], [12, 74, 4]]] },
-  // ----- con más ritmo: house jazz, robots de discoteca y synthwave oscuro; cada uno con sus propios instrumentos -----
-  { tag: 'house', name: 'Ascensor con Barra Libre', bpm: 122, swing: 0.12, soft: 1, stab: 'organ', bassT: 'sub', clap: true, openHat: [2, 6, 10, 14], chords: [[53, 57, 60, 64], [53, 59, 64, 67], [55, 59, 62, 64], [55, 61, 64, 67], [53, 57, 60, 64], [56, 59, 62, 64], [55, 59, 60, 64], [57, 60, 64, 67]],
-    roots: [38, 43, 36, 45, 38, 40, 45, 45], bass: [[0, 0, 2], [3, 0, 1], [6, 7, 1], [8, 0, 2], [11, 12, 1], [14, 7, 1]], stabs: [3, 6, 10, 14],
-    kick: [0, 4, 8, 12], kickOdd: [], snare: [4, 12], hatEvery: 2, lead: 'tri',
-    melody: [[[0, 77, 2], [2, 76, 1], [3, 74, 1], [4, 72, 2], [6, 69, 2], [8, 72, 2], [10, 74, 2], [12, 76, 3]], [[0, 74, 2], [2, 71, 1], [3, 74, 1], [4, 77, 2], [6, 76, 2], [8, 74, 4], [14, 71, 2]], [[0, 72, 2], [2, 76, 2], [4, 79, 2], [6, 83, 1], [7, 81, 1], [8, 79, 2], [10, 76, 2], [12, 72, 4]], [[0, 73, 2], [2, 76, 2], [4, 81, 3], [8, 79, 1], [9, 76, 1], [10, 73, 2], [12, 76, 4]], [[0, 77, 2], [2, 81, 2], [4, 84, 3], [8, 81, 2], [10, 77, 2], [12, 74, 4]], [[0, 76, 2], [2, 80, 2], [4, 83, 3], [8, 80, 2], [10, 76, 1], [11, 74, 1], [12, 71, 4]], [[0, 72, 2], [2, 76, 2], [4, 81, 4], [10, 79, 2], [12, 76, 2], [14, 72, 2]], [[0, 69, 3], [4, 72, 2], [6, 76, 2], [8, 81, 6], [14, 79, 2]]] },
-  { tag: 'robots', name: 'Robots de Resaca', bpm: 116, swing: 0.02, soft: 1, stab: 'pluck', bassT: 'funk', clap: true, chords: [[55, 58, 62, 65], [51, 55, 58, 62], [53, 58, 62, 65], [53, 57, 60, 63], [51, 55, 58, 60], [54, 57, 60, 62], [55, 58, 62, 65], [55, 58, 62, 65]],
-    roots: [43, 39, 46, 41, 36, 38, 43, 43], bass: [[0, 0, 1], [2, 0, 1], [3, 12, 1], [6, 0, 1], [8, 0, 1], [10, 7, 1], [11, 12, 1], [14, 0, 1]], stabs: [2, 5, 10, 13],
-    kick: [0, 4, 8, 12], kickOdd: [], snare: [4, 12], hatEvery: 2, lead: 'robot',
-    melody: [[[0, 79, 1], [2, 79, 1], [3, 77, 1], [4, 74, 1], [6, 74, 1], [8, 77, 1], [10, 79, 1], [12, 82, 2]], [[0, 79, 1], [2, 79, 1], [3, 77, 1], [4, 75, 1], [6, 75, 1], [8, 79, 1], [10, 77, 1], [12, 75, 2]], [[0, 77, 1], [2, 77, 1], [3, 74, 1], [4, 70, 1], [6, 74, 1], [8, 77, 1], [10, 82, 1], [12, 81, 2]], [[0, 81, 1], [2, 79, 1], [3, 77, 1], [4, 75, 1], [6, 77, 1], [8, 79, 1], [10, 81, 1], [12, 84, 2]], [[0, 75, 1], [2, 75, 1], [3, 79, 1], [4, 82, 1], [6, 79, 1], [8, 75, 1], [10, 79, 1], [12, 82, 2]], [[0, 78, 1], [2, 78, 1], [3, 81, 1], [4, 84, 1], [6, 81, 1], [8, 78, 1], [10, 74, 1], [12, 78, 2]], [[0, 79, 1], [2, 79, 1], [3, 77, 1], [4, 74, 1], [6, 77, 1], [8, 79, 1], [10, 82, 1], [12, 86, 2]], [[0, 82, 2], [3, 79, 1], [4, 77, 2], [8, 74, 2], [12, 79, 1], [13, 77, 1], [14, 74, 2]]] },
-  { tag: 'synthwave', name: 'Neón y Mala Idea', bpm: 132, swing: 0, soft: 1.25, stab: 'pad', bassT: 'pulse', arp: true, chords: [[51, 55, 58, 60], [51, 56, 60, 63], [53, 58, 62, 65], [50, 55, 58, 62], [51, 55, 58, 60], [53, 56, 60, 65], [55, 58, 62, 67], [53, 55, 59, 62]],
-    roots: [36, 44, 46, 43, 36, 41, 43, 43], bass: [[0, 0, 1], [2, 0, 1], [4, 0, 1], [6, 12, 1], [8, 0, 1], [10, 0, 1], [12, 0, 1], [14, 12, 1]], stabs: [0],
-    kick: [0, 4, 8, 12], kickOdd: [], snare: [4, 12], hatEvery: 1, lead: 'saw',
-    melody: [[[0, 79, 4], [6, 75, 2], [8, 77, 4], [14, 79, 2]], [[0, 80, 4], [6, 77, 2], [8, 75, 4], [14, 72, 2]], [[0, 77, 4], [6, 74, 2], [8, 77, 2], [10, 79, 2], [12, 82, 4]], [[0, 79, 3], [4, 74, 1], [6, 70, 2], [8, 74, 4], [14, 79, 2]], [[0, 84, 4], [6, 79, 2], [8, 75, 4], [14, 79, 2]], [[0, 77, 2], [3, 80, 1], [4, 84, 4], [10, 80, 2], [12, 77, 4]], [[0, 79, 3], [4, 82, 1], [6, 86, 2], [8, 82, 4], [14, 79, 2]], [[0, 83, 2], [3, 79, 1], [4, 74, 4], [8, 71, 2], [10, 74, 2], [12, 79, 4]]] },
-
-];
-// Temas grabados de TeteCovers (mp3). Se descargan y decodifican solo cuando van a sonar.
-const COVERS = [['borja-rinon-piano', 'Borja Riñón on the Piano'], ['calamare-m40', 'Calamare en la M40'], ['drifting-baptism', 'Drifting after Baptism'], ['drifting-baptism-larga', 'Drifting after Baptism (versión larga)'], ['paco-galaxia', 'Paco Galaxia'], ['roadtrip-boyberry', 'Roadtrip a la BoyBerry'], ['susurro-bruno-perez', 'Susurro de Bruno Pérez']];
-for (const [f, name] of COVERS) SONGS.push({ tag: 'TeteCovers', name, author: 'TeteCovers', file: `assets/music/${f}.mp3` });
+// Música del juego: temas grabados de TeteCovers (mp3). Se descargan al abrir el juego (el primero) y el siguiente se prepara mientras suena el actual.
+// El volumen baja muy suave al final de cada tema y el siguiente entra solapado, sin silencios. Al entrar o salir de un circuito la música no se corta: solo se atenúa.
+const COVERS = [['borja-rinon-piano', 'Borja Riñón on the Piano'], ['calamare-m40', 'Calamare en la M40'], ['drifting-baptism', 'Drifting after Baptism'], ['paco-galaxia', 'Paco Galaxia'], ['roadtrip-boyberry', 'Roadtrip a la BoyBerry'], ['susurro-bruno-perez', 'Susurro de Bruno Pérez']];
+export const SONGS = COVERS.map(([f, name]) => ({ tag: 'TeteCovers', name, author: 'TeteCovers', file: `assets/music/${f}.mp3` }));
+const raw = {}; // arrayBuffers ya pedidos (promesas)
+const fetchRaw = (idx) => raw[idx] || (raw[idx] = fetch(SONGS[idx].file).then((r) => { if (!r.ok) throw new Error('mp3'); return r.arrayBuffer(); }).catch((e) => { delete raw[idx]; throw e; }));
+const FIRST = Math.floor(Math.random() * SONGS.length);
+try { fetchRaw(FIRST); } catch (_) { /* sin red: se reintenta luego */ }
+const FADE_OUT = 6, OVERLAP = 2.5, FADE_IN = 1.6;
 
 export class Music {
-  constructor(ctx, dest, noise) {
-    this.ctx = ctx; this.noise = noise; this.playing = false; this.timer = 0; this.bufs = {}; this.pend = {}; this.src = null; this.vol = 0.55; this.songIdx = Math.floor(Math.random() * SONGS.length); this.song = SONGS[this.songIdx]; this.stepDur = 60 / this.song.bpm / 4;
+  constructor(ctx, dest) {
+    this.ctx = ctx; this.playing = false; this.muted = false; this.vol = 0.55; this.songIdx = FIRST; this.bufs = {}; this.dec = {}; this.cur = null; this.gen = 0; this.onSong = null;
     this.out = ctx.createGain(); this.out.gain.value = 0; this.out.connect(dest);
-    this.delay = ctx.createDelay(1); this.delay.delayTime.value = 0.4;
-    const fb = ctx.createGain(); fb.gain.value = 0.36; const wet = ctx.createGain(); wet.gain.value = 0.3;
-    this.send = ctx.createGain(); this.send.gain.value = 1; this.send.connect(this.delay); this.delay.connect(fb); fb.connect(this.delay); this.delay.connect(wet); wet.connect(this.out);
   }
-  setVolume(v) { this.vol = v; if (this.playing) this.out.gain.setTargetAtTime(v, this.ctx.currentTime, 0.1); }
-  // La música se pre-renderiza: cada tema se genera una vez en un OfflineAudioContext y se reproduce como un buffer.
-  // Antes se programaban las notas en vivo desde el hilo principal; cuando el juego iba justo, las notas llegaban tarde (música lenta) y luego de golpe (rápida).
-  render(idx) {
+  setVolume(v) { this.vol = v; if (this.playing && !this.muted) this.out.gain.setTargetAtTime(v, this.ctx.currentTime, 0.1); }
+  load(idx) {
     if (this.bufs[idx]) return Promise.resolve(this.bufs[idx]);
-    if (this.pend[idx]) return this.pend[idx];
-    const OC = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!OC) return Promise.reject(new Error('sin OfflineAudioContext'));
-    if (SONGS[idx].file) { this.pend[idx] = fetch(SONGS[idx].file).then((r) => { if (!r.ok) throw new Error('mp3'); return r.arrayBuffer(); }).then((ab) => new Promise((ok, ko) => this.ctx.decodeAudioData(ab, ok, ko))).then((b) => (this.bufs[idx] = b)); this.pend[idx].catch(() => { delete this.pend[idx]; }); return this.pend[idx]; }
-    const S = SONGS[idx], ST = 60 / S.bpm / 4, steps = 256, sr = this.ctx.sampleRate, loopN = Math.round(steps * ST * sr), tailN = Math.round(2.6 * sr);
-    const oc = new OC(2, loopN + tailN, sr), m = new Music(oc, oc.destination, this.noise);
-    m.song = S; m.stepDur = ST; m.out.gain.value = 1; m.delay.delayTime.value = (60 / S.bpm) * 0.75;
-    for (let st = 0; st < steps; st++) m.play(st, 0.02 + st * ST);
-    this.pend[idx] = oc.startRendering().then((buf) => {
-      const out = this.ctx.createBuffer(2, loopN, sr);
-      for (let ch = 0; ch < 2; ch++) { const src = buf.getChannelData(Math.min(ch, buf.numberOfChannels - 1)), dst = out.getChannelData(ch); dst.set(src.subarray(0, loopN)); for (let k = 0; k < tailN && k < loopN; k++) dst[k] += src[loopN + k]; } // la cola del eco se pliega al principio: bucle sin cortes
-      this.bufs[idx] = out; return out;
-    });
-    return this.pend[idx];
+    if (this.dec[idx]) return this.dec[idx];
+    this.dec[idx] = fetchRaw(idx).then((ab) => new Promise((ok, ko) => this.ctx.decodeAudioData(ab.slice(0), ok, ko))).then((b) => (this.bufs[idx] = b));
+    this.dec[idx].catch(() => { delete this.dec[idx]; });
+    return this.dec[idx];
   }
+  pickNext(cur) { if (SONGS.length < 2) return 0; let n; do n = Math.floor(Math.random() * SONGS.length); while (n === cur); return n; }
+  // arranca (o reanuda) la música. Si ya estaba sonando solo recupera el volumen: nunca reinicia el tema
   start() {
-    if (this.playing) return; this.playing = true; const c = this.ctx;
-    this.out.gain.cancelScheduledValues(c.currentTime); this.out.gain.setTargetAtTime(this.vol, c.currentTime, 0.6);
-    this.songIdx = this.nextIdx != null ? this.nextIdx : this.pickNext(this.songIdx); this.nextIdx = null; this.playNext();
+    const c = this.ctx; this.muted = false;
+    this.out.gain.cancelScheduledValues(c.currentTime); this.out.gain.setTargetAtTime(this.vol, c.currentTime, 0.8);
+    if (this.playing) return; this.playing = true; this.playSong(this.songIdx, 0, true);
   }
-  // elige un tema concreto; al terminar sigue en aleatorio
+  stop() { // atenúa sin cortar: el tema sigue por debajo y se recupera donde iba
+    if (!this.playing || this.muted) return; this.muted = true; const t = this.ctx.currentTime;
+    this.out.gain.cancelScheduledValues(t); this.out.gain.setTargetAtTime(0, t, 0.5);
+  }
   choose(idx) {
-    if (!(idx >= 0 && idx < SONGS.length)) return; this.nextIdx = null;
-    if (!this.playing) { this.nextIdx = idx; return; }
-    if (this.src) { const o = this.src; this.src = null; o.onended = null; try { o.stop(); } catch (_) { /* ya parado */ } }
-    this.songIdx = idx; if (this.timer && !SONGS[idx].file) { this.step = 0; return; } if (this.timer) { clearInterval(this.timer); this.timer = 0; } this.playNext();
+    if (!(idx >= 0 && idx < SONGS.length)) return;
+    if (!this.playing) { this.songIdx = idx; return; }
+    this.fadeOut(this.cur, 0.7); this.playSong(idx, 0, true);
   }
-  pickNext(cur) { if (SONGS.length < 2) return 0; let n; do n = Math.floor(Math.random() * SONGS.length); while (n === cur); return n; } // siempre una canción al azar, distinta de la actual
-  playNext() {
-    if (!this.playing) return; const idx = this.songIdx, c = this.ctx;
-    const live = SONGS[idx].file ? 0 : setTimeout(() => { if (this.playing && !this.src && !this.bufs[idx]) this.startLive(); }, 2500); // mientras se prepara el tema, suena en vivo
-    this.render(idx).then((buf) => {
-      clearTimeout(live); if (this.timer) { clearInterval(this.timer); this.timer = 0; }
-      if (!this.playing || this.songIdx !== idx) return;
-      const src = c.createBufferSource(); src.buffer = buf; src.connect(this.out); src.start(); this.src = src;
-      src.onended = () => { if (this.src === src && this.playing) { this.songIdx = this.nextIdx != null ? this.nextIdx : this.pickNext(idx); this.nextIdx = null; this.playNext(); } };
-      this.nextIdx = this.pickNext(idx); setTimeout(() => this.render(this.nextIdx).catch(() => {}), 2000); // el siguiente tema se prepara con calma
-    }).catch(() => { if (SONGS[this.songIdx].file) this.songIdx = 0; this.startLive(); });
+  fadeOut(c, dur) {
+    if (!c) return; const t = this.ctx.currentTime; c.gen = -1; clearTimeout(c.timer);
+    try { c.g.gain.cancelScheduledValues(t); c.g.gain.setValueAtTime(c.g.gain.value, t); c.g.gain.linearRampToValueAtTime(0, t + dur); c.src.stop(t + dur + 0.05); } catch (_) { /* ya parado */ }
   }
-  startLive() { // respaldo si el navegador no puede pre-renderizar
-    if (this.timer || !this.playing) return; this.step = 0; this.next = this.ctx.currentTime + 0.12;
-    this.timer = setInterval(() => this.tick(), 50); this.tick();
+  // when: segundos desde ahora en que debe empezar (para solapar con el final del anterior)
+  playSong(idx, when, announce) {
+    const gen = ++this.gen; this.songIdx = idx;
+    this.load(idx).then((buf) => {
+      if (gen !== this.gen || !this.playing) return;
+      const c = this.ctx, t0 = c.currentTime + Math.max(0.02, when), src = c.createBufferSource(), g = c.createGain();
+      src.buffer = buf; src.connect(g); g.connect(this.out);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(1, t0 + FADE_IN);
+      const dur = buf.duration, fo = t0 + dur - FADE_OUT, curve = new Float32Array(32);
+      for (let i = 0; i < 32; i++) curve[i] = 0.5 + 0.5 * Math.cos((i / 31) * Math.PI); // bajada en coseno: muy suave
+      g.gain.setValueAtTime(1, fo); g.gain.setValueCurveAtTime(curve, fo, FADE_OUT);
+      src.start(t0); const rec = { src, g, gen, timer: 0 }; const prev = this.cur; this.cur = rec;
+      if (prev && prev !== rec && prev.gen !== -1) this.fadeOut(prev, Math.max(0.5, when));
+      if (announce !== false && this.onSong) { clearTimeout(this.annT); this.annT = setTimeout(() => { if (gen === this.gen && this.onSong && !this.muted) this.onSong(SONGS[idx]); }, Math.max(0, when * 1000)); }
+      // el siguiente se prepara ya y entra solapado con el final de este
+      const nxt = this.pickNext(idx); this.load(nxt).catch(() => {});
+      rec.timer = setTimeout(() => { if (gen === this.gen && this.playing) this.playSong(nxt, OVERLAP, true); }, Math.max(1000, (when + dur - 2 * OVERLAP) * 1000));
+    }).catch(() => { if (gen === this.gen && this.playing) setTimeout(() => this.playing && gen === this.gen && this.playSong(this.pickNext(idx), 0, true), 4000); });
   }
-  stop() {
-    if (!this.playing) return; this.playing = false; const t = this.ctx.currentTime;
-    this.out.gain.cancelScheduledValues(t); this.out.gain.setTargetAtTime(0, t, 0.18);
-    clearInterval(this.timer); this.timer = 0;
-    if (this.src) { const s = this.src; this.src = null; s.onended = null; try { s.stop(t + 0.5); } catch (_) {} }
-  }
-  tick() {
-    const ctx = this.ctx;
-    if (ctx.state !== 'running') { this.next = ctx.currentTime + 0.1; return; }
-    // si el hilo principal se atasca (frame largo) y nos pasamos, no soltamos de golpe las notas atrasadas: eso sonaba a chasquido
-    if (this.next < ctx.currentTime - 0.04) { this.next = ctx.currentTime + 0.06; this.step = Math.ceil(this.step / 2) * 2; }
-    while (this.next < ctx.currentTime + 0.5) {
-      if (this.step === 0) { this.song = SONGS[this.songIdx]; this.stepDur = 60 / this.song.bpm / 4; this.delay.delayTime.setValueAtTime((60 / this.song.bpm) * 0.75, this.next); }
-      this.play(this.step, this.next); this.next += this.stepDur; this.step++;
-      if (this.step >= 256) { this.step = 0; do this.songIdx = this.pickNext(this.songIdx); while (SONGS[this.songIdx].file); } // al acabar un tema, pasa al siguiente
-    }
-  }
-  play(step, t) {
-    const S = this.song, ST = this.stepDur, bar = Math.floor(step / 16) % 8, s = step % 16, pass = Math.floor(step / 128); t += (s % 2) ? ST * S.swing : 0;
-    // batería
-    if (S.kick.includes(s) || (bar % 2 && S.kickOdd.includes(s))) this.kick(t, (s === 0 ? 1 : 0.8) * (S.soft || 1));
-    if (S.snare.includes(s)) { if (S.clap) this.clap(t, 0.9); else this.snare(t, 0.9 * (S.soft || 1)); } else if (s === 15 && bar % 4 === 3) this.snare(t, 0.35 * (S.soft || 1));
-    if (s % S.hatEvery === 0) this.hat(t, (s % 4 === 2 ? 0.34 : 0.2) * (S.soft || 1), false); else if (s % 4 === 3) this.hat(t, 0.1 * (S.soft || 1), false);
-    if (s === 14 && bar % 2 === 1) this.hat(t, 0.3 * (S.soft || 1), true);
-    // bajo
-    for (const [bs, iv, len] of S.bass) if (bs === s) this.bass(S.roots[bar] + iv, t, ST * len * 0.92, S.bassT);
-    // piano eléctrico: acordes picados
-    if (S.stabs.includes(s)) {
-      const ch = S.chords[bar], vel = s === S.stabs[0] ? 1 : 0.72, K = S.stab || 'epiano';
-      if (K === 'pad') { if (s === 0) for (const n of ch) this.pad(n, t, ST * 15.5, 0.03); }
-      else if (K === 'organ') for (const n of ch) this.organ(n, t, ST * 1.4, 0.04 * vel);
-      else if (K === 'pluck') for (const n of ch) this.pluck(n + 12, t, ST * 1.6, 0.05 * vel);
-      else for (const n of ch) this.epiano(n, t, ST * (s === 0 ? 3.2 : 1.5), 0.05 * vel);
-    }
-    if (S.arp) this.pluck(S.chords[bar][s % 4] + (s % 8 >= 4 ? 24 : 12), t, ST * 0.8, 0.028); // arpegio en semicorcheas
-    if (S.openHat && S.openHat.includes(s)) this.hat(t, 0.55 * (S.soft || 1), true);
-    // melodía (la segunda vuelta sube de registro)
-    for (const [ms, note, len] of S.melody[bar]) if (ms === s) this.lead(note + (pass && note <= 79 ? 12 : 0), t, ST * len * 0.95, pass ? 0.075 : 0.065);
-    if (pass && s % 4 === 1 && (bar === 3 || bar === 7)) this.epiano(S.chords[bar][(s >> 2) % 4] + 12, t, ST * 1.5, 0.028);
-  }
-  env(g, t, a, peak, dur, rel = 0.05) { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak * 0.25), t + a + dur * 0.55); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + rel); }
-  epiano(m, t, dur, v) {
-    const c = this.ctx, f = mtof(m), car = c.createOscillator(), mod = c.createOscillator(), mg = c.createGain(), g = c.createGain(), pan = c.createStereoPanner ? c.createStereoPanner() : null;
-    car.type = 'sine'; mod.type = 'sine'; car.frequency.value = f; mod.frequency.value = f * 14;
-    mg.gain.setValueAtTime(f * 1.6, t); mg.gain.exponentialRampToValueAtTime(f * 0.06, t + 0.18); mod.connect(mg); mg.connect(car.frequency);
-    const car2 = c.createOscillator(); car2.type = 'triangle'; car2.frequency.value = f; const g2 = c.createGain(); g2.gain.value = 0.35; car2.connect(g2); g2.connect(g);
-    car.connect(g); this.env(g, t, 0.004, v, dur * 1.4, 0.25);
-    if (pan) { pan.pan.value = (Math.random() - 0.5) * 0.5; g.connect(pan); pan.connect(this.out); } else g.connect(this.out);
-    for (const o of [car, mod, car2]) { o.start(t); o.stop(t + dur * 1.4 + 0.4); }
-  }
-  clap(t, v) { for (const d of [0, 0.011, 0.023]) this.noiseBurst(t + d, d > 0.02 ? 0.12 : 0.02, 'bandpass', 1500, 1.1, 0.17 * v); }
-  organ(m, t, dur, v) { // órgano de club: cuadrada + armónicos, seco y percusivo
-    const c = this.ctx, f = mtof(m), g = c.createGain(), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3400; lp.connect(g);
-    for (const [ty, k, a] of [['square', 1, 0.5], ['sine', 2, 0.6], ['sine', 3, 0.28]]) { const o = c.createOscillator(), og = c.createGain(); o.type = ty; o.frequency.value = f * k; og.gain.value = a; o.connect(og); og.connect(lp); o.start(t); o.stop(t + dur + 0.1); }
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.006); g.gain.exponentialRampToValueAtTime(v * 0.35, t + dur * 0.5); g.gain.setTargetAtTime(0.0001, t + dur, 0.035);
-    g.connect(this.out); g.connect(this.send);
-  }
-  pluck(m, t, dur, v) { // sierra con filtro que se cierra rápido: pulso disco/synthpop
-    const c = this.ctx, f = mtof(m), g = c.createGain(), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 5; lp.frequency.setValueAtTime(4200, t); lp.frequency.exponentialRampToValueAtTime(380, t + Math.max(0.12, dur * 0.7));
-    for (const dt of [-8, 7]) { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = dt; o.connect(lp); o.start(t); o.stop(t + dur + 0.2); }
-    lp.connect(g); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.004); g.gain.setTargetAtTime(0.0001, t + dur * 0.8, 0.06);
-    g.connect(this.out); g.connect(this.send);
-  }
-  pad(m, t, dur, v) { // colchón de sierras desafinadas con ataque lento
-    const c = this.ctx, f = mtof(m), g = c.createGain(), lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(500, t); lp.frequency.linearRampToValueAtTime(1500, t + dur * 0.5); lp.frequency.linearRampToValueAtTime(600, t + dur);
-    for (const dt of [-11, 0, 12]) { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = dt; o.connect(lp); o.start(t); o.stop(t + dur + 0.6); }
-    lp.connect(g); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.5); g.gain.setValueAtTime(v, t + dur - 0.3); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.45);
-    g.connect(this.out);
-  }
-  bass(m, t, dur, kind) {
-    if (kind) return this.bassV(m, t, dur, kind);
-    const c = this.ctx, f = mtof(m), o = c.createOscillator(), sub = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain();
-    o.type = 'sawtooth'; sub.type = 'sine'; o.frequency.value = f; sub.frequency.value = f;
-    lp.type = 'lowpass'; lp.Q.value = 3; lp.frequency.setValueAtTime(1600, t); lp.frequency.exponentialRampToValueAtTime(260, t + 0.12);
-    const sg = c.createGain(); sg.gain.value = 0.9; sub.connect(sg); sg.connect(g); o.connect(lp); lp.connect(g);
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 0.006); g.gain.setTargetAtTime(0.0001, t + dur, 0.05);
-    g.connect(this.out); o.start(t); sub.start(t); o.stop(t + dur + 0.3); sub.stop(t + dur + 0.3);
-  }
-  bassV(m, t, dur, kind) { // variantes de bajo: redondo (sub), funk y pulsante
-    const c = this.ctx, f = mtof(m), g = c.createGain(), lp = c.createBiquadFilter(), o = c.createOscillator(), o2 = c.createOscillator(); lp.type = 'lowpass';
-    if (kind === 'sub') { o.type = 'sine'; o2.type = 'triangle'; lp.frequency.value = 900; lp.Q.value = 0.7; }
-    else if (kind === 'funk') { o.type = 'square'; o2.type = 'sawtooth'; lp.Q.value = 6; lp.frequency.setValueAtTime(2200, t); lp.frequency.exponentialRampToValueAtTime(240, t + 0.14); }
-    else { o.type = 'sawtooth'; o2.type = 'square'; lp.Q.value = 3; lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(180, t + 0.11); }
-    o.frequency.value = f; o2.frequency.value = f; o2.detune.value = kind === 'sub' ? 0 : 5; const g2 = c.createGain(); g2.gain.value = kind === 'sub' ? 0.5 : 0.6; o2.connect(g2); g2.connect(lp); o.connect(lp); lp.connect(g);
-    const pk = kind === 'sub' ? 0.2 : 0.15; g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(pk, t + 0.006); g.gain.setTargetAtTime(0.0001, t + Math.min(dur, kind === 'pulse' ? 0.1 : dur), 0.04);
-    g.connect(this.out); o.start(t); o2.start(t); o.stop(t + dur + 0.3); o2.stop(t + dur + 0.3);
-  }
-  lead(m, t, dur, v) {
-    const c = this.ctx, f = mtof(m), a = c.createOscillator(), b = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain(), lfo = c.createOscillator(), lg = c.createGain();
-    const LT = { square: ['square', 'triangle'], tri: ['triangle', 'sine'], sine: ['sine', 'triangle'], robot: ['sawtooth', 'square'] }[this.song.lead] || ['sawtooth', 'square']; a.type = LT[0]; b.type = LT[1]; a.frequency.value = f; b.frequency.value = f; a.detune.value = 6; b.detune.value = -7;
-    lfo.frequency.value = 5.2; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(14, t + Math.max(0.05, dur * 0.6)); lfo.connect(lg); lg.connect(a.detune); lg.connect(b.detune);
-    lp.type = 'lowpass'; lp.frequency.setValueAtTime(5200, t); lp.frequency.exponentialRampToValueAtTime(2300, t + dur); lp.Q.value = 1.2;
-    if (this.song.lead === 'robot') { lp.type = 'bandpass'; lp.frequency.setValueAtTime(800, t); lp.frequency.exponentialRampToValueAtTime(2600, t + Math.max(0.08, dur * 0.7)); lp.Q.value = 2.6; v *= 2; } // voz robótica
-    const bg = c.createGain(); bg.gain.value = 0.45; a.connect(lp); b.connect(bg); bg.connect(lp); lp.connect(g);
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.012); g.gain.setTargetAtTime(0.0001, t + dur, 0.06);
-    g.connect(this.out); g.connect(this.send); for (const o of [a, b, lfo]) { o.start(t); o.stop(t + dur + 0.4); }
-  }
-  kick(t, v) {
-    const c = this.ctx, o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
-    g.gain.setValueAtTime(0.34 * v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26); o.connect(g); g.connect(this.out); o.start(t); o.stop(t + 0.3);
-  }
-  noiseBurst(t, dur, type, freq, q, vol) {
-    const c = this.ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); s.buffer = this.noise; f.type = type; f.frequency.value = freq; f.Q.value = q;
-    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); s.connect(f); f.connect(g); g.connect(this.out); s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.02);
-  }
-  snare(t, v) { this.noiseBurst(t, 0.17, 'bandpass', 1900, 0.8, 0.2 * v); const c = this.ctx, o = c.createOscillator(), g = c.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(150, t + 0.08); g.gain.setValueAtTime(0.14 * v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12); o.connect(g); g.connect(this.out); o.start(t); o.stop(t + 0.15); }
-  hat(t, v, open) { this.noiseBurst(t, open ? 0.2 : 0.045, 'highpass', 7200, 0.7, 0.1 * v); }
 }

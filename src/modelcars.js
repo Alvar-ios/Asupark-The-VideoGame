@@ -111,6 +111,11 @@ export function buildModelCar(id, color, lod = 'hi', num = 7) {
   const flames = new THREE.Group();
   const fm = new THREE.MeshBasicMaterial({ color: 0x5ad0ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
   for (const s of [-1, 1]) flames.add(new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.4, 8).rotateX(-Math.PI / 2).translate(s * flameX, flameY, flameZ), fm));
+  if (cfg.kart) { // llama pequeña del tubo de escape (se enciende al petardear)
+    flames.clear(); const fm2 = new THREE.MeshBasicMaterial({ color: 0xffa530, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.42, 7).rotateX(-Math.PI / 2).translate(0, 0, -0.21), fm2), core = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.24, 6).rotateX(-Math.PI / 2).translate(0, 0, -0.12), new THREE.MeshBasicMaterial({ color: 0xfff3b0, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    flames.add(cone, core); flames.position.set(-0.12, 0.2, -1.02);
+  }
   flames.visible = false; tilt.add(flames);
   if (cfg.kart) addKartNumber(orientation, num);
   return { root, tilt, wheels, tail, flames, W, paint: [...paints][0] || { color: new THREE.Color() }, paints };

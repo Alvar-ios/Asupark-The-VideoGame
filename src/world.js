@@ -481,6 +481,27 @@ function gantry(tr, s, label, color) {
 }
 // montones de neumáticos en el exterior de las curvas cerradas
 const bankOff = (tr, i, l) => { const b = tr.bank ? tr.bank[i % tr.N] : 0; return b ? Math.tan(b) * Math.max(-WALL, Math.min(WALL, l)) : 0; }; // altura extra del peralte a distancia lateral l
+// zonas de banderas del país del circuito: dos grupos de mástiles en el lado exterior, con la bandera como textura
+function flagZones(tr, th, scene, svg) {
+  if (!svg) return;
+  const img = new Image(), tex = new THREE.Texture(img); tex.colorSpace = THREE.SRGBColorSpace;
+  img.onload = () => { tex.needsUpdate = true; };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20" width="300" height="200">${svg}</svg>`);
+  const fm = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, fog: true }), pm = new THREE.MeshLambertMaterial({ color: 0xdadde2 }), fg = new THREE.PlaneGeometry(2.6, 1.733).translate(1.3, 0, 0), pg = new THREE.CylinderGeometry(0.055, 0.07, 7.2, 6).translate(0, 3.6, 0);
+  const spots = [];
+  for (const f of [0.18, 0.55]) {
+    const i0 = Math.floor(tr.N * f); let bi = i0, bk = 1e9; for (let k = 0; k < 140; k++) { const i = (i0 + k) % tr.N, a = Math.abs(tr.kap[i]); if (a < bk) { bk = a; bi = i; } } // un tramo recto cercano
+    const side = tr.kap[(bi + 30) % tr.N] > 0 ? 1 : -1;
+    for (let n = -3; n <= 3; n++) { const i = (bi + n * 5 + tr.N) % tr.N, l = (WALL + 2.2) * side; spots.push([tr.X[i] - tr.TZ[i] * l, tr.Y[i] + bankOff(tr, i, l), tr.Z[i] + tr.TX[i] * l, Math.atan2(tr.TX[i], tr.TZ[i]), n]);
+    }
+  }
+  const poles = new THREE.InstancedMesh(pg, pm, spots.length), group = new THREE.Group(), d = new THREE.Object3D();
+  spots.forEach((sp, k) => {
+    d.position.set(sp[0], sp[1], sp[2]); d.rotation.set(0, 0, 0); d.updateMatrix(); poles.setMatrixAt(k, d.matrix);
+    const f = new THREE.Mesh(fg, fm); f.position.set(sp[0], sp[1] + 6.3, sp[2]); f.rotation.set(0, sp[3] + Math.PI / 2 + (sp[4] % 2) * 0.15, 0); group.add(f);
+  });
+  poles.frustumCulled = false; scene.add(poles, group);
+}
 function tyreStacks(tr, th, scene) {
   const spots = [];
   for (let i = 0; i < tr.N; i += 5) {
@@ -974,18 +995,21 @@ function marioTrackBlocks(tr, th) {
 
 // guardarraíl de neumáticos: dos alturas de ruedas apiladas a cada lado, pintadas a tramos de rojo y blanco
 function tireWallMesh(tr, th) {
-  const N = tr.N, L = WALL, gap = 0.6, per = Math.max(1, Math.round(tr.ds / gap)), tires = [];
+  const N = tr.N, L = WALL, gap = 0.66, per = Math.max(1, Math.round(tr.ds / gap)), tires = [];
+  let seed = 1234567; const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
   for (const side of [-1, 1]) for (let i = 0; i < N; i++) for (let k = 0; k < per; k++) {
-    const f = (k / per) * tr.ds, l = (L + 0.34) * side, x = tr.X[i] + tr.TX[i] * f + -tr.TZ[i] * l, z = tr.Z[i] + tr.TZ[i] * f + tr.TX[i] * l;
-    tires.push([x, tr.Y[i] + bankOff(tr, i, l), z, Math.floor((i * per + k) / 9) % 3]);
+    const f = (k / per) * tr.ds + (rnd() - 0.5) * 0.08, l = (L + 0.3 + (rnd() - 0.5) * 0.1) * side, x = tr.X[i] + tr.TX[i] * f + -tr.TZ[i] * l, z = tr.Z[i] + tr.TZ[i] * f + tr.TX[i] * l;
+    tires.push([x, tr.Y[i] + bankOff(tr, i, l), z]);
   }
-  const geo = new THREE.CylinderGeometry(0.3, 0.3, 0.3, 9); geo.translate(0, 0.15, 0);
+  const geo = new THREE.TorusGeometry(0.25, 0.11, 5, 10); geo.rotateX(Math.PI / 2); geo.scale(1, 1.25, 1); geo.translate(0, 0.14, 0);
   const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), tires.length * 2);
-  const d = new THREE.Object3D(), cols = [col(0x17181b), col(0xd91e18), col(0xf2f2f2)], blk = col(0x17181b);
+  const d = new THREE.Object3D(), c = new THREE.Color();
   tires.forEach((t, n) => {
+    const paint = Math.floor(n / 11) % 9 === 0 ? (Math.floor(n / 99) % 2 ? 0xc9c9c4 : 0x9c2a22) : 0; // casi todas negras; alguna pintada y desgastada
     for (let h = 0; h < 2; h++) {
-      d.position.set(t[0], t[1] + h * 0.3, t[2]); d.rotation.set(0, (n * 0.7 + h) % 6.28, 0); d.updateMatrix(); m.setMatrixAt(n * 2 + h, d.matrix);
-      m.setColorAt(n * 2 + h, t[3] === 0 ? blk : cols[h === 0 ? t[3] : (t[3] === 1 ? 2 : 1)]); // franjas rojo/blanco alternadas con tramos negros
+      d.position.set(t[0] + (rnd() - 0.5) * 0.05, t[1] + h * 0.27, t[2] + (rnd() - 0.5) * 0.05); d.rotation.set((rnd() - 0.5) * 0.12, rnd() * 6.28, (rnd() - 0.5) * 0.12); d.updateMatrix(); m.setMatrixAt(n * 2 + h, d.matrix);
+      if (paint && h === 0) c.setHex(paint).multiplyScalar(0.8 + rnd() * 0.15); else { const v = 0.07 + rnd() * 0.06; c.setRGB(v, v, v * 1.05); }
+      m.setColorAt(n * 2 + h, c);
     }
   });
   m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; m.frustumCulled = false; m.castShadow = false;
@@ -1347,7 +1371,7 @@ function createFoamWedgeGeometry() {
 const LOCAL_BRANDS = {
   pruebas: ['ESTRELLA GALICIA', '#c8102e', '#ffffff'], monaco: ['HÔTEL DE PARIS', '#0b1f3a', '#e8c872'], spa: ['SPA MONOPOLE', '#0a4d8c', '#ffffff'],
   valle: ['GUARANÁ ANTARCTICA', '#0a7a3c', '#ffe14d'], desierto: ['TEQUILA SAUZA', '#7a2a0a', '#ffd166'], neon: ['ASAHI SUPER DRY', '#101820', '#f2f2f2'],
-  nieve: ['RICOLA', '#00873c', '#ffffff'], amazonas: ['INCA KOLA', '#f6c600', '#c8102e'], karting: ['KARTING CLUB', '#d91e18', '#ffffff'],
+  nieve: ['RICOLA', '#00873c', '#ffffff'], amazonas: ['INCA KOLA', '#f6c600', '#c8102e'], karting: ['KARTING CLUB', '#d91e18', '#ffffff'], asupark: ['ASUPARK', '#1a3778', '#ffffff'],
 };
 const localBrandCache = {};
 function localBrandTex(th) {
@@ -2656,6 +2680,7 @@ export function buildWorld(tr, th, opt = {}) {
     turnSigns(tr, th, scene, !!opt.mobile);
   }
 
+  flagZones(tr, th, scene, opt.flagSvg);
   const info = scenery(tr, th, scene, rng, q);
   const windDummy = new THREE.Object3D();
   let windClock = 0;

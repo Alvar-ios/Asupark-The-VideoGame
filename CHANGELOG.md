@@ -2,6 +2,19 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.47
+- Música: solo los 6 temas de TeteCovers (fuera los sintetizados y la versión larga de Drifting after Baptism). Fade out muy suave al final de cada tema, el siguiente entra solapado y aparece un aviso con el título al cambiar de canción (también conduciendo). La música ya no se corta al entrar o salir de un circuito (se atenúa y sigue) y el primer tema se descarga al abrir el juego.
+- Kart: miniatura nueva en el garaje; ruedas traseras corregidas (giraban descentradas); petardeo fuerte al soltar el gas con llamita en el escape.
+- Fórmula 0: nuevo trazado muy revirado (el de la foto isométrica, ~820 m) y neumáticos de guardarraíl más realistas (negros, desgastados, algunos pintados, con irregularidades).
+- Nuevo circuito Asupark (karting, ~910 m) basado en el trazado azul.
+- Selector de circuitos: mapa mundi interactivo con cada circuito en su país y zoom a Europa.
+- Menú de pausa: opciones Cambiar de coche y Cambiar de circuito.
+- Garaje: al elegir un coche suena su motor (arranque, acelerones, desacelera y ralentí bajito).
+- Minimapa: ahora gira contigo por defecto, más cerca, más nítido y con mejor diseño (circular al seguirte, con norte).
+- Fantasmas: ya no van a tirones (usan la misma interpolación que tu coche) y el nombre no lleva reborde.
+- Menú de inicio con el fondo y los paneles más translúcidos.
+- Banderas del país del circuito en dos zonas de cada trazado.
+
 ## 0.0.46
 - Música: 7 temas grabados de TeteCovers (Borja Riñón on the Piano, Calamare en la M40, Drifting after Baptism en dos versiones, Paco Galaxia, Roadtrip a la BoyBerry, Susurro de Bruno Pérez). Salen en el selector con autor y en la rotación aleatoria; se descargan solo al sonar.
 - Kart: nuevo modelo 3D de kart 125cc (optimizado de 103 MB a 3,5 MB). Un único kart, con color libre y dorsal (0-99) editables en el garaje. Suspensión rígida: no cabecea ni balancea.

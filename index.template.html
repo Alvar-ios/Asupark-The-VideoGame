@@ -858,9 +858,30 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
 #profile .lbwrap{max-height:44vh;overflow:auto}
 @media (max-width:560px){#profile .pf-shelf{grid-template-columns:1fr}#profile .pf-stats{grid-template-columns:repeat(3,1fr)}}
 #kartCfg{display:flex;gap:14px;align-items:center;margin:10px 0 4px;flex-wrap:wrap}#kartCfg label{display:flex;align-items:center;gap:8px;font:700 15px "Jersey 10",sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#cfd6e6}#kartCfg input[type=color]{width:44px;height:34px;padding:0;border:2px solid #3a4258;border-radius:8px;background:none}#kartCfg input[type=number]{width:64px;height:34px;border-radius:8px;border:2px solid #3a4258;background:#10141f;color:#fff;font:700 18px "Jersey 10",sans-serif;text-align:center}
+#songToast{position:fixed;left:50%;top:74px;transform:translate(-50%,-18px);z-index:60;display:flex;align-items:baseline;gap:10px;padding:8px 16px;border-radius:12px;background:rgba(10,13,22,.72);backdrop-filter:blur(6px);color:#fff;font:700 18px "Jersey 10",sans-serif;letter-spacing:.05em;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;max-width:90vw}
+#songToast.on{opacity:1;transform:translate(-50%,0)}#songToast i{color:#66e8ff;font-style:normal}#songToast small{color:#9aa6bf;font-size:14px}
+body #hud #mini{background:radial-gradient(circle at 50% 50%,rgba(22,30,48,.78),rgba(8,12,22,.78))!important;border:2px solid rgba(255,255,255,.28)!important;border-radius:18px!important;clip-path:none!important;box-shadow:0 8px 26px rgba(0,0,0,.45)!important;padding:0!important}
+body #hud #mini.follow{border-radius:50%!important;border-color:rgba(255,201,40,.7)!important;box-shadow:0 0 0 3px rgba(8,12,22,.6),0 8px 26px rgba(0,0,0,.5)!important}
+/* v0.0.47 mapa mundi, menú más transparente */
+#menu{background:linear-gradient(90deg,rgba(8,10,15,.55) 0,rgba(8,10,15,.38) 30%,rgba(8,10,15,0) 56%)!important}
+#menu .panel{background:rgba(9,13,22,.5)!important;backdrop-filter:blur(7px)!important;-webkit-backdrop-filter:blur(7px)!important}
+#menu #flyout{background:rgba(8,10,15,.52)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important}
+#menu[data-view="tracks"] #flyout{width:min(880px,66vw)!important}
+#worldMap{position:relative;width:100%;aspect-ratio:1000/520;border-radius:14px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,rgba(34,64,98,.55),rgba(10,18,32,.7));border:1px solid rgba(255,255,255,.12)}
+#wmInner{position:absolute;inset:0;transform-origin:0 0;transition:transform .45s ease}#wmZoom{position:absolute;right:10px;top:10px;z-index:6;padding:7px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(8,12,22,.75);color:#fff;font:700 13px inherit;cursor:pointer}
+#worldMap svg{position:absolute;inset:0;width:100%;height:100%}#wmLand{fill:#2c4a5e;stroke:#4f7890;stroke-width:.8;opacity:.95}
+#wmPins{position:absolute;inset:0}
+.wm-pin{position:absolute;transform:translate(-50%,-50%) scale(calc(1 / var(--z,1)));width:30px;height:30px;padding:0;border:2px solid #fff;border-radius:50%;background:#101827;cursor:pointer;display:grid;place-items:center;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.55);transition:transform .15s,border-color .15s;touch-action:manipulation}
+.wm-pin svg{width:22px;height:15px;border-radius:2px}.wm-pin:hover{transform:translate(-50%,-50%) scale(calc(1.25 / var(--z,1)));z-index:3}
+.wm-pin.on{border-color:#ffc928;transform:translate(-50%,-50%) scale(calc(1.4 / var(--z,1)));z-index:4;box-shadow:0 0 0 4px rgba(255,201,40,.35),0 4px 12px rgba(0,0,0,.6)}
+.wm-pin.daily::after{content:"★";position:absolute;right:-1px;top:-3px;font-size:12px;color:#ffc928;text-shadow:0 1px 2px #000}
+#wmInfo{display:flex;align-items:center;gap:12px;margin:12px 0 4px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+#wmInfo .flag{width:42px;flex:0 0 42px}#wmInfo b{display:block;font:800 18px/1.1 inherit;color:#fff}#wmInfo small{color:#aab4cc}#wmInfo button{margin-left:auto;padding:10px 16px;border:0;border-radius:9px;background:#ffc928;color:#111;font:800 14px inherit;letter-spacing:.08em;cursor:pointer}
+@media (max-width:760px){#menu[data-view="tracks"] #flyout{width:100%!important}.wm-pin{width:26px;height:26px}.wm-pin svg{width:19px;height:13px}}
 </style>
 </head>
 <body>
+<div id="songToast" aria-live="polite"></div>
 <canvas id="gl"></canvas>
 <div id="fx-lines"></div><div id="fx-flash"></div>
 <div id="hud" class="hidden">
@@ -909,7 +930,7 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
   </div>
   <aside id="flyout" hidden>
     <div class="vhead"><h2 id="flyTitle">Circuito</h2><button id="flyClose" class="back" type="button" aria-label="Cerrar">✕</button></div>
-    <div id="viewTracks" hidden><div id="trackList" class="grid"></div></div>
+    <div id="viewTracks" hidden><div id="worldMap"><div id="wmInner"><svg viewBox="0 0 1000 520" preserveAspectRatio="none" aria-hidden="true"><path id="wmLand"/></svg><div id="wmPins"></div></div><button type="button" id="wmZoom">Zoom Europa</button></div><div id="wmInfo"></div><h3 class="pt">Todos los circuitos</h3><div id="trackList" class="grid"></div></div>
     <div id="viewGarage" hidden>
       <div id="groupTabs" class="tabs"></div><div id="carList" class="grid"></div>
       <h3 class="pt">Pintura · <span id="paintName">—</span></h3><div id="paints"></div>
@@ -942,7 +963,7 @@ html,body,button,input,select,textarea{font-family:"Jersey 10",Impact,sans-serif
   <div id="gfxSel" class="seg"><button data-v="auto">Auto</button><button data-v="high">Alta</button><button data-v="medium">Media</button><button data-v="low">Baja</button></div>
   <p class="keys" style="display:block">Auto baja la calidad solo si el juego va lento. «Baja» quita las sombras y reduce la resolución: úsala si va a tirones en el móvil.</p>
   <button id="setClose" class="big">LISTO</button></div></div>
-<div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar</button><button id="endBtn" class="big ghost">Terminar y ver tiempos</button><button id="setBtn2" class="big ghost">Ajustes</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
+<div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar</button><button id="pauseCar" class="big ghost">Cambiar de coche</button><button id="pauseTrack" class="big ghost">Cambiar de circuito</button><button id="endBtn" class="big ghost">Terminar y ver tiempos</button><button id="setBtn2" class="big ghost">Ajustes</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
 <div id="results" class="overlay hidden"><div class="panel rbox"><h1 id="rTitle">META</h1><div class="big-n" id="rBig">1º</div><div id="rNew"></div><table id="rTable"></table><button id="againBtn" class="big">OTRA VEZ</button><button id="boardBtn2" class="big ghost">Clasificación completa</button><button id="menuBtn2" class="big ghost">Menú principal</button></div></div>
 <script src="./config.js"></script>
 <script>/*BUNDLE*/</script>

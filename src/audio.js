@@ -53,7 +53,7 @@ export class Sound {
       this.rainHi = nz('highpass', 2400, 0.4); // siseo de las gotas al caer sobre el asfalto
       this.gravel = nz('bandpass', 850, 1.2);
       this.spray = nz('highpass', 720, 0.45);
-      this.music = new Music(ctx, this.master, buf); this.applyVolumes();
+      this.music = new Music(ctx, this.master); this.music.onSong = (sg) => { if (this.onSong) this.onSong(sg); }; this.applyVolumes();
       this.ok = true;
       if (carId) this.startSynth(carId);
     } catch (e) { this.ok = false; }
@@ -113,6 +113,35 @@ export class Sound {
       if (this.engineSource) this.engineSource.gain.gain.setTargetAtTime(0, t, 0.04);
       for (const n of [this.wind, this.rain, this.rainHi, this.spray, this.gravel, this.skid]) if (n) n.g.gain.setTargetAtTime(0, t, 0.05);
     }
+  }
+  // Al elegir coche en el garaje: arranque del motor, un par de acelerones, desacelera y se queda al ralentí bajito hasta que stopPreview()
+  async enginePreview(carId) {
+    if (!this.ctx) return; this.stopPreview(true); const token = this.prevToken = (this.prevToken || 0) + 1;
+    this.startSynth(carId);
+    for (let k = 0; k < 50 && !(this.synth && this.synthCar === carId); k++) await new Promise((r) => setTimeout(r, 50));
+    if (token !== this.prevToken || !this.synth || this.synthCar !== carId) return;
+    const pr = PROFILES[SYNTH_ID[carId] || 'porsche'], t0 = performance.now(), lvl = 0.6 * this.vol.engine; this.previewing = true;
+    this.engineGain.gain.cancelScheduledValues(this.ctx.currentTime); this.engineGain.gain.setTargetAtTime(lvl * 0.9, this.ctx.currentTime, 0.03);
+    const send = (rpm, thr) => this.synth.port.postMessage({ rpm, throttle: thr, boost: thr * Math.min(1, Math.max(0.15, (rpm / pr.redline - 0.25) * 1.8)), limiter: false });
+    const span = pr.redline - pr.idle;
+    clearInterval(this.prevTimer);
+    this.prevTimer = setInterval(() => {
+      const t = (performance.now() - t0) / 1000;
+      if (token !== this.prevToken || !this.previewing) { clearInterval(this.prevTimer); return; }
+      let rpm, thr = 0;
+      if (t < 0.4) { rpm = pr.idle * (0.22 + 0.5 * Math.random() * (t / 0.4)); } // el motor de arranque gira y tose
+      else if (t < 0.55) { rpm = pr.idle * (1.5 + (t - 0.4) * 6); thr = 0.5; } // prende
+      else if (t < 1.1) { const k = (t - 0.55) / 0.55; rpm = pr.idle + span * (0.12 + 0.5 * Math.sin(k * Math.PI * 0.5)); thr = 0.85; } // acelerón
+      else if (t < 1.25) { rpm = pr.idle + span * 0.62; thr = 0.3; }
+      else if (t < 2.7) { const k = (t - 1.25) / 1.45; rpm = pr.idle + span * 0.62 * Math.exp(-3.2 * k); thr = 0; } // desacelera
+      else { rpm = pr.idle * (1 + 0.012 * Math.sin(t * 9)); if (!this.prevIdle) { this.prevIdle = true; this.engineGain.gain.setTargetAtTime(lvl * 0.3, this.ctx.currentTime, 0.5); } } // ralentí bajito
+      send(rpm, thr); this.lastMsg = null;
+    }, 28);
+  }
+  stopPreview(silent) {
+    this.prevToken = (this.prevToken || 0) + 1; clearInterval(this.prevTimer); this.prevIdle = false;
+    if (!this.previewing) return; this.previewing = false;
+    if (this.engineGain && !this.engineOn) this.engineGain.gain.setTargetAtTime(0, this.ctx.currentTime, silent ? 0.05 : 0.25);
   }
   setMusicDuck(d) { if (this.duck !== d) { this.duck = d; this.applyVolumes(); } }
   setMusic(on) { if (!this.music) return; if (on) this.music.start(); else this.music.stop(); }

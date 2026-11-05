@@ -114,13 +114,10 @@ export const THEMES = {
   },
   // Fórmula 0 (kartódromo): pista estrecha y técnica, horquillas y eses, muros de neumáticos
   karting: {
-    id: 'karting', name: 'Fórmula 0', sub: 'Pista corta y técnica de karts: horquillas, eses y muros de neumáticos', tireWalls: true, kerbH: 2.3, seed: 'karting-v1',
+    id: 'karting', name: 'Fórmula 0', sub: 'Muy revirado: recta diagonal, eses y horquillas entre muros de neumáticos', tireWalls: true, kerbH: 2.3, seed: 'karting-v2',
     style: {
-      fixedNodes: [
-        [-80, 0], [-40, 0], [0, 0], [50, 0], [100, 0], [140, -4], [170, -24], [176, -54], [158, -78], [128, -80], [110, -62], [88, -52], [66, -66], [44, -84],
-        [20, -86], [0, -68], [-24, -60], [-48, -72], [-60, -96], [-92, -104], [-122, -90], [-130, -62], [-122, -32], [-104, -10],
-      ],
-      startNear: [20, 0], scale: 1, half: 3.6, wall: 5.2, minR: 7, sep: 14,
+      fixedNodes: [[35.0,37.0],[75.0,56.0],[115.0,76.0],[142.5,91.2],[150.0,103.5],[160.0,97.4],[171.2,105.4],[173.8,119.7],[165.0,128.2],[158.0,140.6],[163.8,152.9],[176.2,151.0],[192.5,142.5],[207.5,124.4],[221.2,133.0],[222.5,152.0],[210.0,163.9],[190.0,162.4],[172.5,163.9],[150.0,166.2],[140.0,159.1],[138.8,142.5],[130.0,125.9],[120.0,114.0],[110.0,121.1],[107.5,137.8],[97.5,144.9],[82.5,142.5],[65.0,133.9],[40.0,135.4],[25.0,125.9],[27.5,113.0],[47.5,117.8],[72.5,122.5],[92.5,121.1],[105.0,109.2],[105.0,92.6],[90.0,90.2],[72.5,83.1],[55.0,76.0],[43.8,64.1],[27.5,71.2],[12.5,64.1],[15.0,52.2],[25.0,46.5]],
+      startNear: [75.0, 56.0], scale: 1, half: 3.4, wall: 4.6, minR: 4.5, sep: 10.5,
       chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], hillPts: [[0, 0], [1, 0]], runoff: { gravel: 0, open: [] },
     },
     skyTop: 0x3a8ee0, skyHor: 0xdfeefa, fog: 0xcfe3ef, fogNear: 200, fogFar: 1300,
@@ -128,8 +125,20 @@ export const THEMES = {
     wall1: 0x17181b, wall2: 0xd91e18, mount: 0x56734a, sun: 0xfff3d6, sunDir: [-0.45, 0.62, 0.4],
     hemiSky: 0xe3efff, hemiGround: 0x4a5a3a, hemiI: 1.0, sunI: 1.25, deco: 'pine', treeCol: 0x3f7a3a, treeCount: 60, night: false, temp: 23, humidity: 0.3, wind: [2, 0.5], gripMul: 1, offroad: 0.6,
   },
+  asupark: {
+    id: 'asupark', name: 'Asupark', sub: 'Karting Asupark: un laberinto de eses, horquillas y rectas cortas', tireWalls: true, kerbH: 2.3, seed: 'asupark-v1',
+    style: {
+      fixedNodes: [[29.4,122.5],[46.5,126.5],[93.0,125.2],[139.5,123.4],[157.5,118.4],[163.7,107.3],[177.3,100.4],[198.4,99.2],[218.6,91.1],[232.5,76.9],[231.9,60.5],[219.5,52.1],[203.1,54.6],[198.4,66.7],[207.1,80.0],[189.7,81.8],[181.7,67.0],[176.7,46.5],[165.8,34.1],[145.7,31.0],[128.7,33.5],[119.3,46.5],[114.7,60.5],[100.8,64.2],[88.3,59.5],[81.2,46.5],[78.1,32.5],[68.8,22.3],[51.1,18.6],[41.9,27.9],[49.6,40.3],[60.5,49.6],[59.5,63.5],[46.5,70.7],[34.7,80.0],[32.5,90.5],[46.5,93.6],[69.8,81.8],[93.0,86.8],[120.9,90.5],[142.6,85.6],[151.9,98.6],[136.4,107.3],[108.5,109.4],[80.6,108.8],[55.8,107.3],[34.1,105.4],[19.2,111.6]],
+      startNear: [93.0, 125.2], scale: 1, half: 3.4, wall: 4.6, minR: 4.5, sep: 10.5,
+      chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], hillPts: [[0, 0], [1, 0]], runoff: { gravel: 0, open: [] },
+    },
+    skyTop: 0x3a8ee0, skyHor: 0xdfeefa, fog: 0xcfe3ef, fogNear: 200, fogFar: 1300,
+    ground: 0x58803f, grass: 0x6a9a4a, dirt: 0x7a6a4a, road: 0x2e3035, kerb1: 0x1a3778, kerb2: 0xf4f4f4,
+    wall1: 0x17181b, wall2: 0x1a3778, mount: 0x56734a, sun: 0xfff3d6, sunDir: [-0.45, 0.62, 0.4],
+    hemiSky: 0xe3efff, hemiGround: 0x4a5a3a, hemiI: 1.0, sunI: 1.25, deco: 'pine', treeCol: 0x3f7a3a, treeCount: 60, night: false, temp: 23, humidity: 0.3, wind: [2, 0.5], gripMul: 1, offroad: 0.6,
+  },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

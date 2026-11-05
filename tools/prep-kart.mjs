@@ -9,7 +9,7 @@ const [src, outdir = '.'] = process.argv.slice(2);
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 const doc = await io.read(src);
 const LEN = 2.1, S = LEN / 272, ZC = -136;
-const groups = {}; // clave: body|FL.. + material
+const groups = {}, tireBox = {}; // clave: body|FL.. + material
 const comp = (T, id) => { const par = id.map((_, i) => i); const f = (x) => { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; }; for (const t of T) { const r = f(id[t[0]]); for (const k of [1, 2]) { const s = f(id[t[k]]); if (s !== r) par[s] = r; } } return f; };
 for (const n of doc.getRoot().listNodes()) {
   const m = n.getMesh(); if (!m) continue; const M = n.getWorldMatrix();
@@ -30,6 +30,7 @@ for (const n of doc.getRoot().listNodes()) {
       const c = cinfo.get(f(id[t[0]])); let g = 'body';
       if (mat === 'chassis_color' && Math.abs(c.cx) > 60 && c.cz < -40 && c.cz > -250 && p.getAttribute('POSITION').getCount() > 0 && m.listPrimitives().length) g = (c.cx < 0 ? 'L' : 'R'); // provisional
       if (g !== 'body') g = (c.cz > -150 ? 'F' : 'R') + g;
+      if (g !== 'body' && c.n > 1000) { const bb = tireBox[g] || (tireBox[g] = { mn: [1e9, 1e9, 1e9], mx: [-1e9, -1e9, -1e9] }); for (const v of t) for (let q = 0; q < 3; q++) { bb.mn[q] = Math.min(bb.mn[q], P[v][q]); bb.mx[q] = Math.max(bb.mx[q], P[v][q]); } }
       const k = g + '|' + mat; const G = groups[k] || (groups[k] = { g, mat, P: [], N: [], U: [] });
       for (const v of t) { G.P.push(P[v]); G.N.push(N[v]); G.U.push(U[v]); }
     }
@@ -65,7 +66,7 @@ const addMesh = (name, list, origin) => {
 };
 scene.addChild(out.createNode('body').setMesh(addMesh('body', Object.values(groups).filter((G) => G.g === 'body'), [0, 0, 0])));
 for (const k of ['FL', 'FR', 'RL', 'RR']) {
-  const c = centers[k]; if (!c) { console.log('FALTA rueda', k); continue; }
+  const c = tireBox[k]; if (!c) { console.log('FALTA rueda', k); continue; }
   const o = toM([(c.mn[0] + c.mx[0]) / 2, (c.mn[1] + c.mx[1]) / 2, (c.mn[2] + c.mx[2]) / 2]);
   scene.addChild(out.createNode('wheel_' + k).setTranslation(o).setMesh(addMesh('wheel_' + k, Object.values(groups).filter((G) => G.g === k), o)));
   console.log(k, 'centro', o.map((v) => +v.toFixed(3)), 'radio', +((c.mx[1] - c.mn[1]) / 2 * S).toFixed(3));
