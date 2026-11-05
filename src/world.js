@@ -493,37 +493,47 @@ function kartSurroundings(tr, th, scene, anim) {
   const grid = new Map(), cs = 8; for (let i = 0; i < N; i++) { const k = Math.floor(tr.X[i] / cs) + ',' + Math.floor(tr.Z[i] / cs); (grid.get(k) || grid.set(k, []).get(k)).push(i); }
   const nearest = (x, z) => { let b = 1e9; const cx = Math.floor(x / cs), cz = Math.floor(z / cs); for (let a = -4; a <= 4; a++) for (let c = -4; c <= 4; c++) { const l = grid.get((cx + a) + ',' + (cz + c)); if (l) for (const i of l) { const d = Math.hypot(tr.X[i] - x, tr.Z[i] - z); if (d < b) b = d; } } return b; };
   const at = (i, side, d) => { i = ((i % N) + N) % N; const l = d * side; return [tr.X[i] - tr.TZ[i] * l, tr.Z[i] + tr.TX[i] * l, tr.Y[i], Math.atan2(tr.TX[i], tr.TZ[i])]; };
-  const free = (i, side, d, r) => { const p = at(i, side, d); return nearest(p[0], p[1]) > r ? p : null; };
-  const spot = (i, side, d0, r) => { for (let d = d0; d < d0 + 40; d += 3) { const p = free(i, side, d, r); if (p) return p; } return null; };
+  // punto en coordenadas de la pista: al = a lo largo, la = lateral (con signo; la>0 = derecha de la marcha)
+  const pos = (i, al, la) => { i = ((i % N) + N) % N; return [tr.X[i] + tr.TX[i] * al - tr.TZ[i] * la, tr.Z[i] + tr.TZ[i] * al + tr.TX[i] * la, tr.Y[i]]; };
+  // la huella completa (esquinas y puntos medios) debe quedar fuera del asfalto con margen
+  const fits = (i, al0, al1, la0, la1) => { for (const al of [al0, (al0 + al1) / 2, al1]) for (const la of [la0, (la0 + la1) / 2, la1]) { const p = pos(i, al, la); if (nearest(p[0], p[1]) <= ROAD_HALF + 0.8) return false; } return true; };
+  // primera distancia lateral m (desde el borde del asfalto hacia fuera) donde cabe un rectángulo de ancho w
+  const spotRect = (i, side, al0, al1, m0, w, dmax = 40) => { for (let s = 0; s < dmax; s += 2) { const m = m0 + s; if (fits(i, al0, al1, side * m, side * (m + w))) return m; } return null; };
+  const spot = (i, side, d0, r) => { for (let d = d0; d < d0 + 40; d += 3) { const p = at(i, side, d); if (nearest(p[0], p[1]) > r) return p; } return null; };
   const lam = (c) => new THREE.MeshLambertMaterial({ color: c }), box = (w, h, d, c, x, y, z, ry = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lam(c)); m.position.set(x, y, z); m.rotation.y = ry; return m; };
   const G = new THREE.Group(); scene.add(G);
+  // objetos alineados con la pista: eje X = dirección de la marcha, eje Z = lateral (+Z = derecha)
+  const along = (p) => p[3] - Math.PI / 2;
   const brand = localBrandTex(th), logo = logoTex(th.logo), logoAr = f0 ? 500 / 129 : 238 / 141;
   // vallas publicitarias sobre postes, mirando a la pista
   const bm = new THREE.MeshBasicMaterial({ map: brand, side: THREE.DoubleSide }); bm.map && (bm.map.repeat.set(1, 1));
-  for (let i = 8, n = 0; i < N; i += 34, n++) { const side = n % 2 ? 1 : -1, p = free(i, side, L + 1.5, 6.5); if (!p) continue; const g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = p[3] + (side > 0 ? -Math.PI / 2 : Math.PI / 2);
-    g.add(new THREE.Mesh(new THREE.PlaneGeometry(7.5, 0.63), bm)); g.children[0].position.y = 1.45; for (const dx of [-3, 3]) g.add(box(0.12, 1.2, 0.12, 0x2a2d33, dx, 0.6, -0.05)); G.add(g); }
+  for (let i = 8, n = 0; i < N; i += 34, n++) { const side = n % 2 ? 1 : -1, m = spotRect(i, side, -3.8, 3.8, L + 1.0, 0.8); if (m == null) continue; const p = at(i, side, m + 0.4); const g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p) + (side > 0 ? Math.PI : 0);
+    const panel = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 0.63), bm); panel.position.y = 1.45; g.add(panel); for (const dx of [-3, 3]) g.add(box(0.12, 1.2, 0.12, 0x2a2d33, dx, 0.6, -0.05)); G.add(g); }
   // gran cartel con el logo junto a una recta
-  let bi = 0, bk = 1e9; for (let k = 0; k < N; k++) { const i = (Math.floor(N * (f0 ? 0.2 : 0.7)) + k) % N, a = Math.abs(tr.kap[i]); if (a < bk && (free(i, 1, 16, 10) || free(i, -1, 16, 10))) { bk = a; bi = i; if (a < 0.004) break; } }
-  { const side = free(bi, 1, 16, 10) ? 1 : -1, p = spot(bi, side, 16, 10); if (p) { const g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = p[3] + (side > 0 ? -Math.PI / 2 : Math.PI / 2); const w = 15, h = w / logoAr + 1;
+  let bi = 0, bk = 1e9; for (let k = 0; k < N; k++) { const i = (Math.floor(N * (f0 ? 0.2 : 0.7)) + k) % N, a = Math.abs(tr.kap[i]); if (a < bk && (spotRect(i, 1, -8.5, 8.5, L + 9, 1.2, 14) != null || spotRect(i, -1, -8.5, 8.5, L + 9, 1.2, 14) != null)) { bk = a; bi = i; if (a < 0.004) break; } }
+  { let side = null, m = null; for (const sd of [1, -1]) { const mm = spotRect(bi, sd, -8.5, 8.5, L + 9, 1.2, 14); if (mm != null) { side = sd; m = mm; break; } }
+    if (side != null) { const p = at(bi, side, m + 0.6), g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p) + (side > 0 ? Math.PI : 0); const w = 15, h = w / logoAr + 1;
     g.add(box(w + 1, h + 0.7, 0.4, 0x1c1f26, 0, 6.2 + h / 2, -0.25)); const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: logo, side: THREE.DoubleSide })); pl.position.set(0, 6.2 + h / 2, 0); g.add(pl);
     for (const dx of [-w / 2 + 1, w / 2 - 1]) g.add(box(0.5, 6.4, 0.5, 0x2a2d33, dx, 3.2, -0.3)); G.add(g); } }
   // torres de focos
   for (let n = 0; n < 8; n++) { const i = Math.floor((n + 0.5) * N / 8), side = n % 2 ? 1 : -1, p = spot(i, side, L + 5, 12); if (!p) continue; const g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = p[3];
     g.add(box(0.3, 14, 0.3, 0x8a909c, 0, 7, 0)); const lamp = box(3.2, 0.9, 0.5, 0x2b2f38, 0, 14.4, 0); lamp.rotation.x = side * 0.3; g.add(lamp); g.add(box(2.8, 0.5, 0.1, 0xfff3c4, 0, 14.4, 0.3 * -side)); G.add(g); }
-  const sp0 = (i0, sides, d0, r) => { for (const sd of sides) { const p = spot(i0, sd, d0, r); if (p) return [p, sd]; } return null; };
-  // edificio de boxes y gradas junto a la salida
-  { const r = sp0(6, [1, -1], L + 10, 16); if (r) { const [p, sd] = r, g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = p[3];
+  // edificio de boxes junto a la salida (fachada de 30 m a lo largo de la pista, 9 m de fondo)
+  { let found = null; for (const sd of [1, -1]) { const m = spotRect(6, sd, -15.5, 15.5, L + 8, 11); if (m != null) { found = { sd, m }; break; } }
+    if (found) { const { sd, m } = found, p = at(6, sd, m + 5.5), g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
     const wall = f0 ? 0xf2f2f0 : 0xeaf0fa, roof = f0 ? red : blue;
     g.add(box(30, 4.6, 9, wall, 0, 2.3, 0), box(31.5, 0.5, 11, roof, 0, 4.85, 0), box(30.2, 1.1, 0.3, roof, 0, 3.7, -sd * 4.6));
     for (let k = -5; k <= 5; k++) g.add(box(1.9, 2.4, 0.2, 0x20242c, k * 2.6, 1.5, -sd * 4.55));
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(11, 11 / logoAr), new THREE.MeshBasicMaterial({ map: logo })); sign.position.set(0, 7.4, -sd * 4.2); sign.rotation.y = sd > 0 ? Math.PI : 0; g.add(sign); g.add(box(11.4, 11 / logoAr + 0.4, 0.2, 0x1c1f26, 0, 7.4, -sd * 4.0 + (sd > 0 ? 0.15 : -0.15)));
     G.add(g); } }
-  { const r = sp0(N - 30, [-1, 1], L + 12, 14); if (r) { const [p, sd] = r, g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = p[3]; // grada escalonada
+  // gradas escalonadas (filas que se alejan de la pista)
+  { let found = null; for (const sd of [-1, 1]) { const m = spotRect(N - 30, sd, -11.5, 11.5, L + 5, 8); if (m != null) { found = { sd, m }; break; } }
+    if (found) { const { sd, m } = found, p = at(N - 30, sd, m), g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
     for (let k = 0; k < 5; k++) g.add(box(22, 0.9, 1.6, k % 2 ? (f0 ? red : blue) : 0xdadde4, 0, 0.5 + k * 0.9, sd * (k * 1.5)), box(22, 0.3, 0.2, 0x2a2d33, 0, 1 + k * 0.9, sd * (k * 1.5 - 0.7)));
     g.add(box(23, 0.3, 9, 0xcfd3da, 0, 6.2, sd * 3.2)); for (const dx of [-11, 11]) g.add(box(0.3, 6, 0.3, 0x555b66, dx, 3, sd * 7)); G.add(g); } }
-  if (f0) { // contenedores apilados (rojo, blanco y negro) en las curvas más cerradas
+  if (f0) { // contenedores apilados (rojo, blanco y negro) en las curvas más cerradas, tumbados a lo largo de la pista
     const peaks = []; for (let i = 0; i < N; i++) { const a = Math.abs(tr.kap[i]); if (a > 0.1 && !peaks.some((q) => Math.min(Math.abs(q - i), N - Math.abs(q - i)) < 90)) peaks.push(i); }
-    peaks.slice(0, 4).forEach((i, n) => { const side = tr.kap[i] > 0 ? 1 : -1, p = spot(i, side, L + 8, 12); if (!p) return; const g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = p[3];
+    peaks.slice(0, 4).forEach((i, n) => { const side = tr.kap[i] > 0 ? 1 : -1, m = spotRect(i, side, -10, 10, L + 6, 2.5); if (m == null) return; const p = at(i, side, m + 1.25); const g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
       const cc = [0xc8201a, 0xf0f0ee, 0x1b1d22]; for (let k = 0; k < 3; k++) { g.add(box(6, 2.5, 2.4, cc[(n + k) % 3], k * 6.2 - 6, 1.25, 0)); if (k !== 1) g.add(box(6, 2.5, 2.4, cc[(n + k + 1) % 3], k * 6.2 - 6, 3.75, 0)); } G.add(g); });
   } else { // Asupark: noria, carpa de circo y globos aerostáticos
     const cx = tr.X.reduce((a, b) => a + b, 0) / N, cz = tr.Z.reduce((a, b) => a + b, 0) / N; let best = null, bd = 1e18;
@@ -560,11 +570,16 @@ function startFlag(tr, th, scene, svg) {
 }
 function tyreStacks(tr, th, scene) {
   const spots = [];
+  const N = tr.N, cs = 8, grid = new Map(), half = th.half || 3.4;
+  for (let i = 0; i < N; i++) { const k = Math.floor(tr.X[i] / cs) + ',' + Math.floor(tr.Z[i] / cs); (grid.get(k) || grid.set(k, []).get(k)).push(i); }
+  const nearest = (x, z) => { let b = 1e9; const cx = Math.floor(x / cs), cz = Math.floor(z / cs); for (let a = -2; a <= 2; a++) for (let c = -2; c <= 2; c++) { const l = grid.get((cx + a) + ',' + (cz + c)); if (l) for (const i of l) { const d = Math.hypot(tr.X[i] - x, tr.Z[i] - z); if (d < b) b = d; } } return b; };
   for (let i = 0; i < tr.N; i += 5) {
     const k = tr.kap[i];
     if (Math.abs(k) < 0.018) continue;
     const side = k > 0 ? 1 : -1, l = (WALL + 1.25) * side;
-    spots.push([tr.X[i] + -tr.TZ[i] * l, tr.Y[i] + bankOff(tr, i, l), tr.Z[i] + tr.TX[i] * l, i]);
+    const x = tr.X[i] + -tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l;
+    if (nearest(x, z) < half + 0.9) continue; // nunca dentro de otro tramo de la pista
+    spots.push([x, tr.Y[i] + bankOff(tr, i, l), z, i]);
   }
   if (!spots.length) return;
   const m = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.55, 0.55, 0.5, 14), new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), spots.length * 3);
@@ -1734,22 +1749,29 @@ function motorsportAmbiance(tr, th, scene, q) {
   scene.add(bleachersGroup);
 
   // 3. Muro de boxes (Pit Wall) en el lado interior de la recta principal
-  const pitWallLength = 65;
+  // solo donde la recta es de verdad recta: el muro no puede atravesar la curva siguiente
   const pitLat = -(WALL + 0.35);
+  const pitClear = (s) => { for (const la of [pitLat, pitLat - 0.65]) { const x = tr.X[0] + tx0 * s - tz0 * la, z = tr.Z[0] + tz0 * s + tx0 * la; for (let i = 0; i < tr.N; i++) if (Math.hypot(tr.X[i] - x, tr.Z[i] - z) <= ROAD_HALF + 0.8) return false; } return true; };
+  let sPos = 0, sNeg = 0; while (sPos < 32.5 && pitClear(sPos + 1)) sPos++;
+  while (sNeg > -32.5 && pitClear(sNeg - 1)) sNeg--;
+  const pitWallLength = sPos - sNeg, pitMid = (sPos + sNeg) / 2;
+  if (pitWallLength >= 8) {
   const pitWallGeo = new THREE.BoxGeometry(0.42, 0.95, pitWallLength);
   const pitWallMat = new THREE.MeshStandardMaterial({ color: 0x767d86, roughness: 0.82 });
   const pitWallMesh = new THREE.Mesh(pitWallGeo, pitWallMat);
-  pitWallMesh.position.set(tr.X[0] + -tz0 * pitLat, tr.Y[0] + bankOff(tr, 0, pitLat) + 0.48, tr.Z[0] + tx0 * pitLat);
+  pitWallMesh.position.set(tr.X[0] + tx0 * pitMid + -tz0 * pitLat, tr.Y[0] + bankOff(tr, 0, pitLat) + 0.48, tr.Z[0] + tz0 * pitMid + tx0 * pitLat);
   pitWallMesh.rotation.set(0, heading0, 0);
   pitWallMesh.receiveShadow = !!q.shadows;
   pitWallMesh.castShadow = false;
   scene.add(pitWallMesh);
+  }
 
   // Puestos de ingenieros en el muro de boxes (pit perches) con monitores
   const perchMat = new THREE.MeshStandardMaterial({ color: 0x1f242b, metalness: 0.7, roughness: 0.35 });
   const monitorMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00b4d8, emissiveIntensity: 0.6, roughness: 0.2 });
   for (let p = 0; p < 4; p++) {
     const sP = (p - 1.5) * 14;
+    if (pitWallLength < 8 || sP > sPos - 2 || sP < sNeg + 2) continue; // puestos solo sobre el tramo recto
     const px = (tr.X[0] + -tz0 * (pitLat - 0.65)) + tx0 * sP;
     const pz = (tr.Z[0] + tx0 * (pitLat - 0.65)) + tz0 * sP;
     const py = tr.Y[0] + bankOff(tr, 0, pitLat);

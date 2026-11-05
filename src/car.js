@@ -251,10 +251,11 @@ export function stepCar(c, inp, dt, tr, env) {
   const KW = Math.min(1.9, WALL - HW - 0.2), side = loc.lat >= 0 ? 1 : -1, over = Math.abs(loc.lat) - (HW - 0.15);
   c.onKerb = !c.air && over > 0 && over < KW + 0.15 && tr.kerb && tr.kerb[loc.i] === side;
   if (c.onKerb && c.speed > 8) {
-    const depth = clamp(over / 1.2, 0, 1), push = 5.5 * depth * clamp(c.speed / 32, 0.3, 1.3); // m/s² hacia el centro
+    const kartK = c.type.kind === 'kart' ? 0.12 : 1; // el kart pasa por encima del piano sin que le empuje
+    const depth = clamp(over / 1.2, 0, 1), push = 5.5 * kartK * depth * clamp(c.speed / 32, 0.3, 1.3); // m/s² hacia el centro
     c.vx += loc.tz * side * push * dt; c.vz += -loc.tx * side * push * dt;
     c.psi += clamp(wrapPi(Math.atan2(loc.tx, loc.tz) - c.psi), -0.4, 0.4) * 0.35 * depth * dt; // y el morro tiende a alinearse con la pista
-    if (env.kerbRough) { const f = Math.exp(-0.45 * depth * dt); c.vx *= f; c.vz *= f; c.vx += (Math.random() - 0.5) * 0.9 * depth; c.vz += (Math.random() - 0.5) * 0.9 * depth; } // pianos altos y rugosos: frenan un poco y sacuden
+    if (env.kerbRough && kartK === 1) { const f = Math.exp(-0.45 * depth * dt); c.vx *= f; c.vz *= f; c.vx += (Math.random() - 0.5) * 0.9 * depth; c.vz += (Math.random() - 0.5) * 0.9 * depth; } // pianos altos y rugosos: frenan un poco y sacuden
   }
   // altura y saltos
   const hNew = loc.h;

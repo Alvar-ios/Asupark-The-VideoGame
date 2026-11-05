@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.51
+- Karts: los pianos ya no empujan al kart hacia fuera en las eses y horquillas; se pasan por encima sin pelear con la trayectoria.
+- Decorado de Fórmula 0 y Asupark: el edificio de boxes y las gradas estaban girados y atravesaban la pista; ahora van a lo largo de la recta, y cada pieza (vallas, cartel, contenedores, gradas) se coloca comprobando que toda su huella queda fuera del asfalto.
+- Muro de boxes y puestos de ingenieros: solo sobre el tramo recto de la salida, sin entrar en la curva siguiente.
+- Bloques de neumáticos: no se colocan cerca de otro tramo de la pista.
+
 ## 0.0.50
 - Música: 10 canciones nuevas (Koldo, Federico Cojones, El Cigala, Peter Sánchez, El Patica y más), con fade-out de 2 s en todas. Autores mostrados en el selector y en el aviso.
 - Calamare en la M40 atribuida a El Patica y Roadtrip a la BoyBerry a Trakatrá.
