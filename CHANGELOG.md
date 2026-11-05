@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.60
+- Móvil: Música en cuadrados (2 columnas) con scroll propio y botón fijo; Ajustes redistribuidos (sliders en 2 columnas, opciones en cuadrícula, cabecera y botón fijos con scroll); Color y Dorsal del kart en una barra limpia de dos tarjetas.
+
 ## 0.0.59
 - Móvil vertical compacto en todo: cabecera del circuito (bandera+nombre y logo arriba, info a un lado y trazado al otro, botón debajo), globo y lista de continentes más bajos, tarjetas de circuito y de coche mucho más pequeñas (2 columnas), barra de pintura/kart fija abajo en el garaje, pestañas de categoría con scroll lateral, ajustes/clasificación/perfil/música con menos relleno.
 
