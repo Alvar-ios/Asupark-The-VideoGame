@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { THEMES, THEME_LIST, dailyInfo } from './themes.js';
+import { THEMES, THEME_LIST } from './themes.js';
+import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo } from './car.js';
 import { hashStr } from './rng.js';
@@ -68,21 +69,23 @@ window.addEventListener('resize', resize); resize();
 // ---------- pistas ----------
 const tracks = [];
 function addTrack(key, name, sub, seed, style, th) { const tr = buildTrack(seed, style); tracks.push({ key, name, sub, tr, th }); }
-const daily = dailyInfo();
+const dailyKey = dailyKeyNow(), dailyPick = pickDaily(dailyKey, THEME_LIST, (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
 addTrack('pruebas', THEMES.pruebas.name, THEMES.pruebas.sub, THEMES.pruebas.seed, THEMES.pruebas.style, THEMES.pruebas);
 addTrack('monaco', THEMES.monaco.name, THEMES.monaco.sub, THEMES.monaco.seed, THEMES.monaco.style, THEMES.monaco);
 addTrack('spa', THEMES.spa.name, THEMES.spa.sub, THEMES.spa.seed, THEMES.spa.style, THEMES.spa);
-addTrack('daily', daily.name, daily.sub, daily.seed, daily.style, daily.theme);
+{ const dth = THEMES[dailyPick.theme]; addTrack('daily', 'Reto del día', dth.sub, dth.seed, dth.style, dth); }
 for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco' && k !== 'spa') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
 
-const DAILY_CAR = hashStr('dailycar-' + daily.key) % CARS.length; // el mismo coche y circuito para todos cada día
+const DAILY_CAR = Math.max(0, CARS.findIndex((c) => c.id === dailyPick.car)); // el mismo coche y circuito para todos cada día (cambia a las 4:00 de Madrid)
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
-const sel = { track: Math.max(0, tracks.findIndex((t) => t.key === 'daily')), mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, touchMode: 'halves', ctlV: 2, colors: {}, vol: { master: 1, music: 0.7, engine: 0.65 }, gfx: 'auto' };
+const sel = { track: 0, mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, touchMode: 'halves', ctlV: 2, colors: {}, vol: { master: 1, music: 0.7, engine: 0.65 }, gfx: 'auto' };
 const paintOf = (c) => { const v = sel.colors[c.id]; if (v && c.freeColor && /^#[0-9a-f]{6}$/i.test(v)) return v; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
 const kartNum = () => { const n = parseInt(sel.kartNum, 10); return n >= 0 && n <= 99 ? n : 7; };
 const halvesOn = () => MOBILE && sel.touchMode === 'halves'; // el control por mitades solo existe en pantallas táctiles
 const saved = store.get('sel'); if (saved && /^kart_/.test(saved.carId || '')) saved.carId = 'kart';
 if (saved) { if (saved.kartNum != null) sel.kartNum = saved.kartNum; const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.touchMode = saved.touchMode === 'buttons' && saved.ctlV === 2 ? 'buttons' : 'halves'; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
+if (tracks[sel.track] && tracks[sel.track].key === 'daily') sel.track = 0;
+let D = null;
 // una sola vez: se borran los tiempos locales de Mario Circuit y de Spa en F1, hechos con el trazado anterior
 if (!store.get('purge.layout-2026-11-04')) {
   try {
@@ -218,9 +221,9 @@ function buildMap() {
   const cur = tracks[sel.track], activeC = wmCont && CONTS.some((c) => c.id === wmCont) ? CONTS.find((c) => c.id === wmCont) : contOf(cur);
   if (!globe) globe = createGlobe($('worldMap'));
   const pick = (i) => { sel.track = i; sel.carId = CARS[sel.car].id; wmCont = contOf(tracks[i]).id; store.set('sel', sel); buildMenu(); };
-  const here = tracks.map((t, i) => [t, i]).filter(([t]) => contOf(t) === activeC);
+  const here = tracks.map((t, i) => [t, i]).filter(([t]) => t.key !== 'daily' && contOf(t) === activeC);
   globe.focus(activeC.ll[0], activeC.ll[1], activeC.z);
-  globe.setPins(tracks.map((t, i) => { const ll = MAP_LL[t.th.id] || MAP_LL.pruebas, daily = t.key === 'daily'; return { lat: ll[0] + (daily ? .7 : 0), lon: ll[1] + (daily ? .9 : 0), on: i === sel.track, title: t.name, html: flagSvg(countryOf(t)[0]), onClick: () => pick(i) }; }));
+  globe.setPins(tracks.map((t, i) => t.key === 'daily' ? null : t).map((t, i) => !t ? null : { t, i }).filter(Boolean).map(({ t, i }) => { const ll = MAP_LL[t.th.id] || MAP_LL.pruebas, daily = t.key === 'daily'; return { lat: ll[0] + (daily ? .7 : 0), lon: ll[1] + (daily ? .9 : 0), on: i === sel.track, title: t.name, html: flagSvg(countryOf(t)[0]), onClick: () => pick(i) }; }));
   $('contPanel').innerHTML = `<div class="cp-tabs">${CONTS.map((c) => `<button type="button" data-c="${c.id}" class="${c === activeC ? 'on' : ''}">${c.name}</button>`).join('')}</div>` + here.map(([t, i]) => `<button type="button" class="cp-row${i === sel.track ? ' on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span><span>${t.key === 'daily' ? 'Pista del día' : t.name}<small>${countryOf(t)[1]} · ${(t.tr.len / 1000).toFixed(1)} km</small></span>${t.key === 'daily' ? '<b>★</b>' : ''}</button>`).join('');
   $('contPanel').querySelectorAll('.cp-tabs button').forEach((b) => { b.onclick = () => { wmCont = b.dataset.c; buildMap(); }; });
   $('contPanel').querySelectorAll('.cp-row').forEach((b) => { b.onclick = () => pick(+b.dataset.i); });
@@ -231,19 +234,16 @@ function buildMap() {
 }
 function buildMenu() {
   { const t0 = tracks[sel.track], c0 = CARS[sel.car]; if (!sel.group) sel.group = groupOf(c0).id;
-    $('pickTrackName').textContent = t0.key === 'daily' ? 'Pista del día' : t0.name; $('pickTrackSub').textContent = `${countryOf(t0)[1]} · ${(t0.tr.len / 1000).toFixed(1)} km · ${envLabel(t0)}`; $('pickTrackFlag').innerHTML = flagSvg(countryOf(t0)[0]);
+    $('pickTrackName').textContent = t0.name; $('pickTrackSub').textContent = `${countryOf(t0)[1]} · ${(t0.tr.len / 1000).toFixed(1)} km · ${envLabel(t0)}`; $('pickTrackFlag').innerHTML = flagSvg(countryOf(t0)[0]);
     $('pickCarName').textContent = c0.name; $('pickCarSub').textContent = groupOf(c0).name; $('pickCarImg').src = `./assets/thumbs/${c0.id}.webp`; }
-  { const dt = tracks.find((t) => t.key === 'daily'), dc = CARS[DAILY_CAR], st = streakInfo(), [dcc] = countryOf(dt);
-    $('dcDate').textContent = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase();
-    $('dcTrack').innerHTML = `<span class="flag sm">${flagSvg(dcc)}</span>${dt.th.name.replace(/ · .*$/, '')} · ${(dt.tr.len / 1000).toFixed(1)} km`; $('dcCar').textContent = dc.brand + ' ' + dc.name.replace(dc.brand, '').trim();
-    $('dcStatus').textContent = st.done ? 'Hecho hoy · racha ' + st.n + ' d' : st.n ? 'Racha de ' + st.n + ' días · mismo coche y pista para todos' : 'Mismo coche y pista para todos los jugadores';
-    $('dcImg').src = `./assets/thumbs/${dc.id}.webp`; drawPreview($('dcCanvas'), dt.tr, dt.th); }
+  if (D) D.refresh && D.refresh();
   buildMap(); updateNowPlaying();
   const tl = $('trackList'); tl.innerHTML = '';
-  $('stPrev').onclick = () => { sel.track = (sel.track + tracks.length - 1) % tracks.length; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
-  $('stNext').onclick = () => { sel.track = (sel.track + 1) % tracks.length; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
+  $('stPrev').onclick = () => { do sel.track = (sel.track + tracks.length - 1) % tracks.length; while (tracks[sel.track].key === 'daily'); sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
+  $('stNext').onclick = () => { do sel.track = (sel.track + 1) % tracks.length; while (tracks[sel.track].key === 'daily'); sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
   const dailyTrack = tracks.find((t) => t.key === 'daily');
   tracks.forEach((t, i) => {
+    if (t.key === 'daily') return;
     const d = document.createElement('div'); d.className = 'card track-card' + (i === sel.track ? ' on' : '');
     const environment = t.th.weather === 'rain' ? ['rain', 'Lluvia'] : t.th.surface === 'snow' ? ['snow', 'Nieve'] : t.th.surface === 'dirt' ? ['dirt', 'Tierra'] : ['dry', 'Asfalto seco'];
     let best = null; for (const cc of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = { ...r, car: cc }; }
@@ -491,11 +491,12 @@ function makeField(ti) {
   return rts.map((rt, i) => { const bm = benchFor(ti, rt), t = (bm ? bm.lap : 60) / Math.pow(drs[i].level, 0.8) * (1 + (Math.random() - 0.5) * 0.01); return { rt, driver: drs[i], t, rev: 9 + (0.1 + Math.random() * 0.9) * t * 2.6 }; });
 }
 async function startRace(restart = false) {
+  if (S.daily && restart) return; // el reto del día no se puede reiniciar
   sound.init(CARS[sel.car].id);
   const gpMode = sel.mode === 'gp';
   if (gpMode && (!restart || !S.gp)) S.gp = { phase: 'quali', qBest: null, grid: null };
   if (!gpMode) S.gp = null;
-  S.mode = gpMode ? (S.gp.phase === 'race' ? 'race' : 'tt') : sel.mode; S.laps = gpMode ? (S.gp.phase === 'race' ? 5 : LAPS) : LAPS; S.nRiv = gpMode ? 5 : 3;
+  S.mode = gpMode ? (S.gp.phase === 'race' ? 'race' : 'tt') : sel.mode; S.laps = S.daily ? S.daily.laps : gpMode ? (S.gp.phase === 'race' ? 5 : LAPS) : LAPS; S.nRiv = gpMode ? 5 : 3;
   const ti0 = tracks[sel.track];
   if (gpMode && S.gp.phase === 'quali' && !S.gp.field) S.gp.field = makeField(ti0);
   if (S.mode === 'race') { if (gpMode) S.rivalTypes = S.gp.field.map((f) => f.rt); else if (!restart || !S.rivalTypes) S.rivalTypes = pickRivals(S.nRiv); }
@@ -511,7 +512,7 @@ async function startRace(restart = false) {
     status.hidden = false; button.disabled = false; button.textContent = previousLabel; return;
   }
   S.ghostRecs = null;
-  if (S.mode === 'tt') { // fantasmas por categoría: tu mejor vuelta de la categoría (gris) y la mejor de la categoría entre todos los jugadores (dorado)
+  if (S.mode === 'tt' && !S.daily) { // fantasmas por categoría: tu mejor vuelta de la categoría (gris) y la mejor de la categoría entre todos los jugadores (dorado)
     const tiG = tracks[sel.track], gk = tiG.key + '.' + tiG.tr.seed; migrateGroupBest(gk, pt.group);
     const own = store.get('best.' + gk + '.g:' + pt.group) || null, carIds = CARS.filter((c) => c.group === pt.group).map((c) => c.id);
     const remote = sel.ghostBest !== false ? await lb.bestGhost(trackIdOf(tiG), carIds, layoutSince(tiG.key, pt.group)) : null;
@@ -629,11 +630,13 @@ async function startRace(restart = false) {
   // la referencia propia solo se usa si su final coincide con el tiempo de esa vuelta; si no, se usa el perfil de la IA
   const pbProfEnd = S.pbRec.prof && S.pbRec.prof.length ? Math.max(...S.pbRec.prof) : -1, profLap = S.pbRec.profLap != null ? S.pbRec.profLap : S.pbRec.lap, pbOk = pbProfEnd >= 0 && profLap != null && Math.abs(pbProfEnd - profLap) < 1.5;
   S.refProf = pbOk ? S.pbRec.prof : bench ? bench.prof : null; S.refFill = fillProf(S.refProf); S.deltaS = null;
+  if (S.daily) { S.refProf = null; S.refFill = null; S.lapPB = null; S.bestLap = null; } // reto del día: sin fantasma ni diferencial
+  document.body.classList.toggle('daily', !!S.daily);
   S.refName = S.pbRec.prof && S.pbRec.prof.length ? 'PB' : 'RÉCORD';
   S.curProf = new Float32Array(Math.ceil(tr.len / 10) + 2).fill(-1);
   S.secIdx = -1; S.secStart = 0; S.secInvalid = false;
   for (let k = 0; k < 3; k++) { const e = $('s' + k); e.className = 'sec'; e.lastElementChild.textContent = '--'; }
-  document.body.classList.toggle('tt', S.mode === 'tt'); $('h-rec').style.display = S.mode === 'tt' && !S.gp ? '' : 'none'; $('endBtn').style.display = S.mode === 'tt' ? '' : 'none';
+  document.body.classList.toggle('tt', S.mode === 'tt'); $('h-rec').style.display = S.mode === 'tt' && !S.gp && !S.daily ? '' : 'none'; $('endBtn').style.display = S.mode === 'tt' ? '' : 'none';
   for (const c of S.cars) { c.lapStart = 0; c.lapsDone = 0; c.finished = false; c.bestLap = null; c.bounce = 0; c.bounceV = 0; c.visPitch = 0; c.visRoll = 0; c.impact = 0; c.impactSide = 0; }
   S.camYaw = player.psi; S.camY = player.y + 3; S.fovT = 0;
   player.crossed = false;
@@ -709,13 +712,24 @@ $('pauseCar').onclick = () => { toMenu(); setView('garage'); }; $('pauseTrack').
 $('restartBtn').onclick = () => { $('pause').classList.add('hidden'); startRace(true); };
 $('rbtn').onclick = () => { if (S.raceScene) startRace(true); };
 $('startBtn').onclick = () => { sound.stopPreview(true); sound.init(CARS[sel.car].id); startRace(false); };
-function startDaily() {
+function toast(t) { let e = $('toast'); if (!e) { e = document.createElement('div'); e.id = 'toast'; document.body.appendChild(e); } e.textContent = t; e.className = 'show'; clearTimeout(toast.t); toast.t = setTimeout(() => { e.className = ''; }, 2400); }
+function startDailySession(kind) {
   if (!S.prevSel) S.prevSel = { car: sel.car, track: sel.track, mode: sel.mode, carId: sel.carId };
+  S.daily = { kind, laps: kind === 'practice' ? PRACTICE_LAPS : OFFICIAL_LAPS, times: [], cur: [null, null, null], done: false };
   sel.track = tracks.findIndex((t) => t.key === 'daily'); sel.mode = 'tt'; sel.car = DAILY_CAR; sel.carId = CARS[DAILY_CAR].id; sound.init(CARS[sel.car].id); startRace(false);
 }
-$('dailyBtn').onclick = startDaily; $('dailyCard').onclick = startDaily;
+// termina la sesión del reto: envía la mejor vuelta si era oficial y vuelve al panel del reto con el resumen
+function endDaily() {
+  const d = S.daily; if (!d || d.done) return; d.done = true;
+  const laps = d.times.map((l) => ({ t: l.t, s: l.s }));
+  if (d.kind === 'official' && laps.length) { const b = d.times.reduce((a, c) => (c.t < a.t ? c : a)); markDaily(); D.submit({ ms: Math.round(b.t * 1000), s: b.s.map((v) => (v == null ? null : Math.round(v * 1000))), car: CARS[DAILY_CAR].id, track: 'daily:' + dailyKey }); }
+  S.daily = null; D.sessionDone({ kind: d.kind, laps });
+  toMenu(); D.open(true);
+}
+D = createDaily({ $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession,
+  get track() { return tracks.find((t) => t.key === 'daily'); }, get car() { return CARS[DAILY_CAR]; } });
 $('againBtn').onclick = () => { if (S.gp && S.gp.phase === 'quali' && S.state === 'finished') S.gp.phase = 'race'; startRace(true); };
-const toMenu = () => { if (S.prevSel) { Object.assign(sel, S.prevSel); S.prevSel = null; } setView('home'); S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; };
+const toMenu = () => { if (S.daily && !S.daily.done) { endDaily(); return; } if (S.prevSel) { Object.assign(sel, S.prevSel); S.prevSel = null; } setView('home'); S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; };
 $('menuBtn').onclick = toMenu; $('menuBtn2').onclick = toMenu;
 
 function doReset() { const p = S.player; if (!p || p.finished) return; resetToTrack(p, S.tr); S.secInvalid = true; S.lapInvalid = true; S.flash = 0.4; sound.play('land', 2); }
@@ -779,6 +793,7 @@ function stepAll() {
     if (done > c.lapsDone && !c.finished) {
       const lt = S.t - c.lapStart; c.lapStart = S.t; c.lapsDone = done;
       if (c.isPlayer) onPlayerLap(c, lt, done);
+      if (c.isPlayer && S.mode === 'tt' && S.daily && done >= S.daily.laps) { c.finished = true; c.finishTime = S.t; onPlayerFinish(); }
       if (c.isPlayer && S.mode === 'tt' && S.gp && S.gp.phase === 'quali' && done >= 3) { c.finished = true; c.finishTime = S.t; onPlayerFinish(); }
       if (S.mode === 'race' && done >= S.laps) { c.finished = true; c.finishTime = S.t; S.finishOrder.push(c); if (c.isPlayer) onPlayerFinish(); }
     }
@@ -890,6 +905,7 @@ function updateRecPanel() {
 }
 function sectorDone(i, t) {
   if (S.secInvalid) { S.secInvalid = false; return; }
+  if (S.daily) { if (i < 2) S.daily.cur[i] = t; sound.play('sector'); const el0 = $('s' + i); el0.className = 'sec done' + (S.secIdx === i ? ' cur' : ''); el0.lastElementChild.innerHTML = fmtS(t); showRaceBanner('SECTOR ' + (i + 1), fmtS(t), '', ''); return; }
   const pbB = S.secPB[i], recB = S.secRec[i], cls = classify(t, pbB, recB) || 'orange', sg = (v) => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(3) + ' s';
   let head, detail;
   if (cls === 'purple') { head = 'Récord de sector'; detail = recB < 1e8 ? sg(t - recB) + ' sobre el récord' : 'Primer tiempo'; }
@@ -910,9 +926,18 @@ function setGhost(slot, ct, gold, name) {
   S[slot] = null; if (!ct || !S.scene || !carAssetReady(ct, 'lo')) return;
   const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold, name || lb.name); m.root.visible = false; S.scene.add(m.root); S[slot] = m;
 }
+function dailyLap(c, lt, done) {
+  const d = S.daily, valid = !S.lapInvalid && lt > 8; S.lapInvalid = false;
+  const s1 = d.cur[0], s2 = d.cur[1], s3 = s1 != null && s2 != null ? lt - s1 - s2 : null; d.cur = [null, null, null];
+  if (valid) { d.times.push({ t: lt, s: [s1, s2, s3] }); S.lastLap = lt; }
+  const best = d.times.length ? Math.min(...d.times.map((x) => x.t)) : null;
+  sound.play('lap'); showRaceBanner(`VUELTA ${Math.min(done, d.laps)}/${d.laps}${valid ? '' : ' · NO VÁLIDA'}`, fmtS(lt), d.kind === 'official' ? 'Solo cuentan tiempos; sin comparaciones' : 'Práctica', '');
+  S.bestLap = best; S.lapPB = best;
+}
 function onPlayerLap(c, lt, done) {
   S.deltaS = null;
   for (let k = 0; k < 3; k++) { const e = $('s' + k); e.className = 'sec' + (k === 0 ? ' cur' : ''); e.lastElementChild.textContent = '--'; } // cada vuelta empiezan limpias
+  if (S.daily) { dailyLap(c, lt, done); return; }
   const key = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.g:' + c.type.group;
   const valid = !S.lapInvalid && (S.mode === 'tt' || done > 1) && (!S.bench || lt > S.bench.lap * 0.6);
   S.lapInvalid = false;
@@ -997,6 +1022,7 @@ function podiumHtml(top, me) {
 const confettiHtml = () => '<div class="confetti">' + Array.from({ length: 36 }, (_, i) => `<i style="left:${(i * 2.8 + (i % 5)) % 100}%;animation-delay:${(i % 9) * 0.18}s;background:${['#ffc928', '#e10600', '#22c55e', '#4aa8ff', '#fff', '#b44bff'][i % 6]}"></i>`).join('') + '</div>';
 function showResults() {
   S.state = 'finished';
+  if (S.daily) { endDaily(); return; }
   const p = S.player, rows = [];
   const order = S.finishOrder.slice();
   const rank = order.indexOf(p) + 1;
@@ -1201,7 +1227,7 @@ function updateHud(dt) {
   const lit = Math.round(gi.rpm * rpmSegs.length);
   if (lit !== lastRpm) { lastRpm = lit; rpmSegs.forEach((e, i) => e.classList.toggle('on', i < lit)); }
   const done = Math.max(0, Math.floor(p.D / tr.len));
-  setText('lap', S.mode === 'tt' ? (S.gp ? Math.min(3, done + 1) + '/3' : String(done + 1)) : Math.min(S.laps, done + 1) + '/' + S.laps);
+  setText('lap', S.mode === 'tt' ? (S.daily ? Math.min(S.daily.laps, done + 1) + '/' + S.daily.laps : S.gp ? Math.min(3, done + 1) + '/3' : String(done + 1)) : Math.min(S.laps, done + 1) + '/' + S.laps);
   setText('time', S.state === 'countdown' || (S.mode === 'tt' && !p.crossed) ? fmt(0) : fmt(p.finished ? p.finishTime - p.lapStart : S.t - p.lapStart));
   setText('lastLap', S.lastLap != null ? fmt(S.lastLap) : '--'); { const pb = $('progBar'); if (pb) pb.style.width = (p.D >= 0 ? ((p.D % tr.len) / tr.len) * 100 : 0).toFixed(1) + '%'; }
   { const lm = S.lapMsg && performance.now() < S.lapMsg.until ? S.lapMsg : null; setText('best', lm ? lm.text : (S.lapPB != null ? 'MEJOR ' + fmt(S.lapPB) : 'SIN TIEMPO')); $('best').className = lm ? 'lm ' + lm.cls : ''; }
@@ -1253,7 +1279,7 @@ const BD = { track: 0, group: 'all' };
 const boardRow2 = (r, best) => `<tr class="${r.you ? 'me' : ''}${r.rank === 1 ? ' first' : ''}"><td class="rk">${r.rank}</td><td class="nm">${r.you ? drvIc(playerDrv(), 1) : ''}${esc(r.name)}</td><td class="car"><small>${esc((CARS.find((c) => c.id === r.carId) || {}).brand || '')}</small> ${esc(carName(r.carId))}</td><td class="tm">${fmt(r.ms / 1000)}</td><td class="gp">${r.rank === 1 ? '' : '+' + ((r.ms - best) / 1000).toFixed(2)}</td></tr>`;
 async function renderBoard() {
   const ti = tracks[BD.track], st = $('boardStatus');
-  $('boardTracks').innerHTML = tracks.map((t, i) => `<button type="button" class="${i === BD.track ? 'on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span>${t.key === 'daily' ? 'Del día' : esc(t.name.replace(/ · .*$/, ''))}</button>`).join('');
+  $('boardTracks').innerHTML = tracks.map((t, i) => t.key === 'daily' ? '' : `<button type="button" class="${i === BD.track ? 'on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span>${t.key === 'daily' ? 'Del día' : esc(t.name.replace(/ · .*$/, ''))}</button>`).join('');
   $('boardGroups').innerHTML = [['all', 'Todos']].concat(GROUPS.map((g) => [g.id, g.name])).map(([id, n]) => `<button type="button" class="${id === BD.group ? 'on' : ''}" data-g="${id}">${esc(n)}</button>`).join('');
   $('boardTable').innerHTML = '<tr><td>Cargando…</td></tr>'; st.textContent = '';
   const res = await getRows(ti);

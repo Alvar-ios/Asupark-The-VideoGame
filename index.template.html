@@ -995,6 +995,68 @@ body.mobile #viewGarage #kartCfg input[type=color]{width:44px;height:36px;paddin
 body.mobile #viewGarage #kartCfg input[type=number]{width:64px;height:36px;text-align:center;font-size:18px;border-radius:8px;flex:none}
 body.mobile #viewGarage #paints{padding-top:8px!important;padding-bottom:12px!important;min-height:52px}
 body.mobile #viewGarage #kartCfg:not([hidden]){margin-top:0!important}
+/* ===== v0.0.61: reto del día ===== */
+#menu .dy-hero{margin:0 0 14px}
+#menu .dy-hbtn{position:relative;display:block;width:100%;text-align:left;color:#fff;font:inherit;cursor:pointer;padding:14px 16px 12px;border-radius:18px;border:1px solid rgba(255,201,40,.55);background:radial-gradient(120% 140% at 85% 0%,rgba(255,120,30,.28),transparent 55%),linear-gradient(135deg,rgba(255,196,50,.2),rgba(40,20,70,.55) 60%,rgba(8,12,24,.9));box-shadow:0 14px 40px rgba(255,150,20,.14),inset 0 1px 0 rgba(255,255,255,.12);overflow:hidden;transition:transform .15s,box-shadow .15s}
+#menu .dy-hbtn:hover{transform:translateY(-2px);box-shadow:0 18px 46px rgba(255,150,20,.25)}
+#menu .dy-hbtn:after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.1) 50%,transparent 60%);transform:translateX(-120%);animation:dyShine 4.5s ease-in-out infinite;pointer-events:none}
+@keyframes dyShine{0%,60%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.dy-h-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.dy-badge{padding:4px 10px;border-radius:999px;background:#ffc928;color:#161006;font:800 11px/1 inherit;letter-spacing:.12em}
+.dy-h-cd{font-size:11px;color:#cdd6ea;letter-spacing:.04em}.dy-h-cd b{color:#ffd34e;font-variant-numeric:tabular-nums}
+.dy-h-main{display:grid;grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:12px;align-items:center}
+.dy-h-main canvas{width:100%;height:auto;border-radius:12px;background:radial-gradient(circle at 50% 50%,rgba(70,96,138,.4),rgba(6,10,18,.6))}
+.dy-h-info{display:flex;flex-direction:column;gap:5px;min-width:0}.dy-h-info b{font-size:clamp(18px,2.6vw,24px);line-height:1.05;display:flex;align-items:center;gap:8px;font-style:italic}.dy-h-info b .flag{width:24px;flex:none}.dy-h-info>span{font-size:12px;color:#b5c0d8}
+.dy-chips{display:flex;flex-wrap:wrap;gap:5px}.dy-chips span{padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.09);font:700 10.5px inherit;color:#e4ebf8}.dy-chips span.on{background:rgba(70,220,130,.2);color:#7bf0aa}.dy-chips span.gold{background:rgba(255,201,40,.22);color:#ffd34e}
+.dy-h-car{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1)}
+.dy-h-car img{width:84px;height:46px;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5))}.dy-h-car div{flex:1;min-width:0}.dy-h-car small{display:block;font-size:9px;letter-spacing:.14em;color:#9fb0cf}.dy-h-car b{font-size:15px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dy-go{font-style:normal;flex:none;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,#ffe27a,#ffc43b);color:#161006;font:800 12px inherit;letter-spacing:.1em}
+.dy-mini{margin-top:8px;padding:8px 10px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09)}
+.dy-mh{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.12em;color:#9fb0cf;margin-bottom:4px}.dy-mh b{color:#ffd34e}
+.dy-mr{display:grid;grid-template-columns:20px 22px minmax(0,1fr) auto 62px;align-items:center;gap:8px;padding:4px 2px;font-size:13px}.dy-mr i{font-style:normal;color:#8e9bbd;text-align:center}.dy-mr b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dy-mr em{font-style:normal;font-variant-numeric:tabular-nums}.dy-mr small{text-align:right;color:#8e9bbd;font-size:11px}.dy-mr.me{color:#ffd34e;background:rgba(255,201,40,.1);border-radius:8px}
+.dy-mr .flag.sm{width:20px}.dy-empty{margin:6px 0;font-size:12px;color:#9fb0cf}
+.dy-more{display:block;width:100%;margin-top:6px;padding:7px;border:0;background:transparent;color:#ffd34e;font:700 12px inherit;letter-spacing:.06em;cursor:pointer}
+/* pantalla del reto */
+#daily{background:radial-gradient(120% 90% at 50% 0%,rgba(60,30,100,.6),transparent 60%),#05080f!important;z-index:8;align-items:flex-start;overflow-y:auto}
+#daily .dy-panel{position:relative;display:flex;flex-direction:column;width:min(600px,100%);margin:0 auto;padding:18px 16px 28px;min-height:100%;color:#eef2fb}
+.dy-x{position:sticky;top:6px;align-self:flex-end;z-index:5;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(8,12,22,.9);color:#fff;font-size:18px;cursor:pointer}
+#dyStage{order:1}.dy-globe{order:2}
+.dy-head{margin:0 0 12px}.dy-head small{font-size:11px;letter-spacing:.16em;color:#ffd34e}.dy-head h2{margin:4px 0 4px;font:800 28px/1.05 inherit;font-style:italic}.dy-cd{font-size:12px;color:#aab7ce}.dy-cd b{color:#ffd34e;font-variant-numeric:tabular-nums}
+.dy-globe{position:relative;width:min(100%,520px);aspect-ratio:1;margin:0 auto;touch-action:none}.dy-globe.hidden{display:none}.dy-skip{text-align:center;font-size:12px;color:#8e9bbd;margin:6px 0}
+.dy-card{margin:0 0 12px;padding:14px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+.dy-reveal{animation:dyRise .7s cubic-bezier(.2,.8,.2,1)}@keyframes dyRise{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
+.dy-ct{display:flex;align-items:center;gap:12px;margin-bottom:10px}.dy-ct .flag{width:38px;flex:none}.dy-ct em{display:block;font-style:normal;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9fb0cf}.dy-ct b{font:800 24px/1.05 inherit;font-style:italic}.dy-logo{margin-left:auto;max-height:42px;max-width:34%;background:#fff;border-radius:8px;padding:4px 8px;object-fit:contain}
+.dy-cv{width:100%;height:auto;display:block;border-radius:12px;background:radial-gradient(circle,rgba(70,96,138,.4),rgba(6,10,18,.6))}.dy-cv.sm{width:42%}
+.dy-btn{display:block;width:100%;margin:8px 0;padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg,#ffe27a,#ffc43b);color:#161006;font:800 14px inherit;letter-spacing:.1em;cursor:pointer}
+.dy-btn.ghost{background:rgba(255,255,255,.08);color:#e6ecf8;border:1px solid rgba(255,255,255,.16)}.dy-btn.gold{background:linear-gradient(135deg,#fff0a0,#ffb81f)}.dy-btn.ad{background:linear-gradient(135deg,#5ce0ff,#3a8bff);color:#04101f}.dy-btn:disabled{opacity:.5}
+.dy-sum{display:flex;gap:14px;align-items:center}.dy-sc{flex:1;min-width:0}.dy-sc img{width:100%;max-height:70px;object-fit:contain}.dy-sc b{display:block;font-size:16px}.dy-sc small{color:#9fb0cf;font-size:11px}
+.dy-steps{display:grid;gap:10px;margin:0 0 12px}.dy-step{padding:14px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.12)}.dy-step h3{margin:0 0 3px;font-size:13px;letter-spacing:.14em;color:#ffd34e}.dy-step p{margin:0 0 6px;font-size:12px;color:#aab7ce}.dy-done{margin:6px 0 0;font-size:12px;color:#ff9aa5}
+.dy-t,.dy-f1{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}.dy-t th,.dy-f1 th{font-size:9px;letter-spacing:.1em;color:#8e9bbd;text-align:right;padding:4px 3px;font-weight:700}.dy-t td,.dy-f1 td{padding:6px 3px;text-align:right;border-top:1px solid rgba(255,255,255,.07)}.dy-t th:first-child,.dy-t td:first-child,.dy-f1 th:first-child,.dy-f1 td:first-child{text-align:left}.dy-f1 td.nm,.dy-f1 th:nth-child(2){text-align:left}.dy-f1 td.nm{display:flex;align-items:center;gap:6px;max-width:130px;overflow:hidden;white-space:nowrap}.dy-f1 td.nm .flag{width:18px;flex:none}.dy-f1 td.lp{font-weight:800}.dy-f1 .pu{color:#c77dff;font-weight:800}.dy-f1 tr.me td,.dy-t tr.best td{background:rgba(255,201,40,.13);color:#ffd34e}.dy-last h3{margin:0 0 6px;font-size:12px;letter-spacing:.12em;color:#9fb0cf}
+.dy-tabs{display:flex;gap:6px;margin-bottom:8px}.dy-tabs button{flex:1;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#cfd8ea;font:700 13px inherit;cursor:pointer}.dy-tabs button.on{background:#ffc928;color:#161006;border-color:#ffc928}
+/* radar y multa */
+.dy-radar{position:relative;height:210px;border-radius:16px;overflow:hidden;background:linear-gradient(#1b2a45,#0e1626 38%,#2a2d36 38%);border:1px solid rgba(255,255,255,.12)}
+.dy-road{position:absolute;left:0;right:0;top:38%;bottom:0;background:repeating-linear-gradient(180deg,transparent 0 24%,rgba(255,255,255,.1) 24% 25%)}
+.dy-tc,.dy-fast{position:absolute;height:48px;left:105%;transform:scaleX(1);filter:drop-shadow(0 5px 6px rgba(0,0,0,.5))}.dy-tc{animation:dyPass linear both}
+@keyframes dyPass{from{left:105%}to{left:-40%}}
+.dy-fast{top:42%;height:58px;z-index:3}.dy-fast.go{animation:dyFast .5s cubic-bezier(.35,0,.65,1) both;filter:blur(1.2px) drop-shadow(0 5px 6px rgba(0,0,0,.5))}
+@keyframes dyFast{from{left:110%}to{left:-60%}}
+.dy-sign{position:absolute;left:10px;top:10px;width:54px;height:54px;border-radius:50%;background:#fff;border:6px solid #e2283c;color:#111;display:grid;place-content:center;text-align:center}.dy-sign small{font-size:6px;letter-spacing:.08em}.dy-sign b{font-size:20px;line-height:1}
+.dy-gun{position:absolute;right:10px;top:10px;padding:6px 12px;border-radius:10px;background:#050a12;border:2px solid #2b3a55;text-align:center;font-family:monospace}.dy-gun small{display:block;font-size:8px;letter-spacing:.2em;color:#6b7da3}.dy-gun b{font-size:30px;color:#4bf08a;text-shadow:0 0 10px #4bf08a;display:inline}.dy-gun em{font-style:normal;font-size:10px;color:#6b7da3;margin-left:3px}.dy-gun b.hot{color:#ff4357;text-shadow:0 0 14px #ff4357}
+.dy-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}.dy-flash.on{animation:dyFlash .6s ease-out}@keyframes dyFlash{0%{opacity:.95}100%{opacity:0}}
+#dyTk{margin-top:12px}
+.dy-ticket{position:relative;padding:14px 16px 16px;border-radius:6px;background:#f6f0dc;color:#1c1a14;font-family:"Courier New",monospace;box-shadow:0 14px 34px rgba(0,0,0,.55);transform:rotate(-.8deg)}
+.dy-ticket.print{animation:dyPrint 1.5s steps(30) both}@keyframes dyPrint{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+.dy-ticket:before{content:"";position:absolute;left:0;right:0;top:-6px;height:8px;background:radial-gradient(circle at 5px 8px,#0a0f1a 4px,transparent 5px) 0 0/10px 8px}
+.tk-top{font-size:10px;letter-spacing:.12em;color:#555;text-align:center;border-bottom:1px dashed #999;padding-bottom:6px}.tk-top b{display:block;font-size:15px;color:#b3141f;letter-spacing:.18em;margin-top:3px}
+.tk-car{display:flex;gap:10px;align-items:center;margin:8px 0}.tk-car img{width:46%;max-height:90px;object-fit:contain;filter:drop-shadow(0 4px 4px rgba(0,0,0,.3))}.tk-car em{display:block;font-style:normal;font-size:10px;letter-spacing:.14em;color:#777}.tk-car b{display:block;font-size:17px}.tk-car small{font-size:10px;color:#666}
+.tk-inf{font-size:11px;margin:4px 0 8px}.tk-st{display:grid;grid-template-columns:52px 1fr 64px;align-items:center;gap:6px;font-size:10px;margin:2px 0}.tk-st i{height:6px;background:#d9d1b8;border-radius:3px;overflow:hidden}.tk-st s{display:block;height:100%;background:#b3141f}.tk-st b{text-align:right}
+.tk-sum{display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px dashed #999;font-weight:800;color:#b3141f;font-size:12px}
+.tk-stamp{position:absolute;left:50%;bottom:8px;margin-left:-62px;transform:rotate(-8deg);padding:3px 8px;border:3px solid rgba(179,20,31,.75);color:rgba(179,20,31,.75);font:800 13px inherit;letter-spacing:.1em;border-radius:6px;animation:dyStamp .35s 1.6s both}@keyframes dyStamp{from{opacity:0;transform:rotate(-8deg) scale(2.4)}to{opacity:1;transform:rotate(-8deg) scale(1)}}
+.dy-ad{position:fixed;inset:0;z-index:20;background:rgba(2,4,10,.94);display:grid;place-items:center}.dy-ad.hidden{display:none}.dy-adbox{width:min(360px,86vw);padding:22px;border-radius:16px;background:#101828;border:1px solid rgba(255,255,255,.15);text-align:center}.dy-adbox small{color:#ffd34e;letter-spacing:.16em}.dy-adbox b{display:block;font-size:22px;margin:8px 0}.dy-adbox p{color:#9fb0cf;font-size:12px}.dy-adbar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-top:12px}.dy-adbar s{display:block;height:100%;width:0;background:#4aa8ff;transition:width 2.6s linear}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:30;padding:10px 16px;border-radius:999px;background:#ffc928;color:#161006;font:800 13px inherit;opacity:0;pointer-events:none;transition:.25s}#toast.show{opacity:1;transform:translate(-50%,0)}
+/* en el reto: solo tiempos por sector, sin diferencial ni récords */
+body.daily #delta,body.daily #h-rec,body.daily .sec small{display:none!important}
+@media(max-width:620px){.dy-h-main{grid-template-columns:minmax(0,40%) minmax(0,1fr);gap:10px}.dy-go{padding:9px 10px;font-size:11px}.dy-h-car img{width:64px;height:38px}#daily .dy-panel{padding:10px 12px 22px}.dy-head h2{font-size:23px}.dy-f1 td.nm{max-width:84px}.dy-f1{font-size:10.5px}.dy-ct b{font-size:20px}}
 </style>
 </head>
 <body>
@@ -1030,11 +1092,15 @@ body.mobile #viewGarage #kartCfg:not([hidden]){margin-top:0!important}
     <div class="menu-scroll">
       <div id="viewHome">
         <div class="wmrow"><h1 class="wm">Drift Rush</h1><span id="ver" class="ver">v{{VERSION}}</span></div>
-        <button id="dailyCard" class="daily-big" type="button">
-          <canvas id="dcCanvas" width="132" height="76"></canvas>
-          <div class="dc-txt"><small>RETO DEL DÍA · <span id="dcDate"></span></small><b id="dcTrack"></b><span id="dcCar"></span><i id="dcStatus"></i></div>
-          <img id="dcImg" class="dc-img" alt=""><em class="dc-go">JUGAR ›</em>
-        </button>
+        <div class="dy-hero">
+          <button id="dailyCard" class="dy-hbtn" type="button">
+            <div class="dy-h-top"><span class="dy-badge">RETO DEL DÍA · <span id="dyDate"></span></span><span class="dy-h-cd">Cambia en <b class="cdv">--:--:--</b></span></div>
+            <div class="dy-h-main"><canvas id="dyHeroCv" width="220" height="120"></canvas><div class="dy-h-info"><b id="dyHeroTrack"></b><span id="dyHeroSub"></span><div id="dyHeroChips" class="dy-chips"></div></div></div>
+            <div class="dy-h-car"><img id="dyHeroImg" alt=""><div><small>COCHE DE HOY</small><b id="dyHeroCar"></b></div><em class="dy-go">ENTRAR AL RETO ›</em></div>
+          </button>
+          <div id="dyMini" class="dy-mini"></div>
+          <button id="dyAllBoard" type="button" class="dy-more">Ver clasificación completa ›</button>
+        </div>
         <button id="startBtn" class="big">JUGAR</button>
         <p id="modelStatus" role="status" hidden></p>
         <button id="pickTrack" class="pick" type="button"><small>Circuito</small><b id="pickTrackName">—</b><span id="pickTrackSub"></span><em id="pickTrackFlag" class="pk-flag"></em><i>›</i></button>
@@ -1055,6 +1121,7 @@ body.mobile #viewGarage #kartCfg:not([hidden]){margin-top:0!important}
     </div>
   </aside>
 </div>
+<div id="daily" class="overlay hidden"><div class="dy-panel"><button id="dyClose" class="dy-x" type="button" aria-label="Cerrar">✕</button><div id="dyStage"></div><div id="dyGlobe" class="dy-globe hidden"></div></div><div id="dyAd" class="dy-ad hidden"></div></div>
 <div id="profile" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="max-width:640px;text-align:left"><h1 style="font-size:30px">PERFIL</h1><div id="profBody"></div><button id="profClose" class="big">CERRAR</button></div></div>
 <div id="board" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="max-width:680px;text-align:left"><h1 style="font-size:30px">CLASIFICACIÓN</h1>
   <div id="boardTracks" class="tabs"></div><div id="boardGroups" class="tabs"></div>

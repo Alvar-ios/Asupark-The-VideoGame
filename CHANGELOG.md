@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.61
+- Reto del día rehecho: cambia cada día a las 4:00 (Madrid) con circuito y coche aleatorios (nunca repite el de ayer). 5 vueltas de práctica + 3 de clasificación, con un único intento extra por tipo tras ver anuncios (simulados por ahora); intentos controlados en el servidor. Sin fantasma ni diferencial: solo tiempo por sector. Clasificación estilo F1 con sectores y diferencias, pestañas Amigos / Global, visible en el menú. Animación de entrada: globo girando hasta el circuito y radar con multa del coche.
+
 ## 0.0.60
 - Móvil: Música en cuadrados (2 columnas) con scroll propio y botón fijo; Ajustes redistribuidos (sliders en 2 columnas, opciones en cuadrícula, cabecera y botón fijos con scroll); Color y Dorsal del kart en una barra limpia de dos tarjetas.
 
