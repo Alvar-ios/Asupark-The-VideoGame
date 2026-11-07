@@ -1177,7 +1177,8 @@ function updateCarVisual(c, dt) {
   m.root.position.set(x, y, z); m.root.rotation.set(0, psi, 0);
   const sf = clamp(c.speed / 40, 0, 1);
   const impact = clamp(c.impact / 22, 0, 1);
-  const ks = c.type.kind === 'kart' ? 0.1 : 1; // el kart no tiene suspensión: sin cabeceo ni balanceo
+  const isKart = c.type.kind === 'kart', grp = c.type.group, ks = isKart ? 0.1 : grp === 'f1' ? 0.18 : grp === 'competicion' ? 0.5 : 1; // kart y F1: suspensión durísima; competición: dura
+  const kSp = isKart ? 420 : grp === 'f1' ? 380 : grp === 'competicion' ? 220 : 120, kDp = isKart ? 26 : grp === 'f1' ? 25 : grp === 'competicion' ? 16 : 9;
   let pitch = -Math.atan(c.grad) * 0.9;
   if (c.air) pitch = clamp(-Math.atan2(c.vy, Math.max(8, c.speed)) * 0.9, -0.45, 0.45);
   else pitch += (c.brake * sf * 0.075 - c.throttle * (1 - Math.min(1, c.speed / c.type.vmax)) * 0.045 + impact * 0.055) * ks;
@@ -1185,10 +1186,10 @@ function updateCarVisual(c, dt) {
   c.impact *= Math.exp(-7 * dt);
   const kk = 1 - Math.exp(-8.5 * dt);
   c.visPitch += (pitch - c.visPitch) * kk; c.visRoll += (roll - c.visRoll) * kk;
-  if (c.onKerb && c.speed > 10) c.bounceV += Math.sin(c.wheelSpin * 1.8 + c.psi) * Math.min(5, c.speed * 0.075) * (S.th && S.th.kerbRough ? 3.4 : 1) * (ks < 1 ? 0.45 : 1) * dt;
-  c.bounceV += (-c.bounce * (ks < 1 ? 420 : 120) - c.bounceV * (ks < 1 ? 26 : 9)) * dt; c.bounce = clamp(c.bounce + c.bounceV * dt, -0.3, 0.3);
+  if (c.onKerb && c.speed > 10) c.bounceV += Math.sin(c.wheelSpin * 1.8 + c.psi) * Math.min(5, c.speed * 0.075) * (S.th && S.th.kerbRough ? 3.4 : 1) * (ks < 1 ? (ks < 0.3 ? 0.45 : 0.7) : 1) * dt;
+  c.bounceV += (-c.bounce * kSp - c.bounceV * kDp) * dt; c.bounce = clamp(c.bounce + c.bounceV * dt, -0.3, 0.3);
   m.tilt.rotation.set(c.visPitch, 0, c.visRoll); m.tilt.position.y = c.bounce - (c.df || 0) * 0.07; // el efecto suelo aplasta el coche contra el asfalto
-  if (ks < 1 && m.flames) { // petardeo del kart al soltar el gas: llamitas cortas en el escape
+  if (isKart && m.flames) { // petardeo del kart al soltar el gas: llamitas cortas en el escape
     c.flameT = (c.flameT || 0) - dt;
     if (c.throttle < 0.08 && c.speed > 12) { if (c.flameT < -0.05 && Math.random() < dt * 7) c.flameT = 0.05 + Math.random() * 0.06; if (c.thrPrev > 0.6 && c.flameT < 0) c.flameT = 0.1; }
     c.thrPrev = c.throttle; m.flames.visible = c.flameT > 0; if (m.flames.visible) m.flames.scale.setScalar(0.7 + Math.random() * 0.7);

@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.66
+- Suspensión: los F1 la tienen durísima como los karts (casi sin cabeceo ni balanceo, rebote seco en los pianos) y los coches de competición la tienen dura.
+
 ## 0.0.65
 - Sonido del radar rehecho: motor grave con Doppler realista y sin zumbido constante, murmullo de calzada para el tráfico y impresora tipo matricial.
 
