@@ -727,7 +727,14 @@ function endDaily() {
   S.daily = null; D.sessionDone({ kind: d.kind, laps });
   toMenu(); D.open(true);
 }
-D = createDaily({ $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession, muted: () => !!sel.mute, volume: () => clamp(+sel.vol.master, 0, 1),
+async function radarCars(fastType, pool) {
+  const types = [fastType, ...pool];
+  await ensureModels(types, null);
+  const cols = [0xd8d8dc, 0x1c2a44, 0x9aa3b0, 0x7a1f2b, 0x2d5a3d, 0xe6e0cf, 0x30343c];
+  const mk = (t, col) => buildCarMesh(col, t.kind, 'lo', 2 + Math.floor(Math.random() * 90));
+  return { fast: mk(fastType, '#' + new THREE.Color(fastType.color).getHexString()), traffic: pool.map((t, i) => mk(t, cols[i % cols.length])) };
+}
+D = createDaily({ radarCars, $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession, muted: () => !!sel.mute, volume: () => clamp(+sel.vol.master, 0, 1),
   get track() { return tracks.find((t) => t.key === 'daily'); }, get car() { return CARS[DAILY_CAR]; } });
 $('againBtn').onclick = () => { if (S.gp && S.gp.phase === 'quali' && S.state === 'finished') S.gp.phase = 'race'; startRace(true); };
 const toMenu = () => { if (S.daily && !S.daily.done) { endDaily(); return; } if (S.prevSel) { Object.assign(sel, S.prevSel); S.prevSel = null; } setView('home'); S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; };

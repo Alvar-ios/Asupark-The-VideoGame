@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.63
+- Radar del reto rehecho en 3D: calzada elevada sobre el agua vista desde arriba, tráfico con los modelos 3D reales a velocidad normal, señales de 50 integradas en la vía, cabina de radar y el coche del reto pasando a toda velocidad con flash.
+- Multa simplificada: banda «TU COCHE PARA EL RETO», coche, velocidad medida, stats clave, multa y matrícula.
+
 ## 0.0.62
 - Reto del día: radar en perspectiva sobre una carretera real (tráfico, señal de 50 integrada, cabina de radar) con sonido (motores con efecto Doppler, flash, impresora); multa refinada. Libres y clasificación: la primera vuelta del día sin referencia y después fantasma + diferencial de tu mejor vuelta de hoy (libres + clasificación). Anuncios de Traced y PalomApp con enlace.
 

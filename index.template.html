@@ -1089,6 +1089,14 @@ body.daily #h-rec,body.daily .sec small{display:none!important}
 body.daily #dyHud{display:flex}body.daily #h-lap{display:none!important}
 @media(max-width:620px) and (orientation:portrait){#dyHud{top:62px;padding:4px 10px}#dyHud span{font-size:14px}}
 @media(orientation:landscape){.dy-radar{width:min(100%,calc((100vh - 140px) * 1.44));margin:0 auto}}
+
+/* v0.0.63 radar 3D + multa simple */
+.dy-radar{aspect-ratio:3/4!important;max-height:62vh;background:#a7bbd1!important}
+.dy-tkwrap .dy-ticket{padding-top:0}
+.tk-claim{margin:0 -14px 10px;padding:10px 8px;background:linear-gradient(90deg,#f3c63c,#ffe37a);color:#14120a;text-align:center;font:800 19px/1 'Jersey 10',Impact,sans-serif;letter-spacing:.14em;border-radius:6px 6px 0 0}
+.tk-pl{font-family:monospace;font-weight:700;letter-spacing:.06em}
+.tk-car{margin:6px 0}.tk-car img{width:46%}.tk-car b{font-size:22px}
+@media(orientation:landscape){.dy-radar{aspect-ratio:16/9!important;width:min(100%,calc((100vh - 140px) * 1.78))!important}}
 </style>
 </head>
 <body>
