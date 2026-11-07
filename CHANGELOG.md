@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.64
+- El radar precarga los modelos 3D al abrir el reto, así la animación arranca sin espera.
+- Anuncio de PalomApp: «Paloma» en lugar de «una paloma».
+
 ## 0.0.63
 - Radar del reto rehecho en 3D: calzada elevada sobre el agua vista desde arriba, tráfico con los modelos 3D reales a velocidad normal, señales de 50 integradas en la vía, cabina de radar y el coche del reto pasando a toda velocidad con flash.
 - Multa simplificada: banda «TU COCHE PARA EL RETO», coche, velocidad medida, stats clave, multa y matrícula.

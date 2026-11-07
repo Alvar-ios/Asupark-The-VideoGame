@@ -94,7 +94,10 @@ export function createDaily(ctx) {
   // ---------- pantalla del reto ----------
   let stage = ''; const isOpen = () => !$('daily').classList.contains('hidden');
   const setStage = (n, html) => { stage = n; $('dyStage').className = 'st-' + n; $('dyStage').innerHTML = html; $('dyGlobe').classList.toggle('hidden', n !== 'globe'); };
+  let carsP = null;
+  const prefetch = () => { if (carsP) return carsP; const c = ctx.car, pool = ctx.cars.filter((x) => x.id !== c.id && x.group !== 'karts').sort(() => Math.random() - 0.5).slice(0, 6); carsP = ctx.radarCars(c, pool).catch(() => null); return carsP; };
   function open(skipIntro) {
+    prefetch();
     ctx.onOpen && ctx.onOpen();
     $('daily').classList.remove('hidden'); document.body.classList.add('in-daily'); sync();
     if (skipIntro) hub(); else intro();
@@ -134,9 +137,9 @@ export function createDaily(ctx) {
   const loadImg = (src) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = src; });
   async function radar() {
     stopRadar(); const ac = audioOk();
-    const c = ctx.car, pool = ctx.cars.filter((x) => x.id !== c.id && x.group !== 'karts').sort(() => Math.random() - 0.5).slice(0, 6);
+    const c = ctx.car;
     setStage('radar', `${head('Control de velocidad')}<div class="dy-radar"><canvas id="dyRc"></canvas><div class="dy-gun"><small>RADAR</small><b id="dySpd">--</b><em>km/h</em></div><div class="dy-flash"></div></div><div id="dyTk"></div>`);
-    let cars; try { cars = await ctx.radarCars(c, pool); } catch (e) { cars = null; }
+    const cars = await prefetch(); carsP = null;
     if (stage !== 'radar') return;
     const cb = {
       onFlash() { const f = document.querySelector('.dy-flash'); f && f.classList.add('on'); const sp = $('dySpd'); if (sp) { sp.textContent = Math.round(c.vmax * 3.6); sp.classList.add('hot'); sp.dataset.hit = 1; } },
@@ -185,7 +188,7 @@ export function createDaily(ctx) {
   }
   const ADS = [
     { id: 'traced', logo: 'traced', name: 'Traced', url: 'https://ro-di-tracker.vercel.app/', kick: '⚠ ÚLTIMA HORA · GOLF', h: '¡TU BOLA DESAPARECE EN PLENO VUELO Y NADIE SABE POR QUÉ!', p: 'Traced dibuja la trayectoria de tu golpe sobre tu propio vídeo. Por fin sabrás dónde acabó esa bola que «iba recta».', cta: 'PROBAR TRACED ›', foot: '*Traced no garantiza que tu bola llegue al green. Solo que verás con todo detalle cómo no llegó.' },
-    { id: 'palomapp', logo: 'palomapp', name: 'PalomApp', url: 'https://urlife-zeta.vercel.app/', kick: '🚨 ALERTA FINANCIERA', h: '¡TU SUELDO SE ESCAPA VOLANDO Y LA PALOMA LO SABE!', p: 'PalomApp: la única paloma que vigila tus euros. Gastos, tareas y cuentas claras, sin que nadie te pique.', cta: 'ABRIR PALOMAPP ›', foot: '*El 100 % de los usuarios deja de preguntarse a dónde fue el dinero. Estudio realizado por una paloma.' },
+    { id: 'palomapp', logo: 'palomapp', name: 'PalomApp', url: 'https://urlife-zeta.vercel.app/', kick: '🚨 ALERTA FINANCIERA', h: '¡TU SUELDO SE ESCAPA VOLANDO Y PALOMA LO SABE!', p: 'PalomApp: la única Paloma que vigila tus euros. Gastos, tareas y cuentas claras, sin que nadie te pique.', cta: 'ABRIR PALOMAPP ›', foot: '*El 100 % de los usuarios deja de preguntarse a dónde fue el dinero. Estudio realizado por Paloma.' },
   ];
   async function adFlow(n) {
     const o = $('dyAd'); o.classList.remove('hidden'); let prev = -1;
