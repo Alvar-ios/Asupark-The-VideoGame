@@ -1097,6 +1097,21 @@ body.daily #dyHud{display:flex}body.daily #h-lap{display:none!important}
 .tk-pl{font-family:monospace;font-weight:700;letter-spacing:.06em}
 .tk-car{margin:6px 0}.tk-car img{width:46%}.tk-car b{font-size:22px}
 @media(orientation:landscape){.dy-radar{aspect-ratio:16/9!important;width:min(100%,calc((100vh - 140px) * 1.78))!important}}
+
+/* v0.0.67 compartir */
+.wa{background:linear-gradient(#2fd566,#18a84a)!important;color:#04200e!important;border:0!important;font-weight:800}
+.wa.ghost{background:transparent!important;color:#5fe58d!important;border:1px solid #2fd566!important}
+.dy-wa{display:flex;gap:8px;margin:10px 0}.dy-wa .dy-btn{flex:1;margin:0;font-size:13px;padding:12px 6px}
+.pf-wa{margin:10px 0}.pf-wa .mini{width:100%;padding:11px}
+#shareBtn svg{width:20px;height:20px}
+
+/* v0.0.67 scroll táctil: el reset global touch-action:none bloqueaba el scroll al tocar casi cualquier elemento de los paneles */
+:where(.overlay *){touch-action:pan-x pan-y}
+:where(.overlay) {touch-action:pan-x pan-y}
+body.mobile .grid,body.mobile .card{touch-action:pan-x pan-y!important}
+#menu #flyout,#menu #flyout *{touch-action:pan-x pan-y}
+#board .tabs{touch-action:pan-x pan-y}
+.overlay input[type=range],body.mobile #settings input[type=range]{touch-action:pan-y!important}
 </style>
 </head>
 <body>
@@ -1188,7 +1203,7 @@ body.daily #dyHud{display:flex}body.daily #h-lap{display:none!important}
   <p class="keys" style="display:block">Auto baja la calidad solo si el juego va lento. «Baja» quita las sombras y reduce la resolución: úsala si va a tirones en el móvil.</p>
   <button id="setClose" class="big">LISTO</button></div></div>
 <div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar</button><button id="pauseCar" class="big ghost">Cambiar de coche</button><button id="pauseTrack" class="big ghost">Cambiar de circuito</button><button id="endBtn" class="big ghost">Terminar y ver tiempos</button><button id="setBtn2" class="big ghost">Ajustes</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
-<div id="results" class="overlay hidden"><div class="panel rbox"><h1 id="rTitle">META</h1><div class="big-n" id="rBig">1º</div><div id="rNew"></div><table id="rTable"></table><button id="againBtn" class="big">OTRA VEZ</button><button id="boardBtn2" class="big ghost">Clasificación completa</button><button id="menuBtn2" class="big ghost">Menú principal</button></div></div>
+<div id="results" class="overlay hidden"><div class="panel rbox"><h1 id="rTitle">META</h1><div class="big-n" id="rBig">1º</div><div id="rNew"></div><table id="rTable"></table><button id="againBtn" class="big">OTRA VEZ</button><button id="shareBtn" class="big wa"></button><button id="boardBtn2" class="big ghost">Clasificación completa</button><button id="menuBtn2" class="big ghost">Menú principal</button></div></div>
 <script src="./config.js"></script>
 <script>/*BUNDLE*/</script>
 </body>

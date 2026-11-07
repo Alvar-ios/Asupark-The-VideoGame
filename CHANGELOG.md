@@ -2,6 +2,14 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.68
+- Scroll táctil arreglado en todas las pantallas: un reset global (touch-action:none) impedía deslizar al tocar casi cualquier elemento de menú, ajustes, música, perfil, ranking, reto, pausa y resultados. Ahora se desliza en vertical desde cualquier punto (los sliders y el globo siguen arrastrándose).
+
+## 0.0.67
+- Reto del día: el piloto automático te suelta ~6 s antes de la meta (con cuenta atrás) para que cruces lanzado y no pierdas la primera vuelta.
+- Compartir por WhatsApp con enlace y mensaje propio: resultado de carrera, tiempo del reto, retar a un amigo e invitar amigos desde el Perfil.
+- Enlace de invitación ?add=usuario: al abrirlo (con sesión) envía la solicitud de amistad automáticamente.
+
 ## 0.0.66
 - Suspensión: los F1 la tienen durísima como los karts (casi sin cabeceo ni balanceo, rebote seco en los pianos) y los coches de competición la tienen dura.
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { THEMES, THEME_LIST } from './themes.js';
+import { waShare, inviteUrl, WA_ICON } from './share.js';
 import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo } from './car.js';
@@ -736,6 +737,12 @@ async function radarCars(fastType, pool) {
 }
 D = createDaily({ radarCars, $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession, muted: () => !!sel.mute, volume: () => clamp(+sel.vol.master, 0, 1),
   get track() { return tracks.find((t) => t.key === 'daily'); }, get car() { return CARS[DAILY_CAR]; } });
+$('shareBtn').innerHTML = WA_ICON + 'COMPARTIR POR WHATSAPP';
+$('shareBtn').onclick = () => {
+  const p = S.player, ti = S.trackInfo, circ = ti ? ti.th.name.replace(/ · .*$/, '') : '', car = p ? p.type.name : '', big = $('rBig').textContent, title = $('rTitle').textContent;
+  const isTime = /^\d+:\d/.test(big), line = isTime ? `⏱️ ${big} en ${circ} con el ${car}` : `🏁 ${title} (${big}) en ${circ} con el ${car}`;
+  waShare(`${line} en Drift Rush. ¿Me ganas?`, inviteUrl(acc.username));
+};
 $('againBtn').onclick = () => { if (S.gp && S.gp.phase === 'quali' && S.state === 'finished') S.gp.phase = 'race'; startRace(true); };
 const toMenu = () => { if (S.daily && !S.daily.done) { endDaily(); return; } if (S.prevSel) { Object.assign(sel, S.prevSel); S.prevSel = null; } setView('home'); S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; };
 $('menuBtn').onclick = toMenu; $('menuBtn2').onclick = toMenu;
@@ -808,6 +815,7 @@ function stepAll() {
   }
   trackSectors(p);
   if (!p.finished && p.D >= 0) { const k = Math.floor((p.D % tr.len) / 10); if (S.curProf[k] < 0) S.curProf[k] = S.t - p.lapStart; }
+  if (S.auto && S.daily && S.mode === 'tt' && p.D < 0 && -p.D / Math.max(20, p.speed) <= 6.5) { S.auto = false; S.autoHandT = S.t; showMsg('¡TU CONTROL! ACELERA', 1800, 'cy'); } // reto: el piloto automático suelta unos segundos antes de la meta para que llegues lanzado
   if (S.auto && S.mode === 'tt' && p.D >= 0) { S.auto = false; flashCount('¡YA!'); }
   if (S.mode === 'tt' && !p.crossed && p.D >= 0) { p.crossed = true; p.lapStart = S.t; S.curProf.fill(-1); S.ghostRec = []; S.deltaS = null; }
   if (S.mode === 'tt' && p.crossed && !p.finished && S.step % 3 === 0) S.ghostRec.push(p.x, p.y, p.z, p.psi);
@@ -1257,7 +1265,7 @@ function updateHud(dt) {
     const q = Math.round(S.deltaS * 100) / 100;
     if (q !== hudCache.dq) { hudCache.dq = q; const el = $('delta'); el.textContent = (q > 0 ? '+' : q < 0 ? '−' : '') + Math.abs(q).toFixed(2); el.className = q > 0.02 ? 'bad' : q < -0.02 ? 'good' : ''; }
   }
-  if (S.auto && S.mode === 'tt' && !S.player.crossed) { const tl = -S.player.D / Math.max(20, S.player.speed); if (tl <= 5.5) { flashCount(String(Math.max(1, Math.ceil(tl)))); } }
+  if ((S.auto || S.daily) && S.mode === 'tt' && !S.player.crossed && S.player.D < 0) { const tl = -S.player.D / Math.max(20, S.player.speed); if (tl <= 5.5) { flashCount(String(Math.max(1, Math.ceil(tl)))); } }
   if (S.mode === 'race') updateTower(dt); else if (S.gp) updateTowerQuali(dt);
   if (S.mode === 'race') { const rank = S.cars.slice().sort((a, b) => (b.finished - a.finished) || (a.finished && b.finished ? a.finishTime - b.finishTime : b.D - a.D)).indexOf(p) + 1; setText('pos', String(rank)); }
   const sp = clamp((p.speed - 52) / 45, 0, 1) * 0.28;
@@ -1527,4 +1535,8 @@ async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62
 initProfile({ $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt });
 acc.onChange(() => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; try { buildHelmetEditor(); } catch (_) {} });
 acc.restore();
+// enlace de invitación ?add=usuario: añade al amigo al entrar (o en cuanto inicies sesión)
+{ const q = new URLSearchParams(location.search).get('add'); if (q) { try { history.replaceState(null, '', location.pathname); } catch (_) {} let pend = q;
+  const tryAdd = async () => { if (!pend || !acc.profile || pend.toLowerCase() === (acc.username || '').toLowerCase()) return; const u = pend; pend = null; try { await acc.addFriend(u); toast(`Solicitud enviada a @${u}`); } catch (e) { toast(acc.explain(e)); } };
+  setTimeout(() => { if (pend && !acc.profile) toast(`Inicia sesión en tu Perfil para añadir a @${pend}`); }, 2500); acc.onChange(tryAdd); setTimeout(tryAdd, 1500); } }
 window.__dr = { acc, placeCar, renderThumb, showRaceBanner, pointAt, makeGhost, lb, S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };

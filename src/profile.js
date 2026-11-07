@@ -1,4 +1,5 @@
 // Pantalla de Perfil: entrar / crear cuenta, estadísticas, vitrina de logros, amigos, rivalidad y salón de la fama.
+import { waShare, inviteUrl, waBtn } from './share.js';
 export function initProfile(ctx) {
   const { $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt } = ctx;
   const S = { tab: 'perfil', mode: 'in', msg: '', rival: null, busy: false };
@@ -57,7 +58,7 @@ export function initProfile(ctx) {
         : `<small>Pendiente</small><button class="mini ghost" data-rm="${f.user_id}">Cancelar</button>`;
       return `<div class="pf-fr">${ic}<b>@${esc(f.username)}</b><span class="pf-act">${act}</span></div>`;
     };
-    body().innerHTML = `${head(st)}${tabs()}<div class="pf-add"><input id="pfFriend" class="sel" maxlength="20" autocapitalize="none" spellcheck="false" placeholder="usuario de tu amigo"><button id="pfAdd" class="mini" type="button">Añadir</button></div><div id="pfMsg" class="pf-msg">${esc(S.msg)}</div>
+    body().innerHTML = `${head(st)}${tabs()}<div class="pf-add"><input id="pfFriend" class="sel" maxlength="20" autocapitalize="none" spellcheck="false" placeholder="usuario de tu amigo"><button id="pfAdd" class="mini" type="button">Añadir</button></div><div class="pf-wa">${waBtn('Invitar a un amigo por WhatsApp', 'id="pfWa"')}</div><div id="pfMsg" class="pf-msg">${esc(S.msg)}</div>
       <div class="pf-list">${list.length ? list.map(row).join('') : '<p class="keys" style="display:block">Todavía no tienes amigos. Añade a alguien por su nombre de usuario.</p>'}</div>`;
   }
 
@@ -105,6 +106,7 @@ export function initProfile(ctx) {
     if (b.dataset.t) { S.tab = b.dataset.t; S.rival = null; S.msg = ''; return render(); }
     if (b.id === 'pfOut') { acc.signOut(); S.tab = 'perfil'; S.rival = null; return render(); }
     if (b.id === 'pfBack') { S.rival = null; return render(); }
+    if (b.id === 'pfWa') { const u = acc.username; waShare(`🏁 ¡Únete a Drift Rush y compite conmigo!${u ? ` Soy @${u}: abre el enlace y me añades como amigo al instante.` : ''} Un juego de carreras gratis en el navegador, con reto diario y clasificación.`, inviteUrl(u)); return; }
     if (b.id === 'pfAdd') { const v = $('pfFriend').value; if (!v.trim()) return; try { S.msg = String(await acc.addFriend(v)); } catch (er) { S.msg = acc.explain(er); } return friendsView(); }
     if (b.dataset.riv) { S.rival = { id: b.dataset.riv, u: b.dataset.u }; return render(); }
     if (b.dataset.ok) { try { await acc.respond(b.dataset.ok, true); S.msg = ''; } catch (er) { S.msg = acc.explain(er); } return friendsView(); }

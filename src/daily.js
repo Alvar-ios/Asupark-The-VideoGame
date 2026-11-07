@@ -2,6 +2,7 @@
 // Los intentos se controlan en el servidor (supabase/daily.sql) y se cachean en local. Sin servidor, solo local.
 import { hashStr } from './rng.js';
 import { createRadar3D } from './radar3d.js';
+import { waShare, inviteUrl, waBtn } from './share.js';
 
 const KEY = 'dr.daily';
 const mad = (ts) => Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(ts).map((x) => [x.type, +x.value]));
@@ -162,6 +163,7 @@ export function createDaily(ctx) {
   // 4) panel principal: pasos, anuncios y clasificación F1
   const btnP = () => left('p') > 0 ? `<button class="dy-btn" data-act="practice">${st.pr ? 'PRÁCTICA EXTRA' : 'EMPEZAR PRÁCTICA'} · ${PRACTICE_LAPS} VUELTAS</button>` : adAvail('p') ? `<button class="dy-btn ad" data-act="ad-practice">▶ VER ANUNCIO · OTRAS ${PRACTICE_LAPS} DE PRÁCTICA</button>` : `<p class="dy-done">Práctica agotada hasta las 4:00</p>`;
   const btnO = () => left('o') > 0 ? `<button class="dy-btn gold" data-act="official">${st.or ? 'OTRA OPORTUNIDAD' : 'CLASIFICACIÓN'} · ${OFFICIAL_LAPS} VUELTAS</button>` : adAvail('o') ? `<button class="dy-btn ad" data-act="ad-official">▶ VER 2 ANUNCIOS · OTRA OPORTUNIDAD</button>` : `<p class="dy-done">Clasificación cerrada: no se puede repetir más hoy</p>`;
+  const acc_user = () => (ctx.acc && ctx.acc.username) || '';
   function lastHtml() {
     if (!last || !last.laps.length) return '';
     const best = Math.min(...last.laps.map((l) => l.t));
@@ -170,7 +172,7 @@ export function createDaily(ctx) {
   function hub() {
     clearTimeout(introTimer); cancelAnimationFrame(spinRaf); stopRadar();
     const t = ctx.track, c = ctx.car;
-    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>Mismo coche y circuito para todos</small></div></div>${lastHtml()}<div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard"><p class="dy-empty">Cargando…</p></div></div>`);
+    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>Mismo coche y circuito para todos</small></div></div>${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard"><p class="dy-empty">Cargando…</p></div></div>`);
     ctx.drawPreview($('dyCv2'), t.tr, t.th, 240, 130);
     renderBoard();
   }
@@ -209,6 +211,11 @@ export function createDaily(ctx) {
     if (b.dataset.tab) { tab = b.dataset.tab; hub(); return; }
     const a = b.dataset.act; if (!a) return;
     if (a === 'practice' || a === 'official') return startKind(a);
+    if (a === 'wa-result' || a === 'wa-challenge') {
+      const t = ctx.track, c = ctx.car, circ = t.th.name.replace(/ · .*$/, ''), u = acc_user();
+      const txt = a === 'wa-result' && st.best ? `🏁 Reto del día de Drift Rush: ${fmt(st.best.ms / 1000)} en ${circ} con el ${c.name}. ¿Me ganas? Mismo coche y circuito para todos, solo un intento oficial.` : `🏎️ Hoy el reto de Drift Rush es ${circ} con el ${c.name}. Mismo coche para todos: ¡a ver quién hace mejor tiempo!`;
+      waShare(txt, inviteUrl(u)); return;
+    }
     if (a === 'profile') { close(); $('profBtn').click(); return; }
     if (a === 'ad-practice' || a === 'ad-official') { const kind = a.slice(3), n = kind === 'practice' ? 1 : 2; b.disabled = true; const okAd = await adFlow(n); if (okAd) await grantAd(kind); renderHero(); hub(); }
   });
