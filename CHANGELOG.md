@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.62
+- Reto del día: radar en perspectiva sobre una carretera real (tráfico, señal de 50 integrada, cabina de radar) con sonido (motores con efecto Doppler, flash, impresora); multa refinada. Libres y clasificación: la primera vuelta del día sin referencia y después fantasma + diferencial de tu mejor vuelta de hoy (libres + clasificación). Anuncios de Traced y PalomApp con enlace.
+
 ## 0.0.61
 - Reto del día rehecho: cambia cada día a las 4:00 (Madrid) con circuito y coche aleatorios (nunca repite el de ayer). 5 vueltas de práctica + 3 de clasificación, con un único intento extra por tipo tras ver anuncios (simulados por ahora); intentos controlados en el servidor. Sin fantasma ni diferencial: solo tiempo por sector. Clasificación estilo F1 con sectores y diferencias, pestañas Amigos / Global, visible en el menú. Animación de entrada: globo girando hasta el circuito y radar con multa del coche.
 

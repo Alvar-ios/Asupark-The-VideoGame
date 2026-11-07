@@ -616,6 +616,7 @@ async function startRace(restart = false) {
       setGhost('ghostMesh', ctOf(same ? trec : rec), !!same, ((same ? trec : rec) || {}).name); setGhost('ghostGold', S.ghostBestGold ? ctOf(trec) : null, true, (trec || {}).name);
     }
     if (S.ghostMesh) S.ghostMesh.root.visible = false; if (S.ghostGold) S.ghostGold.root.visible = false;
+    if (S.daily) { S.ghostBest = S.daily.ref ? Float32Array.from(S.daily.ref.ghost) : null; S.ghostBestGold = null; }
   }
   S.ghostRec = [];
   migrateGroupBest(ti.key + '.' + tr.seed, type.group);
@@ -630,7 +631,7 @@ async function startRace(restart = false) {
   // la referencia propia solo se usa si su final coincide con el tiempo de esa vuelta; si no, se usa el perfil de la IA
   const pbProfEnd = S.pbRec.prof && S.pbRec.prof.length ? Math.max(...S.pbRec.prof) : -1, profLap = S.pbRec.profLap != null ? S.pbRec.profLap : S.pbRec.lap, pbOk = pbProfEnd >= 0 && profLap != null && Math.abs(pbProfEnd - profLap) < 1.5;
   S.refProf = pbOk ? S.pbRec.prof : bench ? bench.prof : null; S.refFill = fillProf(S.refProf); S.deltaS = null;
-  if (S.daily) { S.refProf = null; S.refFill = null; S.lapPB = null; S.bestLap = null; } // reto del día: sin fantasma ni diferencial
+  if (S.daily) { const rf = S.daily.ref; S.refProf = rf ? rf.prof : null; S.refFill = fillProf(S.refProf); S.refName = 'PB'; S.lapPB = rf ? rf.time : null; S.bestLap = S.lapPB; } // reto del día: referencia = tu mejor vuelta de hoy (la 1ª vuelta del día no tiene)
   document.body.classList.toggle('daily', !!S.daily);
   S.refName = S.pbRec.prof && S.pbRec.prof.length ? 'PB' : 'RÉCORD';
   S.curProf = new Float32Array(Math.ceil(tr.len / 10) + 2).fill(-1);
@@ -715,7 +716,7 @@ $('startBtn').onclick = () => { sound.stopPreview(true); sound.init(CARS[sel.car
 function toast(t) { let e = $('toast'); if (!e) { e = document.createElement('div'); e.id = 'toast'; document.body.appendChild(e); } e.textContent = t; e.className = 'show'; clearTimeout(toast.t); toast.t = setTimeout(() => { e.className = ''; }, 2400); }
 function startDailySession(kind) {
   if (!S.prevSel) S.prevSel = { car: sel.car, track: sel.track, mode: sel.mode, carId: sel.carId };
-  S.daily = { kind, laps: kind === 'practice' ? PRACTICE_LAPS : OFFICIAL_LAPS, times: [], cur: [null, null, null], done: false };
+  const rf = store.get('dr.dailyref'); S.daily = { kind, laps: kind === 'practice' ? PRACTICE_LAPS : OFFICIAL_LAPS, times: [], cur: [null, null, null], done: false, ref: rf && rf.day === dailyKey ? rf : null };
   sel.track = tracks.findIndex((t) => t.key === 'daily'); sel.mode = 'tt'; sel.car = DAILY_CAR; sel.carId = CARS[DAILY_CAR].id; sound.init(CARS[sel.car].id); startRace(false);
 }
 // termina la sesión del reto: envía la mejor vuelta si era oficial y vuelve al panel del reto con el resumen
@@ -726,7 +727,7 @@ function endDaily() {
   S.daily = null; D.sessionDone({ kind: d.kind, laps });
   toMenu(); D.open(true);
 }
-D = createDaily({ $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession,
+D = createDaily({ $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession, muted: () => !!sel.mute, volume: () => clamp(+sel.vol.master, 0, 1),
   get track() { return tracks.find((t) => t.key === 'daily'); }, get car() { return CARS[DAILY_CAR]; } });
 $('againBtn').onclick = () => { if (S.gp && S.gp.phase === 'quali' && S.state === 'finished') S.gp.phase = 'race'; startRace(true); };
 const toMenu = () => { if (S.daily && !S.daily.done) { endDaily(); return; } if (S.prevSel) { Object.assign(sel, S.prevSel); S.prevSel = null; } setView('home'); S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; };
@@ -929,10 +930,17 @@ function setGhost(slot, ct, gold, name) {
 function dailyLap(c, lt, done) {
   const d = S.daily, valid = !S.lapInvalid && lt > 8; S.lapInvalid = false;
   const s1 = d.cur[0], s2 = d.cur[1], s3 = s1 != null && s2 != null ? lt - s1 - s2 : null; d.cur = [null, null, null];
-  if (valid) { d.times.push({ t: lt, s: [s1, s2, s3] }); S.lastLap = lt; }
-  const best = d.times.length ? Math.min(...d.times.map((x) => x.t)) : null;
-  sound.play('lap'); showRaceBanner(`VUELTA ${Math.min(done, d.laps)}/${d.laps}${valid ? '' : ' · NO VÁLIDA'}`, fmtS(lt), d.kind === 'official' ? 'Solo cuentan tiempos; sin comparaciones' : 'Práctica', '');
-  S.bestLap = best; S.lapPB = best;
+  const prev = d.ref ? d.ref.time : null; let newBest = false;
+  if (valid) {
+    d.times.push({ t: lt, s: [s1, s2, s3] }); S.lastLap = lt;
+    if (prev == null || lt < prev - 1e-6) { // nueva mejor vuelta personal del día: pasa a ser el fantasma y la referencia del diferencial
+      newBest = true; d.ref = { day: dailyKey, time: lt, prof: Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000)), ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) };
+      store.set('dr.dailyref', d.ref); S.refProf = d.ref.prof; S.refFill = fillProf(S.refProf); S.ghostBest = Float32Array.from(S.ghostRec); S.lapPB = lt; S.bestLap = lt;
+    }
+  }
+  S.curProf.fill(-1); S.ghostRec = []; S.deltaS = null; S.lapRec = 1e9;
+  const gap = prev != null && valid ? (newBest ? 'MEJOR VUELTA DE HOY' : `+${(lt - prev).toFixed(3)} s vs. tu mejor`) : (valid ? 'Primera referencia' : '');
+  sound.play(newBest ? 'purple' : 'lap'); showRaceBanner(`VUELTA ${Math.min(done, d.laps)}/${d.laps}${valid ? '' : ' · NO VÁLIDA'}`, fmtS(lt), gap, newBest ? 'green' : '');
 }
 function onPlayerLap(c, lt, done) {
   S.deltaS = null;
@@ -1227,6 +1235,7 @@ function updateHud(dt) {
   const lit = Math.round(gi.rpm * rpmSegs.length);
   if (lit !== lastRpm) { lastRpm = lit; rpmSegs.forEach((e, i) => e.classList.toggle('on', i < lit)); }
   const done = Math.max(0, Math.floor(p.D / tr.len));
+  if (S.daily) { const dk = S.daily.kind + '|' + Math.min(S.daily.laps, done + 1) + '|' + (S.lapPB != null ? Math.round(S.lapPB * 100) : ''); if (dk !== hudCache.dy) { hudCache.dy = dk; $('dyHud').innerHTML = `<b>${S.daily.kind === 'practice' ? 'LIBRES' : 'CLASIFICACIÓN'}</b><span>VUELTA ${Math.min(S.daily.laps, done + 1)}/${S.daily.laps}</span>${S.lapPB != null ? `<i>MEJOR ${fmt(S.lapPB)}</i>` : '<i>SIN REFERENCIA</i>'}`; } }
   setText('lap', S.mode === 'tt' ? (S.daily ? Math.min(S.daily.laps, done + 1) + '/' + S.daily.laps : S.gp ? Math.min(3, done + 1) + '/3' : String(done + 1)) : Math.min(S.laps, done + 1) + '/' + S.laps);
   setText('time', S.state === 'countdown' || (S.mode === 'tt' && !p.crossed) ? fmt(0) : fmt(p.finished ? p.finishTime - p.lapStart : S.t - p.lapStart));
   setText('lastLap', S.lastLap != null ? fmt(S.lastLap) : '--'); { const pb = $('progBar'); if (pb) pb.style.width = (p.D >= 0 ? ((p.D % tr.len) / tr.len) * 100 : 0).toFixed(1) + '%'; }
