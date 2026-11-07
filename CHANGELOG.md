@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.65
+- Sonido del radar rehecho: motor grave con Doppler realista y sin zumbido constante, murmullo de calzada para el tráfico y impresora tipo matricial.
+
 ## 0.0.64
 - El radar precarga los modelos 3D al abrir el reto, así la animación arranca sin espera.
 - Anuncio de PalomApp: «Paloma» en lugar de «una paloma».

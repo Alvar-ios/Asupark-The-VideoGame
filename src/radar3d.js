@@ -67,7 +67,11 @@ export function createRadar3D(cv, o) {
     master = ac.createGain(); master.gain.value = 0.55 * (o.vol == null ? 1 : o.vol); master.connect(ac.destination);
     noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
-  const voice = (fast) => { if (!ac) return null; const o1 = ac.createOscillator(), o2 = ac.createOscillator(), lp = ac.createBiquadFilter(), gn = ac.createGain(); o1.type = 'sawtooth'; o2.type = 'square'; lp.type = 'lowpass'; lp.frequency.value = fast ? 2400 : 700; gn.gain.value = 0; o1.connect(lp); o2.connect(lp); lp.connect(gn); gn.connect(master); o1.start(); o2.start(); return { set(f, v) { const t = ac.currentTime; o1.frequency.setTargetAtTime(f, t, 0.03); o2.frequency.setTargetAtTime(f * 0.5, t, 0.03); gn.gain.setTargetAtTime(v, t, 0.05); }, stop() { try { gn.gain.setTargetAtTime(0, ac.currentTime, 0.06); setTimeout(() => { try { o1.stop(); o2.stop(); } catch (e) { /* parado */ } }, 500); } catch (e) { /* sin audio */ } } }; };
+  const voice = (fast) => { if (!ac) return null; const lp = ac.createBiquadFilter(), gn = ac.createGain(), oscs = []; lp.type = 'lowpass'; lp.frequency.value = fast ? 1500 : 160; lp.Q.value = 0.7; gn.gain.value = 0; lp.connect(gn); gn.connect(master);
+    for (const k of fast ? [1, 1.012, 2.01] : [1, 0.5]) { const x = ac.createOscillator(); x.type = 'sawtooth'; x.frequency.value = 80; const g = ac.createGain(); g.gain.value = k === 2.01 ? 0.35 : 0.8; x.connect(g); g.connect(lp); x.start(); oscs.push([x, k]); }
+    return { set(f, v, cut) { const t = ac.currentTime; for (const [x, k] of oscs) x.frequency.setTargetAtTime(f * k, t, 0.04); gn.gain.setTargetAtTime(v, t, 0.06); if (cut) lp.frequency.setTargetAtTime(cut, t, 0.08); }, stop() { try { gn.gain.setTargetAtTime(0, ac.currentTime, 0.06); setTimeout(() => { for (const [x] of oscs) { try { x.stop(); } catch (e) { /* parado */ } } }, 500); } catch (e) { /* sin audio */ } } }; };
+  let rumble = null; // ruido grave de la calzada (tráfico lejano)
+  if (ac) { const n = ac.createBufferSource(); n.buffer = noiseBuf; n.loop = true; const lp = ac.createBiquadFilter(), g = ac.createGain(); lp.type = 'lowpass'; lp.frequency.value = 260; g.gain.value = 0.16; n.connect(lp); lp.connect(g); g.connect(master); n.start(); rumble = { stop() { try { g.gain.setTargetAtTime(0, ac.currentTime, 0.1); setTimeout(() => { try { n.stop(); } catch (e) { /* parado */ } }, 600); } catch (e) { /* sin audio */ } } }; }
   const burst = (dur, f0, f1, v, type) => { if (!ac) return; const n = ac.createBufferSource(); n.buffer = noiseBuf; n.loop = true; const bp = ac.createBiquadFilter(), gn = ac.createGain(); bp.type = type || 'bandpass'; bp.frequency.setValueAtTime(f0, ac.currentTime); bp.frequency.exponentialRampToValueAtTime(f1, ac.currentTime + dur); bp.Q.value = 0.8; gn.gain.setValueAtTime(v, ac.currentTime); gn.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur); n.connect(bp); bp.connect(gn); gn.connect(master); n.start(); n.stop(ac.currentTime + dur + 0.05); };
   const tone = (f, dur, v, type) => { if (!ac) return; const x = ac.createOscillator(), gn = ac.createGain(); x.type = type || 'sine'; x.frequency.value = f; gn.gain.setValueAtTime(v, ac.currentTime); gn.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + dur); x.connect(gn); gn.connect(master); x.start(); x.stop(ac.currentTime + dur + 0.02); };
   if (ac) { fastV = voice(true); trafV = voice(false); }
@@ -95,9 +99,10 @@ export function createRadar3D(cv, o) {
     // sonido
     if (ac) {
       const dop = (car, k) => { tmp.set(camBase.x - car.x, camBase.y - 0.8, camBase.z - car.z); const dist = tmp.length(); const vr = car.v * (tmp.z / dist); return { f: 343 / (343 - vr * k), dist }; };
-      const a = dop(F, 4.2); fastV.set((150 + o.kmh * 0.9) * a.f * (1 + 0.03 * Math.sin(t * 38)), 0.36 * Math.min(1.7, 14 / Math.max(5, a.dist)) * (F.z > 150 ? Math.max(0, 1 - (F.z - 150) / 60) : 1));
+      const a = dop(F, 1.5), loud = Math.min(1, 22 / Math.max(6, a.dist)), far = F.z > 140 ? Math.max(0, 1 - (F.z - 140) / 50) : 1;
+      fastV.set((105 + o.kmh * 0.35) * a.f, 0.34 * loud * loud * far, 700 + 2600 * loud);
       let best = 1e9, bz = 0; for (const c of cars) if (!c.fast) { const d = Math.hypot(c.z - camBase.z, c.x - camBase.x); if (d < best) { best = d; bz = c.z; } }
-      trafV.set(78 + Math.sin(t * 7) * 2, 0.07 * Math.min(1.3, 30 / Math.max(10, best)));
+      trafV.set(52 + Math.sin(t * 5) * 1.5, 0.05 * Math.min(1, 30 / Math.max(10, best)), 170);
       if (!passed && F.z > camBase.z) { passed = true; burst(0.6, 2500, 350, 0.55); }
     }
     if (now - tickAt > 170) { tickAt = now; o.cb.onTick(46 + Math.round(Math.random() * 8)); }
@@ -107,7 +112,7 @@ export function createRadar3D(cv, o) {
   raf = requestAnimationFrame(frame);
   const ro = new ResizeObserver(() => { const W2 = cv.clientWidth, H2 = cv.clientHeight; if (!W2 || !H2) return; R.setSize(W2, H2, false); cam.aspect = W2 / H2; cam.updateProjectionMatrix(); }); ro.observe(cv);
   return {
-    stop() { stopped = true; cancelAnimationFrame(raf); ro.disconnect(); fastV && fastV.stop(); trafV && trafV.stop(); scene.traverse((x) => { if (x.geometry) x.geometry.dispose(); }); pm.dispose(); R.dispose(); try { R.forceContextLoss(); } catch (e) { /* ya cerrado */ } },
-    printSound() { if (!ac) return; const x = ac.createOscillator(), l = ac.createOscillator(), gn = ac.createGain(), lg = ac.createGain(); x.type = 'sawtooth'; x.frequency.value = 95; l.frequency.value = 26; l.type = 'square'; lg.gain.value = 0.09; gn.gain.value = 0.1; l.connect(lg); lg.connect(gn.gain); const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1500; x.connect(f); f.connect(gn); gn.connect(master); x.start(); l.start(); x.frequency.setValueAtTime(95, ac.currentTime); x.frequency.linearRampToValueAtTime(130, ac.currentTime + 1.2); const e = ac.currentTime + 1.25; x.stop(e); l.stop(e); setTimeout(() => { tone(1100, 0.08, 0.15, 'square'); burst(0.25, 3000, 800, 0.25); }, 1200); },
+    stop() { stopped = true; cancelAnimationFrame(raf); ro.disconnect(); fastV && fastV.stop(); trafV && trafV.stop(); rumble && rumble.stop(); scene.traverse((x) => { if (x.geometry) x.geometry.dispose(); }); pm.dispose(); R.dispose(); try { R.forceContextLoss(); } catch (e) { /* ya cerrado */ } },
+    printSound() { if (!ac) return; for (let k = 0; k < 16; k++) setTimeout(() => burst(0.05, 2200 + (k % 3) * 500, 900, 0.22, 'bandpass'), k * 75); setTimeout(() => { tone(1200, 0.08, 0.12, 'square'); }, 1250); },
   };
 }
