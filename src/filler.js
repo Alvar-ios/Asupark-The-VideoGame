@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { WALL } from './track.js';
+import { npcMesh, SHIRTS, WALK, CHEER, IDLE, crowdType } from './npc.js';
 
 const cache = {};
 function tex(key, w, h, paint, repeat) {
@@ -25,6 +26,7 @@ const SPRITES = {
   palm: (x, W, H) => { x.strokeStyle = '#8a6c49'; x.lineWidth = W * 0.05; x.beginPath(); x.moveTo(W * 0.52, H); x.quadraticCurveTo(W * 0.42, H * 0.6, W * 0.5, H * 0.24); x.stroke(); x.lineCap = 'round'; for (let k = 0; k < 11; k++) { const a = -Math.PI * (0.02 + (k / 10) * 0.96), L = W * R0(0.36, 0.48), ex = W / 2 + Math.cos(a) * L, ey = H * 0.24 + Math.sin(a) * L * 0.5 + L * 0.42; x.strokeStyle = ['#4f9238', '#3f7f33', '#62a342'][k % 3]; x.lineWidth = W * 0.05; x.beginPath(); x.moveTo(W / 2, H * 0.24); x.quadraticCurveTo(W / 2 + Math.cos(a) * L * 0.6, H * 0.24 + Math.sin(a) * L * 0.9, ex, ey); x.stroke(); } },
   jungle: (x, W, H) => { trunk(x, W / 2, H * 0.3, H, W * 0.05, '#5a4632'); for (const [cy, rx] of [[H * 0.16, 0.46], [H * 0.3, 0.36]]) blobs(x, ['#4f9a44', '#2f7f38', '#256c32', '#1c5a2c'], 170, W / 2, cy, W * rx, H * 0.14, W * 0.04, W * 0.08); },
   saguaro: (x, W, H) => { x.strokeStyle = '#3f7a48'; x.lineCap = 'round'; x.lineWidth = W * 0.14; x.beginPath(); x.moveTo(W / 2, H); x.lineTo(W / 2, H * 0.1); x.stroke(); x.lineWidth = W * 0.09; for (const [d, y, t] of [[-1, 0.55, 0.28], [1, 0.42, 0.16]]) { x.beginPath(); x.moveTo(W / 2, H * y); x.lineTo(W / 2 + d * W * 0.26, H * y); x.lineTo(W / 2 + d * W * 0.26, H * t); x.stroke(); } x.strokeStyle = 'rgba(190,225,180,.35)'; x.lineWidth = 2; for (const d of [-0.03, 0.02]) { x.beginPath(); x.moveTo(W * (0.5 + d), H); x.lineTo(W * (0.5 + d), H * 0.1); x.stroke(); } },
+  flower: (x, W, H) => { x.lineCap = 'round'; for (let k = 0; k < 26; k++) { const px = W * R0(0.08, 0.92), top = H * R0(0.35, 0.8); x.strokeStyle = '#4f8a38'; x.lineWidth = 4; x.beginPath(); x.moveTo(px, H); x.lineTo(px, top); x.stroke(); x.fillStyle = ['#ffd23a', '#ff6b6b', '#ffffff', '#c79bff', '#ff9d2e'][k % 5]; x.beginPath(); x.arc(px, top, W * 0.05, 0, 6.283); x.fill(); } },
   bush: (x, W, H) => blobs(x, ['#79a84b', '#5b9140', '#447a36', '#34652e'], 150, W / 2, H * 0.62, W * 0.42, H * 0.34, W * 0.05, W * 0.11),
   dry: (x, W, H) => { x.lineCap = 'round'; for (let k = 0; k < 44; k++) { const a = -Math.PI * Math.random(), L = H * R0(0.3, 0.7); x.strokeStyle = ['#8d9a5c', '#a2905a', '#6f8450'][k % 3]; x.lineWidth = 3.5; x.beginPath(); x.moveTo(W / 2, H); x.lineTo(W / 2 + Math.cos(a) * L * 0.7, H + Math.sin(a) * L); x.stroke(); } },
   fern: (x, W, H) => { x.lineCap = 'round'; for (let k = 0; k < 30; k++) { const a = -Math.PI * (k / 29), L = H * R0(0.5, 0.9); x.strokeStyle = ['#3f8a34', '#57a040', '#2f7a2c'][k % 3]; x.lineWidth = W * 0.05; x.beginPath(); x.moveTo(W / 2, H); x.quadraticCurveTo(W / 2 + Math.cos(a) * L * 0.5, H + Math.sin(a) * L, W / 2 + Math.cos(a) * L, H + Math.sin(a) * L * 0.55); x.stroke(); } },
@@ -55,6 +57,12 @@ function ring(scene, kind, r, cx, cz, h, tint, repeat, fog = true) {
   const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: t, alphaTest: 0.5, side: THREE.DoubleSide, fog, color: tint }));
   m.position.set(cx, 0, cz); m.frustumCulled = false; scene.add(m);
 }
+// árboles-imagen sueltos para decorados propios: list = [x, z, y, azar]
+export function spriteField(scene, kind, list, h0, h1, wf = 0.82) {
+  if (!list.length) return; const D = new THREE.Object3D(), c = new THREE.Color(), a = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0), g = mergeGeometries([a, a.clone().rotateY(Math.PI / 2)]), m = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ map: spriteTex(kind), alphaTest: 0.5, side: THREE.DoubleSide }), list.length);
+  list.forEach((s, k) => { const h = h0 + s[3] * (h1 - h0), v = 0.78 + (k % 7) * 0.05; D.position.set(s[0], s[2] - 0.15, s[1]); D.rotation.set(0, s[3] * 6.283, 0); D.scale.set(h * wf, h, h * wf); D.updateMatrix(); m.setMatrixAt(k, D.matrix); m.setColorAt(k, c.setRGB(v, v, v * 0.95)); });
+  m.instanceColor.needsUpdate = true; m.frustumCulled = false; scene.add(m);
+}
 export function backdrop(scene, kind, cx, cz, R, near = 260, night = false) { ring(scene, kind, R + near + 240, cx, cz, 110, night ? 0xffffff : 0xdfe6ee, 5, !night); ring(scene, kind, R + near, cx, cz, 58, 0xffffff, 8, !night); }
 
 // ---- objetos: geometrías con color por vértice, unidas en una sola malla por tipo ----
@@ -81,23 +89,21 @@ const PROPS = {
   pipe: () => merge([Cy(1.7, 1.7, 3.6, 14, 0, 1.8, 0, 0x2fb04a), Cy(2.1, 2.1, 1, 14, 0, 4, 0, 0x37c455)]),
   block: () => merge([B(2.6, 2.6, 2.6, 0, 6, 0, 0xffc62e), B(0.8, 1.1, 2.7, 0, 6, 0, 0xc27a10)]),
   coin: () => C(new THREE.CylinderGeometry(1, 1, 0.22, 14).rotateX(Math.PI / 2).translate(0, 4.5, 0), 0xffd23a),
-  body: () => new THREE.CylinderGeometry(0.15, 0.2, 0.75, 6).translate(0, 1.1, 0),
-  headLegs: () => merge([C(new THREE.IcosahedronGeometry(0.13, 0).translate(0, 1.62, 0), 0xe2b48c), C(new THREE.CylinderGeometry(0.17, 0.13, 0.75, 5).translate(0, 0.38, 0), 0x2b3350)]),
 };
 
 // [sprites por capa] near/mid/far = cantidad a densidad 1; sc = altura en metros; tint = variación de color
 const CFG = {
-  pruebas: { ring: 'trees', spr: [['pine', 13, 20], ['olive', 5, 8], ['poplar', 14, 22]], bush: 'bush', near: 460, mid: 950, far: 950, gr: [0x5c7a44, 0x75693f, 0x88844f], props: { house: 14, barn: 6, hay: 46, rock: 60, fence: 34, camper: 16, pylon: 6, turbine: 8, car: 18 }, crowd: 1, birds: 1 },
+  pruebas: { flower: 1, ring: 'trees', spr: [['pine', 13, 20], ['olive', 5, 8], ['poplar', 14, 22]], bush: 'bush', near: 460, mid: 950, far: 950, gr: [0x5c7a44, 0x75693f, 0x88844f], props: { house: 14, barn: 6, hay: 46, rock: 60, fence: 34, camper: 16, pylon: 6, turbine: 8, car: 18 }, crowd: 1, birds: 1 },
   monaco: { ring: 'city', urban: 1, spr: [['palm', 11, 15]], near: 0, mid: 120, far: 260, gr: [], props: {}, crowd: 0 },
   spa: { ring: 'pines', spr: [['pine', 18, 30], ['poplar', 16, 22]], bush: 'fern', near: 380, mid: 900, far: 900, gr: [0x2f4a2a, 0x3e3a26], props: { camper: 30, tent: 26, rock: 40, fence: 26, car: 20 }, crowd: 0.6, tint: 0.62 },
-  valle: { ring: 'favela', spr: [['broad', 11, 17], ['palm', 10, 15]], bush: 'bush', near: 420, mid: 800, far: 750, gr: [0x63a052, 0x8b8a4c], props: { house: 80, car: 24, rock: 30, fence: 24, pylon: 6 }, houseTint: [0xf08a6a, 0xf0cc70, 0x9cc4dc, 0xf4ecdc, 0xdc6a6a, 0x90c08a], crowd: 1, birds: 1 },
+  valle: { flower: 1, ring: 'favela', spr: [['broad', 11, 17], ['palm', 10, 15]], bush: 'bush', near: 420, mid: 800, far: 750, gr: [0x63a052, 0x8b8a4c], props: { house: 80, car: 24, rock: 30, fence: 24, pylon: 6 }, houseTint: [0xf08a6a, 0xf0cc70, 0x9cc4dc, 0xf4ecdc, 0xdc6a6a, 0x90c08a], crowd: 1, birds: 1 },
   desierto: { ring: 'mesa', spr: [['saguaro', 5, 9]], bush: 'dry', near: 300, mid: 360, far: 380, gr: [0xc29a68, 0xb08458, 0xd2ad7e], props: { adobe: 26, rock: 170, tent: 10, car: 16, fence: 24, pylon: 5 }, rockTint: [0xb5835a, 0xa3714a, 0xc49468], crowd: 0.8, birds: 1 },
-  neon: { ring: 'neon', night: 1, spr: [], near: 0, mid: 0, far: 0, gr: [], props: {}, crowd: 0, towers: 90 },
+  neon: { ring: 'neon', night: 1, spr: [], near: 0, mid: 0, far: 0, gr: [], props: {}, crowd: 0.7, towers: 130 },
   nieve: { ring: 'snow', spr: [['snowpine', 14, 24]], bush: null, near: 380, mid: 900, far: 900, gr: [0xe4edf6, 0xd2deea], props: { chalet: 24, rock: 40, pylon: 8, car: 12, fence: 20 }, rockTint: [0xdbe6ef, 0xc4d0dc], crowd: 0.7, birds: 0 },
   prisma: { ring: 'toy', spr: [['toytree', 7, 12]], near: 220, mid: 420, far: 300, gr: [], tintList: [0xff6b6b, 0x6bc4ff, 0xffe06b, 0x7be08a, 0xc79bff, 0xffa66b], props: { mushroom: 60, pipe: 34, block: 34, coin: 50 }, mushTint: [0xe5352f, 0xf0a020, 0x3aa0e8, 0x46c060], crowd: 0 },
-  amazonas: { ring: 'jungle', spr: [['jungle', 30, 58], ['palm', 14, 24], ['broad', 16, 28]], bush: 'fern', near: 700, mid: 1100, far: 900, gr: [0x2a5a2c, 0x3a4a26], props: { hut: 12, rock: 40 }, crowd: 0.25 },
-  karting: { ring: 'trees', spr: [['broad', 10, 16], ['poplar', 13, 20]], bush: 'bush', near: 260, mid: 620, far: 700, gr: [0x5c8444, 0x6a7a44], props: { camper: 16, tent: 14, car: 26, hay: 22, fence: 16 }, crowd: 0.5, birds: 1 },
-  asupark: { ring: 'trees', spr: [['olive', 6, 9], ['broad', 10, 15]], bush: 'bush', near: 240, mid: 560, far: 640, gr: [0x7a8050, 0x8a8354], props: { camper: 12, tent: 10, car: 24, hay: 18, house: 8 }, crowd: 0.5, birds: 1 },
+  amazonas: { flower: 1, ring: 'jungle', spr: [['jungle', 30, 58], ['palm', 14, 24], ['broad', 16, 28]], bush: 'fern', near: 700, mid: 1100, far: 900, gr: [0x2a5a2c, 0x3a4a26], props: { hut: 12, rock: 40 }, crowd: 0.25 },
+  karting: { flower: 1, ring: 'trees', spr: [['broad', 10, 16], ['poplar', 13, 20]], bush: 'bush', near: 260, mid: 620, far: 700, gr: [0x5c8444, 0x6a7a44], props: { camper: 16, tent: 14, car: 26, hay: 22, fence: 16 }, crowd: 0.5, birds: 1 },
+  asupark: { flower: 1, ring: 'trees', spr: [['olive', 6, 9], ['broad', 10, 15]], bush: 'bush', near: 240, mid: 560, far: 640, gr: [0x7a8050, 0x8a8354], props: { camper: 12, tent: 10, car: 24, hay: 18, house: 8 }, crowd: 0.5, birds: 1 },
   kartlos: { ring: 'city', spr: [['palm', 9, 14]], bush: 'dry', near: 180, mid: 360, far: 320, gr: [0xcbb48a, 0xd9c49a], props: { car: 26, tent: 10, adobe: 10, rock: 30 }, rockTint: [0xc7ad84], crowd: 0.5, birds: 1 },
 };
 
@@ -119,8 +125,10 @@ export function fillWorld(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     m.instanceColor.needsUpdate = true; m.frustumCulled = false; scene.add(m);
   };
   const S = cfg.spr, each = S.length || 1;
-  S.forEach(([k, h0, h1]) => sprites(k, near(n(cfg.near / each), WALL + 3, WALL + 38, 2.5).concat(near(n(cfg.mid / each), WALL + 38, WALL + 170, 6), far(n(cfg.far / each))), h0, h1));
-  if (cfg.bush) sprites(cfg.bush, near(n(cfg.near * 0.9), WALL + 1.2, WALL + 30), 0.9, 2.4, 1.3);
+  const LUSH = 1.6;
+  S.forEach(([k, h0, h1]) => sprites(k, near(n((LUSH * cfg.near) / each), WALL + 3, WALL + 38, 2.5).concat(near(n((LUSH * cfg.mid) / each), WALL + 38, WALL + 190, 6), far(n((LUSH * cfg.far) / each))), h0, h1));
+  if (cfg.bush) sprites(cfg.bush, near(n(cfg.near * 1.6), WALL + 1.2, WALL + 34), 0.9, 2.4, 1.3);
+  if (cfg.flower) sprites('flower', near(n(520), WALL + 1, WALL + 70), 0.5, 1.1, 1.5);
   // manchas en el suelo: rompen el color liso sin geometría relevante
   if (cfg.gr.length) { const list = near(n(320), WALL + 6, WALL + 150, 22), m = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 8).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xffffff }), list.length);
     list.forEach((s, k) => { const r = 7 + s[3] * 20; D.position.set(s[0], 0.05 + k * 0.0004, s[1]); D.rotation.set(0, s[3] * 6, 0); D.scale.set(r, 1, r * (0.55 + s[3] * 0.4)); D.updateMatrix(); m.setMatrixAt(k, D.matrix); m.setColorAt(k, base.setHex(cfg.gr[k % cfg.gr.length])); });
@@ -141,9 +149,19 @@ export function fillWorld(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     const roof = new THREE.MeshBasicMaterial({ color: 0x0c0f18 }), side = new THREE.MeshBasicMaterial({ map: t }), m = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), [side, side, roof, roof, side, side], list.length);
     list.forEach((s, k) => { const w = 14 + s[3] * 16; D.position.set(s[0], 0, s[1]); D.rotation.set(0, s[3] * 3, 0); D.scale.set(w, 30 + (k % 9) * 13, w); D.updateMatrix(); m.setMatrixAt(k, D.matrix); });
     if (list.length) { m.frustumCulled = false; scene.add(m); } }
-  // público junto a las vallas, en grupos a la salida de las curvas
-  if (cfg.crowd) { const spots = []; for (let g = 0; g < 18; g++) { const i0 = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1; for (let k = 0; k < 34 * cfg.crowd; k++) { const i = (i0 + Math.floor(rng() * 36)) % tr.N, l = (WALL + 1 + rng() * 3.2) * side, x = tr.X[i] - tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l; if (clearance(x, z, WALL + 0.6)) spots.push([x, z, tr.Y[i] + Math.max(0, Math.tan(tr.bank ? tr.bank[i] : 0) * side * WALL), rng()]); } }
-    const list = dens < 1 ? spots.filter((_, k) => k % 2 === 0) : spots, cols = [0xc8102e, 0xf2f2f2, 0x2a6fd0, 0xffc62e, 0x2f9a4a, 0x23262c, 0xe8559a];
-    if (list.length) { const m = new THREE.InstancedMesh(PROPS.body(), new THREE.MeshLambertMaterial({ color: 0xffffff }), list.length), hl = new THREE.InstancedMesh(PROPS.headLegs(), propMat, list.length); list.forEach((s, k) => { D.position.set(s[0], s[2], s[1]); D.rotation.set(0, s[3] * 6, 0); D.scale.setScalar(0.92 + s[3] * 0.16); D.updateMatrix(); m.setMatrixAt(k, D.matrix); hl.setMatrixAt(k, D.matrix); m.setColorAt(k, base.setHex(cols[k % cols.length])); }); m.instanceColor.needsUpdate = true; m.frustumCulled = false; hl.frustumCulled = false; scene.add(m, hl); } }
+  // gente: grupos animando junto a las vallas, paseantes en distintas direcciones y, en la ciudad, gente en los balcones
+  const npcY = (i, l) => (l < WALL + 7 ? Math.max(groundAt(i, l), tr.Y[i] - 0.35) : groundAt(i, l)); // junto a la valla, a la altura de la pista: si no, el muro los tapa
+  const items = [], yawTo = (dx, dz) => Math.atan2(dx, dz), shirt = (k) => SHIRTS[k % SHIRTS.length];
+  if (cfg.crowd) {
+    for (let g = 0; g < 28; g++) { const i0 = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1, per = n(34 * cfg.crowd); for (let k = 0; k < per; k++) { const i = (i0 + Math.floor(rng() * 42)) % tr.N, l = WALL + 1 + rng() * 3.4, x = tr.X[i] - tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side; if (clearance(x, z, WALL + 0.6)) items.push([x, npcY(i, l) + Math.max(0, Math.tan(tr.bank ? tr.bank[i] : 0) * side * WALL), z, yawTo(tr.TZ[i] * side, -tr.TX[i] * side) + (rng() - 0.5) * 0.7, crowdType(rng()), 0, 0, shirt(items.length)]); } }
+    for (let g = 0, c = n(190 * cfg.crowd), tries = 0; g < c && tries < c * 12; tries++) { const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1, l = WALL + 2.2 + rng() * 16, len = 8 + rng() * 24, x = tr.X[i] - tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side, yaw = rng() < 0.65 ? Math.atan2(tr.TX[i], tr.TZ[i]) + (rng() < 0.5 ? Math.PI : 0) : rng() * 6.283, ex = Math.sin(yaw) * len * 0.5, ez = Math.cos(yaw) * len * 0.5; if (clearance(x + ex, z + ez, WALL + 0.9) && clearance(x - ex, z - ez, WALL + 0.9) && !harbor(x, z)) { items.push([x, npcY(i, l), z, yaw, WALK, 1.1 + rng() * 0.8, len, shirt(items.length + 3)]); g++; } }
+  }
+  if (q.urbanInfo) {
+    const { items: blocks, balconies } = q.urbanInfo, wanted = n(170), every = Math.max(1, Math.floor(balconies.length / wanted));
+    balconies.forEach((b, k) => { if (k % every) return; const fx = Math.cos(b.ry) * b.face, fz = -Math.sin(b.ry) * b.face; items.push([b.x, b.y + 0.1, b.z, yawTo(fx, fz), rng() < 0.5 ? CHEER : IDLE, 0, 0, shirt(k)]); });
+    let g = 0; const cap = n(240); for (let s2 = 0; s2 < tr.len && g < cap; s2 += 4.5) { const i = Math.floor(s2 / tr.ds) % tr.N; for (const side of [-1, 1]) { const l = WALL + 1.1 + rng() * 2.6, x = tr.X[i] - tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side; if (!clearance(x, z, WALL + 0.6) || harbor(x, z) || blocks.some((b) => (b.x - x) ** 2 + (b.z - z) ** 2 < (Math.max(b.d, b.w) * 0.72 + 1) ** 2)) continue; const walk = rng() < 0.45, yaw = walk ? Math.atan2(tr.TX[i], tr.TZ[i]) + (rng() < 0.5 ? Math.PI : 0) : yawTo(tr.TZ[i] * side, -tr.TX[i] * side) + (rng() - 0.5) * 0.7; items.push([x, npcY(i, l), z, yaw, walk ? WALK : crowdType(rng()), 1.1 + rng() * 0.7, walk ? 5 + rng() * 6 : 0, shirt(g)]); g++; } }
+  }
+  npcMesh(scene, items);
+
 }
 export const fillerBirds = (id) => !!(CFG[id] && CFG[id].birds);

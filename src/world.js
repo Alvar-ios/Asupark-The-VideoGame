@@ -6,6 +6,7 @@ import { rngFromSeed } from './rng.js';
 import { getSponsorTexture } from './sponsors.js';
 import { madridDecor } from './madrid.js';
 import { fillWorld, backdrop, fillerBirds } from './filler.js';
+import { npcClock } from './npc.js';
 
 const col = (hex) => new THREE.Color(hex);
 
@@ -207,6 +208,7 @@ function makeBirds(tr, scene, n) {
 export function updateWind(t) {
   const dt = Math.min(0.1, Math.max(0, t - lastWindT)); lastWindT = t;
   windU.uTime.value = t;
+  npcClock.value = t % 3600;
   for (const L of windLeaves) L.update(t, dt);
 }
 function colorGeometry(geo, r, g, b) {
@@ -675,6 +677,7 @@ function urbanMesh(tr, th) {
     }
   }
   const group = new THREE.Group(), D = new THREE.Object3D(), frames = [], panes = [], sills = [], balconies = [], rails = [], roofs = [], awnings = [];
+  group.userData = { items, balconies };
   const m = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true }), items.length);
   items.forEach((b, k) => {
     D.position.set(b.x, -1, b.z); D.scale.set(b.d, b.h + 1, b.w); D.rotation.set(0, b.ry, 0); D.updateMatrix(); m.setMatrixAt(k, D.matrix); m.setColorAt(k, b.c);
@@ -691,7 +694,7 @@ function urbanMesh(tr, th) {
       if (face === -b.side && floor > 1 && column === 0) {
         const bx = b.x + (localX + face * 0.52) * Math.cos(b.ry) + localZ * Math.sin(b.ry);
         const bz = b.z - (localX + face * 0.52) * Math.sin(b.ry) + localZ * Math.cos(b.ry);
-        balconies.push({ x: bx, y: y - height * 0.56, z: bz, ry: b.ry });
+        balconies.push({ x: bx, y: y - height * 0.56, z: bz, ry: b.ry, face });
         rails.push({ x: bx + face * Math.cos(b.ry) * 0.48, y: y - height * 0.1, z: bz - face * Math.sin(b.ry) * 0.48, ry: b.ry });
       }
       if (face === -b.side && floor === 1 && (k + column) % 2 === 0) {
@@ -875,11 +878,30 @@ function tunnelMesh(tr, t, th) {
   for (const sEnd of [t.s0, t.s1]) { const i = Math.floor(sEnd / tr.ds) % N, h = tr.Y[i], fr = new THREE.Mesh(new THREE.TorusGeometry(Lh, 0.55, 6, 24, Math.PI), new THREE.MeshLambertMaterial({ color: 0xcfd3d8 })); fr.position.set(tr.X[i], h + wallH, tr.Z[i]); fr.rotation.y = Math.atan2(tr.TX[i], tr.TZ[i]); fr.scale.y = rv / Lh; g.add(fr); }
   return g;
 }
+// por el interior de una curva más cerrada que la distancia lateral, el borde se plegaría y cruzaría la pista.
+// Devuelve la posición corregida (los puntos plegados se reúnen en el vértice donde se encuentran los dos lados) o null si no hace falta.
+function foldSafe(tr) {
+  const N = tr.N, kMax = new Float32Array(N), memo = new Map();
+  for (let i = 0; i < N; i++) { let m = 0; for (let d = -36; d <= 36; d += 2) m = Math.max(m, tr.absK[(i + d + N) % N]); kMax[i] = m; }
+  const raw = (i, s, l) => [tr.X[i] - tr.TZ[i] * l * s, tr.Z[i] + tr.TX[i] * l * s];
+  const folded = (i, s, l) => { const [x, z] = raw(i, s, l), r = l - 0.05, r2 = r * r, W = Math.min(Math.ceil(l * 3.2) + 6, N >> 2); for (let d = -W; d <= W; d++) { if (!d) continue; const j = (i + d + N) % N; if ((x - tr.X[j]) ** 2 + (z - tr.Z[j]) ** 2 < r2) return true; } return false; };
+  return (i, s, l) => {
+    if (kMax[i] * l < 0.75) return null;
+    const key = i * 2 + (s > 0 ? 1 : 0) + ':' + l.toFixed(2); let v = memo.get(key); if (v !== undefined) return v;
+    if (!folded(i, s, l)) v = null;
+    else { let a = i, b = i, g = 0; while (g++ < 80 && folded((a - 1 + N) % N, s, l)) a = (a - 1 + N) % N; g = 0; while (g++ < 80 && folded((b + 1) % N, s, l)) b = (b + 1) % N; const p = raw((a - 1 + N) % N, s, l), q = raw((b + 1) % N, s, l); v = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; }
+    memo.set(key, v); return v;
+  };
+}
 function roadMesh(tr, th, stride = 1) {
   const N = tr.N, hw = ROAD_HALF, L = WALL, isKart = th.deco === 'kart';
   const cycD = (a, b) => { const d = Math.abs(a - b); return Math.min(d, N - d); };
   const wetZone = !!(tr.rain && tr.rain.length), cWet = col(0x1a2430), cConcrete = col(0x9b988f); // microclima de lluvia: asfalto más oscuro y húmedo en esos tramos
   const effectiveStride = stride;
+  const safePt = foldSafe(tr);
+  // curvatura suavizada: en las curvas muy cerradas el piano se estrecha para que no se aplaste contra sí mismo
+  const kSm = new Float32Array(N); for (let i = 0; i < N; i++) { let m = 0; for (let a = -4; a <= 4; a++) { let sum = 0; for (let d = -5; d <= 5; d++) sum += tr.absK[(i + a + d + 2 * N) % N]; m = Math.max(m, sum / 11); } kSm[i] = m; }
+  const kerbFit = (i, hw) => Math.max(0.85, (1 / Math.max(kSm[i], 1e-4) - hw) * 0.62);
   const roadData = { pos: [], colors: [], uvs: [] };
   const kerbData = { pos: [], colors: [], uvs: [] };
   const gravelData = { pos: [], colors: [], uvs: [] };
@@ -913,7 +935,7 @@ function roadMesh(tr, th, stride = 1) {
     const hwI = tr.hw ? tr.hw[i] : hw, hwJ = tr.hw ? tr.hw[j] : hw; // semianchura del asfalto (variable en algunos circuitos)
     const brI = !!tr.bridge && cycD(i, tr.bridge.i) < tr.bridge.span, brJ = !!tr.bridge && cycD(j, tr.bridge.i) < tr.bridge.span; // sobre el cruce: laterales verticales de hormigón en vez de talud
     const eoI = brI ? L + 0.35 : L + 2.5 + hi * 1.1, eoJ = brJ ? L + 0.35 : L + 2.5 + hj * 1.1;
-    const KWI = isKart ? 1.4 : Math.min(1.9, L - hwI - 0.2), KWJ = isKart ? 1.4 : Math.min(1.9, L - hwJ - 0.2);
+    const KWI = isKart ? 1.4 : Math.min(1.9, L - hwI - 0.2, kerbFit(i, hwI)), KWJ = isKart ? 1.4 : Math.min(1.9, L - hwJ - 0.2, kerbFit(j, hwJ));
     const GW = tr.rg ? hwI + tr.rg[i] : hwI + KWI + 0.02, GWj = tr.rg ? hwJ + tr.rg[j] : hwJ + KWJ + 0.02;
 
     // br: bajo el tablero del puente los bordes laterales solo bajan 1,4 m (canto del tablero) para dejar libre el paso de la pista inferior
@@ -940,7 +962,8 @@ function roadMesh(tr, th, stride = 1) {
         const posX = tr.X[idx], posZ = tr.Z[idx];
         const nx = -tr.TZ[idx], nz = tr.TX[idx];
         const bnk = (Math.abs(l) <= L ? l * Math.tan(tr.bank[idx]) : (l > 0 ? 1 : -1) * L * Math.tan(tr.bank[idx]));
-        return [posX + nx * l, y + bnk, posZ + nz * l];
+        const sf = l ? safePt(idx, l < 0 ? -1 : 1, Math.abs(l)) : null;
+        return sf ? [sf[0], y + bnk, sf[1]] : [posX + nx * l, y + bnk, posZ + nz * l];
       };
 
       const a = P(i, l0, y0i), bb = P(i, l1, y1i), c = P(j, l0j, y0j), d = P(j, l1j, y1j);
@@ -1173,13 +1196,13 @@ function wallMesh(tr, th, stride = 1) {
 
   const pos = [], colors = [], uvs = [];
   const c1 = col(th.wall1), c2 = col(th.wall2);
-  const H = 0.65, T = 0.45;
+  const H = 0.65, T = 0.45, safeW = foldSafe(tr);
 
   for (const side of [-1, 1]) {
     for (let i = 0; i < N; i += stride) {
       const j = (i + stride) % N, s = i * tr.ds;
       const c = Math.floor(s / 6) % 2 ? c1 : c2;
-      const P = (idx, l, y) => [tr.X[idx] + -tr.TZ[idx] * l * side, y + bankOff(tr, idx, l * side), tr.Z[idx] + tr.TX[idx] * l * side];
+      const P = (idx, l, y) => { const sf = safeW(idx, side, l); return sf ? [sf[0], y + bankOff(tr, idx, l * side), sf[1]] : [tr.X[idx] + -tr.TZ[idx] * l * side, y + bankOff(tr, idx, l * side), tr.Z[idx] + tr.TX[idx] * l * side]; };
       const a0 = P(i, L, tr.Y[i] - 0.05), a1 = P(i, L, tr.Y[i] + H), b0 = P(j, L, tr.Y[j] - 0.05), b1 = P(j, L, tr.Y[j] + H);
       const t0 = P(i, L + T, tr.Y[i] + H), t1 = P(j, L + T, tr.Y[j] + H);
       const quad = (p, q, r, s2, u0, u1) => {
@@ -2820,7 +2843,7 @@ export function buildWorld(tr, th, opt = {}) {
   const road = roadMesh(tr, th, q.stride); scene.add(road);
   for (const t of tr.tunnels || []) scene.add(tunnelMesh(tr, t, th));
   trackFeatures(tr, th, scene, q);
-  if (th.urban) scene.add(urbanMesh(tr, th));
+  if (th.urban) { const urb = urbanMesh(tr, th); q.urbanInfo = urb.userData; scene.add(urb); }
   if (th.harbor) scene.add(monacoHarbor(scene, !!q.shadows));
   // Marcas tenues de goma en la trazada: dos huellas de rueda, sin línea central de carretera.
   const rubber = new THREE.MeshStandardMaterial({ color: th.weather === 'rain' ? 0x35404a : 0x25292d, roughness: 0.94, metalness: 0.02, transparent: true, opacity: th.weather === 'rain' ? 0.36 : 0.24, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide });

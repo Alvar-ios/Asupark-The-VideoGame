@@ -2,6 +2,15 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.72
+- Vallas y pianos ya no se pliegan hacia la pista en curvas de 90° y horquillas: el vallado interior termina en un vértice limpio y el piano se estrecha en las curvas muy cerradas.
+- Exteriores aún más frondosos en todos los circuitos, con flores, más arbustos y más árboles.
+- Gente: paseantes en distintas direcciones, público animando, saltando y aplaudiendo, y gente en balcones (Madrid y Mónaco). Animados en la GPU, sin coste apreciable.
+- Clasificación rehecha: medallas de oro, plata y bronce, nombre en blanco y coche debajo.
+- Menú principal: el reto queda como tarjeta (su clasificación se abre al entrar), selección de circuito y coche compacta, y debajo la clasificación de la combinación elegida.
+- Pausa: nueva opción «Ver clasificación» durante la carrera.
+- Contrarreloj normal: el piloto automático te suelta antes de la meta con la cuenta 6-5-4-3-2-1, como en el reto del día.
+
 ## 0.0.71
 - Madring: mismo dibujo del plano con curvas mucho más largas y duras, rectas entre ellas, solo tres chicanes y pista más estrecha (como Mónaco). 2,05 km.
 - Selva Amazónica: otra vuelta más cerrada y técnica, con horquillas y pista estrecha (2,04 km). Tiempos anteriores de Perú y Madring descartados.

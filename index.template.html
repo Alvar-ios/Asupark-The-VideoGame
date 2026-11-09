@@ -1118,6 +1118,30 @@ body.mobile .grid,body.mobile .card{touch-action:pan-x pan-y!important}
 #board .tabs{touch-action:pan-x pan-y}
 #menu #flyout #worldMap,#menu #flyout #worldMap .gl-cv{touch-action:pan-y}
 .overlay input[type=range],body.mobile #settings input[type=range]{touch-action:pan-y!important}
+/* ===== v0.0.72: filas de clasificación, selección compacta y clasificación en el menú ===== */
+.lbt{border-collapse:separate;border-spacing:0 4px}
+.lbt td,#board .lbt td{border-bottom:0;background:rgba(255,255,255,.05);padding:7px 10px;color:#eef2fa;vertical-align:middle}
+.lbt td:first-child{border-radius:10px 0 0 10px}.lbt td:last-child{border-radius:0 10px 10px 0}
+.lbt td.rk{width:42px;padding-right:0}.lbt td.rk i{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;font-style:normal;font-size:15px;font-weight:800;color:#c8d0dc;background:rgba(255,255,255,.09)}
+.lbt tr.p1 td.rk i{background:linear-gradient(145deg,#ffe58a,#d6a019);color:#2a1d00}.lbt tr.p2 td.rk i{background:linear-gradient(145deg,#eef1f6,#a4adba);color:#22262e}.lbt tr.p3 td.rk i{background:linear-gradient(145deg,#eab07a,#b06c36);color:#2a1605}
+.lbt td.nm{min-width:0}.lbt td.nm b{display:flex;align-items:center;gap:6px;font-size:18px;font-weight:700;color:#fff;line-height:1.1}.lbt td.nm b span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbt td.nm small{display:block;margin-top:1px;font-size:12.5px;color:#8e9bbd;letter-spacing:.02em;line-height:1.1}
+.lbt td.tm{text-align:right;font-size:18px;font-weight:700;color:#fff;white-space:nowrap}.lbt tr.p1 td.tm{color:#ffd34e}
+.lbt td.gp,.lbt tr.p1 td.gp{width:66px;color:#8e98a8;font-size:13px;font-weight:600;text-align:right;white-space:nowrap}
+.lbt tr.p1 td{background:rgba(255,255,255,.09)}
+.lbt tr.me td{background:rgba(255,201,40,.13);box-shadow:inset 0 1px rgba(255,201,40,.4),inset 0 -1px rgba(255,201,40,.4);color:#fff;font-weight:inherit}.lbt tr.me td.rk{color:inherit}
+.lbt tr.gh td{background:none;color:#aab4cc;font-size:14px;letter-spacing:.1em;padding:10px 4px 2px;border-radius:0;box-shadow:none}.lbt tr.gh small{color:#7c889e;font-weight:600}
+.lbt tr.gap td{background:none;text-align:center;color:#7c889e;padding:2px;border-radius:0;font-size:14px}
+#menu .picks{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:0 0 10px}
+#menu .picks .pick{margin:0;min-width:0;padding:8px 10px;min-height:0;grid-template-columns:minmax(0,1fr) auto}
+#menu .picks .pick small{font-size:11px}#menu .picks .pick b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}#menu .picks .pick span{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#menu .picks .pick>i{display:none}#menu .picks .pick>small{grid-area:l}#menu .picks .pick>b{grid-area:n}#menu .picks .pick>span{grid-area:s}#menu .picks .pick .pk-img,#menu .picks .pick .pk-flag{position:static!important;grid-area:i;align-self:center;justify-self:end;margin:0 0 0 6px;transform:none!important;right:auto;top:auto;left:auto;bottom:auto}#menu .picks .pick .pk-flag{width:26px;height:18px;display:block}#menu .picks .pick .pk-flag svg{display:block;width:100%;height:100%}#menu .picks .pk-img{width:58px;height:auto;max-height:34px;object-fit:contain}#menu .picks .pk-flag{transform:scale(.8)}
+#menu .modes{margin:8px 0 8px}#menu .modes .seg button{min-height:34px;padding:6px 5px;font-size:17px}#menu .modeinfo{display:none}
+#homeBoard{margin:0 0 10px;padding:9px 10px 6px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09)}
+#homeBoard .hb-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}#homeBoard .hb-h b{display:block;font-size:13px;letter-spacing:.14em;color:#ffc928}#homeBoard .hb-h span{display:block;font-size:14px;color:#c8d0dc;line-height:1.1}
+#homeBoard #hbAll{flex:none;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:8px;color:#e4ebf8;font:inherit;font-size:14px;padding:5px 9px;cursor:pointer;touch-action:manipulation}
+#homeBoard .lbt td{padding:4px 8px}#homeBoard .lbt td.rk{width:34px}#homeBoard .lbt td.rk i{width:22px;height:22px;font-size:13px}#homeBoard .lbt td.nm b{font-size:15px}#homeBoard .lbt td.nm small{font-size:11px}#homeBoard .lbt td.tm{font-size:15px}#homeBoard .lbt td.gp{font-size:12px;width:56px}
+#pauseBoard[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -1159,15 +1183,17 @@ body.mobile .grid,body.mobile .card{touch-action:pan-x pan-y!important}
             <div class="dy-h-main"><canvas id="dyHeroCv" width="220" height="120"></canvas><div class="dy-h-info"><b id="dyHeroTrack"></b><span id="dyHeroSub"></span><div id="dyHeroChips" class="dy-chips"></div></div></div>
             <div class="dy-h-car"><img id="dyHeroImg" alt=""><div><small>COCHE DE HOY</small><b id="dyHeroCar"></b></div><em class="dy-go">ENTRAR AL RETO ›</em></div>
           </button>
-          <div id="dyMini" class="dy-mini"></div>
-          <button id="dyAllBoard" type="button" class="dy-more">Ver clasificación completa ›</button>
+          <button id="dyAllBoard" type="button" style="display:none"></button>
         </div>
         <button id="startBtn" class="big">JUGAR</button>
         <p id="modelStatus" role="status" hidden></p>
-        <button id="pickTrack" class="pick" type="button"><small>Circuito</small><b id="pickTrackName">—</b><span id="pickTrackSub"></span><em id="pickTrackFlag" class="pk-flag"></em><i>›</i></button>
-        <button id="pickCar" class="pick" type="button"><small>Coche</small><b id="pickCarName">—</b><span id="pickCarSub"></span><img id="pickCarImg" class="pk-img" alt=""><i>›</i></button>
         <div class="modes"><div id="modeSel" class="seg"><button data-v="tt">Contrarreloj</button><button data-v="race">Carrera</button><button data-v="gp" class="gp">Gran Premio</button></div><p id="modeInfo" class="modeinfo"></p>
           <div id="diffWrap"><div id="diffSel" class="seg"><button data-v="0">Fácil</button><button data-v="1" class="on">Normal</button><button data-v="2">Difícil</button></div></div></div>
+        <div class="picks">
+        <button id="pickTrack" class="pick" type="button"><small>Circuito</small><b id="pickTrackName">—</b><span id="pickTrackSub"></span><em id="pickTrackFlag" class="pk-flag"></em><i>›</i></button>
+        <button id="pickCar" class="pick" type="button"><small>Coche</small><b id="pickCarName">—</b><span id="pickCarSub"></span><img id="pickCarImg" class="pk-img" alt=""><i>›</i></button>
+        </div>
+        <section id="homeBoard"><div class="hb-h"><div><b>CLASIFICACIÓN</b><span id="hbCtx"></span></div><button id="hbAll" type="button">Ver toda ›</button></div><table id="hbTable" class="lbt"></table></section>
         <div class="links"><button id="dailyBtn" class="link daily" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="m12 12.4.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z" fill="currentColor" stroke="none"/></svg><span>Reto del día</span></button><button id="profBtn" class="link" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.8-3.8 3.7-6 7.5-6s6.7 2.2 7.5 6"/></svg><span id="profBtnLabel">Perfil</span></button><button id="boardBtn" class="link" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H4.5a3 3 0 0 0 3.5 4M16 6h3.5a3 3 0 0 1-3.5 4M12 13v4M8.5 20h7M10 17h4"/></svg><span>Clasificación</span></button><button id="musicBtn" class="link" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg><span>Música</span></button><button id="setBtn" class="link" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></svg><span>Ajustes</span></button></div><button id="nowPlaying" type="button" class="nowplaying" hidden><span class="np-eq"><i></i><i></i><i></i></span><span class="np-txt"><b></b><small></small></span></button>
       </div>
     </div>
@@ -1208,7 +1234,7 @@ body.mobile .grid,body.mobile .card{touch-action:pan-x pan-y!important}
   <div id="gfxSel" class="seg"><button data-v="auto">Auto</button><button data-v="high">Alta</button><button data-v="medium">Media</button><button data-v="low">Baja</button></div>
   <p class="keys" style="display:block">Auto baja la calidad solo si el juego va lento. «Baja» quita las sombras y reduce la resolución: úsala si va a tirones en el móvil.</p>
   <button id="setClose" class="big">LISTO</button></div></div>
-<div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar</button><button id="pauseCar" class="big ghost">Cambiar de coche</button><button id="pauseTrack" class="big ghost">Cambiar de circuito</button><button id="endBtn" class="big ghost">Terminar y ver tiempos</button><button id="setBtn2" class="big ghost">Ajustes</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
+<div id="pause" class="overlay hidden"><div class="panel rbox"><h1>PAUSA</h1><button id="resumeBtn" class="big">CONTINUAR</button><button id="restartBtn" class="big ghost">Reiniciar</button><button id="pauseCar" class="big ghost">Cambiar de coche</button><button id="pauseTrack" class="big ghost">Cambiar de circuito</button><button id="pauseBoard" class="big ghost">Ver clasificación</button><button id="endBtn" class="big ghost">Terminar y ver tiempos</button><button id="setBtn2" class="big ghost">Ajustes</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
 <div id="results" class="overlay hidden"><div class="panel rbox"><h1 id="rTitle">META</h1><div class="big-n" id="rBig">1º</div><div id="rNew"></div><table id="rTable"></table><button id="againBtn" class="big">OTRA VEZ</button><button id="shareBtn" class="big wa"></button><button id="boardBtn2" class="big ghost">Clasificación completa</button><button id="menuBtn2" class="big ghost">Menú principal</button></div></div>
 <script src="./config.js"></script>
 <script>/*BUNDLE*/</script>

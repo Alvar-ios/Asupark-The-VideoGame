@@ -2,6 +2,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { WALL } from './track.js';
+import { npcMesh, SHIRTS, WALK, CHEER, JUMP, IDLE, crowdType } from './npc.js';
+import { spriteField } from './filler.js';
 
 const DATE = '01/02/2027', FONT = '"Segoe UI","Helvetica Neue",Arial,sans-serif';
 const texCache = {};
@@ -242,7 +244,19 @@ export function madridDecor(tr, th, scene, anim, q) {
   const ifemaZone = (x, z) => x < 700 * sc && z > 300 * sc;
   for (let x = minX; x <= maxX; x += 12) for (let z = minZ; z <= maxZ; z += 12) { const px = x + (rnd() - 0.5) * 11, pz = z + (rnd() - 0.5) * 11; if (insideLoop(px, pz) && !ifemaZone(px, pz) && nearest(px, pz) > L + 5 && free(px, pz, 4) && hwyDist(px, pz) > 22) trees.push([px, pz, 0.8 + rnd() * 0.7, rnd() * 6.28]); }
   for (let i = 8; i < N; i += 11) for (const side of [-1, 1]) { const l = side * (L + 8 + rnd() * 10), px = tr.X[i] - tr.TZ[i] * l, pz = tr.Z[i] + tr.TX[i] * l; if (nearest(px, pz) > L + 4 && free(px, pz, 3) && hwyDist(px, pz) > 22 && !ifemaZone(px, pz)) trees.push([px, pz, 0.7 + rnd() * 0.6, rnd() * 6.28]); }
-  const cap = q.density < 1 ? 240 : 620, every = Math.max(1, Math.ceil(trees.length / cap)), list = trees.filter((_, k) => k % every === 0);
+  const cap = q.density < 1 ? 400 : 1000, every = Math.max(1, Math.ceil(trees.length / cap)), list = trees.filter((_, k) => k % every === 0);
+  // ---- verde y gente: setos y flores junto a las aceras, peatones, público en las gradas y balcones ----
+  { const green = (count, a, b) => { const out = []; for (let g = 0; out.length < count && g < count * 10; g++) { const i = Math.floor(rnd() * N), side = rnd() < 0.5 ? -1 : 1, l = (a + rnd() * (b - a)) * side, x = tr.X[i] - tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l; if (nearest(x, z) > L + 1 && free(x, z, 1.2) && hwyDist(x, z) > 22) out.push([x, z, 0, rnd()]); } return out; };
+    const dn = q.density < 1 ? 0.5 : 1;
+    spriteField(G, 'bush', green(Math.round(1200 * dn), L + 1.4, L + 20), 0.9, 2.2, 1.3);
+    spriteField(G, 'poplar', green(Math.round(380 * dn), L + 8, L + 22), 9, 15);
+    const people = [], shirt = (k) => SHIRTS[k % SHIRTS.length], toRoad = (i, side) => Math.atan2(tr.TZ[i] * side, -tr.TX[i] * side);
+    for (let i = 3, c = 0; i < N; i += q.density < 1 ? 7 : 4) { if (inTunnel(i, 10)) continue; const side = c++ % 2 ? 1 : -1, l = L + 2.2 + rnd() * 1.8, len = 8 + rnd() * 18, tx = tr.TX[i], tz = tr.TZ[i], x = tr.X[i] - tz * l * side, z = tr.Z[i] + tx * l * side; if (nearest(x + tx * len * 0.5, z + tz * len * 0.5) < L + 1 || nearest(x - tx * len * 0.5, z - tz * len * 0.5) < L + 1 || !free(x, z, 1.5)) continue; const walk = rnd() < 0.62, y = Math.max(0, tr.Y[i] - 0.35); people.push([x, y, z, walk ? Math.atan2(tx, tz) + (rnd() < 0.5 ? Math.PI : 0) : toRoad(i, side) + (rnd() - 0.5) * 0.8, walk ? WALK : crowdType(rnd()), 1.1 + rnd() * 0.8, walk ? len : 0, shirt(people.length)]); }
+    standSpots.forEach((s, k) => { if (q.density < 1 && k % 2) return; for (let t = 0; t < 4; t++) { const lx = 0.72 + Math.floor(rnd() * 7) * 1.45, lz = (rnd() - 0.5) * 11, tier = Math.round((lx - 0.72) / 1.45), yaw = s[3], x = s[0] + Math.cos(yaw) * lx + Math.sin(yaw) * lz, z = s[2] - Math.sin(yaw) * lx + Math.cos(yaw) * lz; people.push([x, s[1] + (tier + 1) * 0.95, z, Math.atan2(-Math.cos(yaw), Math.sin(yaw)) + (rnd() - 0.5) * 0.5, rnd() < 0.3 ? JUMP : CHEER, 0, 0, shirt(people.length + 2)]); } });
+    const slabs = [], step4 = Math.PI / 2; for (const list of [types[0], types[1]]) for (const b of list) { if (nearest(b[0], b[1]) > L + 46 || rnd() > dn) continue; let bi = 0, bd = 1e18; for (let i = 0; i < N; i += 5) { const d = (tr.X[i] - b[0]) ** 2 + (tr.Z[i] - b[1]) ** 2; if (d < bd) { bd = d; bi = i; } } let bestN = null, bv = -2; for (let f = 0; f < 4; f++) { const a = b[5] + f * step4, nx = Math.sin(a), nz = Math.cos(a), dx = tr.X[bi] - b[0], dz = tr.Z[bi] - b[1], v = (dx * nx + dz * nz) / (Math.hypot(dx, dz) || 1); if (v > bv) { bv = v; bestN = { a, nx, nz, half: f % 2 ? b[2] / 2 : b[3] / 2, wide: f % 2 ? b[3] : b[2] }; } } const fl = Math.floor(b[4] / 3.3); for (let c = 0; c < 3; c++) { const floor = 2 + Math.floor(rnd() * Math.max(1, fl - 3)), off = (rnd() - 0.5) * (bestN.wide - 4), x = b[0] + bestN.nx * (bestN.half + 0.7) + bestN.nz * off, z = b[1] + bestN.nz * (bestN.half + 0.7) - bestN.nx * off, y = floor * 3.3; slabs.push([x, y, z, bestN.a]); people.push([x, y + 0.12, z, bestN.a, rnd() < 0.55 ? CHEER : IDLE, 0, 0, shirt(people.length + 5)]); } }
+    const bal = mergeGeometries([new THREE.BoxGeometry(3.2, 0.2, 1.5), new THREE.BoxGeometry(3.2, 0.9, 0.07).translate(0, 0.5, 0.72)]);
+    inst(bal, lam(0xe8e2d6), slabs, (d, s) => { d.position.set(s[0], s[1], s[2]); d.rotation.y = s[3]; });
+    npcMesh(G, people); }
   const trunk = new THREE.CylinderGeometry(0.18, 0.3, 3.4, 6).translate(0, 1.7, 0), crown = mergeGeometries([new THREE.IcosahedronGeometry(2.4, 1).translate(0, 5, 0), new THREE.IcosahedronGeometry(1.8, 1).translate(1.1, 4.2, 0.4)]);
   const place = (d, s) => { d.position.set(s[0], 0, s[1]); d.rotation.y = s[3]; d.scale.setScalar(s[2] * 1.5); };
   inst(trunk, lam(0x6b5540), list, place);
