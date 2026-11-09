@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { THEMES, THEME_LIST } from './themes.js';
 import { waShare, inviteUrl, WA_ICON } from './share.js';
-import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS } from './daily.js';
+import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS, DAILY_LOCK_DAY } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo } from './car.js';
 import { hashStr } from './rng.js';
@@ -70,10 +70,12 @@ window.addEventListener('resize', resize); resize();
 // ---------- pistas ----------
 const tracks = [];
 function addTrack(key, name, sub, seed, style, th) { const tr = buildTrack(seed, style); tracks.push({ key, name, sub, tr, th }); }
-const dailyKey = dailyKeyNow(), dailyPick = pickDaily(dailyKey, THEME_LIST.filter((k) => k !== 'madring' || dailyKey >= '2026-11-10'), (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
+const dailyKey = dailyKeyNow(), dailyPick = pickDaily(dailyKey, dailyKey === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => k !== 'madring' || dailyKey >= '2026-11-10'), (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
 addTrack('pruebas', THEMES.pruebas.name, THEMES.pruebas.sub, THEMES.pruebas.seed, THEMES.pruebas.style, THEMES.pruebas);
 addTrack('monaco', THEMES.monaco.name, THEMES.monaco.sub, THEMES.monaco.seed, THEMES.monaco.style, THEMES.monaco);
 addTrack('spa', THEMES.spa.name, THEMES.spa.sub, THEMES.spa.seed, THEMES.spa.style, THEMES.spa);
+// el reto de ese día cambió de circuito a mitad de jornada: fuera el progreso local y el fantasma del circuito anterior
+if (dailyKey === DAILY_LOCK_DAY && !store.get('purge.daily-madring')) { try { localStorage.removeItem('dr.daily'); } catch (e) { /* sin almacenamiento */ } store.set('dr.dailyref', null); store.set('purge.daily-madring', true); }
 { const dth = THEMES[dailyPick.theme]; addTrack('daily', 'Reto del día', dth.sub, dth.seed, dth.style, dth); }
 for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco' && k !== 'spa') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
 

@@ -71,7 +71,10 @@ const B = (w, h, d, x, y, z, hex) => C(new THREE.BoxGeometry(w, h, d).translate(
 const Cy = (r0, r1, h, n, x, y, z, hex) => C(new THREE.CylinderGeometry(r0, r1, h, n).translate(x, y, z), hex);
 const merge = (l) => mergeGeometries(l);
 const roof4 = (w, h, y, hex) => C(new THREE.ConeGeometry(w, h, 4).rotateY(Math.PI / 4).translate(0, y, 0), hex);
+// casa-seta: tronco habitable con puerta, ventanas y chimenea, y un gran sombrero
+const shroomHouse = (cap) => () => merge([Cy(3.2, 3.8, 4.6, 14, 0, 2.3, 0, 0xf4e6c4), Cy(5.8, 5.8, 0.3, 14, 0, 4.7, 0, 0xcdb88c), C(new THREE.SphereGeometry(6, 14, 8, 0, 6.283, 0, 1.6).scale(1, 0.72, 1).translate(0, 4.7, 0), cap), B(1.4, 2.4, 0.3, 0, 1.2, 3.55, 0x8a5a30), B(1, 1, 0.2, -2, 2.6, 2.95, 0xffd97a), B(1, 1, 0.2, 2, 2.6, 2.95, 0xffd97a), Cy(0.45, 0.55, 2.2, 8, 2.4, 9, 0.6, 0x9a8a78)]);
 const PROPS = {
+  shroomA: shroomHouse(0xf0a020), shroomB: shroomHouse(0x19a7a7), shroomC: shroomHouse(0x8a5fd8),
   house: () => merge([B(7, 3.4, 6, 0, 1.7, 0, 0xe8dfcf), roof4(5.4, 2.2, 4.5, 0xb5583a), B(1, 1.9, 0.1, 0, 0.95, 3.03, 0x5a3a26), B(1.1, 1.1, 0.1, -2.2, 2, 3.03, 0x2b3a46), B(1.1, 1.1, 0.1, 2.2, 2, 3.03, 0x2b3a46)]),
   barn: () => merge([B(11, 4.2, 7, 0, 2.1, 0, 0x9a3a2c), roof4(7.4, 2.6, 5.5, 0x4a4a48), B(2.4, 2.6, 0.1, 0, 1.3, 3.53, 0xe8e0d0)]),
   chalet: () => merge([B(8, 3.2, 7, 0, 1.6, 0, 0x7a5233), roof4(6.8, 3, 4.7, 0xf2f6fa), B(8.6, 0.25, 1.1, 0, 3, 3.8, 0x5a3a26), B(1.2, 1.2, 0.1, -2, 2, 3.53, 0x26323e), B(1.2, 1.2, 0.1, 2, 2, 3.53, 0x26323e)]),
@@ -100,7 +103,7 @@ const CFG = {
   desierto: { ring: 'mesa', spr: [['saguaro', 5, 9]], bush: 'dry', near: 300, mid: 360, far: 380, gr: [0xc29a68, 0xb08458, 0xd2ad7e], props: { adobe: 26, rock: 170, tent: 10, car: 16, fence: 24, pylon: 5 }, rockTint: [0xb5835a, 0xa3714a, 0xc49468], crowd: 0.8, birds: 1 },
   neon: { ring: 'neon', night: 1, spr: [], near: 0, mid: 0, far: 0, gr: [], props: {}, crowd: 0.7, towers: 130 },
   nieve: { ring: 'snow', spr: [['snowpine', 14, 24]], bush: null, near: 380, mid: 900, far: 900, gr: [0xe4edf6, 0xd2deea], props: { chalet: 24, rock: 40, pylon: 8, car: 12, fence: 20 }, rockTint: [0xdbe6ef, 0xc4d0dc], crowd: 0.7, birds: 0 },
-  prisma: { ring: 'toy', spr: [['toytree', 7, 12]], near: 220, mid: 420, far: 300, gr: [], tintList: [0xff6b6b, 0x6bc4ff, 0xffe06b, 0x7be08a, 0xc79bff, 0xffa66b], props: { mushroom: 60, pipe: 34, block: 34, coin: 50 }, mushTint: [0xe5352f, 0xf0a020, 0x3aa0e8, 0x46c060], crowd: 0.6, people: 'shroom', shirts: [0xf0a020, 0x19a7a7, 0x7a4fd0, 0x8fc23a, 0xe0689a, 0x3aa0e8] },
+  prisma: { ring: 'toy', spr: [['toytree', 7, 12]], near: 220, mid: 420, far: 300, gr: [], tintList: [0xff6b6b, 0x6bc4ff, 0xffe06b, 0x7be08a, 0xc79bff, 0xffa66b], props: { shroomA: 16, shroomB: 16, shroomC: 16, mushroom: 60, pipe: 34, block: 34, coin: 50 }, mushTint: [0xe5352f, 0xf0a020, 0x3aa0e8, 0x46c060], crowd: 0.6, people: 'shroom', shirts: [0xf0a020, 0x19a7a7, 0x7a4fd0, 0x8fc23a, 0xe0689a, 0x3aa0e8] },
   amazonas: { flower: 1, ring: 'jungle', spr: [['jungle', 30, 58], ['palm', 14, 24], ['broad', 16, 28]], bush: 'fern', near: 700, mid: 1100, far: 900, gr: [0x2a5a2c, 0x3a4a26], props: { hut: 48, rock: 40 }, crowd: 0.55, people: 'tribe', shirts: [0xc2452d, 0xd9a13b, 0x3f8a4a, 0xe8d9b0, 0x2f7fa0, 0x9a6a30] },
   karting: { flower: 1, ring: 'trees', spr: [['broad', 10, 16], ['poplar', 13, 20]], bush: 'bush', near: 260, mid: 620, far: 700, gr: [0x5c8444, 0x6a7a44], props: { camper: 16, tent: 14, car: 26, hay: 22, fence: 16 }, crowd: 0.5, birds: 1 },
   asupark: { flower: 1, ring: 'trees', spr: [['olive', 6, 9], ['broad', 10, 15]], bush: 'bush', near: 240, mid: 560, far: 640, gr: [0x7a8050, 0x8a8354], props: { camper: 12, tent: 10, car: 24, hay: 18, house: 8 }, crowd: 0.5, birds: 1 },

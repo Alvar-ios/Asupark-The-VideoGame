@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.75
+- Perú: tribuna de madera con techo de paja y postes de troncos.
+- Circuito de juguete: casas-seta con puerta, ventanas y chimenea.
+- Reto del día especial: Madring, con acceso por contraseña solo durante esta jornada.
+
 ## 0.0.74
 - Madring: se descartan los tiempos hechos con el trazado anterior.
 - Tribuna principal corregida: orientada hacia la pista y colocada donde no toca ningún tramo del circuito.

@@ -1796,11 +1796,13 @@ function motorsportAmbiance(tr, th, scene, q) {
   bleachersGroup.position.set(standX, standY, standZ);
   bleachersGroup.rotation.set(0, headingM + (standSide > 0 ? Math.PI : 0), 0);
 
-  const concMat = new THREE.MeshStandardMaterial({ color: 0x8a9098, roughness: 0.88 });
+  const woodStand = th.id === 'amazonas'; // Perú: plataforma de madera con techo de paja
+  const concMat = woodStand ? new THREE.MeshLambertMaterial({ vertexColors: true }) : new THREE.MeshStandardMaterial({ color: 0x8a9098, roughness: 0.88 });
   const bleacherGeos = [];
   for (let t = 0; t < standTiers; t++) {
     const tierGeo = new THREE.BoxGeometry(standTierDepth, standTierH * (t + 1) + standDrop, standLength);
     tierGeo.translate(t * standTierDepth, (standTierH * (t + 1) - standDrop) * 0.5, 0);
+    if (woodStand) { const c = new THREE.Color(t % 2 ? 0x7a5632 : 0x936a3f), n = tierGeo.attributes.position.count, a = new Float32Array(n * 3); for (let v = 0; v < n; v++) { a[v * 3] = c.r; a[v * 3 + 1] = c.g; a[v * 3 + 2] = c.b; } tierGeo.setAttribute('color', new THREE.BufferAttribute(a, 3)); }
     bleacherGeos.push(tierGeo);
   }
   const bleachersMesh = new THREE.Mesh(mergeBufferGeometries(bleacherGeos), concMat);
@@ -1811,8 +1813,12 @@ function motorsportAmbiance(tr, th, scene, q) {
   // Techo cubierta volada sobre la tribuna (proyecta la sombra principal sobre toda la grada)
   const roofMesh = new THREE.Mesh(
     new THREE.BoxGeometry(standTiers * standTierDepth + 1.2, 0.22, standLength + 2.0),
-    new THREE.MeshStandardMaterial({ color: 0x3d444e, metalness: 0.65, roughness: 0.4 })
+    woodStand ? new THREE.MeshLambertMaterial({ color: 0xb59a55 }) : new THREE.MeshStandardMaterial({ color: 0x3d444e, metalness: 0.65, roughness: 0.4 })
   );
+  if (woodStand) { // postes de troncos que sujetan el techo de paja
+    const postMat = new THREE.MeshLambertMaterial({ color: 0x5a3f24 }), backX = standTiers * standTierDepth, postH = standTiers * standTierH + 2.5 + standDrop;
+    for (let z = -24; z <= 24; z += 12) { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, postH, 6), postMat); post.position.set(backX, postH / 2 - standDrop, z); bleachersGroup.add(post); }
+  }
   roofMesh.position.set((standTiers * standTierDepth) * 0.45, standTiers * standTierH + 2.5, 0);
   roofMesh.rotation.set(0, 0, 0.12);
   roofMesh.castShadow = !!q.shadows;
@@ -1820,7 +1826,7 @@ function motorsportAmbiance(tr, th, scene, q) {
 
   // Asientos coloridos de espectadores (rojo, azul, amarillo, blanco)
   const seatGeo = new THREE.BoxGeometry(0.38, 0.28, 0.35);
-  const seatColors = [0xdf2626, 0x1e60c4, 0xf5b800, 0xf0f3f8].map(col);
+  const seatColors = (woodStand ? [0x6a4a2a, 0x8a6236, 0x5a3f24, 0xa07a48] : [0xdf2626, 0x1e60c4, 0xf5b800, 0xf0f3f8]).map(col);
   const seatMesh = new THREE.InstancedMesh(
     seatGeo,
     new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 }),
