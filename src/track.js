@@ -268,6 +268,9 @@ export function buildTrack(seed, style) {
     }
     minBase = Math.min(minBase, base[i]);
   }
+  // perfil suavizado: las subidas y bajadas se reparten en vez de ir por escalones
+  if (style.hillSmooth) for (let pass = 0; pass < 3; pass++) { const w = style.hillSmooth, c = Float64Array.from(base); for (let i = 0; i < N; i++) { let s = 0; for (let d = -w; d <= w; d++) s += c[(i + d + N) % N]; base[i] = s / (2 * w + 1); } }
+  tr.noAir = !!style.noAir;
   // cruce con puente: el segundo paso por el punto de cruce se eleva sobre el primero (rampas suaves de subida y bajada)
   if (style.cross) {
     const sc2 = style.scale || 1, cx = style.cross[0] * sc2, cz = style.cross[1] * sc2, r = style.cross[2] * sc2 * 0.8, near = [];

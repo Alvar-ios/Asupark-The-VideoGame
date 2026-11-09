@@ -5,7 +5,8 @@ import { WALL } from './track.js';
 import { npcMesh, SHIRTS, WALK, CHEER, JUMP, IDLE, crowdType } from './npc.js';
 import { spriteField } from './filler.js';
 
-const DATE = '01/02/2027', FONT = '"Segoe UI","Helvetica Neue",Arial,sans-serif';
+const DATE = '01/02/2027', FONT = '"Segoe UI","Helvetica Neue",Arial,sans-serif', GAME = '"Jersey 10",Impact,sans-serif';
+const gameFont = () => (document.fonts && document.fonts.load ? document.fonts.load('60px "Jersey 10"').catch(() => {}) : Promise.resolve());
 const texCache = {};
 function canvasTex(key, w, h, paint) {
   if (texCache[key]) return texCache[key];
@@ -15,8 +16,9 @@ function canvasTex(key, w, h, paint) {
   return (texCache[key] = t);
 }
 function withLogo(name, draw, done) {
-  draw(null);
-  const img = new Image(); img.onload = () => { draw(img); done(); }; img.src = `./assets/logos/${name}.webp`;
+  let last = null; draw(null);
+  gameFont().then(() => { draw(last); done(); });
+  const img = new Image(); img.onload = () => { last = img; draw(img); done(); }; img.src = `./assets/logos/${name}.webp`;
 }
 // Traced: icono de la bola + palabra, con "MADRID 01/02/2027" debajo
 const tracedTex = (w, h) => canvasTex(`traced${w}`, w, h, (x, W, H, done) => withLogo('traced', (img) => {
@@ -26,26 +28,27 @@ const tracedTex = (w, h) => canvasTex(`traced${w}`, w, h, (x, W, H, done) => wit
   const tw = x.measureText('traced').width, x0 = (W - ic - gap - tw) / 2, cy = H * 0.37;
   if (img) x.drawImage(img, x0, cy - ic / 2, ic, ic);
   x.fillStyle = '#ffffff'; x.fillText('traced', x0 + ic + gap, cy);
-  x.textAlign = 'center'; x.font = `800 ${H * 0.2}px ${FONT}`; x.fillStyle = '#7fe3ff'; x.fillText(`MADRID  ${DATE}`, W / 2, H * 0.83);
+  x.textAlign = 'center'; x.font = `${H * 0.3}px ${GAME}`; x.fillStyle = '#7fe3ff'; x.fillText(`MADRID ${DATE}`, W / 2, H * 0.83);
 }, done));
 // Celonis: logotipo sobre blanco y la fecha debajo
 const celonisTex = (w, h) => canvasTex(`celonis${w}`, w, h, (x, W, H, done) => withLogo('celonis', (img) => {
   x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H);
   if (img) { const lh = H * 0.66, lw = lh * img.naturalWidth / img.naturalHeight; x.drawImage(img, (W - lw) / 2, H * 0.02, lw, lh); }
   x.fillStyle = '#5cff4f'; x.fillRect(0, H * 0.7, W, H * 0.3);
-  x.fillStyle = '#000000'; x.font = `800 ${H * 0.23}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(DATE, W / 2, H * 0.855);
+  x.fillStyle = '#000000'; x.font = `${H * 0.31}px ${GAME}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(DATE, W / 2, H * 0.855);
 }, done));
 // Burger King: tres logotipos sobre crema con franjas rojas
 const burgerTex = (w, h) => canvasTex(`bk${w}`, w, h, (x, W, H, done) => withLogo('burgerking', (img) => {
   x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H); x.fillStyle = '#d62300'; x.fillRect(0, 0, W, H * 0.05); x.fillRect(0, H * 0.95, W, H * 0.05);
   if (img) { const lh = H * 0.82, lw = lh * img.naturalWidth / img.naturalHeight; for (const c of [0.17, 0.5, 0.83]) x.drawImage(img, W * c - lw / 2, H * 0.09, lw, lh); }
 }, done));
-const textTex = (txt, bg, fg, w = 1024, h = 128) => canvasTex(`t:${txt}:${w}`, w, h, (x, W, H) => {
+const textTex = (txt, bg, fg, w = 1024, h = 128) => canvasTex(`t:${txt}:${w}`, w, h, (x, W, H, done) => { const paint = () => {
   x.fillStyle = bg; x.fillRect(0, 0, W, H); x.strokeStyle = fg; x.lineWidth = H * 0.05; x.strokeRect(H * 0.07, H * 0.07, W - H * 0.14, H - H * 0.14);
   // el texto se ajusta siempre al cartel: se reduce hasta caber y admite varias líneas
   const lines = txt.split('\n'), maxW = W * 0.9; let fs = (H * 0.8) / lines.length;
-  x.font = `800 ${fs}px ${FONT}`; const wide = Math.max(...lines.map((l) => x.measureText(l).width)); if (wide > maxW) fs *= maxW / wide;
-  x.fillStyle = fg; x.font = `800 ${fs}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; lines.forEach((l, k) => x.fillText(l, W / 2, H / 2 + (k - (lines.length - 1) / 2) * fs * 1.08));
+  x.font = `${fs}px ${GAME}`; const wide = Math.max(...lines.map((l) => x.measureText(l).width)); if (wide > maxW) fs *= maxW / wide;
+  x.fillStyle = fg; x.font = `${fs}px ${GAME}`; x.textAlign = 'center'; x.textBaseline = 'middle'; lines.forEach((l, k) => x.fillText(l, W / 2, H / 2 + (k - (lines.length - 1) / 2) * fs * 1.0));
+  }; paint(); gameFont().then(() => { paint(); done(); });
 });
 // bandera de la Comunidad de Madrid: carmesí con siete estrellas blancas (4 + 3)
 const flagTex = () => canvasTex('flagmad', 512, 341, (x, W, H) => {
@@ -232,9 +235,9 @@ export function madridDecor(tr, th, scene, anim, q) {
 
   // ---- vida de ciudad: césped del interior, coches aparcados, farolas, grúas de Valdebebas ----
   { const sh = new THREE.Shape(); for (let i = 0; i < N; i += 6) i ? sh.lineTo(tr.X[i], -tr.Z[i]) : sh.moveTo(tr.X[i], -tr.Z[i]); const m = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), lam(0x6f8f48)); m.position.y = 0.03; G.add(m); }
-  { const cars = [], lamps = []; for (let i = 6; i < N; i += 7) { if (inTunnel(i, 8)) continue; const side = i % 14 < 7 ? 1 : -1, l = side * (L + 4.5), x = tr.X[i] - tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l; if (i % 28 < 7) { const ll = -side * (L + 1.5), lx = tr.X[i] - tr.TZ[i] * ll, lz = tr.Z[i] + tr.TX[i] * ll; if (nearest(lx, lz) > L + 1 && free(lx, lz, 1)) lamps.push([lx, lz, tr.Y[i], Math.atan2(tr.TX[i], tr.TZ[i]) + (ll > 0 ? Math.PI : 0)]); } if (nearest(x, z) > L + 3 && free(x, z, 3) && !insideLoop(x, z) && hwyDist(x, z) > 22) cars.push([x, z, Math.atan2(tr.TX[i], tr.TZ[i])]); }
+  { const cars = [], lamps = []; for (let i = 6; i < N; i += 7) { if (inTunnel(i, 8)) continue; const side = i % 14 < 7 ? 1 : -1, l = side * (L + 9.5), x = tr.X[i] - tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l; if (i % 28 < 7) { const ll = -side * (L + 1.5), lx = tr.X[i] - tr.TZ[i] * ll, lz = tr.Z[i] + tr.TX[i] * ll; if (nearest(lx, lz) > L + 1 && free(lx, lz, 1)) lamps.push([lx, lz, tr.Y[i], Math.atan2(tr.TX[i], tr.TZ[i]) + (ll > 0 ? Math.PI : 0)]); } if (nearest(x, z) > L + 3 && free(x, z, 3) && !insideLoop(x, z) && hwyDist(x, z) > 22) cars.push([x, z, Math.atan2(tr.TX[i], tr.TZ[i]), Math.max(0, tr.Y[i] * (1 - 3.5 / (2.5 + 1.1 * tr.Y[i])))]); }
     const cc = [0xc8102e, 0xe8e8ea, 0x23262c, 0x2a4f9a, 0xb9bcc2, 0xd9a020], body = mergeGeometries([new THREE.BoxGeometry(1.9, 0.75, 4.4).translate(0, 0.62, 0), new THREE.BoxGeometry(1.7, 0.6, 2.2).translate(0, 1.28, -0.2)]);
-    inst(body, lam(0xffffff), q.density < 1 ? cars.filter((_, k) => k % 2 === 0) : cars, (d, s) => { d.position.set(s[0], 0, s[1]); d.rotation.y = s[2]; }, (s, k) => cc[k % cc.length]);
+    inst(body, lam(0xffffff), q.density < 1 ? cars.filter((_, k) => k % 2 === 0) : cars, (d, s) => { d.position.set(s[0], s[3], s[1]); d.rotation.y = s[2]; }, (s, k) => cc[k % cc.length]);
     const pole = mergeGeometries([new THREE.CylinderGeometry(0.09, 0.14, 9, 6).translate(0, 4.5, 0), new THREE.BoxGeometry(0.24, 0.18, 2.6).translate(0, 8.95, 1.2)]);
     inst(pole, lam(0x3c4048), lamps, (d, s) => { d.position.set(s[0], s[2], s[1]); d.rotation.y = s[3]; });
     const crane = mergeGeometries([new THREE.BoxGeometry(1.5, 62, 1.5).translate(0, 31, 0), new THREE.BoxGeometry(52, 1.2, 1.2).translate(14, 60, 0), new THREE.BoxGeometry(5, 3, 3).translate(-11, 58, 0)]), cr = []; for (let k = 0; k < 7; k++) { const px = minX + ((k + 0.5) / 7) * (maxX - minX), pz = minZ - 190 - (k % 3) * 60; cr.push([px, pz, k * 0.9]); }
@@ -246,13 +249,13 @@ export function madridDecor(tr, th, scene, anim, q) {
   for (let i = 8; i < N; i += 11) for (const side of [-1, 1]) { const l = side * (L + 8 + rnd() * 10), px = tr.X[i] - tr.TZ[i] * l, pz = tr.Z[i] + tr.TX[i] * l; if (nearest(px, pz) > L + 4 && free(px, pz, 3) && hwyDist(px, pz) > 22 && !ifemaZone(px, pz)) trees.push([px, pz, 0.7 + rnd() * 0.6, rnd() * 6.28]); }
   const cap = q.density < 1 ? 400 : 1000, every = Math.max(1, Math.ceil(trees.length / cap)), list = trees.filter((_, k) => k % every === 0);
   // ---- verde y gente: setos y flores junto a las aceras, peatones, público en las gradas y balcones ----
-  { const green = (count, a, b) => { const out = []; for (let g = 0; out.length < count && g < count * 10; g++) { const i = Math.floor(rnd() * N), side = rnd() < 0.5 ? -1 : 1, l = (a + rnd() * (b - a)) * side, x = tr.X[i] - tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l; if (nearest(x, z) > L + 1 && free(x, z, 1.2) && hwyDist(x, z) > 22) out.push([x, z, 0, rnd()]); } return out; };
+  { const green = (count, a, b) => { const out = []; for (let g = 0; out.length < count && g < count * 10; g++) { const i = Math.floor(rnd() * N), side = rnd() < 0.5 ? -1 : 1, l = (a + rnd() * (b - a)) * side, x = tr.X[i] - tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l; if (nearest(x, z) > L + 1 && free(x, z, 1.2) && hwyDist(x, z) > 22) out.push([x, z, Math.max(0, tr.Y[i] * (1 - (Math.abs(l) - L - 6) / (2.5 + 1.1 * tr.Y[i]))), rnd()]); } return out; };
     const dn = q.density < 1 ? 0.5 : 1;
-    spriteField(G, 'bush', green(Math.round(1200 * dn), L + 1.4, L + 20), 0.9, 2.2, 1.3);
+    spriteField(G, 'bush', green(Math.round(1200 * dn), L + 7, L + 24), 0.9, 2.2, 1.3);
     spriteField(G, 'poplar', green(Math.round(380 * dn), L + 8, L + 22), 9, 15);
     const people = [], shirt = (k) => SHIRTS[k % SHIRTS.length], toRoad = (i, side) => Math.atan2(tr.TZ[i] * side, -tr.TX[i] * side);
-    for (let i = 3, c = 0; i < N; i += q.density < 1 ? 7 : 4) { if (inTunnel(i, 10)) continue; const side = c++ % 2 ? 1 : -1, l = L + 2.2 + rnd() * 1.8, len = 8 + rnd() * 18, tx = tr.TX[i], tz = tr.TZ[i], x = tr.X[i] - tz * l * side, z = tr.Z[i] + tx * l * side; if (nearest(x + tx * len * 0.5, z + tz * len * 0.5) < L + 1 || nearest(x - tx * len * 0.5, z - tz * len * 0.5) < L + 1 || !free(x, z, 1.5)) continue; const walk = rnd() < 0.62, y = Math.max(0, tr.Y[i] - 0.35); people.push([x, y, z, walk ? Math.atan2(tx, tz) + (rnd() < 0.5 ? Math.PI : 0) : toRoad(i, side) + (rnd() - 0.5) * 0.8, walk ? WALK : crowdType(rnd()), 1.1 + rnd() * 0.8, walk ? len : 0, shirt(people.length)]); }
-    standSpots.forEach((s, k) => { if (q.density < 1 && k % 2) return; for (let t = 0; t < 4; t++) { const lx = 0.72 + Math.floor(rnd() * 7) * 1.45, lz = (rnd() - 0.5) * 11, tier = Math.round((lx - 0.72) / 1.45), yaw = s[3], x = s[0] + Math.cos(yaw) * lx + Math.sin(yaw) * lz, z = s[2] - Math.sin(yaw) * lx + Math.cos(yaw) * lz; people.push([x, s[1] + (tier + 1) * 0.95, z, Math.atan2(-Math.cos(yaw), Math.sin(yaw)) + (rnd() - 0.5) * 0.5, rnd() < 0.3 ? JUMP : CHEER, 0, 0, shirt(people.length + 2)]); } });
+    for (let i = 3, c = 0; i < N; i += q.density < 1 ? 7 : 4) { if (inTunnel(i, 10)) continue; const side = c++ % 2 ? 1 : -1, l = L + 0.9 + rnd() * 4.3, len = 8 + rnd() * 18, tx = tr.TX[i], tz = tr.TZ[i], x = tr.X[i] - tz * l * side, z = tr.Z[i] + tx * l * side; if (nearest(x + tx * len * 0.5, z + tz * len * 0.5) < L + 1 || nearest(x - tx * len * 0.5, z - tz * len * 0.5) < L + 1 || !free(x, z, 1.5) || tr.walk.W[side > 0 ? 1 : 0][i] < 5.5) continue; const walk = rnd() < 0.62, y = tr.Y[i] + (tr.bank ? Math.tan(tr.bank[i]) * side * L : 0); people.push([x, y, z, walk ? Math.atan2(tx, tz) + (rnd() < 0.5 ? Math.PI : 0) : toRoad(i, side) + (rnd() - 0.5) * 0.8, walk ? WALK : crowdType(rnd()), 1.1 + rnd() * 0.8, walk ? len : 0, shirt(people.length)]); }
+    standSpots.forEach((s) => { for (let t = 0, c = q.density < 1 ? 6 : 12; t < c; t++) { const lx = 0.72 + Math.floor(rnd() * 7) * 1.45, lz = (rnd() - 0.5) * 11, tier = Math.round((lx - 0.72) / 1.45), yaw = s[3], x = s[0] + Math.cos(yaw) * lx + Math.sin(yaw) * lz, z = s[2] - Math.sin(yaw) * lx + Math.cos(yaw) * lz; people.push([x, s[1] + (tier + 1) * 0.95, z, Math.atan2(-Math.cos(yaw), Math.sin(yaw)) + (rnd() - 0.5) * 0.5, rnd() < 0.3 ? JUMP : rnd() < 0.85 ? CHEER : IDLE, 0, 0, shirt(people.length + 2)]); } });
     const slabs = [], step4 = Math.PI / 2; for (const list of [types[0], types[1]]) for (const b of list) { if (nearest(b[0], b[1]) > L + 46 || rnd() > dn) continue; let bi = 0, bd = 1e18; for (let i = 0; i < N; i += 5) { const d = (tr.X[i] - b[0]) ** 2 + (tr.Z[i] - b[1]) ** 2; if (d < bd) { bd = d; bi = i; } } let bestN = null, bv = -2; for (let f = 0; f < 4; f++) { const a = b[5] + f * step4, nx = Math.sin(a), nz = Math.cos(a), dx = tr.X[bi] - b[0], dz = tr.Z[bi] - b[1], v = (dx * nx + dz * nz) / (Math.hypot(dx, dz) || 1); if (v > bv) { bv = v; bestN = { a, nx, nz, half: f % 2 ? b[2] / 2 : b[3] / 2, wide: f % 2 ? b[3] : b[2] }; } } const fl = Math.floor(b[4] / 3.3); for (let c = 0; c < 3; c++) { const floor = 2 + Math.floor(rnd() * Math.max(1, fl - 3)), off = (rnd() - 0.5) * (bestN.wide - 4), x = b[0] + bestN.nx * (bestN.half + 0.7) + bestN.nz * off, z = b[1] + bestN.nz * (bestN.half + 0.7) - bestN.nx * off, y = floor * 3.3; slabs.push([x, y, z, bestN.a]); people.push([x, y + 0.12, z, bestN.a, rnd() < 0.55 ? CHEER : IDLE, 0, 0, shirt(people.length + 5)]); } }
     const bal = mergeGeometries([new THREE.BoxGeometry(3.2, 0.2, 1.5), new THREE.BoxGeometry(3.2, 0.9, 0.07).translate(0, 0.5, 0.72)]);
     inst(bal, lam(0xe8e2d6), slabs, (d, s) => { d.position.set(s[0], s[1], s[2]); d.rotation.y = s[3]; });

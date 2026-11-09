@@ -301,11 +301,11 @@ $('ctlMode').onclick = () => { sel.touchMode = sel.touchMode === 'halves' ? 'but
 applyCtl();
 {
   // el freno (#hB) es un pulsador aparte: se puede mantener mientras se gira con la otra mano
-  const hz = $('halves'), hb = $('hB'), hold = new Map(), hx = new Map(), hbrk = new Set();
-  const hUpd = () => { let l = 0, r = 0; for (const [id, v] of hold) { if (v < 0) l = 1; else r = 1; const x = hx.get(id); if (x != null) $(v < 0 ? 'hL' : 'hR').style.setProperty('--x', (v < 0 ? x : x - window.innerWidth / 2) + 'px'); } input.touch.l = l; input.touch.r = r; input.touch.b = hbrk.size ? 1 : 0; $('hL').classList.toggle('on', !!l); $('hR').classList.toggle('on', !!r); hb.classList.toggle('on', hbrk.size > 0); };
+  const hz = $('halves'), hb = $('hB'), hbL = $('hBL'), hold = new Map(), hx = new Map(), hbrk = new Set();
+  const hUpd = () => { let l = 0, r = 0; for (const [id, v] of hold) { if (v < 0) l = 1; else r = 1; const x = hx.get(id); if (x != null) $(v < 0 ? 'hL' : 'hR').style.setProperty('--x', (v < 0 ? x : x - window.innerWidth / 2) + 'px'); } input.touch.l = l; input.touch.r = r; input.touch.b = hbrk.size ? 1 : 0; $('hL').classList.toggle('on', !!l); $('hR').classList.toggle('on', !!r); hbL.classList.toggle('on', hbrk.size > 0); hb.classList.toggle('on', hbrk.size > 0); };
   hz.addEventListener('pointerdown', (e) => {
     e.preventDefault(); sound.init(CARS[sel.car].id);
-    if (e.target.closest && e.target.closest('#hB')) hbrk.add(e.pointerId);
+    if (e.target.closest && e.target.closest('#hB,#hBL')) hbrk.add(e.pointerId);
     else { hold.set(e.pointerId, e.clientX < window.innerWidth / 2 ? -1 : 1); hx.set(e.pointerId, e.clientX); }
     try { hz.setPointerCapture(e.pointerId); } catch (_) { /* sin captura */ }
     hUpd();
@@ -890,9 +890,6 @@ function computeRecords(ti, type, bench) {
   }
   { const gr = store.get('pb.' + ti.key + '.' + ti.tr.seed + '.g:' + g);
     if (gr) { if (gr.lap != null && (lap == null || gr.lap < lap)) lap = gr.lap; if (Array.isArray(gr.sec)) gr.sec.forEach((v, i) => { if (v != null && (sec[i] == null || v < sec[i])) sec[i] = v; }); } }
-  // récord de la pista entre todos los grupos (aparte del récord de tu grupo)
-  { let tl = null, tg = ''; for (const c of CARS) { const r = store.get('pb.' + ti.key + '.' + ti.tr.seed + '.' + c.id); if (r && r.lap != null && (tl == null || r.lap < tl)) { tl = r.lap; tg = c.group; } }
-    S.trkLap = tl != null ? tl : 1e9; S.trkWho = tl != null ? 'Tú' : ''; S.trkGroup = tg; }
   S.recReal = lap != null; S.recWho = lap != null ? 'Tú' : '';
   S.lapRec = lap != null ? lap : bench ? bench.lap : 1e9;
   S.secRec = sec.map((v, i) => (v != null ? v : bench ? bench.sec[i] : 1e9));
@@ -905,8 +902,6 @@ function refreshOnlineRecords(no) {
   const g = p.type.group;
   return getRows(ti).then((res) => {
     if (!res.online || S.raceNo !== no) return;
-    const all = rankRows(res.rows, () => true);
-    if (all.length && all[0].ms / 1000 < S.trkLap) { S.trkLap = all[0].ms / 1000; S.trkWho = all[0].you ? 'Tú' : all[0].name; S.trkGroup = groupIdOfCar(all[0].carId); }
     const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === g);
     if (list.length) { const t = list[0].ms / 1000; if (!S.recReal || t < S.lapRec) { S.lapRec = t; S.recReal = true; S.recWho = list[0].you ? 'Tú' : list[0].name; } }
     updateRecPanel();
@@ -916,7 +911,6 @@ function updateRecPanel() {
   const g = groupName((S.player ? S.player.type : CARS[sel.car]).group).toUpperCase();
   setText('recLabel', 'RÉCORD · ' + g); setText('recLap', S.lapRec < 1e8 ? fmt(S.lapRec) : '--'); setText('recWho', S.recReal ? S.recWho : 'REFERENCIA');
   for (let k = 0; k < 3; k++) setText('rs' + k, S.secRec && S.secRec[k] < 1e8 ? fmtS(S.secRec[k]) : '--');
-  setText('trkLap', S.trkLap < 1e8 ? fmt(S.trkLap) : '--'); setText('trkWho', S.trkLap < 1e8 ? (S.trkWho || '') + (S.trkGroup ? ' · ' + groupName(S.trkGroup) : '') : '');
 }
 function sectorDone(i, t) {
   if (S.secInvalid) { S.secInvalid = false; return; }
@@ -980,7 +974,6 @@ function onPlayerLap(c, lt, done) {
       markDaily();
     }
     if (lt < S.lapRec) { S.lapRec = lt; S.recReal = true; S.recWho = 'Tú'; updateRecPanel(); }
-    if (lt < S.trkLap) { S.trkLap = lt; S.trkWho = 'Tú'; S.trkGroup = c.type.group; updateRecPanel(); }
     if (S.mode === 'tt') { const tk = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.track', tb = store.get(tk); if (!tb || lt < tb.time) store.set(tk, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id, name: lb.name }); } // y el mejor de la pista, para el fantasma dorado
     if (S.mode === 'tt' && newPB) { // el fantasma gris pasa a ser esta vuelta (mejor de la categoría); si además es la mejor de todos, pasa a dorado
       const showGray = sel.ghostMine !== false, showGold = sel.ghostBest !== false, isGold = S.goldTime == null || lt < S.goldTime - 1e-6;

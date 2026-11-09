@@ -7,6 +7,7 @@ import { getSponsorTexture } from './sponsors.js';
 import { madridDecor } from './madrid.js';
 import { fillWorld, backdrop, fillerBirds } from './filler.js';
 import { npcClock } from './npc.js';
+import { computeWalk, walkwayMesh } from './walkway.js';
 
 const col = (hex) => new THREE.Color(hex);
 
@@ -2289,7 +2290,7 @@ function scenery(tr, th, scene, rng, q) {
   while (spots.length < want && guard++ < want * 25) {
     const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1;
     const near = th.treeNear != null, base = near ? WALL + th.treeNear * 0.5 : WALL + 14 + tr.Y[i] * 1.2;
-    const l = base + Math.pow(rng(), near ? 1.9 : 1.6) * (near ? 95 : 140);
+    const l = Math.max(base + Math.pow(rng(), near ? 1.9 : 1.6) * (near ? 95 : 140), WALL + (tr.walk ? tr.walk.W[side > 0 ? 1 : 0][i] : 0) + 0.8);
     if (near && tr.open && tr.open[i] && l - base < 55) continue; // zonas abiertas: sin árboles junto a la pista
     const x = tr.X[i] + -tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side;
     // junto a las vallas los árboles se asientan sobre el talud de la pista elevada
@@ -2560,7 +2561,7 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
   const nearPts = (count, lMin, lMax) => {
     const out = [];
     for (let g = 0; out.length < count && g < count * 30; g++) {
-      const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1, l = lMin + rng() * (lMax - lMin);
+      const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1, l = Math.max(lMin + rng() * (lMax - lMin), WALL + (tr.walk ? tr.walk.W[side > 0 ? 1 : 0][i] : 0) + 0.8);
       const x = tr.X[i] + -tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side;
       if (clearance(x, z, WALL + 4)) out.push([x, z, rng() * 6.283, 0.75 + rng() * 0.55, groundAt(i, l)]);
     }
@@ -2840,7 +2841,9 @@ export function buildWorld(tr, th, opt = {}) {
     weatherMesh.instanceMatrix.needsUpdate = true;
   };
 
+  computeWalk(tr, th);
   const road = roadMesh(tr, th, q.stride); scene.add(road);
+  { const wm = walkwayMesh(tr, th, q.stride, foldSafe(tr)); if (wm) scene.add(wm); }
   for (const t of tr.tunnels || []) scene.add(tunnelMesh(tr, t, th));
   trackFeatures(tr, th, scene, q);
   if (th.urban) { const urb = urbanMesh(tr, th); q.urbanInfo = urb.userData; scene.add(urb); }

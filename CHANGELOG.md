@@ -2,6 +2,15 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.73
+- Paso de peatones propio en cada circuito (aceras en Madrid, losas en Mónaco, caminos de tierra, arena, nieve pisada, tablones en Perú…) a la altura de la pista, con talud de hierba hasta el terreno: nadie flota.
+- Más público, sobre todo animando en las gradas.
+- Madring: alturas progresivas sin escalones y sin saltos en la chicane.
+- Móvil: freno también a la izquierda, con icono y botones mucho más discretos.
+- HUD más grande en móvil y ordenador: tiempos, sectores, minimapa y panel de récord.
+- El récord muestra quién lo tiene en tu categoría; se quita el récord global de pista.
+- Carteles de Madrid con la tipografía del juego.
+
 ## 0.0.72
 - Vallas y pianos ya no se pliegan hacia la pista en curvas de 90° y horquillas: el vallado interior termina en un vértice limpio y el piano se estrecha en las curvas muy cerradas.
 - Exteriores aún más frondosos en todos los circuitos, con flores, más arbustos y más árboles.

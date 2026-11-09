@@ -1142,6 +1142,23 @@ body.mobile .grid,body.mobile .card{touch-action:pan-x pan-y!important}
 #homeBoard #hbAll{flex:none;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:8px;color:#e4ebf8;font:inherit;font-size:14px;padding:5px 9px;cursor:pointer;touch-action:manipulation}
 #homeBoard .lbt td{padding:4px 8px}#homeBoard .lbt td.rk{width:34px}#homeBoard .lbt td.rk i{width:22px;height:22px;font-size:13px}#homeBoard .lbt td.nm b{font-size:15px}#homeBoard .lbt td.nm small{font-size:11px}#homeBoard .lbt td.tm{font-size:15px}#homeBoard .lbt td.gp{font-size:12px;width:56px}
 #pauseBoard[hidden]{display:none}
+/* ===== v0.0.73: HUD grande y legible, frenos discretos ===== */
+#halves>#hB,#halves>#hBL{position:absolute;flex:none;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 3vh);width:clamp(76px,17vh,104px);height:clamp(76px,17vh,104px);margin:0;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);backdrop-filter:none;-webkit-touch-callout:none;user-select:none}
+#halves>#hB{right:max(14px,env(safe-area-inset-right));left:auto}#halves>#hBL{left:max(14px,env(safe-area-inset-left));right:auto}
+#halves>.hbk svg{width:62%;height:62%;pointer-events:none}#halves>.hbk::after{display:none}
+#halves>#hB.on,#halves>#hBL.on{background:rgba(255,70,70,.32);border-color:rgba(255,255,255,.65);color:#fff}
+#hud #time,body.mobile #hud #time{line-height:1}
+body:not(.mobile) #hud #h-time{min-width:640px;padding:10px 40px 12px}body:not(.mobile) #hud #time{font-size:70px}body:not(.mobile) #hud #best{font-size:22px}body:not(.mobile) #hud #delta{font-size:30px}
+body:not(.mobile) #hud #secs .sec{font-size:22px;min-height:46px}body:not(.mobile) #hud .sec span{font-size:22px}body:not(.mobile) #hud .sec span small{font-size:17px}
+body:not(.mobile) #hud #mini{width:310px;height:310px}
+body:not(.mobile) #hud #h-lap{top:112px;min-width:280px}body:not(.mobile) #hud #h-lap .lr{font-size:19px}body:not(.mobile) #hud #h-lap .lr b{font-size:30px}body:not(.mobile) #hud #h-lap .lx b{font-size:24px}
+body:not(.mobile) #hud #h-rec{top:226px;min-width:280px;padding:8px 26px 10px 14px}body:not(.mobile) #hud #h-rec small{font-size:17px}body:not(.mobile) #hud #h-rec b{font-size:40px}body:not(.mobile) #hud #h-rec>span{font-size:19px;color:#ffd34e}body:not(.mobile) #hud #h-rec .rs{gap:14px}body:not(.mobile) #hud #h-rec .rs small{font-size:15px}body:not(.mobile) #hud #h-rec .rs b{font-size:21px}
+body.mobile #hud #h-time{min-width:min(52vw,440px);padding:4px 16px 6px}body.mobile #hud #time{font-size:42px}body.mobile #hud #delta{font-size:20px}
+body.mobile #hud #secs{min-width:100%}body.mobile #hud .sec{min-height:28px}body.mobile #hud .sec span small{font-size:15px!important}
+body.mobile #hud #mini{width:136px;height:136px;opacity:.95}
+body.mobile #pbtn{top:144px}body.mobile #rbtn{top:188px}
+body.mobile #hud #h-rec{top:8px;left:0;padding:5px 18px 6px 10px}body.mobile #hud #h-rec b{font-size:26px}body.mobile #hud #h-rec>span{display:block!important;margin-left:0;font-size:14px;color:#ffd34e}body.mobile #hud #h-rec .rs b{font-size:14px}
+@media (orientation:portrait){body.mobile #hud #h-time{min-width:58vw}body.mobile #hud #h-rec{top:112px}body.mobile #hud #mini{top:112px}body.mobile #pbtn{top:252px}body.mobile #rbtn{top:296px}}
 </style>
 </head>
 <body>
@@ -1152,7 +1169,7 @@ body.mobile .grid,body.mobile .card{touch-action:pan-x pan-y!important}
   <div id="h-pos"><b id="pos">1</b><span>/4</span></div>
   <div id="h-lap"><div class="lr">VUELTA <b id="lap">1/3</b></div><div class="lr lx">ÚLTIMA <b id="lastLap">--</b></div><div id="h-prog"><i id="progBar"></i></div></div>
   <div id="tower"></div>
-  <div id="h-rec"><small id="recLabel">RÉCORD</small><b id="recLap">--</b><span id="recWho"></span><div class="rs"><i><small>S1</small><b id="rs0">--</b></i><i><small>S2</small><b id="rs1">--</b></i><i><small>S3</small><b id="rs2">--</b></i></div><div class="trk"><small>♛ RÉCORD PISTA</small><b id="trkLap">--</b><span id="trkWho"></span></div></div>
+  <div id="h-rec"><small id="recLabel">RÉCORD</small><b id="recLap">--</b><span id="recWho"></span><div class="rs"><i><small>S1</small><b id="rs0">--</b></i><i><small>S2</small><b id="rs1">--</b></i><i><small>S3</small><b id="rs2">--</b></i></div></div>
   <div id="dyHud"></div><div id="h-time"><div id="time">0:00.00</div><div id="best">MEJOR --</div><div id="delta"></div>
     <div id="secs"><div class="sec" id="s0"><b>S1</b><span>--</span></div><div class="sec" id="s1"><b>S2</b><span>--</span></div><div class="sec" id="s2"><b>S3</b><span>--</span></div></div>
   </div>
@@ -1168,7 +1185,7 @@ body.mobile .grid,body.mobile .card{touch-action:pan-x pan-y!important}
   <div id="help"><b>↑/W</b> acelerar · <b>↓/S</b> frenar · <b>←→</b> girar<br><b>ESPACIO</b> freno de mano · <b>R</b> volver a pista · <b>C</b> cámara · <b>M</b> sonido · <b>ESC</b> pausa</div>
 </div>
 <button id="pbtn" class="hidden" aria-label="Pausa">❚❚</button><button id="rbtn" class="hidden" aria-label="Reiniciar (T)">↺</button>
-<div id="halves"><div id="hL"></div><div id="hR"></div><div id="hB">FRENO</div></div>
+<div id="halves"><div id="hL"></div><div id="hR"></div><div id="hBL" class="hbk" aria-label="Freno"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><circle cx="24" cy="24" r="11"/><path d="M24 17v9"/><circle cx="24" cy="31" r=".6" fill="currentColor"/><path d="M9.5 12a19 19 0 0 0 0 24M38.5 12a19 19 0 0 1 0 24"/></svg></div><div id="hB" class="hbk" aria-label="Freno"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><circle cx="24" cy="24" r="11"/><path d="M24 17v9"/><circle cx="24" cy="31" r=".6" fill="currentColor"/><path d="M9.5 12a19 19 0 0 0 0 24M38.5 12a19 19 0 0 1 0 24"/></svg></div></div>
 <div id="touch" class="hidden"><div class="t" id="tL">IZQ</div><div class="t" id="tR">DER</div><div class="t" id="tG">ACEL</div><div class="t" id="tB">FRENO</div><div class="t" id="tD">F.M.</div></div>
 <div id="rotate"><div>↻<br>Gira el móvil<br><small>El juego se disfruta en horizontal</small></div></div>
 
