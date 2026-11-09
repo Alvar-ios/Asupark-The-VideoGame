@@ -890,9 +890,10 @@ body #hud #mini.follow{border-radius:0!important}
 #globeSel{position:relative;margin:0 0 12px}
 #worldMap{position:relative;width:100%;height:clamp(300px,46vh,400px);border-radius:16px;overflow:hidden;background:radial-gradient(ellipse at 38% 50%,rgba(20,50,110,.5),rgba(4,8,20,.55) 70%);border:1px solid rgba(255,255,255,.1);touch-action:pan-y;cursor:grab}
 #worldMap:active{cursor:grabbing}.gl-cv{position:absolute;inset:0;width:100%;height:100%;display:block}.gl-pins{position:absolute;inset:0;pointer-events:none}
-.gl-pin{position:absolute;left:0;top:0;width:30px;height:30px;padding:0;border:2px solid #fff;border-radius:50%;background:#14203c;display:grid;place-items:center;cursor:pointer;pointer-events:auto;box-shadow:0 0 0 3px rgba(226,40,60,.55),0 3px 10px rgba(0,0,0,.6);transition:opacity .2s}
-.gl-pin svg{width:20px;height:14px;border-radius:2px}.gl-pin::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:9px;background:#fff;transform:translateX(-50%);opacity:.8}
-.gl-pin.on{border-color:#ffc928;width:38px;height:38px;box-shadow:0 0 0 4px rgba(255,201,40,.45),0 0 18px rgba(255,201,40,.6)}.gl-pin.on svg{width:26px;height:18px}
+.gl-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.gl-lines line{stroke:rgba(255,255,255,.75);stroke-width:1.4}.gl-lines circle{fill:#fff;stroke:rgba(10,16,34,.8);stroke-width:1}.gl-lines .on{stroke:#ffc928}.gl-lines circle.on{fill:#ffc928}
+.gl-pin{position:absolute;left:0;top:0;display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:3px 9px 3px 5px;border:1.5px solid rgba(255,255,255,.85);border-radius:999px;background:#14203c;color:#fff;font:inherit;font-size:14px;line-height:1;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;cursor:pointer;pointer-events:auto;box-shadow:0 3px 10px rgba(0,0,0,.6);transition:opacity .2s;touch-action:manipulation}
+.gl-pin svg{width:20px;height:14px;border-radius:2px;flex:none}
+.gl-pin.on{border-color:#ffc928;background:#3a2c08;color:#ffd34e;box-shadow:0 0 0 3px rgba(255,201,40,.4),0 0 14px rgba(255,201,40,.5)}
 #contPanel{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:262px;max-height:calc(100% - 24px);overflow:auto;background:rgba(9,14,38,.92);border:1px solid #e2283c;box-shadow:0 0 0 1px rgba(226,40,60,.25),0 10px 30px rgba(0,0,0,.5);clip-path:polygon(0 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%)}
 #contPanel .cp-tabs{display:flex;border-bottom:1px solid rgba(226,40,60,.6)}#contPanel .cp-tabs button{flex:1;padding:9px 4px;border:0;background:transparent;color:#8e9bbd;font:inherit;font-size:15px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
 #contPanel .cp-tabs button.on{color:#fff;background:rgba(226,40,60,.28);box-shadow:inset 0 -3px #e2283c}
@@ -919,6 +920,10 @@ body.mobile #songList>*{min-height:46px}
 body.mobile .stat{font-size:10px}
 body.mobile button,body.mobile .pick,body.mobile .cp-row{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 body.mobile input,body.mobile select,body.mobile textarea{font-size:16px}
+/* selector de circuitos en móvil: lista bajo el globo, sin scroll anidado, para deslizar la pantalla entera */
+body.mobile #contPanel{position:static;transform:none;width:auto;max-height:none;overflow:visible;margin-top:8px;clip-path:none}
+body.mobile #worldMap{height:clamp(240px,42vh,340px)}body.mobile .gl-pin{font-size:12px;min-height:25px;padding:2px 7px 2px 4px;gap:4px}body.mobile .gl-pin svg{width:16px;height:11px}
+body.mobile #contPanel,body.mobile #contPanel *{touch-action:pan-y}
 /* ===== v0.0.59: móvil vertical compacto — cabecera de circuito, mapa, coches, barra de pintura ===== */
 @media (max-width:760px) and (orientation:portrait){
   #trHero{grid-template-columns:minmax(0,1fr) 42%;grid-template-areas:"flag logo" "name logo" "info map" "go go";gap:8px 10px;padding:10px;margin:0 0 8px;border-radius:14px;align-items:center}
@@ -1111,6 +1116,7 @@ body.daily #dyHud{display:flex}body.daily #h-lap{display:none!important}
 body.mobile .grid,body.mobile .card{touch-action:pan-x pan-y!important}
 #menu #flyout,#menu #flyout *{touch-action:pan-x pan-y}
 #board .tabs{touch-action:pan-x pan-y}
+#menu #flyout #worldMap,#menu #flyout #worldMap .gl-cv{touch-action:pan-y}
 .overlay input[type=range],body.mobile #settings input[type=range]{touch-action:pan-y!important}
 </style>
 </head>

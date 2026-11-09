@@ -2,6 +2,13 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.71
+- Madring: mismo dibujo del plano con curvas mucho más largas y duras, rectas entre ellas, solo tres chicanes y pista más estrecha (como Mónaco). 2,05 km.
+- Selva Amazónica: otra vuelta más cerrada y técnica, con horquillas y pista estrecha (2,04 km). Tiempos anteriores de Perú y Madring descartados.
+- Exteriores de todos los circuitos mucho más llenos con elementos ligeros: fondos en anillo, bosques, casas, campers, rocas, molinos, público, bandadas de pájaros y detalles propios de cada país.
+- Madrid: menos Celonis (solo sus dos pórticos), vallas de Burger King, más banderas de la Comunidad, cartel de la curva de Valdebebas legible y ciudad mucho más densa con coches, farolas y grúas.
+- Selector de circuitos: el globo ya no oscila, las etiquetas llevan nombre y se separan solas para poder pulsar cada circuito, y en móvil la lista va bajo el globo y se desliza con normalidad.
+
 ## 0.0.70
 - Circuito nuevo: Madring · Madrid (España, en el globo). Calcado del plano oficial y encogido a 1,94 km para que sea técnico: meta junto a IFEMA, Ribera del Sena, dos túneles bajo la M-11 y la curva peraltada de Valdebebas.
 - Entorno propio: pabellones de IFEMA, gradas donde marca el plano, M-11 con tráfico, Cuatro Torres, torres KIO, Puerta de Alcalá, bloques madrileños y parque de Valdebebas.

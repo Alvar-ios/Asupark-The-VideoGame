@@ -5,6 +5,7 @@ import { SURF, zoneAt, smoothstep, patchBoundary, puddleParams, mudParams, MARIO
 import { rngFromSeed } from './rng.js';
 import { getSponsorTexture } from './sponsors.js';
 import { madridDecor } from './madrid.js';
+import { fillWorld, backdrop, fillerBirds } from './filler.js';
 
 const col = (hex) => new THREE.Color(hex);
 
@@ -2496,7 +2497,7 @@ function scenery(tr, th, scene, rng, q) {
 // Elementos fuera de las vallas, según el paisaje de cada circuito: relieves, rocas, mesetas, cactus, bosques y pequeños poblados.
 // Se añade después de la decoración existente, así que no altera la colocación de árboles ni montañas.
 function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
-  if (th.id === 'madring') { windLeaves.length = 0; return; } // su entorno lo construye madridDecor
+  if (th.id === 'madring') { windLeaves.length = 0; backdrop(scene, 'city', cxm, czm, R, 520); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; } // el resto de su entorno lo construye madridDecor
   const id = th.id, dens = q.density, dummy = new THREE.Object3D();
   windLeaves.length = 0; // cada circuito construido empieza sin hojas de la carrera anterior
   // Amazonas: lagos junto a la pista. Se colocan antes que nada y el resto de elementos los esquiva
@@ -2688,7 +2689,8 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     put(new THREE.CircleGeometry(0.55, 9).rotateX(-Math.PI / 2), lam(0x3e8a3a, 0.9), pads, (d, s2) => { d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); d.scale.set(s2[3], 1, s2[3]); }, null, false);
   }
 
-  if (id === 'amazonas') makeBirds(tr, scene, dens < 1 ? 5 : 7);
+  if (id === 'amazonas' || fillerBirds(id)) makeBirds(tr, scene, dens < 1 ? 5 : 7);
+  fillWorld(tr, th, scene, rng, q, clearance, cxm, czm, R);
   // hojas al viento: en los circuitos de bosque y valle, con pocas hojas en móvil
   if (id === 'spa' || id === 'valle' || id === 'pruebas' || id === 'amazonas') makeLeaves(tr, scene, Math.max(30, Math.round((id === 'spa' ? 110 : 70) * dens)), id === 'valle' ? [0x6fa83a, 0x8cc04a, 0xc9a23a, 0x5e9a32] : [0x4f8a2e, 0x6e9b2f, 0x8f6a2a, 0x3f7a2a]);
 }

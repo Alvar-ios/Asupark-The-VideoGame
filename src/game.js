@@ -34,8 +34,8 @@ const store = {
   set(k, v) { try { localStorage.setItem('dr.' + k, JSON.stringify(v)); } catch (e) { /* sin almacenamiento */ } },
 };
 const fmtS = (t) => (t == null ? '--' : t >= 60 ? fmt(t) : t.toFixed(3));
-// Mario Circuit (todas las categorías), Spa en F1, Selva Amazónica (rediseñada el 9-11) y Fórmula 0 cambiaron de trazado: sus tiempos anteriores a cada cambio no cuentan
-const cutOf = (trackKey, group) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1') ? '2026-11-04T00:00:00Z' : trackKey === 'amazonas' ? '2026-11-09T16:05:00Z' : trackKey === 'karting' ? '2026-11-05T17:45:00Z' : null);
+// Mario Circuit (todas las categorías), Spa en F1, Selva Amazónica, Madring (rediseñados el 9-11) y Fórmula 0 cambiaron de trazado: sus tiempos anteriores a cada cambio no cuentan
+const cutOf = (trackKey, group) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1') ? '2026-11-04T00:00:00Z' : trackKey === 'amazonas' || trackKey === 'madring' ? '2026-11-09T17:32:00Z' : trackKey === 'karting' ? '2026-11-05T17:45:00Z' : null);
 const oldLayout = (trackKey, group, at) => { const c = cutOf(trackKey, group); return !!c && (!at || Date.parse(at) < Date.parse(c)); };
 const layoutSince = (trackKey, group) => cutOf(trackKey, group);
 const fmt = (t) => { if (t == null || !isFinite(t)) return '--'; const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s < 10 ? '0' : ''}${s.toFixed(2)}`; };
@@ -224,7 +224,7 @@ function buildMap() {
   const pick = (i) => { sel.track = i; sel.carId = CARS[sel.car].id; wmCont = contOf(tracks[i]).id; store.set('sel', sel); buildMenu(); };
   const here = tracks.map((t, i) => [t, i]).filter(([t]) => t.key !== 'daily' && contOf(t) === activeC);
   globe.focus(activeC.ll[0], activeC.ll[1], activeC.z);
-  globe.setPins(tracks.map((t, i) => t.key === 'daily' ? null : t).map((t, i) => !t ? null : { t, i }).filter(Boolean).map(({ t, i }) => { const ll = MAP_LL[t.th.id] || MAP_LL.pruebas, daily = t.key === 'daily'; return { lat: ll[0] + (daily ? .7 : 0), lon: ll[1] + (daily ? .9 : 0), on: i === sel.track, title: t.name, html: flagSvg(countryOf(t)[0]), onClick: () => pick(i) }; }));
+  globe.setPins(tracks.map((t, i) => t.key === 'daily' ? null : t).map((t, i) => !t ? null : { t, i }).filter(Boolean).map(({ t, i }) => { const ll = MAP_LL[t.th.id] || MAP_LL.pruebas, daily = t.key === 'daily'; return { lat: ll[0] + (daily ? .7 : 0), lon: ll[1] + (daily ? .9 : 0), on: i === sel.track, title: t.name, label: t.name.replace(/ · .*$/, '').replace(/^Circuito de /, ''), html: flagSvg(countryOf(t)[0]), onClick: () => pick(i) }; }));
   $('contPanel').innerHTML = `<div class="cp-tabs">${CONTS.map((c) => `<button type="button" data-c="${c.id}" class="${c === activeC ? 'on' : ''}">${c.name}</button>`).join('')}</div>` + here.map(([t, i]) => `<button type="button" class="cp-row${i === sel.track ? ' on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span><span>${t.key === 'daily' ? 'Pista del día' : t.name}<small>${countryOf(t)[1]} · ${(t.tr.len / 1000).toFixed(1)} km</small></span>${t.key === 'daily' ? '<b>★</b>' : ''}</button>`).join('');
   $('contPanel').querySelectorAll('.cp-tabs button').forEach((b) => { b.onclick = () => { wmCont = b.dataset.c; buildMap(); }; });
   $('contPanel').querySelectorAll('.cp-row').forEach((b) => { b.onclick = () => pick(+b.dataset.i); });

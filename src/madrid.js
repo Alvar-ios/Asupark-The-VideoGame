@@ -33,9 +33,17 @@ const celonisTex = (w, h) => canvasTex(`celonis${w}`, w, h, (x, W, H, done) => w
   x.fillStyle = '#5cff4f'; x.fillRect(0, H * 0.7, W, H * 0.3);
   x.fillStyle = '#000000'; x.font = `800 ${H * 0.23}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(DATE, W / 2, H * 0.855);
 }, done));
-const textTex = (txt, bg, fg, w = 1024, h = 128) => canvasTex(`t:${txt}`, w, h, (x, W, H) => {
+// Burger King: tres logotipos sobre crema con franjas rojas
+const burgerTex = (w, h) => canvasTex(`bk${w}`, w, h, (x, W, H, done) => withLogo('burgerking', (img) => {
+  x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H); x.fillStyle = '#d62300'; x.fillRect(0, 0, W, H * 0.05); x.fillRect(0, H * 0.95, W, H * 0.05);
+  if (img) { const lh = H * 0.82, lw = lh * img.naturalWidth / img.naturalHeight; for (const c of [0.17, 0.5, 0.83]) x.drawImage(img, W * c - lw / 2, H * 0.09, lw, lh); }
+}, done));
+const textTex = (txt, bg, fg, w = 1024, h = 128) => canvasTex(`t:${txt}:${w}`, w, h, (x, W, H) => {
   x.fillStyle = bg; x.fillRect(0, 0, W, H); x.strokeStyle = fg; x.lineWidth = H * 0.05; x.strokeRect(H * 0.07, H * 0.07, W - H * 0.14, H - H * 0.14);
-  x.fillStyle = fg; x.font = `800 ${H * 0.56}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, W / 2, H * 0.53);
+  // el texto se ajusta siempre al cartel: se reduce hasta caber y admite varias líneas
+  const lines = txt.split('\n'), maxW = W * 0.9; let fs = (H * 0.8) / lines.length;
+  x.font = `800 ${fs}px ${FONT}`; const wide = Math.max(...lines.map((l) => x.measureText(l).width)); if (wide > maxW) fs *= maxW / wide;
+  x.fillStyle = fg; x.font = `800 ${fs}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; lines.forEach((l, k) => x.fillText(l, W / 2, H / 2 + (k - (lines.length - 1) / 2) * fs * 1.08));
 });
 // bandera de la Comunidad de Madrid: carmesí con siete estrellas blancas (4 + 3)
 const flagTex = () => canvasTex('flagmad', 512, 341, (x, W, H) => {
@@ -108,13 +116,13 @@ export function madridDecor(tr, th, scene, anim, q) {
   const gantryI = GANTRIES.map(([x, y]) => idxOf(x, y));
   GANTRIES.forEach(([, , kind], n) => {
     const i = gantryI[n], g = new THREE.Group(), w = 2 * (L + 1.1), h = 4.4; g.position.set(tr.X[i], tr.Y[i], tr.Z[i]); g.rotation.y = Math.atan2(tr.TX[i], tr.TZ[i]);
-    const mat = sign(kind === 'traced' ? tracedTex(1600, 368) : kind === 'celonis' ? celonisTex(1600, 368) : textTex('CURVA DE VALDEBEBAS', '#0b2a5c', '#ffffff', 1600, 368));
+    const mat = sign(kind === 'traced' ? tracedTex(1600, 368) : kind === 'celonis' ? celonisTex(1600, 368) : textTex('CURVA DE\nVALDEBEBAS', '#0b2a5c', '#ffffff', 1600, 368));
     const steel = lam(0x262a33), beam = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.7), [steel, steel, steel, steel, mat, mat]); beam.position.y = 8.6; g.add(beam);
     for (const sd of [-1, 1]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.9, 11, 0.9), steel); p.position.set(sd * (L + 1.1), 5.5, 0); g.add(p); }
     G.add(g);
   });
 
-  // ---- vallas grandes junto a la pista, giradas hacia el piloto que llega; dos de Traced por cada una de Celonis ----
+  // ---- vallas grandes junto a la pista, giradas hacia el piloto que llega; dos de Traced por cada una de Burger King (Celonis solo en sus dos pórticos) ----
   const BW = 13, BH = 4.7, boards = [[], []], A = 0.49, cA = Math.cos(A), sA = Math.sin(A);
   let bn = 0;
   for (let i0 = 40; i0 < N - 40; i0 += 58) {
@@ -133,11 +141,11 @@ export function madridDecor(tr, th, scene, anim, q) {
   const allBoards = boards[0].concat(boards[1]), bottomM = 2.6;
   inst(new THREE.BoxGeometry(BW + 0.5, BH + 0.5, 0.3), lam(0x1a1d24), allBoards, (d, s) => { d.position.set(s[0], s[3] + bottomM + BH / 2, s[1]); d.rotation.y = s[2]; }, null, true);
   inst(new THREE.BoxGeometry(0.45, 1, 0.45).translate(0, 0.5, 0), lam(0x2c3038), allBoards.flatMap((s) => [-1, 1].map((sd) => [s[0] + Math.cos(s[2]) * sd * BW * 0.36, s[1] - Math.sin(s[2]) * sd * BW * 0.36, s[3] + bottomM])), (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.y = s[2]; });
-  [tracedTex(1024, 370), celonisTex(1024, 370)].forEach((t, k) => inst(new THREE.PlaneGeometry(BW, BH), sign(t), boards[k], (d, s) => { d.position.set(s[0] + s[4] * 0.17, s[3] + bottomM + BH / 2, s[1] + s[5] * 0.17); d.rotation.y = s[2]; }));
+  [tracedTex(1024, 370), burgerTex(1024, 370)].forEach((t, k) => inst(new THREE.PlaneGeometry(BW, BH), sign(t), boards[k], (d, s) => { d.position.set(s[0] + s[4] * 0.17, s[3] + bottomM + BH / 2, s[1] + s[5] * 0.17); d.rotation.y = s[2]; }));
 
   // ---- banderas de la Comunidad de Madrid ----
   const flags = [];
-  for (let i = 18, n = 0; i < N - 10; i += 70, n++) { if (inTunnel(i, 12)) continue; const side = n % 2 ? 1 : -1, l = side * (L + 0.9); flags.push([tr.X[i] - tr.TZ[i] * l, tr.Z[i] + tr.TX[i] * l, topY(i, side), Math.atan2(tr.TX[i], tr.TZ[i]) + Math.PI / 2 - side * 0.5]); }
+  for (let i = 18, n = 0; i < N - 10; i += 38, n++) { if (inTunnel(i, 12)) continue; const side = n % 2 ? 1 : -1, l = side * (L + 0.9); flags.push([tr.X[i] - tr.TZ[i] * l, tr.Z[i] + tr.TX[i] * l, topY(i, side), Math.atan2(tr.TX[i], tr.TZ[i]) + Math.PI / 2 - side * 0.5]); }
   for (let k = 0; k < 7; k++) { const i = 14 + k * 7, l = L + 0.9; flags.push([tr.X[i] - tr.TZ[i] * l, tr.Z[i] + tr.TX[i] * l, tr.Y[i], Math.atan2(tr.TX[i], tr.TZ[i]) + Math.PI / 2 - 0.5]); }
   const FH = 12, FW = 4.8, FT = 3.2;
   inst(new THREE.CylinderGeometry(0.07, 0.13, 1, 8).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ color: 0xdfe4ea, metalness: 0.7, roughness: 0.35 }), flags, (d, s) => { d.position.set(s[0], 0, s[1]); d.scale.y = s[2] + FH; });
@@ -209,23 +217,32 @@ export function madridDecor(tr, th, scene, anim, q) {
   { const x = 1150 * sc, z = 760 * sc; if (nearest(x, z) > 48) { const a = new THREE.Mesh(new THREE.CylinderGeometry(48, 54, 22, 40, 1, true).translate(0, 11, 0), new THREE.MeshLambertMaterial({ color: 0xe6e8ec, side: THREE.DoubleSide })); a.position.set(x, 0, z); a.scale.z = 0.72; G.add(a); noBuild.push([x, z, 66]); } }
 
   // ---- ciudad: bloques con fachada en textura (3 materiales, sin ventanas sueltas, coste muy bajo) ----
-  const step = q.density < 1 ? 60 : 44, types = [[], [], []]; let hash = 1;
+  const step = q.density < 1 ? 44 : 30, types = [[], [], []]; let hash = 1;
   const rnd = () => { hash = (hash * 16807) % 2147483647; return (hash & 0xffff) / 0xffff; };
-  for (let x = minX - 340; x <= maxX + 340; x += step) for (let z = minZ - 320; z <= maxZ + 320; z += step) {
-    const px = x + (rnd() - 0.5) * 12, pz = z + (rnd() - 0.5) * 12, w = 16 + rnd() * 12, d = 14 + rnd() * 12;
-    if (insideLoop(px, pz) || nearest(px, pz) < L + 22 || hwyDist(px, pz) < 26 + w || noBuild.some((o) => (o[0] - px) ** 2 + (o[1] - pz) ** 2 < o[2] * o[2]) || !free(px, pz, 16)) continue;
+  for (let x = minX - 500; x <= maxX + 500; x += step) for (let z = minZ - 480; z <= maxZ + 480; z += step) {
+    const px = x + (rnd() - 0.5) * 12, pz = z + (rnd() - 0.5) * 12, w = 15 + rnd() * 12, d = 13 + rnd() * 12;
+    if (insideLoop(px, pz) || nearest(px, pz) < L + 18 || hwyDist(px, pz) < 26 + w || noBuild.some((o) => (o[0] - px) ** 2 + (o[1] - pz) ** 2 < o[2] * o[2]) || !free(px, pz, 16)) continue;
     const t = rnd(), k = t < 0.45 ? 0 : t < 0.86 ? 1 : 2, h = k === 2 ? 34 + rnd() * 42 : 15 + rnd() * 24;
     types[k].push([px, pz, w, d, h, (Math.floor(rnd() * 4) * Math.PI) / 2 + (rnd() - 0.5) * 0.2]);
   }
   const roofMat = lam(0xa89e8e);
   facades().forEach((t, k) => { const mf = new THREE.MeshLambertMaterial({ map: t }); inst(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), [mf, mf, roofMat, roofMat, mf, mf], types[k], (dm, s) => { dm.position.set(s[0], 0, s[1]); dm.rotation.y = s[5]; dm.scale.set(s[2], s[4], s[3]); }); });
 
+  // ---- vida de ciudad: césped del interior, coches aparcados, farolas, grúas de Valdebebas ----
+  { const sh = new THREE.Shape(); for (let i = 0; i < N; i += 6) i ? sh.lineTo(tr.X[i], -tr.Z[i]) : sh.moveTo(tr.X[i], -tr.Z[i]); const m = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), lam(0x6f8f48)); m.position.y = 0.03; G.add(m); }
+  { const cars = [], lamps = []; for (let i = 6; i < N; i += 7) { if (inTunnel(i, 8)) continue; const side = i % 14 < 7 ? 1 : -1, l = side * (L + 4.5), x = tr.X[i] - tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l; if (i % 28 < 7) { const ll = -side * (L + 1.5), lx = tr.X[i] - tr.TZ[i] * ll, lz = tr.Z[i] + tr.TX[i] * ll; if (nearest(lx, lz) > L + 1 && free(lx, lz, 1)) lamps.push([lx, lz, tr.Y[i], Math.atan2(tr.TX[i], tr.TZ[i]) + (ll > 0 ? Math.PI : 0)]); } if (nearest(x, z) > L + 3 && free(x, z, 3) && !insideLoop(x, z) && hwyDist(x, z) > 22) cars.push([x, z, Math.atan2(tr.TX[i], tr.TZ[i])]); }
+    const cc = [0xc8102e, 0xe8e8ea, 0x23262c, 0x2a4f9a, 0xb9bcc2, 0xd9a020], body = mergeGeometries([new THREE.BoxGeometry(1.9, 0.75, 4.4).translate(0, 0.62, 0), new THREE.BoxGeometry(1.7, 0.6, 2.2).translate(0, 1.28, -0.2)]);
+    inst(body, lam(0xffffff), q.density < 1 ? cars.filter((_, k) => k % 2 === 0) : cars, (d, s) => { d.position.set(s[0], 0, s[1]); d.rotation.y = s[2]; }, (s, k) => cc[k % cc.length]);
+    const pole = mergeGeometries([new THREE.CylinderGeometry(0.09, 0.14, 9, 6).translate(0, 4.5, 0), new THREE.BoxGeometry(0.24, 0.18, 2.6).translate(0, 8.95, 1.2)]);
+    inst(pole, lam(0x3c4048), lamps, (d, s) => { d.position.set(s[0], s[2], s[1]); d.rotation.y = s[3]; });
+    const crane = mergeGeometries([new THREE.BoxGeometry(1.5, 62, 1.5).translate(0, 31, 0), new THREE.BoxGeometry(52, 1.2, 1.2).translate(14, 60, 0), new THREE.BoxGeometry(5, 3, 3).translate(-11, 58, 0)]), cr = []; for (let k = 0; k < 7; k++) { const px = minX + ((k + 0.5) / 7) * (maxX - minX), pz = minZ - 190 - (k % 3) * 60; cr.push([px, pz, k * 0.9]); }
+    inst(crane, lam(0xf0b428), cr, (d, s) => { d.position.set(s[0], 0, s[1]); d.rotation.y = s[2]; }); }
   // ---- arbolado: parque de Valdebebas dentro del trazado y bulevares fuera ----
   const trees = [];
   const ifemaZone = (x, z) => x < 700 * sc && z > 300 * sc;
-  for (let x = minX; x <= maxX; x += 17) for (let z = minZ; z <= maxZ; z += 17) { const px = x + (rnd() - 0.5) * 11, pz = z + (rnd() - 0.5) * 11; if (insideLoop(px, pz) && !ifemaZone(px, pz) && nearest(px, pz) > L + 5 && free(px, pz, 4) && hwyDist(px, pz) > 22) trees.push([px, pz, 0.8 + rnd() * 0.7, rnd() * 6.28]); }
-  for (let i = 8; i < N; i += 22) for (const side of [-1, 1]) { const l = side * (L + 8 + rnd() * 10), px = tr.X[i] - tr.TZ[i] * l, pz = tr.Z[i] + tr.TX[i] * l; if (nearest(px, pz) > L + 4 && free(px, pz, 3) && hwyDist(px, pz) > 22 && !ifemaZone(px, pz)) trees.push([px, pz, 0.7 + rnd() * 0.6, rnd() * 6.28]); }
-  const cap = q.density < 1 ? 110 : 240, every = Math.max(1, Math.ceil(trees.length / cap)), list = trees.filter((_, k) => k % every === 0);
+  for (let x = minX; x <= maxX; x += 12) for (let z = minZ; z <= maxZ; z += 12) { const px = x + (rnd() - 0.5) * 11, pz = z + (rnd() - 0.5) * 11; if (insideLoop(px, pz) && !ifemaZone(px, pz) && nearest(px, pz) > L + 5 && free(px, pz, 4) && hwyDist(px, pz) > 22) trees.push([px, pz, 0.8 + rnd() * 0.7, rnd() * 6.28]); }
+  for (let i = 8; i < N; i += 11) for (const side of [-1, 1]) { const l = side * (L + 8 + rnd() * 10), px = tr.X[i] - tr.TZ[i] * l, pz = tr.Z[i] + tr.TX[i] * l; if (nearest(px, pz) > L + 4 && free(px, pz, 3) && hwyDist(px, pz) > 22 && !ifemaZone(px, pz)) trees.push([px, pz, 0.7 + rnd() * 0.6, rnd() * 6.28]); }
+  const cap = q.density < 1 ? 240 : 620, every = Math.max(1, Math.ceil(trees.length / cap)), list = trees.filter((_, k) => k % every === 0);
   const trunk = new THREE.CylinderGeometry(0.18, 0.3, 3.4, 6).translate(0, 1.7, 0), crown = mergeGeometries([new THREE.IcosahedronGeometry(2.4, 1).translate(0, 5, 0), new THREE.IcosahedronGeometry(1.8, 1).translate(1.1, 4.2, 0.4)]);
   const place = (d, s) => { d.position.set(s[0], 0, s[1]); d.rotation.y = s[3]; d.scale.setScalar(s[2] * 1.5); };
   inst(trunk, lam(0x6b5540), list, place);
