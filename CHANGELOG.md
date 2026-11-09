@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.70
+- Circuito nuevo: Madring · Madrid (España, en el globo). Calcado del plano oficial y encogido a 1,94 km para que sea técnico: meta junto a IFEMA, Ribera del Sena, dos túneles bajo la M-11 y la curva peraltada de Valdebebas.
+- Entorno propio: pabellones de IFEMA, gradas donde marca el plano, M-11 con tráfico, Cuatro Torres, torres KIO, Puerta de Alcalá, bloques madrileños y parque de Valdebebas.
+- Banderas de la Comunidad de Madrid, muchas vallas de Traced, vallas de Celonis y pórticos sobre la pista con el logo y la fecha 01/02/2027.
+
 ## 0.0.69
 - Selva Amazónica (Perú) rediseñada: más compacta (1,9 km) y técnica. Mantiene la recta larga y las curvas rápidas, pero añade horquillas cerradas (hasta ~15 m de radio), eses y un tramo revirado; el cruce en puente se conserva.
 - Todos los tiempos y fantasmas anteriores de Perú se descartan (trazado nuevo). Para borrarlos de Supabase: ejecutar `supabase/cleanup-layout-records.sql`.

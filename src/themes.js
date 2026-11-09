@@ -112,6 +112,20 @@ export const THEMES = {
     wall1: 0xf4f4f4, wall2: 0xd91e18, mount: 0x2f6a3e, sun: 0xfff1c9, sunDir: [-0.42, 0.6, 0.45],
     hemiSky: 0xd3ecff, hemiGround: 0x2b4a26, hemiI: 1.0, sunI: 1.25, deco: 'jungle', treeCount: 40, treeCol: 0x1f6a2a, night: false, temp: 31, humidity: 0.85, wind: [2, 0.8], gripMul: 1, offroad: 0.62, wetGrip: 0.8, brakeForce: 24,
   },
+  // Madring (Madrid): el plano oficial calcado y encogido para que sea técnico; meta junto a IFEMA, dos túneles bajo la M-11 y curva peraltada de Valdebebas
+  madring: {
+    id: 'madring', name: 'Madring · Madrid', sub: 'IFEMA, Ribera del Sena, túneles bajo la M-11 y la curva peraltada de Valdebebas', seed: 'madring-1', barrierLogo: 'celonis', barrierLogoAccent: '#5cff4f',
+    style: {
+      fixedNodes: [[255,513],[270,450],[284,408],[262,382],[258,355],[272,332],[320,318],[420,293],[510,270],[600,245],[680,237],[750,243],[810,265],[855,287],[905,290],[970,280],[1040,265],[1100,248],[1145,256],[1180,267],[1222,258],[1320,270],[1430,285],[1530,297],[1590,320],[1628,365],[1640,410],[1625,460],[1597,487],[1550,517],[1490,535],[1435,530],[1395,500],[1350,445],[1310,395],[1270,365],[1232,385],[1185,420],[1148,441],[1100,435],[1030,412],[955,392],[905,402],[870,440],[866,470],[876,492],[838,522],[780,548],[722,575],[705,600],[698,625],[680,637],[600,638],[490,638],[462,650],[452,690],[450,735],[430,757],[330,758],[225,758],[207,745],[212,700],[232,620]],
+      startNear: [255, 513], scale: 0.52, half: 4.6, widthMax: 6.2, wall: 7.6, minR: 6, sep: 16, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] },
+      tunnels: [[0.214, 0.243], [0.7135, 0.7425]], banks: [[0.395, 0.545, 20]],
+      hillPts: [[0, 2.2], [0.17, 2.6], [0.2, 2.2], [0.214, 0], [0.243, 0], [0.258, 2.2], [0.33, 4.5], [0.4, 6.2], [0.47, 7], [0.545, 5], [0.63, 3.2], [0.695, 2.2], [0.7135, 0], [0.7425, 0], [0.76, 2], [1, 2.2]],
+    },
+    skyTop: 0x2f83dd, skyHor: 0xdfeaf2, fog: 0xd3e2ee, fogNear: 320, fogFar: 2200,
+    ground: 0x8d8a68, grass: 0x71894a, dirt: 0x9a8560, road: 0x2a2c31, kerb1: 0xd91e18, kerb2: 0xf4f4f4,
+    wall1: 0xf4f4f4, wall2: 0xc8102e, mount: 0x7f93a8, sun: 0xfff2d6, sunDir: [-0.4, 0.68, 0.42],
+    hemiSky: 0xe6f0fb, hemiGround: 0x74705e, hemiI: 1.1, sunI: 1.35, deco: 'madrid', treeCol: 0x4c7a38, night: false, temp: 17, humidity: 0.3, wind: [3, 0.8], gripMul: 1, offroad: 0.6, slope: 1.3,
+  },
   // Fórmula 0 (kartódromo): pista estrecha y técnica, horquillas y eses, muros de neumáticos
   karting: {
     id: 'karting', name: 'Fórmula 0', sub: 'Muy revirado: recta diagonal, eses y horquillas entre muros de neumáticos', tireWalls: true, logo: 'formula0', surround: 'f0', kerbH: 2.3, seed: 'karting-v2',
@@ -151,7 +165,7 @@ export const THEMES = {
     hemiSky: 0xf0f4ff, hemiGround: 0x9a8058, hemiI: 1.0, sunI: 1.35, deco: 'cactus', treeCol: 0x5b7a3a, treeCount: 40, night: false, temp: 31, humidity: 0.15, wind: [2, 0.4], gripMul: 1, offroad: 0.6,
   },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

@@ -4,6 +4,7 @@ import { ROAD_HALF, WALL, setRoad, rainAt } from './track.js';
 import { SURF, zoneAt, smoothstep, patchBoundary, puddleParams, mudParams, MARIO_OIL_PATCHES } from './surface.js';
 import { rngFromSeed } from './rng.js';
 import { getSponsorTexture } from './sponsors.js';
+import { madridDecor } from './madrid.js';
 
 const col = (hex) => new THREE.Color(hex);
 
@@ -1529,11 +1530,12 @@ function logoTex(name) { // textura con el logo (carga asíncrona)
   t.image = logoImage(name, () => { t.needsUpdate = true; }); logoTexCache[name] = t; return t;
 }
 function localBrandTex(th) {
-  if (th.logo && typeof document !== 'undefined') { // circuitos con logo propio: banda blanca con el logo repetido, en alta resolución
+  const bandLogo = th.logo || th.barrierLogo;
+  if (bandLogo && typeof document !== 'undefined') { // circuitos con logo propio: banda blanca con el logo repetido, en alta resolución
     if (localBrandCache[th.id]) return localBrandCache[th.id];
     const c = document.createElement('canvas'); c.width = 3072; c.height = 256; const x = c.getContext('2d'), t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.anisotropy = 8;
-    const draw = (img) => { x.fillStyle = '#ffffff'; x.fillRect(0, 0, 3072, 256); const h = 214, w = h * img.naturalWidth / img.naturalHeight; for (const cx of [768, 2304]) x.drawImage(img, cx - w / 2, 21, w, h); x.fillStyle = th.id === 'asupark' ? '#1a3778' : '#d91e18'; x.fillRect(0, 0, 3072, 12); x.fillRect(0, 244, 3072, 12); t.needsUpdate = true; };
-    const img = logoImage(th.logo, () => draw(img)); localBrandCache[th.id] = t; return t;
+    const draw = (img) => { x.fillStyle = '#ffffff'; x.fillRect(0, 0, 3072, 256); const h = 214, w = h * img.naturalWidth / img.naturalHeight; for (const cx of [768, 2304]) x.drawImage(img, cx - w / 2, 21, w, h); x.fillStyle = th.barrierLogoAccent || (th.id === 'asupark' ? '#1a3778' : '#d91e18'); x.fillRect(0, 0, 3072, 12); x.fillRect(0, 244, 3072, 12); t.needsUpdate = true; };
+    const img = logoImage(bandLogo, () => draw(img)); localBrandCache[th.id] = t; return t;
   }
   const b = LOCAL_BRANDS[th.id]; if (!b || typeof document === 'undefined') return null;
   if (localBrandCache[th.id]) return localBrandCache[th.id];
@@ -2494,6 +2496,7 @@ function scenery(tr, th, scene, rng, q) {
 // Elementos fuera de las vallas, según el paisaje de cada circuito: relieves, rocas, mesetas, cactus, bosques y pequeños poblados.
 // Se añade después de la decoración existente, así que no altera la colocación de árboles ni montañas.
 function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
+  if (th.id === 'madring') { windLeaves.length = 0; return; } // su entorno lo construye madridDecor
   const id = th.id, dens = q.density, dummy = new THREE.Object3D();
   windLeaves.length = 0; // cada circuito construido empieza sin hojas de la carrera anterior
   // Amazonas: lagos junto a la pista. Se colocan antes que nada y el resto de elementos los esquiva
@@ -2908,6 +2911,7 @@ export function buildWorld(tr, th, opt = {}) {
 
   startFlag(tr, th, scene, opt.flagSvg);
   const extraAnim = []; if (th.surround) kartSurroundings(tr, th, scene, extraAnim);
+  if (th.id === 'madring') madridDecor(tr, th, scene, extraAnim, q);
   const info = scenery(tr, th, scene, rng, q);
   const windDummy = new THREE.Object3D();
   let windClock = 0;
