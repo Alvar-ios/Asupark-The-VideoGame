@@ -12,6 +12,7 @@ const STYLE = {
   neon: { w: 5, a: 0x2c2e3c, b: 0x24262f, step: 2, curb: 0x19e3ff }, // acera oscura con borde de luz
   nieve: { w: 4, a: 0xe3ebf3, b: 0xd5dfe9, step: 3 }, // nieve pisada
   amazonas: { w: 3.5, a: 0x8d6c47, b: 0x7c5d3b, step: 0.9 }, // pasarela de tablones
+  prisma: { w: 4, a: 0xf3e3b0, b: 0xe8d398, step: 2.4, curb: 0xff9d2e }, // baldosa de juguete
   karting: { w: 3.5, a: 0xaa9c82, b: 0x9d8f76, step: 2.6 },
   asupark: { w: 3.5, a: 0xb39f80, b: 0xa59174, step: 2.6 },
   kartlos: { w: 4, a: 0xdac9a9, b: 0xcdbc9c, step: 3 },
@@ -19,7 +20,7 @@ const STYLE = {
 
 // tr.walk = { W: [izq, der], E: [izq, der] }: ancho del paso y distancia a la que el talud llega al suelo, por muestra de pista
 export function computeWalk(tr, th) {
-  tr.walk = null; const st = STYLE[th.id]; if (!st) return;
+  tr.walk = null; const st = STYLE[th.id]; if (!st) { tr.stand = findStand(tr); return; }
   const N = tr.N, cs = 12, grid = new Map(), rr = Math.ceil((WALL + 1) / cs);
   for (let i = 0; i < N; i += 2) { const k = Math.floor(tr.X[i] / cs) + ',' + Math.floor(tr.Z[i] / cs); (grid.get(k) || grid.set(k, []).get(k)).push(i); }
   const hitsOther = (x, z, i) => { const cx = Math.floor(x / cs), cz = Math.floor(z / cs), r2 = (WALL + 0.8) ** 2; for (let a = -rr; a <= rr; a++) for (let b = -rr; b <= rr; b++) { const l = grid.get((cx + a) + ',' + (cz + b)); if (l) for (const j of l) { const g = Math.abs(j - i); if (Math.min(g, N - g) > 40 && (tr.X[j] - x) ** 2 + (tr.Z[j] - z) ** 2 < r2) return true; } } return false; };
@@ -39,6 +40,22 @@ export function computeWalk(tr, th) {
     W.push(ws); E.push(es);
   }
   tr.walk = { W, E };
+  tr.stand = findStand(tr);
+}
+
+// Sitio de la tribuna principal: el primero cerca de la salida cuyo rectángulo no toque ningún tramo de pista ni el paso de peatones
+function findStand(tr) {
+  const N = tr.N, half = 28, depth = 7, reach = Math.ceil(half / tr.ds), lim = (WALL + 0.6) ** 2;
+  const closed = (i) => (tr.tunnels || []).some((t) => i * tr.ds > t.s0 - half && i * tr.ds < t.s1 + half) || (tr.bridge && Math.min(Math.abs(i - tr.bridge.i), N - Math.abs(i - tr.bridge.i)) < tr.bridge.span + reach);
+  const free = (x, z) => { for (let j = 0; j < N; j += 3) if ((tr.X[j] - x) ** 2 + (tr.Z[j] - z) ** 2 < lim) return false; return true; };
+  for (const side of [1, -1]) for (let k = 0; k <= 26; k++) {
+    const off = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 10, i = ((Math.floor((44 + off) / tr.ds) % N) + N) % N; if (closed(i)) continue;
+    let w = 1; if (tr.walk) for (let d = -reach; d <= reach; d++) w = Math.max(w, tr.walk.W[side > 0 ? 1 : 0][(i + d + N) % N]);
+    const lat = WALL + w + 0.8; let ok = true;
+    for (let a = -half; a <= half && ok; a += 4) for (let b = 0; b <= depth && ok; b += 1.75) ok = free(tr.X[i] - tr.TZ[i] * (lat + b) * side + tr.TX[i] * a, tr.Z[i] + tr.TX[i] * (lat + b) * side + tr.TZ[i] * a);
+    if (ok) return { i, side, lat };
+  }
+  return null;
 }
 
 export function walkwayMesh(tr, th, stride, safe) {

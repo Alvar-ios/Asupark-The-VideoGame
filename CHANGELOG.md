@@ -2,6 +2,14 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.74
+- Madring: se descartan los tiempos hechos con el trazado anterior.
+- Tribuna principal corregida: orientada hacia la pista y colocada donde no toca ningún tramo del circuito.
+- Móvil: nuevo icono de disco de freno y botones rojos translúcidos.
+- Spa: sin charcos ni barro.
+- Circuito de juguete: público de setas con sombrero picudo.
+- Perú: guerreros tribales con lanza y plumas, y muchas más chozas.
+
 ## 0.0.73
 - Paso de peatones propio en cada circuito (aceras en Madrid, losas en Mónaco, caminos de tierra, arena, nieve pisada, tablones en Perú…) a la altura de la pista, con talud de hierba hasta el terreno: nadie flota.
 - Más público, sobre todo animando en las gradas.

@@ -76,7 +76,7 @@ const PROPS = {
   barn: () => merge([B(11, 4.2, 7, 0, 2.1, 0, 0x9a3a2c), roof4(7.4, 2.6, 5.5, 0x4a4a48), B(2.4, 2.6, 0.1, 0, 1.3, 3.53, 0xe8e0d0)]),
   chalet: () => merge([B(8, 3.2, 7, 0, 1.6, 0, 0x7a5233), roof4(6.8, 3, 4.7, 0xf2f6fa), B(8.6, 0.25, 1.1, 0, 3, 3.8, 0x5a3a26), B(1.2, 1.2, 0.1, -2, 2, 3.53, 0x26323e), B(1.2, 1.2, 0.1, 2, 2, 3.53, 0x26323e)]),
   adobe: () => merge([B(7, 3, 7, 0, 1.5, 0, 0xcfa577), B(7.4, 0.3, 7.4, 0, 3.1, 0, 0xb98a5c), B(1.1, 2, 0.1, 0, 1, 3.53, 0x2f6fa0), B(0.9, 0.9, 0.1, 2.2, 2, 3.53, 0x2b3a46)]),
-  hut: () => merge([Cy(3.2, 3.2, 2.2, 8, 0, 1.1, 0, 0xa58a5e), C(new THREE.ConeGeometry(4.2, 2.8, 8).translate(0, 3.6, 0), 0x8a7a48)]),
+  hut: () => merge([Cy(3, 3.2, 2.2, 10, 0, 1.1, 0, 0x9a7a4e), C(new THREE.ConeGeometry(4.6, 3.6, 10).translate(0, 3.9, 0), 0xb59a55), C(new THREE.ConeGeometry(3.2, 2.2, 10).translate(0, 5, 0), 0x8f7a40), B(1.2, 1.7, 0.2, 0, 0.85, 3.05, 0x241a12), Cy(0.09, 0.09, 2.6, 5, -1, 1.3, 3.6, 0x5a3f24), Cy(0.09, 0.09, 2.6, 5, 1, 1.3, 3.6, 0x5a3f24)]),
   camper: () => merge([B(2.3, 2.4, 6, 0, 1.6, 0, 0xf0f0ea), B(2.34, 0.5, 6.04, 0, 1.2, 0, 0x2f6fb0), B(2.32, 0.8, 1.6, 0, 2.2, 2.1, 0x2b3a46), B(2.3, 0.5, 5, 0, 0.45, 0, 0x2a2c30)]),
   tent: () => merge([C(new THREE.ConeGeometry(2.6, 2.6, 4).rotateY(Math.PI / 4).translate(0, 1.3, 0), 0xe9e4d4), B(0.9, 1.3, 0.1, 0, 0.65, 1.82, 0x2c3340)]),
   car: () => merge([B(1.9, 0.75, 4.4, 0, 0.62, 0, 0xffffff), B(1.7, 0.62, 2.2, 0, 1.3, -0.2, 0x2b3a46)]),
@@ -100,8 +100,8 @@ const CFG = {
   desierto: { ring: 'mesa', spr: [['saguaro', 5, 9]], bush: 'dry', near: 300, mid: 360, far: 380, gr: [0xc29a68, 0xb08458, 0xd2ad7e], props: { adobe: 26, rock: 170, tent: 10, car: 16, fence: 24, pylon: 5 }, rockTint: [0xb5835a, 0xa3714a, 0xc49468], crowd: 0.8, birds: 1 },
   neon: { ring: 'neon', night: 1, spr: [], near: 0, mid: 0, far: 0, gr: [], props: {}, crowd: 0.7, towers: 130 },
   nieve: { ring: 'snow', spr: [['snowpine', 14, 24]], bush: null, near: 380, mid: 900, far: 900, gr: [0xe4edf6, 0xd2deea], props: { chalet: 24, rock: 40, pylon: 8, car: 12, fence: 20 }, rockTint: [0xdbe6ef, 0xc4d0dc], crowd: 0.7, birds: 0 },
-  prisma: { ring: 'toy', spr: [['toytree', 7, 12]], near: 220, mid: 420, far: 300, gr: [], tintList: [0xff6b6b, 0x6bc4ff, 0xffe06b, 0x7be08a, 0xc79bff, 0xffa66b], props: { mushroom: 60, pipe: 34, block: 34, coin: 50 }, mushTint: [0xe5352f, 0xf0a020, 0x3aa0e8, 0x46c060], crowd: 0 },
-  amazonas: { flower: 1, ring: 'jungle', spr: [['jungle', 30, 58], ['palm', 14, 24], ['broad', 16, 28]], bush: 'fern', near: 700, mid: 1100, far: 900, gr: [0x2a5a2c, 0x3a4a26], props: { hut: 12, rock: 40 }, crowd: 0.25 },
+  prisma: { ring: 'toy', spr: [['toytree', 7, 12]], near: 220, mid: 420, far: 300, gr: [], tintList: [0xff6b6b, 0x6bc4ff, 0xffe06b, 0x7be08a, 0xc79bff, 0xffa66b], props: { mushroom: 60, pipe: 34, block: 34, coin: 50 }, mushTint: [0xe5352f, 0xf0a020, 0x3aa0e8, 0x46c060], crowd: 0.6, people: 'shroom', shirts: [0xf0a020, 0x19a7a7, 0x7a4fd0, 0x8fc23a, 0xe0689a, 0x3aa0e8] },
+  amazonas: { flower: 1, ring: 'jungle', spr: [['jungle', 30, 58], ['palm', 14, 24], ['broad', 16, 28]], bush: 'fern', near: 700, mid: 1100, far: 900, gr: [0x2a5a2c, 0x3a4a26], props: { hut: 48, rock: 40 }, crowd: 0.55, people: 'tribe', shirts: [0xc2452d, 0xd9a13b, 0x3f8a4a, 0xe8d9b0, 0x2f7fa0, 0x9a6a30] },
   karting: { flower: 1, ring: 'trees', spr: [['broad', 10, 16], ['poplar', 13, 20]], bush: 'bush', near: 260, mid: 620, far: 700, gr: [0x5c8444, 0x6a7a44], props: { camper: 16, tent: 14, car: 26, hay: 22, fence: 16 }, crowd: 0.5, birds: 1 },
   asupark: { flower: 1, ring: 'trees', spr: [['olive', 6, 9], ['broad', 10, 15]], bush: 'bush', near: 240, mid: 560, far: 640, gr: [0x7a8050, 0x8a8354], props: { camper: 12, tent: 10, car: 24, hay: 18, house: 8 }, crowd: 0.5, birds: 1 },
   kartlos: { ring: 'city', spr: [['palm', 9, 14]], bush: 'dry', near: 180, mid: 360, far: 320, gr: [0xcbb48a, 0xd9c49a], props: { car: 26, tent: 10, adobe: 10, rock: 30 }, rockTint: [0xc7ad84], crowd: 0.5, birds: 1 },
@@ -110,7 +110,9 @@ const CFG = {
 export function fillWorld(tr, th, scene, rng, q, clearance, cxm, czm, R) {
   const cfg = CFG[th.id]; if (!cfg) return;
   const dens = q.density, n = (v) => Math.round(v * dens), D = new THREE.Object3D();
-  const harbor = (x, z) => th.harbor && Math.abs(x - 118) < 130 && Math.abs(z + 125) < 150;
+  const stand = !th.surround && th.deco !== 'kart' ? tr.stand : null;
+  const inStand = (x, z) => { if (!stand) return false; const dx = x - tr.X[stand.i], dz = z - tr.Z[stand.i], ou = (-dx * tr.TZ[stand.i] + dz * tr.TX[stand.i]) * stand.side; return Math.abs(dx * tr.TX[stand.i] + dz * tr.TZ[stand.i]) < 32 && ou > stand.lat - 1 && ou < stand.lat + 10; };
+  const harbor = (x, z) => inStand(x, z) || (th.harbor && Math.abs(x - 118) < 130 && Math.abs(z + 125) < 150);
   const walkW = (i, side) => (tr.walk ? tr.walk.W[side > 0 ? 1 : 0][i] : 0);
   const groundAt = (i, l, side) => Math.max(0, tr.Y[i] * (1 - (l - WALL - walkW(i, side)) / (2.5 + 1.1 * tr.Y[i])));
   const lMin = cfg.urban ? WALL + 30 : WALL + 1.5;
@@ -152,7 +154,7 @@ export function fillWorld(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     if (list.length) { m.frustumCulled = false; scene.add(m); } }
   // gente: grupos animando junto a las vallas, paseantes en distintas direcciones y, en la ciudad, gente en los balcones
   // gente sobre el paso de peatones: a la altura de la pista, nunca flotando
-  const items = [], yawTo = (dx, dz) => Math.atan2(dx, dz), shirt = (k) => SHIRTS[k % SHIRTS.length];
+  const items = [], yawTo = (dx, dz) => Math.atan2(dx, dz), palette = cfg.shirts || SHIRTS, shirt = (k) => palette[k % palette.length];
   const bankY = (i, side) => (tr.bank ? Math.max(0, Math.tan(tr.bank[i]) * side * WALL) : 0) + Math.min(0, tr.bank ? Math.tan(tr.bank[i]) * side * WALL : 0);
   const onPath = (x, z, W) => clearance(x, z, WALL + 0.6) && !clearance(x, z, WALL + W - 0.15);
   if (cfg.crowd) {
@@ -160,13 +162,13 @@ export function fillWorld(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     for (let g = 0, c = n(280 * cfg.crowd), tries = 0; g < c && tries < c * 14; tries++) { const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1, W = walkW(i, side); if (W < 2) continue; const l = WALL + 0.8 + rng() * (W - 1.3), len = 8 + rng() * 26, x = tr.X[i] - tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side, yaw = Math.atan2(tr.TX[i], tr.TZ[i]) + (rng() < 0.5 ? Math.PI : 0), ex = Math.sin(yaw) * len * 0.5, ez = Math.cos(yaw) * len * 0.5; if (onPath(x + ex, z + ez, W) && onPath(x - ex, z - ez, W) && !harbor(x, z)) { items.push([x, tr.Y[i] + bankY(i, side), z, yaw, WALK, 1.1 + rng() * 0.8, len, shirt(items.length + 3)]); g++; } }
   }
   // tribuna principal llena
-  if (!th.surround && th.deco !== 'kart') { const im = Math.floor(44 / tr.ds) % tr.N, psi = Math.atan2(tr.TX[im], tr.TZ[im]), lat = WALL + 4.2, x0 = tr.X[im] - tr.TZ[im] * lat, z0 = tr.Z[im] + tr.TX[im] * lat, y0 = tr.Y[im]; for (let k = 0, c = n(190); k < c; k++) { const t = Math.floor(rng() * 6), lx = t * 0.72, lz = (rng() - 0.5) * 50; items.push([x0 + Math.cos(psi) * lx + Math.sin(psi) * lz, y0 + 0.42 * (t + 1), z0 - Math.sin(psi) * lx + Math.cos(psi) * lz, psi + Math.PI / 2 + (rng() - 0.5) * 0.5, rng() < 0.3 ? 2 : 1, 0, 0, shirt(k)]); } }
+  if (stand) { const im = stand.i, sd = stand.side, tx = tr.TX[im], tz = tr.TZ[im], psi = Math.atan2(tx, tz), y0 = tr.Y[im] + bankY(im, sd); for (let k = 0, c = n(190); k < c; k++) { const t = Math.floor(rng() * 6), lx = stand.lat + t * 0.72, lz = (rng() - 0.5) * 50; items.push([tr.X[im] - tz * lx * sd + tx * lz, y0 + 0.42 * (t + 1), tr.Z[im] + tx * lx * sd + tz * lz, psi + (Math.PI / 2) * sd + (rng() - 0.5) * 0.5, rng() < 0.3 ? 2 : 1, 0, 0, shirt(k)]); } }
   if (q.urbanInfo) {
     const { items: blocks, balconies } = q.urbanInfo, wanted = n(170), every = Math.max(1, Math.floor(balconies.length / wanted));
     balconies.forEach((b, k) => { if (k % every) return; const fx = Math.cos(b.ry) * b.face, fz = -Math.sin(b.ry) * b.face; items.push([b.x, b.y + 0.1, b.z, yawTo(fx, fz), rng() < 0.5 ? CHEER : IDLE, 0, 0, shirt(k)]); });
     let g = 0; const cap = n(240); for (let s2 = 0; s2 < tr.len && g < cap; s2 += 4.5) { const i = Math.floor(s2 / tr.ds) % tr.N; for (const side of [-1, 1]) { const W = walkW(i, side); if (W < 1.8) continue; const l = WALL + 0.8 + rng() * (W - 1.2), x = tr.X[i] - tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side; if (!clearance(x, z, WALL + 0.6) || harbor(x, z) || blocks.some((b) => (b.x - x) ** 2 + (b.z - z) ** 2 < (Math.max(b.d, b.w) * 0.72 + 1) ** 2)) continue; const walk = rng() < 0.45, yaw = walk ? Math.atan2(tr.TX[i], tr.TZ[i]) + (rng() < 0.5 ? Math.PI : 0) : yawTo(tr.TZ[i] * side, -tr.TX[i] * side) + (rng() - 0.5) * 0.7; items.push([x, tr.Y[i] + bankY(i, side), z, yaw, walk ? WALK : crowdType(rng()), 1.1 + rng() * 0.7, walk ? 5 + rng() * 6 : 0, shirt(g)]); g++; } }
   }
-  npcMesh(scene, items);
+  npcMesh(scene, items, cfg.people || 'human');
 
 }
 export const fillerBirds = (id) => !!(CFG[id] && CFG[id].birds);

@@ -27,7 +27,7 @@ export const THEMES = {
     ground: 0x283824, grass: 0x344c2c, dirt: 0x483a28, road: 0x22262a, kerb1: 0xd8473d, kerb2: 0xeeeeea, kerbs3: [0x191919, 0xfdda24, 0xef3340],
     wall1: 0xc9cbc9, wall2: 0xb23a32, mount: 0x303e32, sun: 0x7c8a94, sunDir: [-0.3, 0.5, 0.4],
     hemiSky: 0x4d5964, hemiGround: 0x1e261e, hemiI: 0.75, sunI: 0.45, deco: 'pine', treeNear: 1, treeCount: 1900, kerbRough: true, treeCol: 0x1f4d2b, night: false, temp: 11, humidity: 0.9, wind: [6, 1.0], gripMul: 0.98, offroad: 0.6, slope: 1.4,
-    weather: 'rain', wetGrip: 0.78, brakeForce: 22, mud: true,
+    weather: 'rain', wetGrip: 0.78, brakeForce: 22, noPuddles: true,
     rainPalette: {
       skyTop: 0x242d35, skyHor: 0x4a545e, fog: 0x404a52,
       ground: 0x283824, grass: 0x344c2c, dirt: 0x483a28, treeCol: 0x1f4d2b, mount: 0x303e32,

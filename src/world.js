@@ -1779,28 +1779,28 @@ function motorsportAmbiance(tr, th, scene, q) {
   scene.add(startLights);
 
   // 2. Gran tribuna principal (solo circuitos normales: en los karts ya hay gradas propias en el decorado)
-  if (!th.surround) {
-  // 2. Gran tribuna principal de espectadores a lo largo de la recta principal (s = 18 a 68)
+  if (!th.surround && tr.stand) {
+  // 2. Gran tribuna principal de espectadores: la fila baja junto a la pista y las altas alejándose de ella
   const standLength = 52, standTiers = 6, standTierDepth = 0.72, standTierH = 0.42;
-  const sMid = 44;
-  const iMid = Math.floor(sMid / tr.ds) % N;
+  const iMid = tr.stand.i, standSide = tr.stand.side;
   const txM = tr.TX[iMid], tzM = tr.TZ[iMid];
   const headingM = Math.atan2(txM, tzM);
-  const standLat = WALL + 4.2;
+  const standLat = tr.stand.lat * standSide;
   const standX = tr.X[iMid] + -tzM * standLat;
   const standZ = tr.Z[iMid] + txM * standLat;
   const standY = tr.Y[iMid] + bankOff(tr, iMid, standLat);
+  const standDrop = Math.max(0, standY) + 0.5; // la base llega hasta el terreno
 
   // Gradas escalonadas en 1 sola geometría optimizada
   const bleachersGroup = new THREE.Group();
   bleachersGroup.position.set(standX, standY, standZ);
-  bleachersGroup.rotation.set(0, headingM, 0);
+  bleachersGroup.rotation.set(0, headingM + (standSide > 0 ? Math.PI : 0), 0);
 
   const concMat = new THREE.MeshStandardMaterial({ color: 0x8a9098, roughness: 0.88 });
   const bleacherGeos = [];
   for (let t = 0; t < standTiers; t++) {
-    const tierGeo = new THREE.BoxGeometry(standTierDepth, standTierH * (t + 1), standLength);
-    tierGeo.translate(t * standTierDepth, (standTierH * (t + 1)) * 0.5, 0);
+    const tierGeo = new THREE.BoxGeometry(standTierDepth, standTierH * (t + 1) + standDrop, standLength);
+    tierGeo.translate(t * standTierDepth, (standTierH * (t + 1) - standDrop) * 0.5, 0);
     bleacherGeos.push(tierGeo);
   }
   const bleachersMesh = new THREE.Mesh(mergeBufferGeometries(bleacherGeos), concMat);
@@ -2895,7 +2895,7 @@ export function buildWorld(tr, th, opt = {}) {
       scene.add(mesh);
     }
   }
-  if (th.weather === 'rain') {
+  if (th.weather === 'rain' && !th.noPuddles) {
     const water = new THREE.MeshPhysicalMaterial({ color: 0xffffff, side: THREE.DoubleSide, map: waterTexture(), roughness: 0.07, metalness: 0.025, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 1.15, transparent: true, opacity: 0.9, vertexColors: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
     for (let i = 0; ; i++) {
       const p = puddleParams(i);

@@ -183,7 +183,7 @@ export function stepCar(c, inp, dt, tr, env) {
     }
     const soilGrip = env.offroadGrip || 0.68;
     const surfaceGrip = (1 - offroadBlend * (1 - soilGrip)) * (1 - wetK * (1 - (env.wetGrip || 0.78))) * SP.g;
-    const puddleWater = env.weather === 'rain' ? puddleAt(loc.s, loc.lat) : 0;
+    const puddleWater = env.weather === 'rain' && !env.noPuddles ? puddleAt(loc.s, loc.lat) : 0;
     c.puddleWater = puddleWater;
     c.inPuddle = puddleWater > 0.12;
     const mud = env.mud ? mudAt(loc.s, loc.lat) : 0; c.mud = mud;
