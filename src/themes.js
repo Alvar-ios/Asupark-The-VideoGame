@@ -97,13 +97,13 @@ export const THEMES = {
   },
   // Selva amazónica (Perú): figura de ocho con un cruce en puente sobre sí misma, curvas rápidas, dos eses, horquillas más anchas y un chaparrón local
   amazonas: {
-    id: 'amazonas', name: 'Selva Amazónica · Perú', sub: 'Lagos, árboles gigantes, cruce en puente y un chaparrón local', seed: 'amazonas-v1',
+    id: 'amazonas', name: 'Selva Amazónica · Perú', sub: 'Lagos, árboles gigantes, cruce en puente y un chaparrón local', seed: 'amazonas-v2',
     style: {
       fixedNodes: [
-        [-95, 95], [-40, 38], [0, 0], [45, -40], [100, -85], [170, -105], [250, -108], [330, -100], [400, -95], [458, -60], [472, 0], [445, 55], [390, 75], [345, 62], [322, 100], [290, 130], [248, 112], [212, 132], [140, 112], [85, 72], [40, 32], [-5, -4], [-45, -38], [-105, -80], [-175, -105], [-250, -100], [-330, -92], [-395, -55], [-405, 10], [-370, 60], [-320, 55], [-292, 92], [-308, 138], [-255, 152], [-205, 128], [-150, 140],
+        [-75, 62], [-32, 28], [0, 0], [34, -30], [80, -58], [140, -76], [210, -80], [280, -78], [322, -60], [342, -26], [330, 8], [298, 20], [262, 26], [236, 48], [250, 76], [282, 92], [300, 120], [272, 148], [228, 140], [196, 110], [160, 98], [120, 112], [84, 100], [56, 66], [28, 34], [-4, -2], [-40, -36], [-84, -62], [-120, -92], [-166, -112], [-220, -108], [-250, -80], [-238, -44], [-200, -30], [-176, 0], [-190, 36], [-170, 66], [-130, 80], [-100, 66],
       ],
-      startNear: [200, -105], scale: 1.35, half: 5, widthMax: 8.8, wall: 15.5, minR: 12, sep: 30,
-      cross: [0, 0, 75], bridgeH: 8.5, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0,
+      startNear: [190, -80], scale: 1.12, half: 5, widthMax: 8.8, wall: 15.5, minR: 9, sep: 26,
+      cross: [0, 0, 60], bridgeH: 8.5, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0,
       hillPts: [[0, 0], [0.08, 3], [0.18, 7], [0.28, 4], [0.34, 0], [0.47, 0], [0.55, 3], [0.65, 8], [0.74, 5], [0.82, 0], [0.94, 0], [1, 0]],
       runoff: { gravel: 4, open: [] }, rainZones: [[0.48, 0.72]], zones: [],
     },

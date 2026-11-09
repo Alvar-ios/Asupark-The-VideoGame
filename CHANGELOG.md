@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.69
+- Selva Amazónica (Perú) rediseñada: más compacta (1,9 km) y técnica. Mantiene la recta larga y las curvas rápidas, pero añade horquillas cerradas (hasta ~15 m de radio), eses y un tramo revirado; el cruce en puente se conserva.
+- Todos los tiempos y fantasmas anteriores de Perú se descartan (trazado nuevo). Para borrarlos de Supabase: ejecutar `supabase/cleanup-layout-records.sql`.
+- Selva más alta y tropical: árboles gigantes de 55-85 m con raíces tabulares, árboles medios y palmeras mucho más altos, y ruinas incas escalonadas entre la vegetación.
+- Pájaros: de vez en cuando cruza una bandada por el cielo (siluetas oscuras o guacamayos rojos y azules), con coste mínimo.
+
 ## 0.0.68
 - Scroll táctil arreglado en todas las pantallas: un reset global (touch-action:none) impedía deslizar al tocar casi cualquier elemento de menú, ajustes, música, perfil, ranking, reto, pausa y resultados. Ahora se desliza en vertical desde cualquier punto (los sliders y el globo siguen arrastrándose).
 

@@ -34,8 +34,8 @@ const store = {
   set(k, v) { try { localStorage.setItem('dr.' + k, JSON.stringify(v)); } catch (e) { /* sin almacenamiento */ } },
 };
 const fmtS = (t) => (t == null ? '--' : t >= 60 ? fmt(t) : t.toFixed(3));
-// Mario Circuit (todas las categorías), Spa en F1 y Selva Amazónica cambiaron de trazado: sus tiempos anteriores a cada cambio no cuentan
-const cutOf = (trackKey, group) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1') ? '2026-11-04T00:00:00Z' : trackKey === 'amazonas' ? '2026-11-05T16:00:00Z' : trackKey === 'karting' ? '2026-11-05T17:45:00Z' : null);
+// Mario Circuit (todas las categorías), Spa en F1, Selva Amazónica (rediseñada el 9-11) y Fórmula 0 cambiaron de trazado: sus tiempos anteriores a cada cambio no cuentan
+const cutOf = (trackKey, group) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1') ? '2026-11-04T00:00:00Z' : trackKey === 'amazonas' ? '2026-11-09T16:05:00Z' : trackKey === 'karting' ? '2026-11-05T17:45:00Z' : null);
 const oldLayout = (trackKey, group, at) => { const c = cutOf(trackKey, group); return !!c && (!at || Date.parse(at) < Date.parse(c)); };
 const layoutSince = (trackKey, group) => cutOf(trackKey, group);
 const fmt = (t) => { if (t == null || !isFinite(t)) return '--'; const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s < 10 ? '0' : ''}${s.toFixed(2)}`; };

@@ -158,6 +158,49 @@ function makeLeaves(tr, scene, n, palette) {
     },
   });
 }
+// pájaros: de vez en cuando cruza una bandada (siluetas oscuras o guacamayos rojos) a gran altura; una sola InstancedMesh reciclada
+function makeBirds(tr, scene, n) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0.35, -1, 0.3, -0.15, 0, 0, -0.35, 0, 0, 0.35, 0, 0, -0.35, 1, 0.3, -0.15]), 3));
+  const m = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }), n);
+  m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; scene.add(m);
+  const dummy = new THREE.Object3D(), dark = col(0x1a2a1e), red = col(0xd2342a), blue = col(0x2a5fc0);
+  const birds = Array.from({ length: n }, () => ({ on: false, x: 0, y: 0, z: 0, dx: 1, dz: 0, ph: 0, sz: 1 }));
+  let wait = 4 + Math.random() * 8, flightLeft = 0;
+  const launch = () => {
+    const i = Math.floor(Math.random() * tr.N), a = Math.random() * 6.283, sp = 10 + Math.random() * 6, h = 38 + Math.random() * 40, macaw = Math.random() < 0.4;
+    const bx = tr.X[i] - Math.cos(a) * 160, bz = tr.Z[i] - Math.sin(a) * 160, k = 3 + Math.floor(Math.random() * Math.min(5, n - 2));
+    for (let b = 0; b < n; b++) {
+      const d = birds[b]; d.on = b < k;
+      if (!d.on) continue;
+      const lane = (b - k / 2) * 6 + (Math.random() - 0.5) * 3, back = Math.abs(b - k / 2) * 5 + Math.random() * 3;
+      d.x = bx - Math.sin(a) * lane - Math.cos(a) * back; d.z = bz + Math.cos(a) * lane - Math.sin(a) * back; d.y = h + (Math.random() - 0.5) * 6;
+      d.dx = Math.cos(a) * sp; d.dz = Math.sin(a) * sp; d.ph = Math.random() * 6.283; d.sz = macaw ? 1.5 : 1.9;
+      m.setColorAt(b, macaw ? (b % 2 ? red : blue) : dark);
+    }
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    flightLeft = 320 / sp;
+  };
+  windLeaves.push({
+    update(t, dt) {
+      if (flightLeft > 0) { flightLeft -= dt; if (flightLeft <= 0) { for (const d of birds) d.on = false; wait = 25 + Math.random() * 40; } }
+      else { wait -= dt; if (wait <= 0) launch(); }
+      for (let b = 0; b < n; b++) {
+        const d = birds[b];
+        if (!d.on) { dummy.position.set(0, -500, 0); dummy.scale.setScalar(0.0001); }
+        else {
+          d.x += d.dx * dt; d.z += d.dz * dt;
+          const fl = Math.sin(t * 9 + d.ph);
+          dummy.position.set(d.x, d.y + Math.sin(t * 1.3 + d.ph) * 0.8, d.z);
+          dummy.rotation.set(0, Math.atan2(d.dx, d.dz), fl * 0.12);
+          dummy.scale.set(d.sz * 1.5, d.sz * (0.2 + 0.8 * Math.abs(fl)) * 1.5, d.sz * 1.5);
+        }
+        dummy.updateMatrix(); m.setMatrixAt(b, dummy.matrix);
+      }
+      m.instanceMatrix.needsUpdate = true;
+    },
+  });
+}
 // llamar en cada fotograma: mueve el viento y las hojas
 export function updateWind(t) {
   const dt = Math.min(0.1, Math.max(0, t - lastWindT)); lastWindT = t;
@@ -2603,10 +2646,11 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
     const place = (d, s2) => { d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); d.scale.set(s2[3], s2[3], s2[3]); };
     const tintG = (pal) => (s2) => pick(pal, s2);
     // árboles gigantes (30-45 m): tronco con base ancha y copa de varias masas aplanadas, como los emergentes de la selva
-    const giantTrunk = new THREE.CylinderGeometry(0.9, 1.9, 38, 9).translate(0, 19, 0);
+    const buttress = (a) => new THREE.ConeGeometry(0.9, 7, 3).rotateZ(0.42).translate(1.5, 3.2, 0).rotateY(a);
+    const giantTrunk = mergeBufferGeometries([new THREE.CylinderGeometry(1.1, 2.3, 60, 9).translate(0, 30, 0), ...[0, 1.26, 2.5, 3.8, 5.0].map(buttress)]);
     const blob = (rx, ry, rz, x, y, z) => new THREE.SphereGeometry(1, 9, 7).scale(rx, ry, rz).translate(x, y, z);
-    const giantCrown = mergeBufferGeometries([blob(7.5, 3.2, 7.5, 0, 36, 0), blob(5.5, 2.6, 5.5, 5, 34, 2), blob(5.2, 2.4, 5.2, -4.5, 34.5, -3), blob(5, 2.4, 5, 2, 39, -4), blob(5, 2.4, 5, -3, 33, 4.5), blob(4.5, 2.2, 4.5, 0, 42, 0.5)]);
-    const gScale = (s2) => 0.8 + (s2[3] - 0.75) * 0.75; // 0.8-1.2: unos 30-45 m
+    const giantCrown = mergeBufferGeometries([blob(10, 3.4, 10, 0, 58, 0), blob(7, 2.8, 7, 7, 55, 3), blob(6.8, 2.6, 6.8, -6.5, 56, -4), blob(6.5, 2.6, 6.5, 3, 62, -6), blob(6.5, 2.6, 6.5, -4, 54, 6.5), blob(6, 2.4, 6, 0, 65, 0.5), blob(5.5, 2.2, 5.5, 9, 50, -6)]);
+    const gScale = (s2) => 0.85 + (s2[3] - 0.75) * 0.8; // 0.85-1.3: unos 55-85 m
     const giantsNear = nearPts(n(150), WALL + 4, WALL + 120), giantsFar = farOk(farPts(n(240), 25, 260));
     const gPlace = (d, s2) => { const k = gScale(s2); d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); d.scale.set(k, k, k); };
     const barkMat = lam(0x5a4632, 0.95);
@@ -2615,26 +2659,33 @@ function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
       put(giantCrown, foliage(1, 0xffffff, 0.92), list, gPlace, tintG([0x2a7a30, 0x1f6a2a, 0x38853a, 0x2a6a38, 0x34803a]), cast);
     }
     // árboles medios (12-18 m) en segundo plano
-    const midTrunk = new THREE.CylinderGeometry(0.35, 0.6, 9, 7).translate(0, 4.5, 0);
-    const midCrown = mergeBufferGeometries([blob(3.8, 2.8, 3.8, 0, 11, 0), blob(2.8, 2.2, 2.8, 2.4, 9.5, 1), blob(2.8, 2.2, 2.8, -2.2, 9.8, -1.2), blob(2.6, 2, 2.6, 0.5, 13.2, -0.5)]);
+    const midTrunk = new THREE.CylinderGeometry(0.4, 0.75, 14, 7).translate(0, 7, 0);
+    const midCrown = mergeBufferGeometries([blob(4.2, 3, 4.2, 0, 16, 0), blob(3.1, 2.4, 3.1, 2.6, 14, 1), blob(3.1, 2.4, 3.1, -2.4, 14.4, -1.2), blob(2.9, 2.2, 2.9, 0.5, 18.6, -0.5)]);
     const mids = nearPts(n(220), WALL + 3, WALL + 90).concat(farOk(farPts(n(380), 20, 240)));
     const mPlace = (d, s2) => { const k = 0.9 + (s2[3] - 0.75) * 0.9; d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); d.scale.set(k, k, k); };
     put(midTrunk, barkMat, mids, mPlace, null, false);
     put(midCrown, foliage(1, 0xffffff, 0.9), mids, mPlace, tintG([0x3b8a3c, 0x2f7a35, 0x4a9a44, 0x33803a]), false);
     // palmeras altas (aguaje): tronco fino y penacho de hojas
-    const frondG = (k) => colorGeometry(new THREE.ConeGeometry(0.9, 5, 3).rotateZ(-Math.PI / 2 + 0.5).translate(2.6, 14.2, 0).rotateY((k * Math.PI) / 4), 0.36, 0.7, 0.3);
-    const palmTall = mergeBufferGeometries([colorGeometry(new THREE.CylinderGeometry(0.26, 0.42, 14, 6).translate(0, 7, 0), 0.42, 0.32, 0.2), ...[0, 1, 2, 3, 4, 5, 6, 7].map(frondG)]);
+    const frondG = (k) => colorGeometry(new THREE.ConeGeometry(0.9, 5, 3).rotateZ(-Math.PI / 2 + 0.5).translate(2.6, 22.2, 0).rotateY((k * Math.PI) / 4), 0.36, 0.7, 0.3);
+    const palmTall = mergeBufferGeometries([colorGeometry(new THREE.CylinderGeometry(0.26, 0.42, 22, 6).translate(0, 11, 0), 0.42, 0.32, 0.2), ...[0, 1, 2, 3, 4, 5, 6, 7].map(frondG)]);
     put(palmTall, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true }), nearPts(n(110), WALL + 3, WALL + 70), place, null, false);
     // sotobosque: helechos y plantas de hoja ancha, muy densos junto a la valla
     const fernG = mergeBufferGeometries([0, 1, 2, 3, 4, 5].map((k) => new THREE.ConeGeometry(0.28, 2.6, 3).rotateZ(1.0).translate(0.9, 0.9, 0).rotateY((k * Math.PI) / 3)));
     const ferns = nearPts(n(520), WALL + 1.5, WALL + 40);
     put(fernG, lam(0xffffff, 0.95), ferns, (d, s2) => { d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); const k = 0.8 + s2[3] * 0.6; d.scale.set(k, k, k); }, tintG([0x3f8a34, 0x4f9a3a, 0x2f7a2c, 0x5aa040]), false);
+    // ruinas incas: pirámides escalonadas de piedra cubiertas de musgo, entre la selva
+    const terrace = (w, h, y) => new THREE.BoxGeometry(w, h, w * 0.8).translate(0, y + h / 2, 0);
+    const ruin = mergeBufferGeometries([terrace(26, 3, 0), terrace(21, 3, 3), terrace(16, 3, 6), terrace(11, 3, 9), terrace(5, 2.4, 12), new THREE.BoxGeometry(2.2, 5, 0.9).translate(0, 4, 13.6)]);
+    const ruins = [];
+    for (let g2 = 0; ruins.length < 4 && g2 < 400; g2++) { const p = nearPts(1, WALL + 55, WALL + 170)[0]; if (p && clearance(p[0], p[1], 24) && ruins.every((q2) => (q2[0] - p[0]) ** 2 + (q2[1] - p[1]) ** 2 > 90 * 90)) ruins.push(p); }
+    put(ruin, lam(0xffffff, 0.97), ruins, (d, s2) => { d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); const k = 0.9 + s2[3] * 0.5; d.scale.set(k, k, k); }, (s2) => pick([0x8a8c80, 0x7a8870, 0x6f7f66], s2), true);
     // nenúfares sobre los lagos
     const pads = [];
     for (const k of lakes) for (let q2 = 0; q2 < 16; q2++) { const a = rng() * 6.283, d = Math.sqrt(rng()) * 0.82, ex = Math.cos(a) * d * k.rx, ez = Math.sin(a) * d * k.rz; pads.push([k.x + ex * Math.cos(k.a) + ez * Math.sin(k.a), k.z - ex * Math.sin(k.a) + ez * Math.cos(k.a), rng() * 6.283, 0.7 + rng() * 0.8, 0.09]); }
     put(new THREE.CircleGeometry(0.55, 9).rotateX(-Math.PI / 2), lam(0x3e8a3a, 0.9), pads, (d, s2) => { d.position.set(s2[0], s2[4], s2[1]); d.rotation.set(0, s2[2], 0); d.scale.set(s2[3], 1, s2[3]); }, null, false);
   }
 
+  if (id === 'amazonas') makeBirds(tr, scene, dens < 1 ? 5 : 7);
   // hojas al viento: en los circuitos de bosque y valle, con pocas hojas en móvil
   if (id === 'spa' || id === 'valle' || id === 'pruebas' || id === 'amazonas') makeLeaves(tr, scene, Math.max(30, Math.round((id === 'spa' ? 110 : 70) * dens)), id === 'valle' ? [0x6fa83a, 0x8cc04a, 0xc9a23a, 0x5e9a32] : [0x4f8a2e, 0x6e9b2f, 0x8f6a2a, 0x3f7a2a]);
 }

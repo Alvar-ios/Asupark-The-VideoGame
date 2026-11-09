@@ -9,6 +9,6 @@ where updated_at < '2026-11-04T00:00:00Z'
     or (track_id = 'spa' and car_id in ('lotus', 'aston', 'f312t', 'r24', 'brawngp', 'mp45', 'mp423'))
   );
 
--- Selva Amazónica (Perú): nuevo trazado con curvas más cerradas (5 de noviembre de 2026).
+-- Selva Amazónica (Perú): trazado rediseñado, más compacto y técnico (9 de noviembre de 2026). Borra TODOS los tiempos y fantasmas anteriores.
 delete from public.lap_times
-where updated_at < '2026-11-05T16:00:00Z' and track_id = 'amazonas';
+where updated_at < '2026-11-09T16:05:00Z' and track_id = 'amazonas';
