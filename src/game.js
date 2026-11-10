@@ -35,7 +35,7 @@ const store = {
 };
 const fmtS = (t) => (t == null ? '--' : t >= 60 ? fmt(t) : t.toFixed(3));
 // Mario Circuit (todas las categorías), Spa en F1, Selva Amazónica, Madring (rediseñados el 9-11) y Fórmula 0 cambiaron de trazado: sus tiempos anteriores a cada cambio no cuentan
-const cutOf = (trackKey, group) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1') ? '2026-11-04T00:00:00Z' : trackKey === 'madring' ? '2026-11-09T20:40:00Z' : trackKey === 'amazonas' ? '2026-11-09T17:32:00Z' : trackKey === 'karting' ? '2026-11-05T17:45:00Z' : null);
+const cutOf = (trackKey, group) => (trackKey === 'prisma' || (trackKey === 'spa' && group === 'f1') ? '2026-11-04T00:00:00Z' : trackKey === 'magarigawa' ? '2026-11-10T23:54:00Z' : trackKey === 'madring' ? '2026-11-09T20:40:00Z' : trackKey === 'amazonas' ? '2026-11-09T17:32:00Z' : trackKey === 'karting' ? '2026-11-05T17:45:00Z' : null);
 const oldLayout = (trackKey, group, at) => { const c = cutOf(trackKey, group); return !!c && (!at || Date.parse(at) < Date.parse(c)); };
 const layoutSince = (trackKey, group) => cutOf(trackKey, group);
 const fmt = (t) => { if (t == null || !isFinite(t)) return '--'; const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s < 10 ? '0' : ''}${s.toFixed(2)}`; };
@@ -70,7 +70,7 @@ window.addEventListener('resize', resize); resize();
 // ---------- pistas ----------
 const tracks = [];
 function addTrack(key, name, sub, seed, style, th) { const tr = buildTrack(seed, style); tracks.push({ key, name, sub, tr, th }); }
-const dailyKey = dailyKeyNow(), dailyPick = pickDaily(dailyKey, dailyKey === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => (k !== 'madring' || dailyKey >= '2026-11-10') && (k !== 'magarigawa' || dailyKey >= '2026-11-11')), (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
+const dailyKey = dailyKeyNow(), dailyPick = pickDaily(dailyKey, dailyKey === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => (k !== 'madring' || dailyKey >= '2026-11-10') && (k !== 'magarigawa' || dailyKey >= '2026-11-11') && (k !== 'muralla' || dailyKey >= '2026-11-12')), (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos' || th === 'muralla') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
 addTrack('pruebas', THEMES.pruebas.name, THEMES.pruebas.sub, THEMES.pruebas.seed, THEMES.pruebas.style, THEMES.pruebas);
 addTrack('monaco', THEMES.monaco.name, THEMES.monaco.sub, THEMES.monaco.seed, THEMES.monaco.style, THEMES.monaco);
 addTrack('spa', THEMES.spa.name, THEMES.spa.sub, THEMES.spa.seed, THEMES.spa.style, THEMES.spa);
@@ -110,6 +110,15 @@ if (!store.get('purge.madring-2026-11-09b')) {
     drop.forEach((k) => localStorage.removeItem(k));
   } catch (e) { /* sin almacenamiento */ }
   store.set('purge.madring-2026-11-09b', true);
+}
+// una sola vez: Magarigawa se ha reescalado y sus rectas son más cortas
+if (!store.get('purge.magarigawa-scale')) {
+  try {
+    const drop = [];
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && /^dr\.(pb|best)\.magarigawa\./.test(k)) drop.push(k); }
+    drop.forEach((k) => localStorage.removeItem(k));
+  } catch (e) { /* sin almacenamiento */ }
+  store.set('purge.magarigawa-scale', true);
 }
 // una sola vez: tiempos de karts y del Ford GT Heritage (cambian de stats o de grupo), y récords de Karting y Asupark (trazado modificado)
 if (!store.get('purge.records-2026-11-05')) {
@@ -153,6 +162,7 @@ const FLAGS = {
   be: '<rect width="10" height="20" fill="#1b1b1b"/><rect x="10" width="10" height="20" fill="#fdda24"/><rect x="20" width="10" height="20" fill="#ef3340"/>',
   at: '<rect width="30" height="20" fill="#ed2939"/><rect y="6.67" width="30" height="6.67" fill="#f4f4f4"/>',
   ma: '<rect width="30" height="20" fill="#c1272d"/><polygon points="' + starPts(15, 10.4, 5.6, 2.2) + '" fill="none" stroke="#006233" stroke-width="1.1"/>',
+  cn: '<rect width="30" height="20" fill="#de2910"/><polygon points="5.00,2.00 5.71,4.03 7.85,4.07 6.14,5.37 6.76,7.43 5.00,6.20 3.24,7.43 3.86,5.37 2.15,4.07 4.29,4.03" fill="#ffde00"/><polygon points="10.00,1.00 10.24,1.68 10.95,1.69 10.38,2.12 10.59,2.81 10.00,2.40 9.41,2.81 9.62,2.12 9.05,1.69 9.76,1.68" fill="#ffde00"/><polygon points="12.00,3.00 12.24,3.68 12.95,3.69 12.38,4.12 12.59,4.81 12.00,4.40 11.41,4.81 11.62,4.12 11.05,3.69 11.76,3.68" fill="#ffde00"/><polygon points="12.00,6.00 12.24,6.68 12.95,6.69 12.38,7.12 12.59,7.81 12.00,7.40 11.41,7.81 11.62,7.12 11.05,6.69 11.76,6.68" fill="#ffde00"/><polygon points="10.00,8.00 10.24,8.68 10.95,8.69 10.38,9.12 10.59,9.81 10.00,9.40 9.41,9.81 9.62,9.12 9.05,8.69 9.76,8.68" fill="#ffde00"/>',
   jp: '<rect width="30" height="20" fill="#f4f4f4"/><circle cx="15" cy="10" r="5.6" fill="#bc002d"/>',
   br: '<rect width="30" height="20" fill="#009c3b"/><polygon points="15,2.5 27,10 15,17.5 3,10" fill="#ffdf00"/><circle cx="15" cy="10" r="3.6" fill="#002776"/>',
   mx: '<rect width="10" height="20" fill="#006847"/><rect x="10" width="10" height="20" fill="#f4f4f4"/><rect x="20" width="10" height="20" fill="#ce1126"/><circle cx="15" cy="10" r="2.2" fill="#8c6a2a"/>',
@@ -192,7 +202,7 @@ const playerDrv = () => ({ flag: lb.flag, helm: lb.helmet });
 const drvOf = (c) => (c && c.isPlayer ? playerDrv() : c && c.driver) || null;
 const drvIc = (d, sm) => d ? `<span class="flag${sm ? ' sm' : ''}">${flagSvg(d.flag)}</span><span class="hel${sm ? ' sm' : ''}">${helmetSvg(d.helm)}</span>` : '';
 const FLAG_NAMES = { es: 'España', pt: 'Portugal', fr: 'Francia', de: 'Alemania', it: 'Italia', gb: 'Reino Unido', ie: 'Irlanda', nl: 'Países Bajos', be: 'Bélgica', ch: 'Suiza', at: 'Austria', pl: 'Polonia', ro: 'Rumanía', ua: 'Ucrania', se: 'Suecia', mc: 'Mónaco', us: 'Estados Unidos', mx: 'México', co: 'Colombia', ar: 'Argentina', br: 'Brasil', pe: 'Perú', ma: 'Marruecos', jp: 'Japón', pr: 'Orgullo' };
-const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'Fórmula 0'], asupark: ['es', 'Asupark'], kartlos: ['ae', 'Kartlos'], madring: ['es', 'España'], magarigawa: ['jp', 'Japón'] };
+const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'Fórmula 0'], asupark: ['es', 'Asupark'], kartlos: ['ae', 'Kartlos'], madring: ['es', 'España'], magarigawa: ['jp', 'Japón'], muralla: ['cn', 'China'] };
 const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
 function drawPreview(cv, tr, th, w = 300, h = 130, kw = 1) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
@@ -225,8 +235,8 @@ $('pickCar').onclick = () => { if ($('menu').dataset.view === 'garage') { setVie
 $('flyClose').onclick = () => setView('home');
 window.addEventListener('keydown', (e) => { if (S.state === 'menu' && $('menu').dataset.view === 'tracks' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { $(e.code === 'ArrowLeft' ? 'stPrev' : 'stNext').click(); e.preventDefault(); e.stopPropagation(); } }, true);
 window.addEventListener('keydown', (e) => { if (e.code === 'Escape' && S.state === 'menu' && $('menu').dataset.view !== 'home') { setView('home'); e.stopPropagation(); } }, true);
-const MAP_LL = { pruebas: [36.7, -6.0], monaco: [43.74, 7.42], spa: [51.0, 5.6], valle: [-23.7, -46.7], desierto: [19.4, -99.1], neon: [35.7, 139.7], prisma: [34.7, 135.5], nieve: [47.1, 8.6], amazonas: [-12.0, -77.0], karting: [42.4, -1.2], asupark: [38.4, -3.2], kartlos: [25.2, 55.3], madring: [40.47, -3.6], magarigawa: [35.05, 139.92] };
-const CONTS = [{ id: 'eu', name: 'Europa', ll: [46, 8], z: 2.35, ids: ['pruebas', 'monaco', 'spa', 'nieve', 'karting', 'asupark', 'madring'] }, { id: 'am', name: 'América', ll: [-2, -72], z: 3.0, ids: ['valle', 'desierto', 'amazonas'] }, { id: 'as', name: 'Asia', ll: [31, 96], z: 3.6, ids: ['neon', 'prisma', 'kartlos', 'magarigawa'] }];
+const MAP_LL = { pruebas: [36.7, -6.0], monaco: [43.74, 7.42], spa: [51.0, 5.6], valle: [-23.7, -46.7], desierto: [19.4, -99.1], neon: [35.7, 139.7], prisma: [34.7, 135.5], nieve: [47.1, 8.6], amazonas: [-12.0, -77.0], karting: [42.4, -1.2], asupark: [38.4, -3.2], kartlos: [25.2, 55.3], madring: [40.47, -3.6], magarigawa: [35.05, 139.92], muralla: [40.43, 116.57] };
+const CONTS = [{ id: 'eu', name: 'Europa', ll: [46, 8], z: 2.35, ids: ['pruebas', 'monaco', 'spa', 'nieve', 'karting', 'asupark', 'madring'] }, { id: 'am', name: 'América', ll: [-2, -72], z: 3.0, ids: ['valle', 'desierto', 'amazonas'] }, { id: 'as', name: 'Asia', ll: [31, 96], z: 3.6, ids: ['neon', 'prisma', 'kartlos', 'magarigawa', 'muralla'] }];
 const contOf = (t) => CONTS.find((c) => c.ids.includes(t.th.id)) || CONTS[0];
 let globe = null, wmCont = null, wmWorld = false;
 function buildMap() {

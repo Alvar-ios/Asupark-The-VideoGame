@@ -9,6 +9,7 @@ import { fillWorld, backdrop, fillerBirds } from './filler.js';
 import { npcClock } from './npc.js';
 import { computeWalk, walkwayMesh } from './walkway.js';
 import { magarigawaDecor } from './magarigawa.js';
+import { murallaDecor } from './muralla.js';
 
 const col = (hex) => new THREE.Color(hex);
 
@@ -227,6 +228,12 @@ function colorGeometry(geo, r, g, b) {
 }
 
 const asphaltCache = new Map();
+let pavingCache = null;
+function pavingTex() { // losas de piedra de la muralla
+  if (pavingCache) return pavingCache;
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'); x.fillStyle = '#8d8373'; x.fillRect(0, 0, 256, 256); const t = ['#efe7d6', '#e2d8c4', '#f6efe0', '#d9cfba']; for (let r = 0; r < 8; r++) for (let k = -1; k < 5; k++) { x.fillStyle = t[(r * 3 + k + 5) % 4]; x.fillRect(k * 64 + (r % 2 ? 32 : 0) + 1.5, r * 32 + 1.5, 61, 29); }
+  pavingCache = new THREE.CanvasTexture(c); pavingCache.wrapS = pavingCache.wrapT = THREE.RepeatWrapping; pavingCache.colorSpace = THREE.SRGBColorSpace; pavingCache.anisotropy = 4; pavingCache.repeat.set(2, 2); return pavingCache;
+}
 function asphaltTex(th) {
   const key = th.id || 'default';
   if (asphaltCache.has(key)) return asphaltCache.get(key);
@@ -936,7 +943,7 @@ function roadMesh(tr, th, stride = 1) {
     const hi = tr.Y[i], hj = tr.Y[j];
     const hwI = tr.hw ? tr.hw[i] : hw, hwJ = tr.hw ? tr.hw[j] : hw; // semianchura del asfalto (variable en algunos circuitos)
     const brI = !!tr.bridge && cycD(i, tr.bridge.i) < tr.bridge.span, brJ = !!tr.bridge && cycD(j, tr.bridge.i) < tr.bridge.span; // sobre el cruce: laterales verticales de hormigón en vez de talud
-    const eoI = brI ? L + 0.35 : L + 2.5 + hi * 1.1, eoJ = brJ ? L + 0.35 : L + 2.5 + hj * 1.1;
+    const eoI = brI || th.wallTop ? L + 0.35 : L + 2.5 + hi * 1.1, eoJ = brJ || th.wallTop ? L + 0.35 : L + 2.5 + hj * 1.1;
     const KWI = isKart ? 1.4 : Math.min(1.9, L - hwI - 0.2, kerbFit(i, hwI)), KWJ = isKart ? 1.4 : Math.min(1.9, L - hwJ - 0.2, kerbFit(j, hwJ));
     const GW = tr.rg ? hwI + tr.rg[i] : hwI + KWI + 0.02, GWj = tr.rg ? hwJ + tr.rg[j] : hwJ + KWJ + 0.02;
 
@@ -972,7 +979,7 @@ function roadMesh(tr, th, stride = 1) {
       let color;
       let outerColor = null;
 
-      if (brI && (b <= 2 || b >= 12)) {
+      if (brI && !th.wallTop && (b <= 2 || b >= 12)) {
         color = cConcrete; outerColor = cConcrete;
       } else if (b === 0 || b === 14) {
         color = cGrass; outerColor = cDirt;
@@ -1031,7 +1038,7 @@ function roadMesh(tr, th, stride = 1) {
   };
 
   const wet = th.weather === 'rain', snow = th.surface === 'snow', dirt = th.surface === 'dirt';
-  const rTex = isKart ? marioTarmacTex() : asphaltTex(th);
+  const rTex = isKart ? marioTarmacTex() : th.wallTop ? pavingTex() : asphaltTex(th);
 
   let roadRough = 0.76, roadMetal = 0.01, envInt = 0.28;
   if (isKart) {
@@ -2528,7 +2535,8 @@ function scenery(tr, th, scene, rng, q) {
 // Elementos fuera de las vallas, según el paisaje de cada circuito: relieves, rocas, mesetas, cactus, bosques y pequeños poblados.
 // Se añade después de la decoración existente, así que no altera la colocación de árboles ni montañas.
 function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
-  if (th.id === 'magarigawa') { windLeaves.length = 0; backdrop(scene, 'jungle', cxm, czm, R, 1050); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
+  if (th.id === 'muralla') { windLeaves.length = 0; backdrop(scene, 'karst', cxm, czm, R, 1250); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
+  if (th.id === 'magarigawa') { windLeaves.length = 0; backdrop(scene, 'jungle', cxm, czm, R, 1500); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
   if (th.id === 'madring') { windLeaves.length = 0; backdrop(scene, 'city', cxm, czm, R, 520); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; } // el resto de su entorno lo construye madridDecor
   const id = th.id, dens = q.density, dummy = new THREE.Object3D();
   windLeaves.length = 0; // cada circuito construido empieza sin hojas de la carrera anterior
@@ -2863,7 +2871,7 @@ export function buildWorld(tr, th, opt = {}) {
     line.frustumCulled = false; scene.add(line);
   }
   scene.add(startGridBoxes(tr, th));
-  if (th.deco !== 'kart') scene.add(brakingMarks(tr, th));
+  if (th.deco !== 'kart' && !th.wallTop) scene.add(brakingMarks(tr, th));
   const walls = th.privateClub ? new THREE.Group() : wallMesh(tr, th, q.stride); // en el club las vallas siguen la escapatoria (magarigawa.js)
   walls.receiveShadow = true;
   walls.castShadow = !!q.shadows;
@@ -2921,7 +2929,7 @@ export function buildWorld(tr, th, opt = {}) {
       mesh.frustumCulled = false; mesh.receiveShadow = true; scene.add(mesh);
     }
   }
-  scene.add(archMesh(tr, th));
+  if (!th.wallTop) scene.add(archMesh(tr, th));
   { // línea de meta a cuadros
     const c = document.createElement('canvas'); c.width = 256; c.height = 32; const x = c.getContext('2d');
     for (let i = 0; i < 16; i++) for (let j = 0; j < 2; j++) { x.fillStyle = (i + j) % 2 ? '#111' : '#f4f4f4'; x.fillRect(i * 16, j * 16, 16, 16); }
@@ -2931,7 +2939,7 @@ export function buildWorld(tr, th, opt = {}) {
     const fl = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: t, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); fl.receiveShadow = true; scene.add(fl);
   }
   // Líneas blancas continuas de borde, separadas de los pianos elevados (circuitos realistas).
-  if (th.deco !== 'kart') {
+  if (th.deco !== 'kart' && !th.wallTop) {
     const edgeMat = new THREE.MeshBasicMaterial({ color: th.surface === 'snow' ? 0xd7e9ff : 0xf5f2e9, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     for (const side of [-1, 1]) {
       const hwf = roadHalfAt(tr), edge = new THREE.Mesh(stripGeom(tr, 0, tr.len - 1, (i, j, t) => side * (hwf(i, j, t) - 0.24) - 0.075, (i, j, t) => side * (hwf(i, j, t) - 0.24) + 0.075, 0.075), edgeMat);
@@ -2949,6 +2957,7 @@ export function buildWorld(tr, th, opt = {}) {
   const extraAnim = []; if (th.surround) kartSurroundings(tr, th, scene, extraAnim);
   if (th.id === 'madring') madridDecor(tr, th, scene, extraAnim, q);
   if (th.id === 'magarigawa') magarigawaDecor(tr, th, scene, q);
+  if (th.id === 'muralla') murallaDecor(tr, th, scene, q);
   const info = scenery(tr, th, scene, rng, q);
   const windDummy = new THREE.Object3D();
   let windClock = 0;

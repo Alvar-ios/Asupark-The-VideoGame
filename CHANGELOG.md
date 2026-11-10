@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.77
+- Magarigawa Club reducido a escala de juego (unos 1,9 km): pista más estrecha, curvas más cerradas y rectas hacia la horquilla mucho más cortas. Se descartan sus tiempos anteriores.
+- Nuevo circuito de karts: Gran Muralla (China), sobre muros de piedra almenados con horquillas apiladas, un puente sobre otro tramo, torres, puertas y picos kársticos.
+
 ## 0.0.76
 - Nuevo circuito: Magarigawa Club (Japón), calcado de la foto aérea: 3,5 km, 22 curvas, grandes desniveles, escapatorias de asfalto azul, pianos blancos y negros, club blanco junto a meta y montañas de bosque cerrado.
 

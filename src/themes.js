@@ -1,3 +1,4 @@
+import { NODES as MU_NODES, START as MU_START, CROSS as MU_CROSS, HILLS as MU_HILLS } from './muralla-data.js';
 import { NODES as MG_NODES, START as MG_START, HILLS as MG_HILLS, RUNOFF as MG_RUNOFF } from './magarigawa-data.js';
 import { hashStr } from './rng.js';
 
@@ -126,15 +127,27 @@ export const THEMES = {
     hemiSky: 0xe6f0fb, hemiGround: 0x74705e, hemiI: 1.1, sunI: 1.35, deco: 'madrid', treeCol: 0x4c7a38, night: false, temp: 17, humidity: 0.3, wind: [3, 0.8], gripMul: 1, offroad: 0.6, slope: 1.3,
   },
   magarigawa: {
-    id: 'magarigawa', name: 'Magarigawa Club · Japón', sub: 'Club privado entre montañas: 22 curvas, 3,5 km, grandes desniveles y escapatorias azules', seed: 'magarigawa-1', privateClub: true, ownTerrain: true, runoffCol: 0x2f8d80,
+    id: 'magarigawa', name: 'Magarigawa Club · Japón', sub: 'Club privado entre montañas: 22 curvas, técnico, grandes desniveles y escapatorias azules', seed: 'magarigawa-1', privateClub: true, ownTerrain: true, runoffCol: 0x2f8d80,
     style: {
-      fixedNodes: MG_NODES, startNear: MG_START, scale: 1, half: 5.6, widthMax: 7, wall: 9.8, minR: 7, sep: 14, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [],
-      runoff: { gravel: 2.3, open: [], key: 'paint' }, runoffEdge: MG_RUNOFF, hillPts: MG_HILLS, hillSmooth: 10, noAir: true,
+      fixedNodes: MG_NODES, startNear: MG_START, scale: 1, half: 3.9, widthMax: 5, wall: 7.2, minR: 5, sep: 10, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [],
+      runoff: { gravel: 2, open: [], key: 'paint' }, runoffEdge: MG_RUNOFF, hillPts: MG_HILLS, hillSmooth: 8, noAir: true,
     },
     skyTop: 0x4f9fe8, skyHor: 0xe6f1f6, fog: 0xdbe9ee, fogNear: 500, fogFar: 3000,
     ground: 0x3f7a35, grass: 0x2f8d80, dirt: 0x2f8d80, road: 0x46423f, kerb1: 0x16171a, kerb2: 0xf7f7f5,
     wall1: 0xdedcd3, wall2: 0xc42a2a, mount: 0x4f8050, sun: 0xfff6e2, sunDir: [-0.35, 0.78, 0.4],
     hemiSky: 0xeaf4ff, hemiGround: 0x7c8f62, hemiI: 1.25, sunI: 1.5, deco: 'madrid', treeCount: 1, treeCol: 0x3f7a35, night: false, temp: 22, humidity: 0.35, wind: [2, 0.6], gripMul: 1, offroad: 0.74, offroadGrip: 0.8, slope: 1.1,
+  },
+  muralla: {
+    id: 'muralla', name: 'Gran Muralla · China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,
+    style: {
+      fixedNodes: MU_NODES, startNear: MU_START, scale: 1, half: 3.0, widthMax: 4.4, wall: 5.2, minR: 5.5, sep: 10.5, extraSmooth: 3, noKerb: true, baseY: 34,
+      cross: MU_CROSS, bridgeH: 0.1, bridgePlat: 8, bridgeRamp: 20, bridgeSpan: 9,
+      chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], hillPts: MU_HILLS, hillSmooth: 5, noAir: true,
+    },
+    skyTop: 0x6ea8dc, skyHor: 0xeef2ee, fog: 0xdfe8e6, fogNear: 260, fogFar: 2300,
+    ground: 0xc9bca6, grass: 0xc4b294, dirt: 0xb9a78a, road: 0xe4d6bd, kerb1: 0xb9a78a, kerb2: 0xb9a78a,
+    wall1: 0x8f8676, wall2: 0x6f6658, mount: 0x5f8a66, sun: 0xfff3dc, sunDir: [-0.4, 0.72, 0.42],
+    hemiSky: 0xf2f2f0, hemiGround: 0xb8a88e, hemiI: 1.15, sunI: 1.35, deco: 'madrid', treeCount: 1, treeCol: 0x3f7a35, night: false, temp: 18, humidity: 0.4, wind: [3, 0.9], gripMul: 1, offroad: 0.96, offroadGrip: 0.96, rollingDrag: 0.08, steerOffroad: 1, slope: 0.9,
   },
   // Fórmula 0 (kartódromo): pista estrecha y técnica, horquillas y eses, muros de neumáticos
   karting: {
@@ -175,7 +188,7 @@ export const THEMES = {
     hemiSky: 0xf0f4ff, hemiGround: 0x9a8058, hemiI: 1.0, sunI: 1.35, deco: 'cactus', treeCol: 0x5b7a3a, treeCount: 40, night: false, temp: 31, humidity: 0.15, wind: [2, 0.4], gripMul: 1, offroad: 0.6,
   },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring', 'magarigawa'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring', 'magarigawa', 'muralla'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

@@ -47,6 +47,7 @@ const RINGS = {
   city: (x, W, H) => blocks(x, W, H, ['#c9bda8', '#b39e86', '#d8d0c0', '#a8a39a', '#b98d72'], ['#31424f', '#425664', '#6d8089']),
   neon: (x, W, H) => blocks(x, W, H, ['#10141f', '#161a2a', '#0d1120', '#1b1730'], ['#ffd27a', '#5ff0ff', '#ff5fc4', '#fff4c8'], true),
   favela: (x, W, H) => { x.fillStyle = '#4f7a44'; x.beginPath(); x.moveTo(0, H); for (let px = 0; px <= W; px += 30) x.lineTo(px, 80 + Math.sin(px * 0.012) * 26 + Math.sin(px * 0.031) * 12); x.lineTo(W, H); x.fill(); const c = ['#d8795a', '#e7c26a', '#8fb4c9', '#e8e0d0', '#c95d5d', '#7fae7a', '#d39a4f']; for (let k = 0; k < 2600; k++) { const px = Math.random() * W, y0 = 90 + Math.sin(px * 0.012) * 26 + Math.sin(px * 0.031) * 12, py = y0 + Math.random() * (H - y0); x.fillStyle = c[Math.floor(Math.random() * c.length)]; x.fillRect(px, py, R0(6, 12), R0(5, 9)); } },
+  karst: (x, W) => { for (const [c, base, h0, h1] of [['#a9c3c0', 150, 70, 130], ['#7ea096', 180, 50, 110], ['#55806a', 215, 30, 85]]) { x.fillStyle = c; for (let px = -30; px < W + 30; px += R0(26, 60)) { const h = R0(h0, h1), w = R0(18, 34); x.beginPath(); x.moveTo(px - w, 256); x.lineTo(px - w * 0.9, base - h * 0.5); x.quadraticCurveTo(px - w * 0.6, base - h, px, base - h); x.quadraticCurveTo(px + w * 0.6, base - h, px + w * 0.9, base - h * 0.5); x.lineTo(px + w, 256); x.fill(); } x.fillRect(0, base, W, 256 - base); } },
   toy: (x, W) => bump(x, W, 160, 20, 80, ['#ffd86b', '#7fe08a', '#5cc8ff'], 70),
 };
 const lerp = (a, b) => R0(a, b);

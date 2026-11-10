@@ -16,3 +16,7 @@ where updated_at < '2026-11-09T17:32:00Z' and track_id in ('amazonas', 'madring'
 -- Madring: alturas y chicane rehechas (v0.0.73). Borra TODOS sus tiempos y fantasmas anteriores a v0.0.74.
 delete from public.lap_times
 where updated_at < '2026-11-09T20:40:00Z' and track_id = 'madring';
+
+-- Magarigawa Club: reescalado y con las rectas recortadas (v0.0.77). Borra todos sus tiempos y fantasmas anteriores.
+delete from public.lap_times
+where updated_at < '2026-11-10T23:54:00Z' and track_id = 'magarigawa';

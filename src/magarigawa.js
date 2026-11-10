@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { WALL } from './track.js';
 import { spriteField } from './filler.js';
-import { MPP } from './magarigawa-data.js';
+import { MPP, WIDE } from './magarigawa-data.js';
 
 const P = (x, y) => [(20 + x / 3.2) * MPP, (50 + y / 3.2) * MPP];
 const SERVICE = [[950, 272], [1003, 304], [998, 384], [939, 437], [811, 469], [747, 464], [640, 544], [501, 565], [448, 501], [320, 475], [256, 533], [251, 608], [309, 768], [363, 821]];
@@ -22,7 +22,7 @@ const glassTex = () => canvas(256, 64, (x, W, H) => { x.fillStyle = '#23465a'; x
 export function magarigawaDecor(tr, th, scene, q) {
   const N = tr.N, L = WALL, mobile = q.density < 1, E = tr.wallEdge, G = new THREE.Group(); scene.add(G);
   let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9; for (let i = 0; i < N; i += 4) { minX = Math.min(minX, tr.X[i]); maxX = Math.max(maxX, tr.X[i]); minZ = Math.min(minZ, tr.Z[i]); maxZ = Math.max(maxZ, tr.Z[i]); }
-  const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2, HALF = 1900, step = mobile ? 20 : 12, n = Math.ceil((2 * HALF) / step) + 1, x0 = cx - HALF, z0 = cz - HALF, id = (a, b) => b * n + a;
+  const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2, HALF = 1500, step = mobile ? 16 : 10, n = Math.ceil((2 * HALF) / step) + 1, x0 = cx - HALF, z0 = cz - HALF, id = (a, b) => b * n + a;
   const H = new Float32Array(n * n).fill(1e9), fixed = new Uint8Array(n * n), D = new Float32Array(n * n).fill(1e9);
   const mark = (x, z, y) => { const a = Math.round((x - x0) / step), b = Math.round((z - z0) / step); for (const [p, r] of [[a, b], [a + 1, b], [a - 1, b], [a, b + 1], [a, b - 1]]) { if (p < 0 || r < 0 || p >= n || r >= n) continue; const k = id(p, r); fixed[k] = 1; D[k] = 0; if (y < H[k]) H[k] = y; } };
   for (let i = 0; i < N; i += 2) for (const sd of [0, 1]) { const s = sd ? 1 : -1, w = E[sd][i] + 2; for (let l = 0; l <= w; l += step * 0.55) mark(tr.X[i] - tr.TZ[i] * l * s, tr.Z[i] + tr.TX[i] * l * s, tr.Y[i] - 1.4); }
@@ -65,7 +65,7 @@ export function magarigawaDecor(tr, th, scene, q) {
       quad(wall, pt(i, s, wi, yi + 0.85), pt(i, s, wi, yi + 1.05), pt(j, s, wj, yj + 0.85), pt(j, s, wj, yj + 1.05)); paint(wall, cR);
       const u0 = i * tr.ds / 0.8, u1 = u0 + stride * tr.ds / 0.8, a = pt(i, s, wi, yi + 1.05), b = pt(i, s, wi, yi + 4.2), c = pt(j, s, wj, yj + 1.05), d = pt(j, s, wj, yj + 4.2);
       net.p.push(...a, ...c, ...b, ...b, ...c, ...d); net.u.push(u0, 0, u1, 0, u0, 3.9, u0, 3.9, u1, 0, u1, 3.9);
-      const R = 1 / Math.max(tr.absK[i], 1e-4), inner = tr.kerb[i] === s, u = i / N, wide = u > 0.33 && u < 0.7, want = wide ? 14 : 3.5, sw = room(i, s, wi, inner ? Math.max(0, Math.min(want, R * 0.92 - wi)) : want), swj = room(j, s, wj, sw); // celosía ancha solo en el terraplén de las rectas
+      const R = 1 / Math.max(tr.absK[i], 1e-4), inner = tr.kerb[i] === s, u = i / N, wide = u > WIDE[0] && u < WIDE[1], want = wide ? 9 : 3, sw = room(i, s, wi, inner ? Math.max(0, Math.min(want, R * 0.92 - wi)) : want), swj = room(j, s, wj, sw); // celosía ancha solo en el terraplén de las rectas
       if (sw > 1 && swj > 1) { const ea = pt(i, s, wi + sw, 0), eb = pt(j, s, wj + swj, 0); ea[1] = Math.min(yi + 3, hAt(ea[0], ea[2]) + 0.2); eb[1] = Math.min(yj + 3, hAt(eb[0], eb[2]) + 0.2); const fa = pt(i, s, wi, yi - 0.05), fb = pt(j, s, wj, yj - 0.05); slope.p.push(...fa, ...fb, ...ea, ...ea, ...fb, ...eb); const v0 = u0 / 6, v1 = u1 / 6; slope.u.push(v0, 0, v1, 0, v0, 2.4, v0, 2.4, v1, 0, v1, 2.4); }
       if (i % 8 < stride) posts.push(pt(i, s, wi, yi));
     } }
@@ -79,8 +79,8 @@ export function magarigawaDecor(tr, th, scene, q) {
   { const D3 = new THREE.Object3D(), m = new THREE.InstancedMesh(new THREE.BoxGeometry(0.12, 4.3, 0.12).translate(0, 2.15, 0), new THREE.MeshLambertMaterial({ color: 0xd7dadd }), posts.length); posts.forEach((p, k) => { D3.position.set(p[0], p[1], p[2]); D3.updateMatrix(); m.setMatrixAt(k, D3.matrix); }); m.frustumCulled = false; G.add(m); }
   // caminos de servicio y calle de boxes, asentados en el terreno
   const road = (list, w, color) => { const p = [], pts = list.map(([x, y]) => P(x, y)); for (let k = 0; k < pts.length - 1; k++) { const [ax, az] = pts[k], [bx, bz] = pts[k + 1], len = Math.hypot(bx - ax, bz - az), nx = -(bz - az) / len * w / 2, nz = (bx - ax) / len * w / 2, st = Math.ceil(len / 8); for (let q2 = 0; q2 < st; q2++) { const t0 = q2 / st, t1 = (q2 + 1) / st, v = (t, sgn) => { const x = ax + (bx - ax) * t + nx * sgn, z = az + (bz - az) * t + nz * sgn; return [x, hAt(x, z) + 0.3, z]; }; p.push(...v(t0, -1), ...v(t1, -1), ...v(t0, 1), ...v(t0, 1), ...v(t1, -1), ...v(t1, 1)); } } add(buf(p), new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide })); };
-  road(SERVICE, 6, 0xb9bcbd); road(PITLANE, 8, 0x3b3a3c);
-  const onService = (x, z) => { for (const list of [SERVICE, PITLANE]) for (let k = 0; k < list.length - 1; k++) { const [ax, az] = P(...list[k]), [bx, bz] = P(...list[k + 1]), ex = bx - ax, ez = bz - az, t = Math.min(1, Math.max(0, ((x - ax) * ex + (z - az) * ez) / (ex * ex + ez * ez))); if ((ax + ex * t - x) ** 2 + (az + ez * t - z) ** 2 < 49) return true; } return false; };
+  road(SERVICE, 4, 0xb9bcbd); road(PITLANE, 5, 0x3b3a3c);
+  const onService = (x, z) => { for (const list of [SERVICE, PITLANE]) for (let k = 0; k < list.length - 1; k++) { const [ax, az] = P(...list[k]), [bx, bz] = P(...list[k + 1]), ex = bx - ax, ez = bz - az, t = Math.min(1, Math.max(0, ((x - ax) * ex + (z - az) * ez) / (ex * ex + ez * ez))); if ((ax + ex * t - x) ** 2 + (az + ez * t - z) ** 2 < 25) return true; } return false; };
   // edificios
   const lam = (c) => new THREE.MeshLambertMaterial({ color: c }), white = lam(0xf4f3ee), slate = lam(0x4a4f57), concrete = lam(0xb4b6b4), glass = new THREE.MeshLambertMaterial({ map: glassTex() }), shadow = !!q.shadows;
   const box = (ax, ay, bx, by, y, h, mat) => { const [a, b] = P(ax, ay), [c, d] = P(bx, by), m = new THREE.Mesh(new THREE.BoxGeometry(c - a, h, d - b), mat); m.position.set((a + c) / 2, y + h / 2, (b + d) / 2); m.castShadow = shadow; G.add(m); return m; };

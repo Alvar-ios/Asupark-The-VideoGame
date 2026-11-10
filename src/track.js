@@ -241,6 +241,7 @@ export function buildTrack(seed, style) {
   tr.kerb = new Int8Array(N); { const raw = new Int8Array(N);
     for (let i = 0; i < N; i++) { let km = 0; for (let d = -10; d <= 10; d++) km += kap[(i + d + N) % N]; km /= 21; if (Math.abs(km) > 0.0075) raw[i] = km > 0 ? -1 : 1; }
     for (let i = 0; i < N; i++) if (raw[i]) for (let d = -14; d <= 14; d++) { const j = (i + d + N) % N; if (!tr.kerb[j]) tr.kerb[j] = raw[i]; } }
+  if (style.noKerb) tr.kerb.fill(0);
   // muros de neumáticos de los karts: pegados al borde del piano (en curvas) o a la pista (en rectas)
   // style.wallMode: 'all' = en todo el trazado; 'curves' = en las curvas, y en rectas a la distancia normal de la valla
   if (style.wallMode) {
@@ -311,7 +312,7 @@ export function buildTrack(seed, style) {
   minBase = 1e9; for (let i = 0; i < N; i++) minBase = Math.min(minBase, base[i]);
   // fuera de la salida la pista es llana (primeros metros)
   for (let i = 0; i < N; i++) {
-    let h = base[i] - minBase + 0.8;
+    let h = base[i] - minBase + 0.8 + (style.baseY || 0);
     const s = i * ds;
     for (const r of tr.rollers) {
       const u = s - r.s0;
