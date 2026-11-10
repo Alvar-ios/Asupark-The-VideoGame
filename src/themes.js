@@ -1,3 +1,4 @@
+import { NODES as MG_NODES, START as MG_START, HILLS as MG_HILLS, RUNOFF as MG_RUNOFF } from './magarigawa-data.js';
 import { hashStr } from './rng.js';
 
 export const THEMES = {
@@ -124,6 +125,17 @@ export const THEMES = {
     wall1: 0xf4f4f4, wall2: 0xc8102e, mount: 0x7f93a8, sun: 0xfff2d6, sunDir: [-0.4, 0.68, 0.42],
     hemiSky: 0xe6f0fb, hemiGround: 0x74705e, hemiI: 1.1, sunI: 1.35, deco: 'madrid', treeCol: 0x4c7a38, night: false, temp: 17, humidity: 0.3, wind: [3, 0.8], gripMul: 1, offroad: 0.6, slope: 1.3,
   },
+  magarigawa: {
+    id: 'magarigawa', name: 'Magarigawa Club · Japón', sub: 'Club privado entre montañas: 22 curvas, 3,5 km, grandes desniveles y escapatorias azules', seed: 'magarigawa-1', privateClub: true, ownTerrain: true, runoffCol: 0x2f8d80,
+    style: {
+      fixedNodes: MG_NODES, startNear: MG_START, scale: 1, half: 5.6, widthMax: 7, wall: 9.8, minR: 7, sep: 14, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [],
+      runoff: { gravel: 2.3, open: [], key: 'paint' }, runoffEdge: MG_RUNOFF, hillPts: MG_HILLS, hillSmooth: 10, noAir: true,
+    },
+    skyTop: 0x4f9fe8, skyHor: 0xe6f1f6, fog: 0xdbe9ee, fogNear: 500, fogFar: 3000,
+    ground: 0x3f7a35, grass: 0x2f8d80, dirt: 0x2f8d80, road: 0x46423f, kerb1: 0x16171a, kerb2: 0xf7f7f5,
+    wall1: 0xdedcd3, wall2: 0xc42a2a, mount: 0x4f8050, sun: 0xfff6e2, sunDir: [-0.35, 0.78, 0.4],
+    hemiSky: 0xeaf4ff, hemiGround: 0x7c8f62, hemiI: 1.25, sunI: 1.5, deco: 'madrid', treeCount: 1, treeCol: 0x3f7a35, night: false, temp: 22, humidity: 0.35, wind: [2, 0.6], gripMul: 1, offroad: 0.74, offroadGrip: 0.8, slope: 1.1,
+  },
   // Fórmula 0 (kartódromo): pista estrecha y técnica, horquillas y eses, muros de neumáticos
   karting: {
     id: 'karting', name: 'Fórmula 0', sub: 'Muy revirado: recta diagonal, eses y horquillas entre muros de neumáticos', tireWalls: true, logo: 'formula0', surround: 'f0', kerbH: 2.3, seed: 'karting-v2',
@@ -163,7 +175,7 @@ export const THEMES = {
     hemiSky: 0xf0f4ff, hemiGround: 0x9a8058, hemiI: 1.0, sunI: 1.35, deco: 'cactus', treeCol: 0x5b7a3a, treeCount: 40, night: false, temp: 31, humidity: 0.15, wind: [2, 0.4], gripMul: 1, offroad: 0.6,
   },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring', 'magarigawa'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

@@ -208,7 +208,7 @@ export function buildTrack(seed, style) {
   tr.zones = (style.zones || []).map(([u0, u1, type]) => ({ s0: u0 * len, s1: u1 * len, type }));
   // escapatorias: ancho de grava junto al asfalto (más ancho en las zonas «abiertas», donde además no hay árboles); más allá, hierba hasta la valla
   if (style.runoff) {
-    tr.rg = new Float32Array(N); tr.open = new Uint8Array(N);
+    tr.rg = new Float32Array(N); tr.open = new Uint8Array(N); tr.runoffKey = style.runoff.key || null;
     const sm = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
     for (let i = 0; i < N; i++) {
       const u = i / N; let extra = 0;
@@ -252,6 +252,15 @@ export function buildTrack(seed, style) {
       const edge = (tr.half || 3.4) + 1.4 + (inside ? 1.4 * kE[i] : 0); // borde del piano en ese lado
       tr.wallEdge[s][i] = style.wallMode === 'curves' && kv === 0 ? tr.wall : edge;
     }
+  }
+  // vallas a distancia variable, medida en la foto del circuito: [izquierda, derecha] por fracción de vuelta
+  if (style.runoffEdge) {
+    tr.wallEdge = style.runoffEdge.map((arr, sd) => {
+      const K = arr.length, s = sd ? 1 : -1, raw = new Float32Array(N), out = new Float32Array(N);
+      for (let i = 0; i < N; i++) { const f = (i / N) * K, a = Math.floor(f) % K, b = (a + 1) % K, t = f - Math.floor(f); let w = Math.max(tr.wall + 0.6, arr[a] + (arr[b] - arr[a]) * t); let km = 0; for (let d = -12; d <= 12; d += 3) km = Math.max(km, kap[(i + d + N) % N] * -s); if (km > 0.002) w = Math.min(w, Math.max(tr.wall + 0.6, 0.8 / km)); raw[i] = w; } // por dentro de una curva la valla no puede pasar del centro de giro
+      for (let i = 0; i < N; i++) { let v = 0; for (let d = -14; d <= 14; d++) v += raw[(i + d + N) % N]; out[i] = v / 29; }
+      return out;
+    });
   }
   // --- perfil de altura ---
   const A1 = style.hill || 0, ph = [rng() * TAU, rng() * TAU, rng() * TAU];

@@ -8,6 +8,7 @@ import { madridDecor } from './madrid.js';
 import { fillWorld, backdrop, fillerBirds } from './filler.js';
 import { npcClock } from './npc.js';
 import { computeWalk, walkwayMesh } from './walkway.js';
+import { magarigawaDecor } from './magarigawa.js';
 
 const col = (hex) => new THREE.Color(hex);
 
@@ -913,7 +914,7 @@ function roadMesh(tr, th, stride = 1) {
   const k1 = col(th.kerb1).multiplyScalar(0.9), k2 = col(th.kerb2).multiplyScalar(0.92);
   const yel = col(0xffc400), blk = col(0x222222);
   const kset = th.kerbs3 ? th.kerbs3.map((c) => col(c).multiplyScalar(0.92)) : null;
-  const cGravel = col(0xd4be88);
+  const cGravel = col(th.runoffCol ?? 0xd4be88);
 
   const kEnv = new Float32Array(N);
   for (let i = 0; i < N; i++) {
@@ -976,7 +977,7 @@ function roadMesh(tr, th, stride = 1) {
       } else if (b === 0 || b === 14) {
         color = cGrass; outerColor = cDirt;
       } else if (b === 1 || b === 13) {
-        color = tr.rg ? cGrass.clone().multiplyScalar(Math.floor(s / 14) % 2 ? 1 : 0.93) : cGrass;
+        color = th.runoffCol != null ? cGravel.clone().multiplyScalar(0.72) : tr.rg ? cGrass.clone().multiplyScalar(Math.floor(s / 14) % 2 ? 1 : 0.93) : cGrass;
       } else if (b === 2 || b === 12) {
         color = tr.rg ? cGravel.clone().multiplyScalar(0.92 + 0.08 * (((Math.sin(Math.floor(s / 3) * 5.31 + b) * 4375.5) % 1 + 1) % 1)) : cGrass;
       } else if (b === 3 || b === 4 || b === 5 || b === 9 || b === 10 || b === 11) {
@@ -984,7 +985,7 @@ function roadMesh(tr, th, stride = 1) {
         const baseKerb = isKart
           ? (stripe ? col(0xee2c2c) : col(0xffffff))
           : (kset ? kset[stripeN % 3] : (stripe ? k1 : k2));
-        let kShaded = isKart ? baseKerb.clone() : wornC(baseKerb, stripeN).lerp(cRoad2, 1 - kEnv[i]);
+        let kShaded = isKart ? baseKerb.clone() : th.privateClub ? baseKerb.clone().multiplyScalar(stripe ? 1 : 1.2) : wornC(baseKerb, stripeN).lerp(cRoad2, 1 - kEnv[i]);
         if (b === 4 || b === 10) kShaded.multiplyScalar(isKart ? 1.0 : 1.08);
         else if (b === 3 || b === 11) kShaded.multiplyScalar(isKart ? 0.9 : 0.72);
         color = th.noKerbs ? cGrass : hasKerb ? kShaded : (tr.rg ? cGravel : cRoad2);
@@ -1059,12 +1060,12 @@ function roadMesh(tr, th, stride = 1) {
   const kerbMaterial = new THREE.MeshStandardMaterial({
     vertexColors: true, side: THREE.DoubleSide,
     roughness: isKart ? 0.45 : 0.68, metalness: 0.02,
-    map: isKart ? null : kerbTex(), envMapIntensity: 0.22, flatShading: isKart
+    map: isKart || th.privateClub ? null : kerbTex(), envMapIntensity: 0.22, flatShading: isKart
   });
 
   const gravelMaterial = new THREE.MeshStandardMaterial({
     vertexColors: true, side: THREE.DoubleSide,
-    roughness: 0.95, metalness: 0.01, map: gravelTex()
+    roughness: 0.95, metalness: 0.01, map: th.runoffCol != null ? null : gravelTex()
   });
 
   const edgeMaterial = new THREE.MeshStandardMaterial({
@@ -2527,6 +2528,7 @@ function scenery(tr, th, scene, rng, q) {
 // Elementos fuera de las vallas, según el paisaje de cada circuito: relieves, rocas, mesetas, cactus, bosques y pequeños poblados.
 // Se añade después de la decoración existente, así que no altera la colocación de árboles ni montañas.
 function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
+  if (th.id === 'magarigawa') { windLeaves.length = 0; backdrop(scene, 'jungle', cxm, czm, R, 1050); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
   if (th.id === 'madring') { windLeaves.length = 0; backdrop(scene, 'city', cxm, czm, R, 520); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; } // el resto de su entorno lo construye madridDecor
   const id = th.id, dens = q.density, dummy = new THREE.Object3D();
   windLeaves.length = 0; // cada circuito construido empieza sin hojas de la carrera anterior
@@ -2862,7 +2864,7 @@ export function buildWorld(tr, th, opt = {}) {
   }
   scene.add(startGridBoxes(tr, th));
   if (th.deco !== 'kart') scene.add(brakingMarks(tr, th));
-  const walls = wallMesh(tr, th, q.stride);
+  const walls = th.privateClub ? new THREE.Group() : wallMesh(tr, th, q.stride); // en el club las vallas siguen la escapatoria (magarigawa.js)
   walls.receiveShadow = true;
   walls.castShadow = !!q.shadows;
   scene.add(walls);
@@ -2872,7 +2874,7 @@ export function buildWorld(tr, th, opt = {}) {
     marioPipes(scene, !!q.shadows);
     marioProps(scene, !!q.shadows);
     marioArrows(tr, scene);
-  } else {
+  } else if (!th.privateClub) {
     distanceMarkers(tr, th, scene);
     sponsorHoardings(tr, th, scene);
     motorsportAmbiance(tr, th, scene, q);
@@ -2936,7 +2938,7 @@ export function buildWorld(tr, th, opt = {}) {
       edge.frustumCulled = false; scene.add(edge);
     }
   }
-  if (th.deco !== 'kart') {
+  if (th.deco !== 'kart' && !th.privateClub) {
     scene.add(gantry(tr, tr.len / 3, 'S2', '#66e8ff'));
     scene.add(gantry(tr, (tr.len * 2) / 3, 'S3', '#66e8ff'));
     if (!th.tireWalls) tyreStacks(tr, th, scene);
@@ -2946,6 +2948,7 @@ export function buildWorld(tr, th, opt = {}) {
   startFlag(tr, th, scene, opt.flagSvg);
   const extraAnim = []; if (th.surround) kartSurroundings(tr, th, scene, extraAnim);
   if (th.id === 'madring') madridDecor(tr, th, scene, extraAnim, q);
+  if (th.id === 'magarigawa') magarigawaDecor(tr, th, scene, q);
   const info = scenery(tr, th, scene, rng, q);
   const windDummy = new THREE.Object3D();
   let windClock = 0;
@@ -2972,7 +2975,7 @@ export function buildWorld(tr, th, opt = {}) {
   const gs = 5200;
   const gg = new THREE.PlaneGeometry(gs, gs, 1, 1).rotateX(-Math.PI / 2);
   const ground = new THREE.Mesh(gg, new THREE.MeshLambertMaterial({ color: th.ground, map: groundTex() }));
-  ground.position.set(info.cx, 0, info.cz); ground.receiveShadow = true; scene.add(ground);
+  ground.position.set(info.cx, th.ownTerrain ? -30 : 0, info.cz); ground.receiveShadow = true; scene.add(ground);
 
   // líneas de sector
   const lm = new THREE.MeshBasicMaterial({ color: 0x66e8ff, transparent: true, opacity: 0.55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide });

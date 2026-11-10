@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.76
+- Nuevo circuito: Magarigawa Club (Japón), calcado de la foto aérea: 3,5 km, 22 curvas, grandes desniveles, escapatorias de asfalto azul, pianos blancos y negros, club blanco junto a meta y montañas de bosque cerrado.
+
 ## 0.0.75
 - Perú: tribuna de madera con techo de paja y postes de troncos.
 - Circuito de juguete: casas-seta con puerta, ventanas y chimenea.
