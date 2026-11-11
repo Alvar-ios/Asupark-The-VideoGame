@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.69
+- Nuevo coche: Kart Dorado, en el grupo Karts. Mismo modelo que el Kart 125cc, pintado en dorado de serie, con un poco más de velocidad, aceleración, giro y agarre.
+
 ## 0.0.68
 - Scroll táctil arreglado en todas las pantallas: un reset global (touch-action:none) impedía deslizar al tocar casi cualquier elemento de menú, ajustes, música, perfil, ranking, reto, pausa y resultados. Ahora se desliza en vertical desde cualquier punto (los sliders y el globo siguen arrastrándose).
 
