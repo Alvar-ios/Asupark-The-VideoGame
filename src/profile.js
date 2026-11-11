@@ -41,6 +41,7 @@ export function initProfile(ctx) {
 
   async function profileView() {
     const st = acc.profile; if (!st) { body().innerHTML = '<p class="keys" style="display:block">Cargando…</p>'; return; }
+    if (!body().children.length) body().innerHTML = '<p class="keys" style="display:block">Cargando…</p>';
     let hall = null; try { hall = await acc.hall(); } catch (e) { /* sin salón */ }
     try { const fresh = await acc.stats(st.user_id); if (fresh) Object.assign(st, fresh); } catch (e) { /* datos en caché */ }
     const A = achievements(st, hall);

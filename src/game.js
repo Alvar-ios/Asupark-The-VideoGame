@@ -1366,7 +1366,7 @@ $('pauseBoard').onclick = () => openBoard(S.trackInfo && S.trackInfo.key);
 function openBoard(trackKey) {
   BD.track = Math.max(0, tracks.findIndex((t) => t.key === (trackKey || tracks[sel.track].key))); BD.group = groupIdOfCar(CARS[sel.car].id); // se abre en la categoría del coche que usas
   $('board').classList.remove('hidden'); renderBoard();
-  setTimeout(() => { const on = $('boardTracks').querySelector('.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' }); }, 30);
+  setTimeout(() => { for (const id of ['boardTracks', 'boardGroups']) { const on = $(id).querySelector('.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' }); } }, 30);
 }
 $('boardTracks').onclick = (e) => { const b = e.target.closest('button'); if (b) { BD.track = +b.dataset.i; renderBoard(); } };
 $('boardGroups').onclick = (e) => { const b = e.target.closest('button'); if (b) { BD.group = b.dataset.g; renderBoard(); } };

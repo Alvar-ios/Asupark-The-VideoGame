@@ -2,6 +2,15 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.88
+- Lavado de cara en móvil:
+  - Clasificación, ajustes, perfil, música, pausa y resultados se abren a pantalla completa, con el botón de cerrar fijo abajo.
+  - En la clasificación, circuitos y categorías van en una fila que se desliza, y se ve la lista entera sin una caja con scroll dentro.
+  - En la tabla del reto del día, los sectores pasan debajo del nombre para que se lean el tiempo y la diferencia.
+  - Contrarreloj y Racing: el botón JUGAR queda abajo, al alcance del pulgar, y circuito y coche ocupan el ancho completo.
+  - Selección de circuito con un globo más pequeño y más lista; categorías de coches en una fila deslizable.
+  - Ajustes como lista de opciones a ancho completo.
+
 ## 0.0.87
 - Nuevo menú de inicio tipo app: arriba el reto del día; justo debajo las ligas (tus ligas con posición y puntos, crear o unirte); luego Contrarreloj y Clasificación; y «Racing» (Carreras y Gran Premio) en una sección discreta al final. Barra inferior con Inicio, Ligas, Ranking, Amigos y Perfil; la música y los ajustes pasan arriba a la derecha.
 - Premio Lentorro: ahora es el jugador con menos puntos de la liga, siempre que ayer haya corrido el reto (si el último en puntos no jugó, no hay Lentorro ese día). Se marca con 🐌 en la clasificación de la liga y se avisa en el inicio.

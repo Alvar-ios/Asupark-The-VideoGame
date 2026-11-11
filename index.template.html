@@ -1218,6 +1218,53 @@ body.mobile #hud #mini{width:136px;height:136px;opacity:.95}
 body.mobile #pbtn{top:144px}body.mobile #rbtn{top:188px}
 body.mobile #hud #h-rec{top:8px;left:0;padding:5px 18px 6px 10px}body.mobile #hud #h-rec b{font-size:26px}body.mobile #hud #h-rec>span{display:block!important;margin-left:0;font-size:14px;color:#ffd34e}body.mobile #hud #h-rec .rs b{font-size:14px}
 @media (orientation:portrait){body.mobile #hud #h-time{min-width:58vw}body.mobile #hud #h-rec{top:112px}body.mobile #hud #mini{top:112px}body.mobile #pbtn{top:252px}body.mobile #rbtn{top:296px}}
+
+/* ===== v0.0.88 · lavado de cara móvil ===== */
+.dy-secs{display:none}
+@media (max-width:620px){
+  /* hojas a pantalla completa */
+  #board,#settings,#profile,#musicPick,#results,#pause{align-items:stretch!important;padding:0!important}
+  #board>.panel,#settings>.panel,#profile>.panel,#musicPick>.panel,#results>.panel,#pause>.panel{width:100%!important;max-width:none!important;height:100dvh;max-height:none!important;margin:0!important;border-radius:0!important;border:0!important;overflow-y:auto;box-sizing:border-box;padding:max(14px,env(safe-area-inset-top)) 16px 0!important;display:flex;flex-direction:column}
+  #board>.panel>h1,#settings>.panel>h1,#profile>.panel>h1,#musicPick>.panel>h1{font-size:24px!important;margin:4px 0 12px!important}
+  #board>.panel>button.big,#settings>.panel>button.big,#profile>.panel>button.big,#musicPick>.panel>button.big{position:sticky!important;bottom:0;margin:auto -16px 0!important;width:calc(100% + 32px)!important;border-radius:0!important;padding:16px 16px max(16px,env(safe-area-inset-bottom))!important;z-index:3}
+  /* clasificación: chips en una fila deslizable */
+  #board #boardTracks,#board #boardGroups{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;gap:6px!important;margin:0 -16px 8px!important;padding:0 16px 2px!important;scrollbar-width:none}
+  #board #boardTracks::-webkit-scrollbar,#board #boardGroups::-webkit-scrollbar{display:none}
+  #board #boardGroups button,#board #boardTracks button{flex:none!important;border-radius:999px!important;padding:8px 13px!important;font-size:12px!important;white-space:nowrap!important;min-height:36px}
+  #board #boardGroups button{background:transparent;border-color:rgba(255,255,255,.18)}
+  #board .lbwrap{max-height:none!important;overflow:visible!important;flex:1}
+  #board .lbt td{padding:9px 8px!important}
+  /* reto: tabla compacta (sectores bajo el nombre) */
+  .dy-f1 th:nth-child(3),.dy-f1 th:nth-child(4),.dy-f1 th:nth-child(5),.dy-f1 td:nth-child(3),.dy-f1 td:nth-child(4),.dy-f1 td:nth-child(5){display:none}
+  .dy-f1{font-size:13px!important}.dy-f1 td{padding:8px 4px!important}.dy-f1 td.nm{max-width:none!important;white-space:nowrap}
+  .dy-f1 .dy-secs{display:block;margin:2px 0 0 26px;font-size:10px;color:#8f9ab8;letter-spacing:.02em}
+  .dy-f1 td.lp{font-weight:800;font-size:14px}
+  .dy-step p{display:none}.dy-step{padding:10px 12px!important}.dy-step h3{margin:0 0 4px!important}
+  /* selección de circuito y coche */
+  #worldMap{height:170px!important}
+  #groupTabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;gap:6px!important;margin:0 -12px 10px!important;padding:0 12px 2px!important;scrollbar-width:none}
+  #groupTabs::-webkit-scrollbar{display:none}#groupTabs button{flex:none!important;white-space:nowrap;border-radius:999px!important;min-height:38px}
+  /* pantalla de juego: JUGAR abajo, al alcance del pulgar */
+  #menu[data-screen=play] #homePlay{display:flex;flex-direction:column}
+  #menu[data-screen=play] #homePlay #startBtn{order:10;position:sticky!important;bottom:70px;z-index:6;margin:10px 0 0!important;box-shadow:0 10px 30px rgba(0,0,0,.55)!important}
+  #menu[data-screen=play] #homePlay .picks{grid-template-columns:1fr!important}
+  #menu[data-screen=play] #homePlay .picks .pick{padding:12px 14px!important;min-height:64px}
+  /* ajustes: lista limpia */
+  #settings .row[style*="gap:8px"]{flex-direction:column!important;gap:6px!important}
+  #settings .tog{width:100%;text-align:left!important;padding:13px 14px!important;border-radius:12px!important;background:rgba(255,255,255,.06)!important;color:#e6ecf8!important;border:1px solid rgba(255,255,255,.12)!important;font-weight:700;position:relative}
+  #settings .tog.on{border-color:rgba(255,201,40,.6)!important;box-shadow:inset 4px 0 0 #ffc928}
+  #settings>.panel>.keys:first-of-type{display:none!important}
+  #settings h3{margin:16px 0 6px!important}
+}
+@media (max-width:620px){
+  #board>.panel,#settings>.panel,#profile>.panel{overflow-x:hidden}
+  #board .lbwrap,#board .lbt{margin-left:0!important;margin-right:0!important;width:100%!important}
+  #settings .row[style*="gap:8px"]{display:flex!important;grid-template-columns:none!important}
+  #settings .tog{flex:1 1 100%!important;grid-column:1/-1!important;font-size:13px!important}
+  #menu[data-screen=play] #homePlay{min-height:calc(100dvh - 110px)}
+  #menu[data-screen=play] #homePlay #startBtn{margin-top:auto!important}
+}
+@media (max-width:620px){#settings .row{display:block!important}#settings .row label{display:block}#settings input[type=range]{width:100%!important;max-width:none!important}}
 </style>
 </head>
 <body>
