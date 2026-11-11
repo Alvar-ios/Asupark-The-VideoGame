@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.79
+- Kart Dorado más competitivo: velocidad máxima 38, aceleración 13,2, giro 3,8 y agarre 18.
+- Kart Dorado con modelo propio: carrocería metálica dorada, dorsal dorado con número negro y llama de escape dorada.
+
 ## 0.0.78
 - Nuevo coche: Kart Dorado, en el grupo Karts. Mismo modelo que el Kart 125cc, pintado en dorado de serie, con un poco más de velocidad, aceleración, giro y agarre.
 

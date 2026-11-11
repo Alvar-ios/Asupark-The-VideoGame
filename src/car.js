@@ -3,6 +3,7 @@ import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi, rainAt } from './tra
 import { puddleAt, mudAt, oilAt, smoothstep, surfaceAt, applyRunoff } from './surface.js';
 const SP = { key: 'asphalt', g: 1, b: 1, d: 0, s: 1, a: 1 };
 
+export const isKartKind = (k) => k === 'kart' || k === 'superkart'; // karts: misma física y mismo modelo base
 export const YAW_SCALE = 0.8, YAW_SPEED = 42; // sensibilidad de giro global
 export const GROUPS = [
   { id: 'cartoon', name: 'Cartoon', desc: 'Coches de dibujos: pura diversión' },
@@ -25,7 +26,7 @@ export const CARS = [
   { id: 'mclaren', brand: 'McLaren', group: 'cartoon', name: 'McLaren MP4-25 Toon', desc: 'Monoplaza de dibujos: ruedas enormes y mucho agarre', color: 0xc8202c, vmax: 56, accel: 14.7, yaw: 2.85, grip: 13.5, driftGrip: 2.9, radius: 1.2, mass: 700, kind: 'mclaren', nopaint: true, custom: true },
   // —— Karts: ligeros, mucho agarre y giro, sin carrocería
   { id: 'kart', brand: 'Kart', group: 'karts', drive: 'rwd', name: 'Kart 125cc', desc: 'Ligero, rígido y a un palmo del suelo. Elige tu color y tu dorsal', color: 0xd32a22, vmax: 35, accel: 12, yaw: 3.4, grip: 16, driftGrip: 4.2, radius: 0.8, mass: 190, kind: 'kart', freeColor: true, paints: [['Rojo', '#d32a22'], ['Naranja', '#f08a1c'], ['Amarillo', '#f3c026'], ['Verde', '#28a745'], ['Azul', '#2d5fd0'], ['Morado', '#7d3fc4'], ['Rosa', '#e8559a'], ['Blanco', '#f2f2f2'], ['Negro', '#16181d']] },
-  { id: 'superkart', brand: 'Kart', group: 'karts', drive: 'rwd', name: 'Kart Dorado', desc: 'El kart de siempre, más rápido y con mejor agarre. Dorado de serie', color: 0xf5c542, vmax: 37, accel: 12.8, yaw: 3.6, grip: 17, driftGrip: 4.5, radius: 0.8, mass: 190, kind: 'kart' },
+  { id: 'superkart', brand: 'Kart', group: 'karts', drive: 'rwd', name: 'Kart Dorado', desc: 'El kart de siempre, más rápido y con mejor agarre. Dorado de serie', color: 0xf5c542, vmax: 38, accel: 13.2, yaw: 3.8, grip: 18, driftGrip: 4.8, radius: 0.8, mass: 190, kind: 'superkart' },
   // —— 100 CV
   { id: 'qashqai', brand: 'Nissan', group: 'cv100', name: 'Nissan Qashqai', desc: 'SUV pesado y estable', color: 0xf7f7f7, vmax: 51, accel: 12.4, yaw: 2.1, grip: 14, driftGrip: 2.3, radius: 1.3, mass: 1780, kind: 'qashqai', paints: [['Blanco', '#f7f7f7'], ['Gris', '#6b7280'], ['Rojo', '#b3171d']], custom: true },
   { id: 'bora', brand: 'Volkswagen', group: 'cv100', name: 'VW Bora VR6', desc: 'Berlina 2005 · estable y noble', color: 0x0b4d2c, vmax: 52, accel: 12.8, yaw: 2.3, grip: 13.4, driftGrip: 2.7, radius: 1.2, mass: 1460, kind: 'bora', paints: [['Verde botella', '#0b4d2c'], ['Negro', '#16181d'], ['Plata', '#b9bec6']], custom: true },
@@ -248,10 +249,10 @@ export function stepCar(c, inp, dt, tr, env) {
 
   // pianos (bordillos): solo existen en el interior de las curvas. Al ser más altos por dentro, te lanzan suavemente hacia fuera (hacia el centro de la pista), sin frenar:
   // ayudan a cerrar la curva si los pisas con ganas y vibran un poco.
-  const KW = c.type.kind === 'kart' ? 2.8 : Math.min(1.9, WALL - HW - 0.2), side = loc.lat >= 0 ? 1 : -1, over = Math.abs(loc.lat) - (HW - 0.15);
+  const KW = isKartKind(c.type.kind) ? 2.8 : Math.min(1.9, WALL - HW - 0.2), side = loc.lat >= 0 ? 1 : -1, over = Math.abs(loc.lat) - (HW - 0.15);
   c.onKerb = !c.air && over > 0 && over < KW + 0.15 && tr.kerb && tr.kerb[loc.i] === side;
   if (c.onKerb && c.speed > 8) {
-    const kartK = c.type.kind === 'kart' ? 0.12 : 1; // el kart pasa por encima del piano sin que le empuje
+    const kartK = isKartKind(c.type.kind) ? 0.12 : 1; // el kart pasa por encima del piano sin que le empuje
     const depth = clamp(over / 1.2, 0, 1), push = 5.5 * kartK * depth * clamp(c.speed / 32, 0.3, 1.3); // m/s² hacia el centro
     c.vx += loc.tz * side * push * dt; c.vz += -loc.tx * side * push * dt;
     c.psi += clamp(wrapPi(Math.atan2(loc.tx, loc.tz) - c.psi), -0.4, 0.4) * 0.35 * depth * dt; // y el morro tiende a alinearse con la pista

@@ -4,7 +4,7 @@ import { THEMES, THEME_LIST } from './themes.js';
 import { waShare, inviteUrl, WA_ICON } from './share.js';
 import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS, DAILY_LOCK_DAY } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
-import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo } from './car.js';
+import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo, isKartKind } from './car.js';
 import { hashStr } from './rng.js';
 import { buildSpeedProfile, aiInput, benchmark, aiType, AI_TOP } from './ai.js';
 import { buildWorld, disposeScene, updateWind } from './world.js';
@@ -1198,7 +1198,7 @@ function updateCarVisual(c, dt) {
   m.root.position.set(x, y, z); m.root.rotation.set(0, psi, 0);
   const sf = clamp(c.speed / 40, 0, 1);
   const impact = clamp(c.impact / 22, 0, 1);
-  const isKart = c.type.kind === 'kart', grp = c.type.group, ks = isKart ? 0.1 : grp === 'f1' ? 0.18 : grp === 'competicion' ? 0.5 : 1; // kart y F1: suspensión durísima; competición: dura
+  const isKart = isKartKind(c.type.kind), grp = c.type.group, ks = isKart ? 0.1 : grp === 'f1' ? 0.18 : grp === 'competicion' ? 0.5 : 1; // kart y F1: suspensión durísima; competición: dura
   const kSp = isKart ? 420 : grp === 'f1' ? 380 : grp === 'competicion' ? 220 : 120, kDp = isKart ? 26 : grp === 'f1' ? 25 : grp === 'competicion' ? 16 : 9;
   let pitch = -Math.atan(c.grad) * 0.9;
   if (c.air) pitch = clamp(-Math.atan2(c.vy, Math.max(8, c.speed)) * 0.9, -0.45, 0.45);
@@ -1431,7 +1431,7 @@ function menuPreviewFrame(dt) {
   MP.sk = !MP.sk; if (MP.sk && MP.car) return; // el menú se dibuja a 30 fps: menos batería y calor en el móvil
   const mpr = Math.min(pixelRatio, MOBILE ? 1.25 : 1.75); if (renderer.getPixelRatio() !== mpr) { renderer.setPixelRatio(mpr); renderer.setSize(window.innerWidth, window.innerHeight, false); }
   const hasWorld = menuWorldEnsure(), scn = hasWorld ? MW.scene : MP.scene;
-  const type = CARS[sel.car], color = paintOf(type), lod = MOBILE ? 'lo' : 'hi', key = type.id + color + lod + (type.kind === 'kart' ? kartNum() : '');
+  const type = CARS[sel.car], color = paintOf(type), lod = MOBILE ? 'lo' : 'hi', key = type.id + color + lod + (isKartKind(type.kind) ? kartNum() : '');
   if (MP.key !== key) {
     if (!carAssetReady(type, lod)) { if (MP.loading !== type.id) { MP.loading = type.id; loadCarAsset(type, true).then(() => { MP.loading = ''; }).catch(() => { MP.loading = ''; }); } }
     else { try { if (MP.car) MP.car.root.removeFromParent(); MP.car = buildCarMesh(color, type.kind, lod, kartNum()); MP.key = key; } catch (e) { MP.key = key; } }

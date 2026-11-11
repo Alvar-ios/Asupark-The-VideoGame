@@ -36,6 +36,7 @@ export const MODEL = {
   kart: { hi: './assets/car_kart_hi.glb.gz', lo: './assets/car_kart_lo.glb.gz', paint: /^body_color$/, length: 2.1, kart: true },
   minis: { hi: './assets/car_minis_hi.glb.gz', lo: './assets/car_minis_lo.glb.gz', paint: /^COOPER$/, length: 3.7 },
 };
+MODEL.superkart = { ...MODEL.kart, gold: true }; // Kart Dorado: mismo modelo, pintura y dorsal dorados
 const cache = {}, pending = {};
 export const modelCarReady = (id, lod = 'hi') => !!(cache[id] && cache[id][lod]);
 export function loadModelCar(id, lods = ['hi', 'lo']) {
@@ -95,7 +96,8 @@ export function buildModelCar(id, color, lod = 'hi', num = 7) {
     // brillos contenidos: los cromados y plásticos no deben deslumbrar; la pintura lleva laca suave
     m.envMapIntensity = isPaint ? 1.0 : 0.62;
     if (!isPaint && m.isMeshStandardMaterial) { m.metalness = Math.min(m.metalness, 0.8); m.roughness = Math.max(m.roughness, m.metalness > 0.5 ? 0.28 : 0.4); }
-    if (isPaint && cfg.kart) { m.color = new THREE.Color(color); m.metalness = 0; m.roughness = 0.55; paints.add(m); }
+    if (isPaint && cfg.gold) { m.color = new THREE.Color(color); m.metalness = 0.5; m.roughness = 0.3; m.envMapIntensity = 1.2; if (m.emissive) { m.emissive = new THREE.Color(0x6a4300); m.emissiveIntensity = 0.5; } paints.add(m); }
+    else if (isPaint && cfg.kart) { m.color = new THREE.Color(color); m.metalness = 0; m.roughness = 0.55; paints.add(m); }
     else if (isPaint) { m.color = new THREE.Color(color); if (m.map) m.map = null; m.metalness = 0.32; m.roughness = 0.34; if ('clearcoat' in m) { m.clearcoat = 0.7; m.clearcoatRoughness = 0.12; } if (cfg.paintMat) Object.assign(m, cfg.paintMat); paints.add(m); }
   });
   if (cfg.tails) for (const [x, y, z, w, h] of cfg.tails) for (const sd of [-1, 1]) { // pilotos traseros que el modelo no trae (se encienden al frenar)
@@ -122,26 +124,27 @@ export function buildModelCar(id, color, lod = 'hi', num = 7) {
   const fm = new THREE.MeshBasicMaterial({ color: 0x5ad0ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
   for (const s of [-1, 1]) flames.add(new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.4, 8).rotateX(-Math.PI / 2).translate(s * flameX, flameY, flameZ), fm));
   if (cfg.kart) { // llama pequeña del tubo de escape (se enciende al petardear)
-    flames.clear(); const fm2 = new THREE.MeshBasicMaterial({ color: 0xffa530, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+    flames.clear(); const fm2 = new THREE.MeshBasicMaterial({ color: cfg.gold ? 0xffe27a : 0xffa530, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
     const cone = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.42, 7).rotateX(-Math.PI / 2).translate(0, 0, -0.21), fm2), core = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.24, 6).rotateX(-Math.PI / 2).translate(0, 0, -0.12), new THREE.MeshBasicMaterial({ color: 0xfff3b0, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     flames.add(cone, core); flames.position.set(-0.12, 0.2, -1.02);
   }
   flames.visible = false; tilt.add(flames);
-  if (cfg.kart) addKartNumber(orientation, num);
+  if (cfg.kart) addKartNumber(orientation, num, !!cfg.gold);
   return { root, tilt, wheels, tail, flames, W, paint: [...paints][0] || { color: new THREE.Color() }, paints };
 }
 
 // dorsal del kart: placa blanca con el número en el morro y a cada lado (coordenadas en metros, morro +Z)
 const plateCache = {};
-function plateTex(n) {
-  if (plateCache[n]) return plateCache[n];
+function plateTex(n, gold = false) {
+  const key = n + (gold ? 'g' : '');
+  if (plateCache[key]) return plateCache[key];
   const cv = document.createElement('canvas'); cv.width = cv.height = 128; const x = cv.getContext('2d');
-  x.fillStyle = '#f6f6f2'; x.beginPath(); x.arc(64, 64, 62, 0, 7); x.fill(); x.lineWidth = 5; x.strokeStyle = '#16181d'; x.stroke();
+  x.fillStyle = gold ? '#ffd65a' : '#f6f6f2'; x.beginPath(); x.arc(64, 64, 62, 0, 7); x.fill(); x.lineWidth = 5; x.strokeStyle = gold ? '#5a3d00' : '#16181d'; x.stroke();
   x.fillStyle = '#16181d'; x.font = `900 ${String(n).length > 1 ? 70 : 88}px Impact,Arial Black,sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(n), 64, 70);
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return (plateCache[n] = t);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return (plateCache[key] = t);
 }
-function addKartNumber(parent, n) {
-  const m = new THREE.MeshBasicMaterial({ map: plateTex(n), transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+function addKartNumber(parent, n, gold = false) {
+  const m = new THREE.MeshBasicMaterial({ map: plateTex(n, gold), transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   for (const d of KART_PLATES) { const nrm = new THREE.Vector3(...d.n).normalize(), q = new THREE.Mesh(new THREE.PlaneGeometry(d.s, d.s), m); q.position.set(...d.p).addScaledVector(nrm, 0.012); q.rotation.set(-Math.asin(nrm.y), Math.atan2(nrm.x, nrm.z), 0, 'YXZ'); parent.add(q); }
 }
 // justo encima de los dorsales pintados en la textura original (morro y trasera)
