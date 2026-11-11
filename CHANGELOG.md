@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.87
+- Nuevo menú de inicio tipo app: arriba el reto del día; justo debajo las ligas (tus ligas con posición y puntos, crear o unirte); luego Contrarreloj y Clasificación; y «Racing» (Carreras y Gran Premio) en una sección discreta al final. Barra inferior con Inicio, Ligas, Ranking, Amigos y Perfil; la música y los ajustes pasan arriba a la derecha.
+- Premio Lentorro: ahora es el jugador con menos puntos de la liga, siempre que ayer haya corrido el reto (si el último en puntos no jugó, no hay Lentorro ese día). Se marca con 🐌 en la clasificación de la liga y se avisa en el inicio.
+
 ## 0.0.86
 - Ligas de amigos (botón «Ligas» del menú): crea una liga, invita por WhatsApp o enlace (?liga=CÓDIGO, te une al instante tras entrar) o únete con el código de 6 letras.
 - Temporadas de 14 días sobre el reto diario con puntos de F1 (25-18-15-12-10-8-6-4-2-1): clasificación con victorias, podios y mejor tiempo, y pestaña «Días» con el tiempo, la diferencia, los puntos, los sectores y los intentos de cada piloto cada día.

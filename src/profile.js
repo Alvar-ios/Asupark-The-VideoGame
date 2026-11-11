@@ -115,5 +115,7 @@ export function initProfile(ctx) {
   $('profBody').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.target.id === 'pfUser' || e.target.id === 'pfPass')) submit(); if (e.key === 'Enter' && e.target.id === 'pfFriend') $('pfAdd').click(); });
   $('profBtn').onclick = () => { S.msg = ''; $('profile').classList.remove('hidden'); render(); };
   $('profClose').onclick = () => $('profile').classList.add('hidden');
+  const api = { open(tab) { S.msg = ''; S.rival = null; S.tab = tab || 'perfil'; $('profile').classList.remove('hidden'); render(); } };
   acc.onChange(() => { const t = $('profBtnLabel'); if (t) t.textContent = acc.loggedIn && acc.username ? '@' + acc.username : 'Perfil'; });
+  return api;
 }

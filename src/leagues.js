@@ -47,26 +47,24 @@ export function initLeagues(ctx) {
     return S.tab === 'dias' ? daysView() : tableView();
   }
   const seasonNav = (L) => `<div class="lg-sn"><button type="button" data-s="${L.season - 1}" ${L.season <= 1 ? 'disabled' : ''}>‹</button><span>Temporada ${L.season}${L.season === L.current ? ' · en curso' : ''}</span><button type="button" data-s="${L.season + 1}" ${L.season >= L.current ? 'disabled' : ''}>›</button></div>`;
-  // Lentorro: el último de cada día cerrado (mínimo 2 pilotos con tiempo y sin empate)
-  const lentorro = (d, L) => { if (d.day >= L.today || d.rows.length < 2) return null; const a = d.rows[d.rows.length - 1], b = d.rows[d.rows.length - 2]; return a.ms > b.ms ? a.user_id : null; };
   function tableView() {
     const { league: L, members, standings } = S.state, mm = Object.fromEntries(members.map((m) => [m.user_id, m]));
-    const rows = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }; return `<tr class="${s.user_id === me() ? 'me' : ''}${i < 3 ? ' p' + (i + 1) : ''}"><td class="po">${i + 1}</td><td class="nm">${flag(m.flag)}<span>${esc(m.username)}</span></td><td>${s.wins}</td><td>${s.podiums}</td><td>${s.best ? fmt(s.best / 1000) : '–'}</td><td class="pt">${s.pts}</td></tr>`; }).join('');
-    const yd = new Date(Date.parse(L.today + 'T00:00:00Z') - 864e5).toISOString().slice(0, 10), yday = S.state.days.find((d) => d.day === yd), yl = yday && lentorro(yday, L);
-    const ban = yl && mm[yl] ? `<div class="lg-len">🐌 <b>Lentorro de ayer:</b> @${esc(mm[yl].username)}${yl === me() ? ' (¡eres tú! Hoy puedes elegir coche en el reto)' : ' · hoy puede elegir coche en el reto'}</div>` : '';
+    const rows = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }; return `<tr class="${s.user_id === me() ? 'me' : ''}${i < 3 ? ' p' + (i + 1) : ''}"><td class="po">${i + 1}</td><td class="nm">${flag(m.flag)}<span>${esc(m.username)}${s.user_id === S.state.lentorro ? ' 🐌' : ''}</span></td><td>${s.wins}</td><td>${s.podiums}</td><td>${s.best ? fmt(s.best / 1000) : '–'}</td><td class="pt">${s.pts}</td></tr>`; }).join('');
+    const yl = S.state.lentorro;
+    const ban = yl && mm[yl] ? `<div class="lg-len">🐌 <b>Lentorro de hoy:</b> @${esc(mm[yl].username)}${yl === me() ? ' (¡eres tú! Hoy puedes elegir coche en el reto)' : ' · hoy puede elegir coche en el reto'}</div>` : '';
     body().innerHTML = `${head(L)}${seasonNav(L)}${ban}<table class="lg-t"><thead><tr><th>POS</th><th>PILOTO</th><th>VIC</th><th>POD</th><th>MEJOR</th><th>PTS</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="lg-note sm">🐌 El último de cada día es el Lentorro: al día siguiente puede elegir entre el coche del reto o uno de categoría superior. Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto diario entre los miembros de la liga. La temporada dura ${L.season_days} días.</p>
+      <p class="lg-note sm">🐌 El Lentorro es el piloto con menos puntos de la liga, si ayer corrió el reto: hoy puede elegir entre el coche del reto o uno de categoría superior. Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto diario entre los miembros de la liga. La temporada dura ${L.season_days} días.</p>
       <button class="lg-btn ghost danger" data-a="leave" type="button">Salir de la liga</button><div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`;
     S.msg = '';
   }
   function daysView() {
     const { league: L, members, days } = S.state, mm = Object.fromEntries(members.map((m) => [m.user_id, m]));
     const dayHtml = (d) => {
-      const lead = d.rows[0].ms, len = lentorro(d, L), live = d.day === L.today, played = new Set(d.rows.map((r) => r.user_id));
+      const lead = d.rows[0].ms, live = d.day === L.today, played = new Set(d.rows.map((r) => r.user_id));
       const rows = d.rows.map((r, i) => { const m = mm[r.user_id] || { username: '?' }, pts = PTS[i] || 0;
         const at = (r.attempts && r.attempts.length) ? r.attempts.map((a, k) => `<i${a === r.ms ? ' class="b"' : ''}>${k + 1}º ${fmt(a / 1000)}</i>`).join('') : '';
         const sec = r.s1 ? `<small class="sec">${[r.s1, r.s2, r.s3].map((x) => fmt(x / 1000)).join(' · ')}</small>` : '';
-        return `<div class="lg-dr${r.user_id === me() ? ' me' : ''}"><div class="lg-d1"><i class="po">${i + 1}</i>${flag(m.flag)}<b>${esc(m.username)}${len === r.user_id ? '<span class="lg-tag">🐌</span>' : ''}</b><em>${fmt(r.ms / 1000)}</em><small class="gp">${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'LÍDER'}</small><span class="pp">+${pts}</span></div>${at || sec ? `<div class="lg-d2">${at}${at ? '' : sec}</div>` : ''}</div>`; }).join('');
+        return `<div class="lg-dr${r.user_id === me() ? ' me' : ''}"><div class="lg-d1"><i class="po">${i + 1}</i>${flag(m.flag)}<b>${esc(m.username)}</b><em>${fmt(r.ms / 1000)}</em><small class="gp">${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'LÍDER'}</small><span class="pp">+${pts}</span></div>${at || sec ? `<div class="lg-d2">${at}${at ? '' : sec}</div>` : ''}</div>`; }).join('');
       const miss = members.filter((m) => !played.has(m.user_id)).map((m) => esc(m.username));
       return `<div class="lg-day"><div class="lg-dh"><b>${esc(dayTxt(d.day))}</b>${live ? '<span class="live">HOY · PROVISIONAL</span>' : ''}</div>${rows}${miss.length ? `<p class="lg-miss">Sin tiempo: ${miss.join(', ')}</p>` : ''}</div>`;
     };
@@ -151,5 +149,5 @@ export function initLeagues(ctx) {
     }, 1800);
     acc.onChange(tryJoin);
   }
-  return { open: () => { show(); S.state = null; S.list = null; listView(); } };
+  return { open: () => { show(); S.state = null; S.list = null; listView(); }, openLeague: async (id) => { show(); await enter(id); } };
 }

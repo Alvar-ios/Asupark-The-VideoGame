@@ -157,13 +157,24 @@ revoke all on function public.is_league_member(uuid,uuid), public.league_points(
 grant execute on function public.league_preview(text) to anon, authenticated;
 grant execute on function public.league_create(text), public.league_join(text), public.league_leave(uuid), public.my_leagues(), public.league_state(uuid,int), public.league_post(uuid,text), public.league_chat(uuid,bigint) to authenticated;
 
--- Lentorro: el último de ayer en alguna de mis ligas (mínimo 2 pilotos con tiempo) puede elegir coche hoy
+-- Lentorro: el jugador con menos puntos de la temporada (hasta ayer) en la liga, siempre que ayer haya jugado.
+create or replace function public.league_lentorro(p_league uuid) returns uuid language plpgsql stable security definer set search_path = public as $$
+declare l public.leagues; y date := public.daily_today() - 1; sn int; a date; u uuid;
+begin
+  select * into l from public.leagues where id = p_league;
+  if l.id is null or y < l.start_day then return null; end if;
+  if (select count(*) from public.league_members where league_id = p_league) < 2 then return null; end if;
+  sn := floor((y - l.start_day)::numeric / l.season_days)::int; a := l.start_day + sn * l.season_days;
+  select s.user_id into u from public.league_points(p_league, a, y) s
+    left join public.daily_results r on r.day = y and r.player_id = s.user_id
+    order by s.pts asc, (r.player_id is not null) asc, r.lap_ms desc nulls last, s.user_id limit 1;
+  if u is null or not exists (select 1 from public.daily_results where day = y and player_id = u) then return null; end if;
+  return u;
+end $$;
 create or replace function public.daily_underdog() returns jsonb language sql stable security definer set search_path = public as $$
   select case when auth.uid() is null then null else (
     select jsonb_agg(l.name) from public.leagues l join public.league_members m on m.league_id = l.id and m.user_id = auth.uid()
-    where (select count(*) from public.daily_results r join public.league_members mm on mm.user_id = r.player_id and mm.league_id = l.id where r.day = public.daily_today() - 1) >= 2
-      and (select r.player_id from public.daily_results r join public.league_members mm on mm.user_id = r.player_id and mm.league_id = l.id where r.day = public.daily_today() - 1 order by r.lap_ms desc limit 1) = auth.uid()
-      and (select count(*) from public.daily_results r join public.league_members mm on mm.user_id = r.player_id and mm.league_id = l.id where r.day = public.daily_today() - 1 and r.lap_ms = (select lap_ms from public.daily_results where day = public.daily_today() - 1 and player_id = auth.uid())) = 1
-  ) end $$;
-revoke all on function public.daily_underdog() from public, anon, authenticated;
+    where public.league_lentorro(l.id) = auth.uid()) end $$;
+-- (league_state devuelve además 'lentorro': el user_id; ver la migración lentorro_by_points)
+revoke all on function public.league_lentorro(uuid), public.daily_underdog() from public, anon, authenticated;
 grant execute on function public.daily_underdog() to authenticated;
