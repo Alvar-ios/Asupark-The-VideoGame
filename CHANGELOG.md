@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.85
+- Palomring: el salto está ahora justo después de la salida y la recta es unos 70 m más larga, así aterrizas antes de la siguiente curva sin chocarte.
+
 ## 0.0.84
 - Nuevo circuito: Palomring · Cielo. Trazado en forma de paloma (~1,24 km) con cruce en puente sobre túnel, curvas cerradas y un salto altísimo, entre nubes. El público son palomas y gente con cabeza de paloma, y los únicos anuncios son carteles de PalomApp, todos distintos y con mensajes graciosos.
 - Un 80% menos de vallas de PalomApp en el resto de circuitos.
