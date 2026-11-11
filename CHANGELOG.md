@@ -2,8 +2,64 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
-## 0.0.69
+## 0.0.78
 - Nuevo coche: Kart Dorado, en el grupo Karts. Mismo modelo que el Kart 125cc, pintado en dorado de serie, con un poco más de velocidad, aceleración, giro y agarre.
+
+## 0.0.77
+- Magarigawa Club reducido a escala de juego (unos 1,9 km): pista más estrecha, curvas más cerradas y rectas hacia la horquilla mucho más cortas. Se descartan sus tiempos anteriores.
+- Nuevo circuito de karts: Gran Muralla (China), sobre muros de piedra almenados con horquillas apiladas, un puente sobre otro tramo, torres, puertas y picos kársticos.
+
+## 0.0.76
+- Nuevo circuito: Magarigawa Club (Japón), calcado de la foto aérea: 3,5 km, 22 curvas, grandes desniveles, escapatorias de asfalto azul, pianos blancos y negros, club blanco junto a meta y montañas de bosque cerrado.
+
+## 0.0.75
+- Perú: tribuna de madera con techo de paja y postes de troncos.
+- Circuito de juguete: casas-seta con puerta, ventanas y chimenea.
+- Reto del día especial: Madring, con acceso por contraseña solo durante esta jornada.
+
+## 0.0.74
+- Madring: se descartan los tiempos hechos con el trazado anterior.
+- Tribuna principal corregida: orientada hacia la pista y colocada donde no toca ningún tramo del circuito.
+- Móvil: nuevo icono de disco de freno y botones rojos translúcidos.
+- Spa: sin charcos ni barro.
+- Circuito de juguete: público de setas con sombrero picudo.
+- Perú: guerreros tribales con lanza y plumas, y muchas más chozas.
+
+## 0.0.73
+- Paso de peatones propio en cada circuito (aceras en Madrid, losas en Mónaco, caminos de tierra, arena, nieve pisada, tablones en Perú…) a la altura de la pista, con talud de hierba hasta el terreno: nadie flota.
+- Más público, sobre todo animando en las gradas.
+- Madring: alturas progresivas sin escalones y sin saltos en la chicane.
+- Móvil: freno también a la izquierda, con icono y botones mucho más discretos.
+- HUD más grande en móvil y ordenador: tiempos, sectores, minimapa y panel de récord.
+- El récord muestra quién lo tiene en tu categoría; se quita el récord global de pista.
+- Carteles de Madrid con la tipografía del juego.
+
+## 0.0.72
+- Vallas y pianos ya no se pliegan hacia la pista en curvas de 90° y horquillas: el vallado interior termina en un vértice limpio y el piano se estrecha en las curvas muy cerradas.
+- Exteriores aún más frondosos en todos los circuitos, con flores, más arbustos y más árboles.
+- Gente: paseantes en distintas direcciones, público animando, saltando y aplaudiendo, y gente en balcones (Madrid y Mónaco). Animados en la GPU, sin coste apreciable.
+- Clasificación rehecha: medallas de oro, plata y bronce, nombre en blanco y coche debajo.
+- Menú principal: el reto queda como tarjeta (su clasificación se abre al entrar), selección de circuito y coche compacta, y debajo la clasificación de la combinación elegida.
+- Pausa: nueva opción «Ver clasificación» durante la carrera.
+- Contrarreloj normal: el piloto automático te suelta antes de la meta con la cuenta 6-5-4-3-2-1, como en el reto del día.
+
+## 0.0.71
+- Madring: mismo dibujo del plano con curvas mucho más largas y duras, rectas entre ellas, solo tres chicanes y pista más estrecha (como Mónaco). 2,05 km.
+- Selva Amazónica: otra vuelta más cerrada y técnica, con horquillas y pista estrecha (2,04 km). Tiempos anteriores de Perú y Madring descartados.
+- Exteriores de todos los circuitos mucho más llenos con elementos ligeros: fondos en anillo, bosques, casas, campers, rocas, molinos, público, bandadas de pájaros y detalles propios de cada país.
+- Madrid: menos Celonis (solo sus dos pórticos), vallas de Burger King, más banderas de la Comunidad, cartel de la curva de Valdebebas legible y ciudad mucho más densa con coches, farolas y grúas.
+- Selector de circuitos: el globo ya no oscila, las etiquetas llevan nombre y se separan solas para poder pulsar cada circuito, y en móvil la lista va bajo el globo y se desliza con normalidad.
+
+## 0.0.70
+- Circuito nuevo: Madring · Madrid (España, en el globo). Calcado del plano oficial y encogido a 1,94 km para que sea técnico: meta junto a IFEMA, Ribera del Sena, dos túneles bajo la M-11 y la curva peraltada de Valdebebas.
+- Entorno propio: pabellones de IFEMA, gradas donde marca el plano, M-11 con tráfico, Cuatro Torres, torres KIO, Puerta de Alcalá, bloques madrileños y parque de Valdebebas.
+- Banderas de la Comunidad de Madrid, muchas vallas de Traced, vallas de Celonis y pórticos sobre la pista con el logo y la fecha 01/02/2027.
+
+## 0.0.69
+- Selva Amazónica (Perú) rediseñada: más compacta (1,9 km) y técnica. Mantiene la recta larga y las curvas rápidas, pero añade horquillas cerradas (hasta ~15 m de radio), eses y un tramo revirado; el cruce en puente se conserva.
+- Todos los tiempos y fantasmas anteriores de Perú se descartan (trazado nuevo). Para borrarlos de Supabase: ejecutar `supabase/cleanup-layout-records.sql`.
+- Selva más alta y tropical: árboles gigantes de 55-85 m con raíces tabulares, árboles medios y palmeras mucho más altos, y ruinas incas escalonadas entre la vegetación.
+- Pájaros: de vez en cuando cruza una bandada por el cielo (siluetas oscuras o guacamayos rojos y azules), con coste mínimo.
 
 ## 0.0.68
 - Scroll táctil arreglado en todas las pantallas: un reset global (touch-action:none) impedía deslizar al tocar casi cualquier elemento de menú, ajustes, música, perfil, ranking, reto, pausa y resultados. Ahora se desliza en vertical desde cualquier punto (los sliders y el globo siguen arrastrándose).

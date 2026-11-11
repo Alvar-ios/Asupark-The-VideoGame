@@ -81,6 +81,7 @@ export const SURF = {
   asphalt: { g: 1, b: 1, d: 0, s: 1, a: 1, col: null, name: 'ASFALTO' },
   wet: { g: 0.78, b: 0.8, d: 0.04, s: 0.96, a: 0.95, col: 0x2d3138, name: 'MOJADO' },
   dirt: { g: 0.74, b: 0.82, d: 0.22, s: 0.92, a: 0.92, col: 0x7a5a3a, name: 'TIERRA' },
+  paint: { g: 0.82, b: 0.86, d: 0.16, s: 0.94, a: 0.94, col: 0x3f9f92, name: 'ESCAPATORIA' }, // asfalto pintado: frena, pero menos que la tierra
   gravel: { g: 0.66, b: 0.74, d: 0.4, s: 0.88, a: 0.86, col: 0x8d877a, name: 'GRAVA' },
   grass: { g: 0.58, b: 0.62, d: 0.6, s: 0.82, a: 0.76, col: 0x4f8a3e, name: 'HIERBA' },
   sand: { g: 0.56, b: 0.66, d: 0.8, s: 0.82, a: 0.74, col: 0xd9b985, name: 'ARENA' },
@@ -122,7 +123,7 @@ export function surfaceAt(tr, env, s, out) {
 export function applyRunoff(tr, env, i, lat, roadHalf, blend, out) {
   if (!tr.rg || blend < 0.02) return;
   const e = Math.abs(lat) - roadHalf; if (e <= 0) return;
-  const key = e < tr.rg[i] ? 'gravel' : 'grass', Z = SURF[key], B = SURF[baseSurfKey(env)];
+  const key = tr.runoffKey || (e < tr.rg[i] ? 'gravel' : 'grass'), Z = SURF[key], B = SURF[baseSurfKey(env)];
   out.g *= lerp(1, cl(Z.g / B.g, 0.2, 2.4), blend); out.b *= lerp(1, cl(Z.b / B.b, 0.2, 2.4), blend); out.d += lerp(0, Z.d - B.d, blend);
   out.s *= lerp(1, cl(Z.s / B.s, 0.6, 1.3), blend); out.a *= lerp(1, cl(Z.a / B.a, 0.4, 1.6), blend);
   if (blend > 0.5) out.key = key;

@@ -12,6 +12,9 @@ const prevKey = (k) => new Date(Date.parse(k + 'T00:00:00Z') - 864e5).toISOStrin
 const pick1 = (key, salt, arr) => { let i = hashStr(salt + key) % arr.length; if (arr.length > 1 && i === hashStr(salt + prevKey(key)) % arr.length) i = (i + 1) % arr.length; return arr[i]; }; // nunca repite el de ayer
 export function pickDaily(key, themeIds, carPool) { const theme = pick1(key, 'dtheme-', themeIds); return { theme, car: pick1(key, 'dcar-', carPool(theme)) }; }
 
+// Estreno de Madring: ese día el reto es Madring y se entra con contraseña (una vez por dispositivo). Se compara su huella, no el texto.
+export const DAILY_LOCK_DAY = '2026-11-09';
+const LOCK_HASH = 2404629177, OPEN_KEY = 'dr.dailyOpen';
 export const PRACTICE_LAPS = 5, OFFICIAL_LAPS = 3;
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
 const save = (v) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) { /* sin almacenamiento */ } };
@@ -97,11 +100,22 @@ export function createDaily(ctx) {
   const setStage = (n, html) => { stage = n; $('dyStage').className = 'st-' + n; $('dyStage').innerHTML = html; $('dyGlobe').classList.toggle('hidden', n !== 'globe'); };
   let carsP = null;
   const prefetch = () => { if (carsP) return carsP; const c = ctx.car, pool = ctx.cars.filter((x) => x.id !== c.id && x.group !== 'karts').sort(() => Math.random() - 0.5).slice(0, 6); carsP = ctx.radarCars(c, pool).catch(() => null); return carsP; };
+  let openedNow = false;
+  const locked = () => { if (key !== DAILY_LOCK_DAY || openedNow) return false; try { return localStorage.getItem(OPEN_KEY) !== key; } catch (e) { return true; } };
+  function lockScreen(skipIntro) {
+    setStage('lock', `${head('Reto con contraseña')}<div class="dy-card"><label for="dyPass" style="display:block;margin-bottom:10px">Introduce la contraseña para desbloquear el circuito de hoy</label><input id="dyPass" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" style="box-sizing:border-box;width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.35);color:#fff;font-size:16px;letter-spacing:.08em;-webkit-user-select:text;user-select:text"><p id="dyPassErr" style="min-height:18px;margin:8px 0 0;color:#ff8a8a;font-size:13px"></p></div><button id="dyPassGo" class="dy-btn">DESBLOQUEAR</button>`);
+    const input = $('dyPass'), go = () => {
+      if (hashStr(input.value.trim().toUpperCase()) !== LOCK_HASH) { $('dyPassErr').textContent = 'Contraseña incorrecta'; input.select(); return; }
+      openedNow = true; try { localStorage.setItem(OPEN_KEY, key); } catch (e) { /* vale para esta sesión */ }
+      open(skipIntro);
+    };
+    $('dyPassGo').onclick = go; input.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') go(); };
+  }
   function open(skipIntro) {
     prefetch();
     ctx.onOpen && ctx.onOpen();
     $('daily').classList.remove('hidden'); document.body.classList.add('in-daily'); sync();
-    if (skipIntro) hub(); else intro();
+    if (locked()) lockScreen(skipIntro); else if (skipIntro) hub(); else intro();
   }
   function close() { clearTimeout(introTimer); cancelAnimationFrame(spinRaf); stopRadar(); $('daily').classList.add('hidden'); document.body.classList.remove('in-daily'); stage = ''; renderHero(); }
   const head = (sub) => `<div class="dy-head"><small>RETO DEL DÍA · ${dateTxt()}</small><h2>${sub}</h2><span class="dy-cd">Cambia en <b class="cdv">${hms(msToReset())}</b></span></div>`;

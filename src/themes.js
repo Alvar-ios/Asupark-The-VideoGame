@@ -1,3 +1,5 @@
+import { NODES as MU_NODES, START as MU_START, CROSS as MU_CROSS, HILLS as MU_HILLS } from './muralla-data.js';
+import { NODES as MG_NODES, START as MG_START, HILLS as MG_HILLS, RUNOFF as MG_RUNOFF } from './magarigawa-data.js';
 import { hashStr } from './rng.js';
 
 export const THEMES = {
@@ -27,7 +29,7 @@ export const THEMES = {
     ground: 0x283824, grass: 0x344c2c, dirt: 0x483a28, road: 0x22262a, kerb1: 0xd8473d, kerb2: 0xeeeeea, kerbs3: [0x191919, 0xfdda24, 0xef3340],
     wall1: 0xc9cbc9, wall2: 0xb23a32, mount: 0x303e32, sun: 0x7c8a94, sunDir: [-0.3, 0.5, 0.4],
     hemiSky: 0x4d5964, hemiGround: 0x1e261e, hemiI: 0.75, sunI: 0.45, deco: 'pine', treeNear: 1, treeCount: 1900, kerbRough: true, treeCol: 0x1f4d2b, night: false, temp: 11, humidity: 0.9, wind: [6, 1.0], gripMul: 0.98, offroad: 0.6, slope: 1.4,
-    weather: 'rain', wetGrip: 0.78, brakeForce: 22, mud: true,
+    weather: 'rain', wetGrip: 0.78, brakeForce: 22, noPuddles: true,
     rainPalette: {
       skyTop: 0x242d35, skyHor: 0x4a545e, fog: 0x404a52,
       ground: 0x283824, grass: 0x344c2c, dirt: 0x483a28, treeCol: 0x1f4d2b, mount: 0x303e32,
@@ -97,20 +99,55 @@ export const THEMES = {
   },
   // Selva amazónica (Perú): figura de ocho con un cruce en puente sobre sí misma, curvas rápidas, dos eses, horquillas más anchas y un chaparrón local
   amazonas: {
-    id: 'amazonas', name: 'Selva Amazónica · Perú', sub: 'Lagos, árboles gigantes, cruce en puente y un chaparrón local', seed: 'amazonas-v1',
+    id: 'amazonas', name: 'Selva Amazónica · Perú', sub: 'Selva cerrada: horquillas, eses, cruce en puente y un chaparrón local', seed: 'amazonas-v3',
     style: {
-      fixedNodes: [
-        [-95, 95], [-40, 38], [0, 0], [45, -40], [100, -85], [170, -105], [250, -108], [330, -100], [400, -95], [458, -60], [472, 0], [445, 55], [390, 75], [345, 62], [322, 100], [290, 130], [248, 112], [212, 132], [140, 112], [85, 72], [40, 32], [-5, -4], [-45, -38], [-105, -80], [-175, -105], [-250, -100], [-330, -92], [-395, -55], [-405, 10], [-370, 60], [-320, 55], [-292, 92], [-308, 138], [-255, 152], [-205, 128], [-150, 140],
-      ],
-      startNear: [200, -105], scale: 1.35, half: 5, widthMax: 8.8, wall: 15.5, minR: 12, sep: 30,
-      cross: [0, 0, 75], bridgeH: 8.5, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0,
-      hillPts: [[0, 0], [0.08, 3], [0.18, 7], [0.28, 4], [0.34, 0], [0.47, 0], [0.55, 3], [0.65, 8], [0.74, 5], [0.82, 0], [0.94, 0], [1, 0]],
+      fixedNodes: [[-75,62],[-32,28],[0,0],[34,-30],[78,-56],[135,-72],[205,-76],[262,-74],[298,-64],[316,-40],[306,-14],[278,-8],[250,-22],[222,-20],[202,2],[222,24],[262,18],[296,24],[316,48],[300,76],[262,84],[232,70],[208,84],[212,114],[244,128],[262,152],[232,172],[192,158],[176,124],[142,104],[112,122],[82,108],[60,70],[28,34],[-4,-2],[-40,-36],[-84,-60],[-122,-84],[-162,-108],[-208,-104],[-226,-72],[-202,-52],[-168,-56],[-150,-30],[-176,-8],[-214,-2],[-232,26],[-208,52],[-174,42],[-148,58],[-142,90],[-112,92],[-96,68]],
+      startNear: [170, -74], scale: 1, half: 4.4, widthMax: 6.2, wall: 9.5, minR: 6.5, sep: 20,
+      cross: [0, 0, 60], bridgeH: 8.5, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0,
+      hillPts: [[0, 0], [0.08, 3], [0.18, 7], [0.28, 4], [0.36, 0], [0.56, 0], [0.63, 4], [0.7, 8], [0.76, 5], [0.82, 0], [0.94, 0], [1, 0]],
       runoff: { gravel: 4, open: [] }, rainZones: [[0.48, 0.72]], zones: [],
     },
     skyTop: 0x2d7ccc, skyHor: 0xd8ead2, fog: 0xa9cfb0, fogNear: 90, fogFar: 760,
     ground: 0x2c5a28, grass: 0x3b7a33, dirt: 0x6a5a3a, road: 0x2b2d31, kerb1: 0xd91e18, kerb2: 0xf4f4f4,
     wall1: 0xf4f4f4, wall2: 0xd91e18, mount: 0x2f6a3e, sun: 0xfff1c9, sunDir: [-0.42, 0.6, 0.45],
     hemiSky: 0xd3ecff, hemiGround: 0x2b4a26, hemiI: 1.0, sunI: 1.25, deco: 'jungle', treeCount: 40, treeCol: 0x1f6a2a, night: false, temp: 31, humidity: 0.85, wind: [2, 0.8], gripMul: 1, offroad: 0.62, wetGrip: 0.8, brakeForce: 24,
+  },
+  // Madring (Madrid): el plano oficial calcado y encogido para que sea técnico; meta junto a IFEMA, dos túneles bajo la M-11 y curva peraltada de Valdebebas
+  madring: {
+    id: 'madring', name: 'Madring · Madrid', sub: 'Curvas largas y duras entre IFEMA, los túneles bajo la M-11 y la curva peraltada de Valdebebas', seed: 'madring-2', barrierLogo: 'celonis', barrierLogoAccent: '#5cff4f',
+    style: {
+      fixedNodes: [[242,774],[231,772],[223,767],[216,759],[213,750],[213,739],[232,656],[252,573],[271,490],[290,407],[290,403],[289,399],[287,396],[284,394],[251,376],[247,373],[245,369],[245,364],[248,318],[251,308],[258,300],[268,295],[347,274],[426,252],[505,231],[584,209],[663,187],[680,186],[697,190],[711,199],[757,239],[802,279],[848,320],[860,327],[873,330],[887,328],[969,301],[1051,274],[1133,247],[1137,247],[1142,248],[1146,250],[1186,289],[1190,291],[1195,292],[1269,293],[1344,295],[1418,296],[1493,297],[1567,298],[1603,307],[1633,329],[1651,361],[1655,397],[1648,468],[1639,499],[1620,524],[1594,542],[1563,549],[1488,553],[1465,550],[1445,540],[1428,523],[1391,468],[1353,412],[1315,356],[1306,348],[1296,344],[1284,344],[1273,348],[1265,356],[1230,407],[1195,458],[1187,466],[1178,470],[1167,471],[1157,468],[1094,436],[1031,404],[968,372],[958,369],[947,369],[938,373],[930,380],[897,425],[864,470],[862,474],[862,478],[862,482],[865,486],[873,496],[876,500],[876,505],[875,510],[872,514],[868,516],[802,541],[736,566],[730,569],[726,575],[724,582],[717,633],[715,640],[710,646],[703,650],[696,651],[622,645],[548,640],[474,634],[466,635],[458,639],[452,645],[449,653],[449,661],[459,739],[458,749],[453,758],[445,764],[436,766],[371,769],[306,771]],
+      startNear: [265,513], scale: 0.5, half: 4.2, wall: 6.4, minR: 5.5, sep: 14, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] },
+      tunnels: [[0.2253, 0.2527], [0.7243, 0.7517]], banks: [[0.411, 0.5411, 20]],
+      hillPts: [[0, 2], [0.17, 2], [0.2253, 0], [0.2527, 0], [0.31, 2], [0.345, 2], [0.48, 4.6], [0.6, 3], [0.67, 2], [0.7243, 0], [0.7517, 0], [0.81, 2], [1, 2]], hillSmooth: 22, noAir: true,
+    },
+    skyTop: 0x2f83dd, skyHor: 0xdfeaf2, fog: 0xd3e2ee, fogNear: 320, fogFar: 2200,
+    ground: 0x9c9a8c, grass: 0x71894a, dirt: 0x9a8560, road: 0x2a2c31, kerb1: 0xd91e18, kerb2: 0xf4f4f4,
+    wall1: 0xf4f4f4, wall2: 0xc8102e, mount: 0x7f93a8, sun: 0xfff2d6, sunDir: [-0.4, 0.68, 0.42],
+    hemiSky: 0xe6f0fb, hemiGround: 0x74705e, hemiI: 1.1, sunI: 1.35, deco: 'madrid', treeCol: 0x4c7a38, night: false, temp: 17, humidity: 0.3, wind: [3, 0.8], gripMul: 1, offroad: 0.6, slope: 1.3,
+  },
+  magarigawa: {
+    id: 'magarigawa', name: 'Magarigawa Club · Japón', sub: 'Club privado entre montañas: 22 curvas, técnico, grandes desniveles y escapatorias azules', seed: 'magarigawa-1', privateClub: true, ownTerrain: true, runoffCol: 0x2f8d80,
+    style: {
+      fixedNodes: MG_NODES, startNear: MG_START, scale: 1, half: 3.9, widthMax: 5, wall: 7.2, minR: 5, sep: 10, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [],
+      runoff: { gravel: 2, open: [], key: 'paint' }, runoffEdge: MG_RUNOFF, hillPts: MG_HILLS, hillSmooth: 8, noAir: true,
+    },
+    skyTop: 0x4f9fe8, skyHor: 0xe6f1f6, fog: 0xdbe9ee, fogNear: 500, fogFar: 3000,
+    ground: 0x3f7a35, grass: 0x2f8d80, dirt: 0x2f8d80, road: 0x46423f, kerb1: 0x16171a, kerb2: 0xf7f7f5,
+    wall1: 0xdedcd3, wall2: 0xc42a2a, mount: 0x4f8050, sun: 0xfff6e2, sunDir: [-0.35, 0.78, 0.4],
+    hemiSky: 0xeaf4ff, hemiGround: 0x7c8f62, hemiI: 1.25, sunI: 1.5, deco: 'madrid', treeCount: 1, treeCol: 0x3f7a35, night: false, temp: 22, humidity: 0.35, wind: [2, 0.6], gripMul: 1, offroad: 0.74, offroadGrip: 0.8, slope: 1.1,
+  },
+  muralla: {
+    id: 'muralla', name: 'Gran Muralla · China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,
+    style: {
+      fixedNodes: MU_NODES, startNear: MU_START, scale: 1, half: 3.0, widthMax: 4.4, wall: 5.2, minR: 5.5, sep: 10.5, extraSmooth: 3, noKerb: true, baseY: 34,
+      cross: MU_CROSS, bridgeH: 0.1, bridgePlat: 8, bridgeRamp: 20, bridgeSpan: 9,
+      chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], hillPts: MU_HILLS, hillSmooth: 5, noAir: true,
+    },
+    skyTop: 0x6ea8dc, skyHor: 0xeef2ee, fog: 0xdfe8e6, fogNear: 260, fogFar: 2300,
+    ground: 0xc9bca6, grass: 0xc4b294, dirt: 0xb9a78a, road: 0xe4d6bd, kerb1: 0xb9a78a, kerb2: 0xb9a78a,
+    wall1: 0x8f8676, wall2: 0x6f6658, mount: 0x5f8a66, sun: 0xfff3dc, sunDir: [-0.4, 0.72, 0.42],
+    hemiSky: 0xf2f2f0, hemiGround: 0xb8a88e, hemiI: 1.15, sunI: 1.35, deco: 'madrid', treeCount: 1, treeCol: 0x3f7a35, night: false, temp: 18, humidity: 0.4, wind: [3, 0.9], gripMul: 1, offroad: 0.96, offroadGrip: 0.96, rollingDrag: 0.08, steerOffroad: 1, slope: 0.9,
   },
   // Fórmula 0 (kartódromo): pista estrecha y técnica, horquillas y eses, muros de neumáticos
   karting: {
@@ -151,7 +188,7 @@ export const THEMES = {
     hemiSky: 0xf0f4ff, hemiGround: 0x9a8058, hemiI: 1.0, sunI: 1.35, deco: 'cactus', treeCol: 0x5b7a3a, treeCount: 40, night: false, temp: 31, humidity: 0.15, wind: [2, 0.4], gripMul: 1, offroad: 0.6,
   },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring', 'magarigawa', 'muralla'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {
