@@ -1588,16 +1588,16 @@ function sponsorBarrierDecals(tr, th, scene) {
     const i = Math.floor(s / tr.ds) % N;
     if (Math.abs(tr.kap[i]) < 0.0055 && s - lastS >= minSpacing) {
       if ((tr.tunnels || []).some((t) => s > t.s0 - 6 && s < t.s1 + 6)) continue;
-      sections.push({ s0: s, s1: s + 12.0, brandIdx: Math.floor(s / 32) % (localBrandTex(th) ? 5 : 4) });
+      sections.push({ s0: s, s1: s + 12.0, brandIdx: Math.floor(s / 32) % (localBrandTex(th) ? 6 : 5) });
       lastS = s;
     }
   }
   if (!sections.length) return;
 
-  for (let b = 0; b < 5; b++) {
+  for (let b = 0; b < 6; b++) {
     const group = sections.filter((sec) => sec.brandIdx === b);
     if (!group.length) continue;
-    const tex = b === 4 ? localBrandTex(th) : getSponsorTexture(b);
+    const tex = b === 5 ? localBrandTex(th) : getSponsorTexture(b);
     const mat = new THREE.MeshStandardMaterial({
       map: tex,
       roughness: 0.35,
@@ -1672,7 +1672,7 @@ function sponsorFoamWedges(tr, th, scene) {
     const i = Math.floor(s / tr.ds) % N;
     if (s - lastS >= minSpacing) {
       if ((tr.tunnels || []).some((t) => s > t.s0 - 6 && s < t.s1 + 6)) continue;
-      const brandIdx = Math.floor(s / 36) % 4;
+      const brandIdx = Math.floor(s / 36) % 5;
       // Posicionados a los lados en el arcén/borde de pista
       const side = (Math.floor(s / 24) % 2 === 0 ? 1 : -1);
       wedges.push({ s, i, side, brandIdx });
@@ -1684,7 +1684,7 @@ function sponsorFoamWedges(tr, th, scene) {
   const wedgeGeo = createFoamWedgeGeometry();
   const dummy = new THREE.Object3D();
 
-  for (let b = 0; b < 4; b++) {
+  for (let b = 0; b < 5; b++) {
     const group = wedges.filter((w) => w.brandIdx === b);
     if (!group.length) continue;
     const tex = getSponsorTexture(b);

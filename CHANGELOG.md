@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.80
+- Publicidad de PalomApp en los circuitos: vallas y cuñas de espuma con el banner «PalomApp · Próximamente en Google Play (Android)».
+
 ## 0.0.79
 - Kart Dorado más competitivo: velocidad máxima 38, aceleración 13,2, giro 3,8 y agarre 18.
 - Kart Dorado con modelo propio: carrocería metálica dorada, dorsal dorado con número negro y llama de escape dorada.
