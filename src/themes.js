@@ -1,5 +1,6 @@
 import { NODES as MU_NODES, START as MU_START, CROSS as MU_CROSS, HILLS as MU_HILLS } from './muralla-data.js';
 import { NODES as MG_NODES, START as MG_START, HILLS as MG_HILLS, RUNOFF as MG_RUNOFF } from './magarigawa-data.js';
+import { NODES as PR_NODES, START as PR_START, CROSS as PR_CROSS, RAMP_U as PR_RAMP, TUNNEL as PR_TUNNEL, HILLS as PR_HILLS } from './palomring-data.js';
 import { NODES as RA_NODES, START as RA_START, HILLS as RA_HILLS, FORDS as RA_FORDS } from './rally-data.js';
 import { hashStr } from './rng.js';
 
@@ -166,6 +167,21 @@ export const THEMES = {
     hemiSky: 0xcfe3ff, hemiGround: 0x7a5a38, hemiI: 1.05, sunI: 1.45, deco: 'savanna', treeCount: 1, treeCol: 0x7a8a3a, night: false, temp: 33, humidity: 0.15, wind: [5, 2.0],
     gripMul: 0.62, traction: 0.82, offroad: 0.74, surface: 'dirt', offroadGrip: 0.55, brakeGrip: 0.72, rollingDrag: 0.7, steerOffroad: 0.7, dust: 0xd4a36a, brakeForce: 17, slope: 1.2,
   },
+  // Palomring: circuito con forma de paloma sobre las nubes; cruce bajo puente, salto altísimo, público de palomas y solo publicidad de PalomApp
+  palomring: {
+    id: 'palomring', name: 'Palomring · Cielo', sub: 'Un circuito con forma de paloma sobre las nubes: curvas técnicas, cruce en túnel bajo el puente y un salto altísimo', seed: 'palomring-1', sky: true, logo: 'palomapp',
+    style: {
+      fixedNodes: PR_NODES, startNear: PR_START, scale: 0.78, half: 5.2, wall: 8.6, minR: 6, sep: 18,
+      cross: PR_CROSS, bridgeH: 11.5, bridgePlat: 12, bridgeRamp: 52, bridgeSpan: 22,
+      chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, hillPts: PR_HILLS, hillSmooth: 6,
+      rampList: [{ u: PR_RAMP, len: 20, h: 5 }], tunnels: [PR_TUNNEL],
+      banks: [[0.2, 0.26, 8], [0.56, 0.6, 7]],
+    },
+    skyTop: 0x2a74d6, skyHor: 0xeaf5ff, fog: 0xd8e9fb, fogNear: 160, fogFar: 1300,
+    ground: 0xf4f8ff, grass: 0xeaf1fb, dirt: 0xdde7f4, road: 0x434b5a, kerb1: 0xffffff, kerb2: 0x5fb0ff,
+    wall1: 0xffffff, wall2: 0x5fb0ff, mount: 0xe6f0fc, sun: 0xfff6dc, sunDir: [-0.4, 0.7, 0.3],
+    hemiSky: 0xe0f0ff, hemiGround: 0xaec6e6, hemiI: 1.2, sunI: 1.4, deco: 'sky', treeCount: 1, treeCol: 0xffffff, night: false, temp: 4, humidity: 0.5, wind: [6, 1.5], gripMul: 1, offroad: 0.6, brakeForce: 24, slope: 1.2,
+  },
   // Fórmula 0 (kartódromo): pista estrecha y técnica, horquillas y eses, muros de neumáticos
   karting: {
     id: 'karting', name: 'Fórmula 0', sub: 'Muy revirado: recta diagonal, eses y horquillas entre muros de neumáticos', tireWalls: true, logo: 'formula0', surround: 'f0', kerbH: 2.3, seed: 'karting-v2',
@@ -205,7 +221,7 @@ export const THEMES = {
     hemiSky: 0xf0f4ff, hemiGround: 0x9a8058, hemiI: 1.0, sunI: 1.35, deco: 'cactus', treeCol: 0x5b7a3a, treeCount: 40, night: false, temp: 31, humidity: 0.15, wind: [2, 0.4], gripMul: 1, offroad: 0.6,
   },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring', 'magarigawa', 'muralla', 'rally'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

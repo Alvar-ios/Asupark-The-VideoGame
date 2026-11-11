@@ -1998,7 +1998,7 @@ function motorsportAmbiance(tr, th, scene, q) {
 }
 
 function sponsorHoardings(tr, th, scene) {
-  if (th.deco === 'kart') return;
+  if (th.deco === 'kart' || th.id === 'palomring') return;
   // 1. Envoltorios de patrocinadores integrados directamente en el guardarraíl
   sponsorBarrierDecals(tr, th, scene);
   // 2. Cuñas de espuma de perfil bajo en arcenes y escapatorias
@@ -2309,7 +2309,7 @@ function trackFeatures(tr, th, scene, q) {
       scene.add(g);
     }
   }
-  if (th.night) nightFloodlights(tr, th, scene, q, glowTex); // torres de focos de estadio a lo largo del trazado
+  if (th.night || th.id === 'spa') nightFloodlights(tr, th, scene, q, glowTex); // torres de focos de estadio a lo largo del trazado
   if (th.night && th.id === 'neon') {
     neonBladeSigns(tr, scene, offTrack);
   }
@@ -2572,6 +2572,7 @@ function scenery(tr, th, scene, rng, q) {
 function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
   if (th.id === 'muralla') { windLeaves.length = 0; backdrop(scene, 'karst', cxm, czm, R, 1250); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
   if (th.id === 'magarigawa') { windLeaves.length = 0; backdrop(scene, 'jungle', cxm, czm, R, 1500); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
+  if (th.id === 'palomring') { windLeaves.length = 0; fillWorld(tr, th, scene, rng, q, clearance, cxm, czm, R); makeBirds(tr, scene, q.density < 1 ? 8 : 16); return; }
   if (th.id === 'rally') { windLeaves.length = 0; fillWorld(tr, th, scene, rng, q, clearance, cxm, czm, R); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; } // sabana: todo el entorno lo da filler.js
   if (th.id === 'madring') { windLeaves.length = 0; backdrop(scene, 'city', cxm, czm, R, 520); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; } // el resto de su entorno lo construye madridDecor
   const id = th.id, dens = q.density, dummy = new THREE.Object3D();

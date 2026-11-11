@@ -25,6 +25,16 @@ function peep(variant) {
       ...limbs(skin, skin),
       part(new THREE.CylinderGeometry(0.022, 0.022, 2.3, 5), 0.36, 1.15, 0.08, 0x6a4a28, 5), part(new THREE.ConeGeometry(0.07, 0.3, 5), 0.36, 2.44, 0.08, 0xb9bdc2, 5), // lanza
     ];
+  } else if (variant === 'dove') {
+    const wh = 0xf4f6f8;
+    parts = [
+      part(box(0.38, 0.62, 0.22), 0, 1.2, 0, T, 0), part(new THREE.IcosahedronGeometry(0.18, 1), 0, 1.7, 0.01, wh, 0), // cabeza de paloma
+      part(new THREE.ConeGeometry(0.055, 0.19, 5).rotateX(Math.PI / 2), 0, 1.67, 0.22, 0xf0a030, 0), // pico
+      part(box(0.04, 0.05, 0.03), -0.1, 1.74, 0.13, 0x14161a, 0), part(box(0.04, 0.05, 0.03), 0.1, 1.74, 0.13, 0x14161a, 0), // ojos
+      part(new THREE.CylinderGeometry(0.16, 0.19, 0.07, 8), 0, 1.54, 0, 0x8f9db0, 0), // collar gris
+      part(box(0.05, 0.14, 0.04), 0, 1.93, -0.04, wh, 0), // cresta
+      ...limbs(0x2b3350, wh),
+    ];
   } else if (variant === 'shroom') {
     const stem = 0xeadfbe;
     parts = [

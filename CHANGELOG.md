@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.84
+- Nuevo circuito: Palomring · Cielo. Trazado en forma de paloma (~1,24 km) con cruce en puente sobre túnel, curvas cerradas y un salto altísimo, entre nubes. El público son palomas y gente con cabeza de paloma, y los únicos anuncios son carteles de PalomApp, todos distintos y con mensajes graciosos.
+- Un 80% menos de vallas de PalomApp en el resto de circuitos.
+- Focos nocturnos continuos que cubren toda la pista (sin huecos), ahora también en Ardenas.
+- Túnel y puente del cruce a distinta altura para que no se solapen.
+
 ## 0.0.83
 - Tierra del Rally Safari más real y pesada: textura de 1024 px con roderas, guijarros, grietas secas y relieve.
 - Polvo realista: estela baja y ancha tras cada rueda que se queda flotando, chorro de tierra por las ruedas motrices y columna densa detrás del coche al ir rápido o derrapar.
