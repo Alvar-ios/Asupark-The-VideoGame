@@ -2,6 +2,13 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.81
+- Nuevo circuito: Rally Safari · Kenia. Tierra roja deslizante (África), horquillas apiladas inspiradas en el circuito de motocross de la foto, 1,8 km.
+- Peraltes en cuatro curvas rápidas, baches repartidos por las rectas (frenan y sacuden), tramos de arena y grava, y un salto de rally sobre un vado de agua.
+- Entorno de sabana: balas de paja, acacias, baobabs, chozas, volcán al fondo, público, carpas y camiones de asistencia, polvareda tras los coches y salpicaduras en el vado.
+- Nuevo coche: Porsche 911 SC Rally 4x4 (grupo Rally). Tracción total, más agarre, frenada y tracción en tierra, grava, arena y nieve; en asfalto es un coche normal.
+- Nuevo logo de PalomApp en los anuncios.
+
 ## 0.0.80
 - Publicidad de PalomApp en los circuitos: vallas y cuñas de espuma con el banner «PalomApp · Próximamente en Google Play (Android)».
 

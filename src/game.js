@@ -70,7 +70,7 @@ window.addEventListener('resize', resize); resize();
 // ---------- pistas ----------
 const tracks = [];
 function addTrack(key, name, sub, seed, style, th) { const tr = buildTrack(seed, style); tracks.push({ key, name, sub, tr, th }); }
-const dailyKey = dailyKeyNow(), dailyPick = pickDaily(dailyKey, dailyKey === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => (k !== 'madring' || dailyKey >= '2026-11-10') && (k !== 'magarigawa' || dailyKey >= '2026-11-11') && (k !== 'muralla' || dailyKey >= '2026-11-12')), (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos' || th === 'muralla') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
+const dailyKey = dailyKeyNow(), dailyPick = pickDaily(dailyKey, dailyKey === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => (k !== 'madring' || dailyKey >= '2026-11-10') && (k !== 'magarigawa' || dailyKey >= '2026-11-11') && (k !== 'muralla' || dailyKey >= '2026-11-12') && (k !== 'rally' || dailyKey >= '2026-11-13')), (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos' || th === 'muralla') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
 addTrack('pruebas', THEMES.pruebas.name, THEMES.pruebas.sub, THEMES.pruebas.seed, THEMES.pruebas.style, THEMES.pruebas);
 addTrack('monaco', THEMES.monaco.name, THEMES.monaco.sub, THEMES.monaco.seed, THEMES.monaco.style, THEMES.monaco);
 addTrack('spa', THEMES.spa.name, THEMES.spa.sub, THEMES.spa.seed, THEMES.spa.style, THEMES.spa);
@@ -162,6 +162,7 @@ const FLAGS = {
   be: '<rect width="10" height="20" fill="#1b1b1b"/><rect x="10" width="10" height="20" fill="#fdda24"/><rect x="20" width="10" height="20" fill="#ef3340"/>',
   at: '<rect width="30" height="20" fill="#ed2939"/><rect y="6.67" width="30" height="6.67" fill="#f4f4f4"/>',
   ma: '<rect width="30" height="20" fill="#c1272d"/><polygon points="' + starPts(15, 10.4, 5.6, 2.2) + '" fill="none" stroke="#006233" stroke-width="1.1"/>',
+  ke: '<rect width="30" height="20" fill="#fff"/><rect width="30" height="5.4" fill="#111"/><rect y="7.3" width="30" height="5.4" fill="#bb0000"/><rect y="14.6" width="30" height="5.4" fill="#006600"/><ellipse cx="15" cy="10" rx="2.6" ry="5.2" fill="#bb0000"/><ellipse cx="15" cy="10" rx="1.2" ry="3.6" fill="#fff"/><rect x="14.6" y="4.6" width="0.8" height="10.8" fill="#111"/>',
   cn: '<rect width="30" height="20" fill="#de2910"/><polygon points="5.00,2.00 5.71,4.03 7.85,4.07 6.14,5.37 6.76,7.43 5.00,6.20 3.24,7.43 3.86,5.37 2.15,4.07 4.29,4.03" fill="#ffde00"/><polygon points="10.00,1.00 10.24,1.68 10.95,1.69 10.38,2.12 10.59,2.81 10.00,2.40 9.41,2.81 9.62,2.12 9.05,1.69 9.76,1.68" fill="#ffde00"/><polygon points="12.00,3.00 12.24,3.68 12.95,3.69 12.38,4.12 12.59,4.81 12.00,4.40 11.41,4.81 11.62,4.12 11.05,3.69 11.76,3.68" fill="#ffde00"/><polygon points="12.00,6.00 12.24,6.68 12.95,6.69 12.38,7.12 12.59,7.81 12.00,7.40 11.41,7.81 11.62,7.12 11.05,6.69 11.76,6.68" fill="#ffde00"/><polygon points="10.00,8.00 10.24,8.68 10.95,8.69 10.38,9.12 10.59,9.81 10.00,9.40 9.41,9.81 9.62,9.12 9.05,8.69 9.76,8.68" fill="#ffde00"/>',
   jp: '<rect width="30" height="20" fill="#f4f4f4"/><circle cx="15" cy="10" r="5.6" fill="#bc002d"/>',
   br: '<rect width="30" height="20" fill="#009c3b"/><polygon points="15,2.5 27,10 15,17.5 3,10" fill="#ffdf00"/><circle cx="15" cy="10" r="3.6" fill="#002776"/>',
@@ -202,7 +203,7 @@ const playerDrv = () => ({ flag: lb.flag, helm: lb.helmet });
 const drvOf = (c) => (c && c.isPlayer ? playerDrv() : c && c.driver) || null;
 const drvIc = (d, sm) => d ? `<span class="flag${sm ? ' sm' : ''}">${flagSvg(d.flag)}</span><span class="hel${sm ? ' sm' : ''}">${helmetSvg(d.helm)}</span>` : '';
 const FLAG_NAMES = { es: 'España', pt: 'Portugal', fr: 'Francia', de: 'Alemania', it: 'Italia', gb: 'Reino Unido', ie: 'Irlanda', nl: 'Países Bajos', be: 'Bélgica', ch: 'Suiza', at: 'Austria', pl: 'Polonia', ro: 'Rumanía', ua: 'Ucrania', se: 'Suecia', mc: 'Mónaco', us: 'Estados Unidos', mx: 'México', co: 'Colombia', ar: 'Argentina', br: 'Brasil', pe: 'Perú', ma: 'Marruecos', jp: 'Japón', pr: 'Orgullo' };
-const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'Fórmula 0'], asupark: ['es', 'Asupark'], kartlos: ['ae', 'Kartlos'], madring: ['es', 'España'], magarigawa: ['jp', 'Japón'], muralla: ['cn', 'China'] };
+const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'Fórmula 0'], asupark: ['es', 'Asupark'], kartlos: ['ae', 'Kartlos'], madring: ['es', 'España'], magarigawa: ['jp', 'Japón'], muralla: ['cn', 'China'], rally: ['ke', 'Kenia'] };
 const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
 function drawPreview(cv, tr, th, w = 300, h = 130, kw = 1) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
@@ -235,8 +236,8 @@ $('pickCar').onclick = () => { if ($('menu').dataset.view === 'garage') { setVie
 $('flyClose').onclick = () => setView('home');
 window.addEventListener('keydown', (e) => { if (S.state === 'menu' && $('menu').dataset.view === 'tracks' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { $(e.code === 'ArrowLeft' ? 'stPrev' : 'stNext').click(); e.preventDefault(); e.stopPropagation(); } }, true);
 window.addEventListener('keydown', (e) => { if (e.code === 'Escape' && S.state === 'menu' && $('menu').dataset.view !== 'home') { setView('home'); e.stopPropagation(); } }, true);
-const MAP_LL = { pruebas: [36.7, -6.0], monaco: [43.74, 7.42], spa: [51.0, 5.6], valle: [-23.7, -46.7], desierto: [19.4, -99.1], neon: [35.7, 139.7], prisma: [34.7, 135.5], nieve: [47.1, 8.6], amazonas: [-12.0, -77.0], karting: [42.4, -1.2], asupark: [38.4, -3.2], kartlos: [25.2, 55.3], madring: [40.47, -3.6], magarigawa: [35.05, 139.92], muralla: [40.43, 116.57] };
-const CONTS = [{ id: 'eu', name: 'Europa', ll: [46, 8], z: 2.35, ids: ['pruebas', 'monaco', 'spa', 'nieve', 'karting', 'asupark', 'madring'] }, { id: 'am', name: 'América', ll: [-2, -72], z: 3.0, ids: ['valle', 'desierto', 'amazonas'] }, { id: 'as', name: 'Asia', ll: [31, 96], z: 3.6, ids: ['neon', 'prisma', 'kartlos', 'magarigawa', 'muralla'] }];
+const MAP_LL = { pruebas: [36.7, -6.0], monaco: [43.74, 7.42], spa: [51.0, 5.6], valle: [-23.7, -46.7], desierto: [19.4, -99.1], neon: [35.7, 139.7], prisma: [34.7, 135.5], nieve: [47.1, 8.6], amazonas: [-12.0, -77.0], karting: [42.4, -1.2], asupark: [38.4, -3.2], kartlos: [25.2, 55.3], madring: [40.47, -3.6], magarigawa: [35.05, 139.92], muralla: [40.43, 116.57], rally: [-0.4, 36.9] };
+const CONTS = [{ id: 'eu', name: 'Europa', ll: [46, 8], z: 2.35, ids: ['pruebas', 'monaco', 'spa', 'nieve', 'karting', 'asupark', 'madring'] }, { id: 'am', name: 'América', ll: [-2, -72], z: 3.0, ids: ['valle', 'desierto', 'amazonas'] }, { id: 'as', name: 'Asia', ll: [31, 96], z: 3.6, ids: ['neon', 'prisma', 'kartlos', 'magarigawa', 'muralla'] }, { id: 'af', name: 'África', ll: [2, 24], z: 2.7, ids: ['rally'] }];
 const contOf = (t) => CONTS.find((c) => c.ids.includes(t.th.id)) || CONTS[0];
 let globe = null, wmCont = null, wmWorld = false;
 function buildMap() {
@@ -851,6 +852,7 @@ function stepAll() {
         else if (e.t === 'drift') { sound.play('drift'); showMsg('DERRAPE', 520, 'cy'); }
       }
       if (e.t === 'land') { c.bounceV = -Math.min(2.4, e.v * 0.12); }
+      if (e.t === 'pothole') { c.bounceV = -Math.min(1.1, e.v * 0.035); if (c.isPlayer) { S.shake = Math.max(S.shake, 0.03); S.camKick = clamp(S.camKick + (Math.random() - 0.5) * 0.02, -0.06, 0.06); sound.play('bump', 8 + e.v * 0.5); } }
       if (e.t === 'wall' || e.t === 'bump') sparks(c, e);
       if (e.t === 'land' && e.v > 5) dust(c, e.v);
     }
@@ -1137,7 +1139,11 @@ function emitFx(dt) {
       const dustCol = new THREE.Color(th.dust || th.dirt), snow = th.surface === 'snow';
       for (const sx of [-1, 1]) { wheelPos(c, sx, -1, wp); markTire(c, snow ? 0.035 : 0.06); if (Math.random() < 0.6) P.emit(wp.x, wp.y + 0.2, wp.z, (Math.random() - 0.5) * 3, 1 + Math.random() * 2, (Math.random() - 0.5) * 3, snow ? 0.9 : 0.7, 0.6, snow ? 3.4 : 2.4, dustCol.r + 0.04, dustCol.g + 0.04, dustCol.b + 0.04, 0.5, 2); }
     }
-    if (th.weather === 'rain' && c.speed > 10 && !c.air) {
+    if (th.rally && c.speed > 8 && !c.air && !c.offroad && (c.puddleWater || 0) < 0.3) { // tierra suelta: polvareda tras cada coche
+      const dc = new THREE.Color(th.dust || th.dirt), sp = Math.min(1, c.speed / 45), slide = Math.min(1, Math.abs(c.vl) / 6);
+      for (const sx of [-1, 1]) { wheelPos(c, sx, -1, wp); if (Math.random() < 0.35 + 0.55 * sp + 0.3 * slide) P.emit(wp.x, wp.y + 0.15, wp.z, (Math.random() - 0.5) * 2.5, 0.8 + Math.random() * 1.6, (Math.random() - 0.5) * 2.5, 0.8 + sp * 0.6, 0.5, 2.8 + slide * 1.2, dc.r + 0.05, dc.g + 0.05, dc.b + 0.05, 0.32 + 0.2 * slide, 2); }
+    }
+    if ((th.weather === 'rain' || (th.rally && c.puddleWater > 0.3)) && c.speed > 10 && !c.air) {
       const sn = Math.sin(c.psi), cs = Math.cos(c.psi), spray = Math.max(0.24, c.puddleWater || c.offroadFactor * 0.55 || (Math.abs(c.vl) > 2.5 ? 0.45 : 0));
       for (const side of [-1, 1]) { wheelPos(c, side, -1, wp); if (Math.random() < 0.72) P.emit(wp.x, wp.y + 0.12, wp.z, -sn * 1.5 + (Math.random() - 0.5) * 2, 1.4 + Math.random() * 2.4, -cs * 1.5 + (Math.random() - 0.5) * 2, 0.42, 0.5, 1.6, 0.62, 0.78, 0.9, 0.32 * spray, 1.4, 1.2); }
     }

@@ -1,6 +1,7 @@
 // Física arcade del coche (sin dependencias de three)
 import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi, rainAt } from './track.js';
 import { puddleAt, mudAt, oilAt, smoothstep, surfaceAt, applyRunoff } from './surface.js';
+const LOOSE = { dirt: 1, gravel: 1, snow: 1, sand: 0.9, grass: 0.8, ice: 0.6, wet: 0.5 };
 const SP = { key: 'asphalt', g: 1, b: 1, d: 0, s: 1, a: 1 };
 
 export const isKartKind = (k) => k === 'kart' || k === 'superkart'; // karts: misma física y mismo modelo base
@@ -11,6 +12,7 @@ export const GROUPS = [
   { id: 'cv100', name: '100 CV', desc: 'Utilitarios y familiares' },
   { id: 'cv150', name: '150 CV', desc: 'Deportivos compactos' },
   { id: 'cv200', name: '200 CV', desc: 'Deportivos potentes' },
+  { id: 'rally', name: 'Rally', desc: 'Tracción total y suspensión larga: reinan en tierra y superficies deslizantes' },
   { id: 'competicion', name: 'Competición', desc: 'Deportivos de altas prestaciones' },
   { id: 'f1', name: 'F1', desc: 'Monoplazas' },
 ];
@@ -42,6 +44,7 @@ export const CARS = [
   { id: 's4', brand: 'Audi', group: 'cv200', name: 'Audi S4 2013', desc: 'Tracción total y compresor: sale como un tiro', color: 0xd32a22, vmax: 58, accel: 15.3, yaw: 2.5, grip: 14, driftGrip: 2.5, radius: 1.3, mass: 1700, kind: 's4', paints: [['Rojo', '#d32a22'], ['Gris', '#6b7280'], ['Negro', '#16181d']], custom: true },
   { id: 'm3', brand: 'BMW', group: 'cv200', drive: 'rwd', name: 'BMW M3 E46', desc: 'Tracción trasera, ágil y rabioso', color: 0x0070ed, vmax: 58, accel: 15.2, yaw: 2.5, grip: 12.5, driftGrip: 2.7, radius: 1.2, mass: 1570, kind: 'm3', paints: [['Azul', '#0070ed'], ['Negro', '#16181d'], ['Plata', '#b9bec6']], custom: true },
   { id: 'porsche', brand: 'Porsche', group: 'cv200', drive: 'rwd', name: 'Porsche 911 Turbo S', desc: 'Rapidísimo, motor trasero: cuidado al frenar', color: 0x0a1a28, vmax: 59, accel: 15.6, yaw: 2.85, grip: 12.6, driftGrip: 2.9, radius: 1.2, mass: 1510, kind: 'porsche', paints: [['Azul noche', '#0a1a28'], ['Plata', '#b9bec6'], ['Rojo', '#b3171d']], custom: true },
+  { id: 'rally911', brand: 'Porsche', group: 'rally', drive: 'awd', name: 'Porsche 911 SC Rally 4x4', desc: 'Tracción total y suspensión de rally: se agarra donde otros patinan. Brutal en tierra', color: 0xf2f2f2, vmax: 57, accel: 16.2, yaw: 3.0, grip: 13.1, driftGrip: 3.4, radius: 1.15, mass: 1120, kind: 'rally911', loose: 1, paints: [['Blanco', '#f2f2f2'], ['Rojo', '#c8201c'], ['Amarillo', '#f3c026'], ['Azul', '#1f4fd0']], custom: true },
   { id: 'cobra', brand: 'AC', group: 'cv200', drive: 'rwd', name: 'AC Cobra 427', desc: 'V8 de 7 litros en un coche diminuto: brutal', color: 0x9a1b1b, vmax: 59, accel: 16, yaw: 2.7, grip: 11.9, driftGrip: 2.7, radius: 1.2, mass: 1150, kind: 'cobra', paints: [['Rojo', '#9a1b1b'], ['Azul', '#1f4fd0'], ['Verde', '#0b4d2c']], custom: true },
   { id: 'etype', brand: 'Jaguar', group: 'cv200', drive: 'rwd', name: 'Jaguar E-Type 1961', desc: 'Gran turismo británico, elegante y ligero', color: 0xc3b987, vmax: 58, accel: 15.1, yaw: 2.55, grip: 12.6, driftGrip: 2.75, radius: 1.1, mass: 1230, kind: 'etype', nopaint: true, custom: true },
   { id: 'z8', brand: 'BMW', group: 'cv200', drive: 'rwd', name: 'BMW Z8', desc: 'Roadster V8: potencia y equilibrio', color: 0xc4c8cf, vmax: 61, accel: 16.3, yaw: 2.7, grip: 13, driftGrip: 2.8, radius: 1.2, mass: 1590, kind: 'z8', nopaint: true, custom: true },
@@ -64,8 +67,8 @@ export const CARS = [
 // efecto suelo / aerodinámica (apoyo que crece con el cuadrado de la velocidad), tracción y potencia de frenada
 const AERO = { aston: 1.0, mp423: 1.0, brawngp: 0.96, r24: 0.95, mp45: 0.85, mclaren: 0.55, lotus: 0.4, fordgt06: 0.14, stradale: 0.12, slr: 0.08, gtr: 0.06, f360: 0.05, rx7toon: 0.05, cobra: 0.03 };
 const DRIVE = { s4: 'awd', porsche: 'rwd', minis: 'fwd' };
-const BRAKE = { cartoon: 1, cv100: 0.95, cv150: 1, cv200: 1.1, competicion: 1.2, f1: 1.5 };
-const MUD_BRAKE = { cartoon: 0.45, cv100: 0.45, cv150: 0.55, cv200: 0.68, competicion: 1, f1: 1 };
+const BRAKE = { rally: 1.1, cartoon: 1, cv100: 0.95, cv150: 1, cv200: 1.1, competicion: 1.2, f1: 1.5 };
+const MUD_BRAKE = { rally: 0.5, cartoon: 0.45, cv100: 0.45, cv150: 0.55, cv200: 0.68, competicion: 1, f1: 1 };
 for (const c of CARS) { c.aero = AERO[c.id] || 0; c.drive = c.drive || DRIVE[c.id] || 'fwd'; c.brakeMul = BRAKE[c.group] || 1; }
 // el apoyo aerodinámico sustituye al agarre base de los monoplazas: en curvas lentas agarran como un coche normal, a alta velocidad se pegan al suelo
 for (const [id, g] of [['aston', 13.8], ['mp423', 13.8], ['brawngp', 13.9], ['r24', 13.8], ['mp45', 13.5], ['mclaren', 13.4], ['lotus', 13.6]]) {
@@ -128,7 +131,8 @@ export function stepCar(c, inp, dt, tr, env) {
   const onPavedKerb = ground && tr.kerb && tr.kerb[loc.i] === curbSide
     && absLat > HW - 0.15 && absLat < HW + curbWidth + 0.15;
   const offroadBlend = onPavedKerb ? 0 : smoothstep(HW - 0.7, HW + 2.4, absLat);
-  surfaceAt(tr, env, loc.s, SP); applyRunoff(tr, env, loc.i, loc.lat, HW, offroadBlend, SP); c.surf = SP.key; // superficie bajo el coche (zonas mixtas + temperatura y humedad)
+  surfaceAt(tr, env, loc.s, SP); applyRunoff(tr, env, loc.i, loc.lat, HW, offroadBlend, SP); c.surf = SP.key;
+  if (T.loose) { const lo = (LOOSE[SP.key] || 0) * T.loose; if (lo) { SP.g *= 1 + 0.2 * lo; SP.b *= 1 + 0.12 * lo; SP.a *= 1 + 0.1 * lo; SP.d *= 1 - 0.3 * lo; } } // coches de rally: más agarre, tracción y frenada en superficies sueltas // superficie bajo el coche (zonas mixtas + temperatura y humedad)
   const off = offroadBlend > 0.5;
   c.offroadFactor = ground ? offroadBlend : 0;
   c.offroad = off && ground;
@@ -185,7 +189,16 @@ export function stepCar(c, inp, dt, tr, env) {
     }
     const soilGrip = env.offroadGrip || 0.68;
     const surfaceGrip = (1 - offroadBlend * (1 - soilGrip)) * (1 - wetK * (1 - (env.wetGrip || 0.78))) * SP.g;
-    const puddleWater = env.weather === 'rain' && !env.noPuddles ? puddleAt(loc.s, loc.lat) : 0;
+    let puddleWater = env.weather === 'rain' && !env.noPuddles ? puddleAt(loc.s, loc.lat) : 0;
+    if (tr.fords && tr.fords.length) for (const f of tr.fords) if (loc.s > f.s0 && loc.s < f.s1) puddleWater = Math.max(puddleWater, 0.9 * Math.min(1, Math.min(loc.s - f.s0, f.s1 - loc.s) / 2)); // vado: agua que frena y resbala
+    if (tr.potholes && tr.potholes.length && speed > 4) { // baches: un tirón que frena un poco, sacude el coche y lo desvía
+      for (const p of tr.potholes) {
+        const ds = loc.s - p.s; if (ds < -p.r - 1 || ds > p.r + 1) continue;
+        const dl = loc.lat - p.lat, d2 = dl * dl + ds * ds, rr = p.r + 0.7;
+        if (d2 < rr * rr) { if (c.phLast !== p) { c.phLast = p; vf *= 0.975; vl += (dl >= 0 ? 1 : -1) * Math.min(1.4, speed * 0.03); c.events.push({ t: 'pothole', v: Math.min(30, speed) }); } break; }
+        else if (c.phLast === p && d2 > (rr + 3) * (rr + 3)) c.phLast = null;
+      }
+    }
     c.puddleWater = puddleWater;
     c.inPuddle = puddleWater > 0.12;
     const mud = env.mud ? mudAt(loc.s, loc.lat) : 0; c.mud = mud;

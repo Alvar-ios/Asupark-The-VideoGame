@@ -205,6 +205,8 @@ export function buildTrack(seed, style) {
 
   // --- rasgos propios de cada circuito: rampas a medida, túneles y curvas peraltadas ---
   if (style.rampList) tr.ramps = style.rampList.map((r) => ({ s0: r.u * len, len: (r.len || 12) * 1.5, h: (r.h || 1.6) * 0.85 }));
+  tr.potholes = (style.potholes || []).map(([s, lat, r]) => ({ s, lat, r })); // baches: bajan la velocidad y sacuden el coche
+  tr.fords = (style.fords || []).map(([s0, s1]) => ({ s0, s1 })); // vado: agua sobre la pista
   tr.zones = (style.zones || []).map(([u0, u1, type]) => ({ s0: u0 * len, s1: u1 * len, type }));
   // escapatorias: ancho de grava junto al asfalto (más ancho en las zonas «abiertas», donde además no hay árboles); más allá, hierba hasta la valla
   if (style.runoff) {

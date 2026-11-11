@@ -33,6 +33,7 @@ export const MODEL = {
   brawngp: { hi: './assets/car_brawngp_hi.glb.gz', lo: './assets/car_brawngp_lo.glb.gz', paint: /(?!)/, length: 4.7 },
   rx7toon: { hi: './assets/car_rx7toon_hi.glb.gz', lo: './assets/car_rx7toon_lo.glb.gz', paint: /(?!)/, length: 4.2, rotation: [0, Math.PI / 2, 0] },
   mp45: { hi: './assets/car_mp45_hi.glb.gz', lo: './assets/car_mp45_lo.glb.gz', paint: /(?!)/, length: 4.1 },
+  rally911: { hi: './assets/car_rally_hi.glb.gz', lo: './assets/car_rally_lo.glb.gz', paint: /^Material\.001$/, paintMat: { metalness: 0.1, roughness: 0.35, envMapIntensity: 0.8, clearcoat: 0.6, clearcoatRoughness: 0.2 } },
   kart: { hi: './assets/car_kart_hi.glb.gz', lo: './assets/car_kart_lo.glb.gz', paint: /^body_color$/, length: 2.1, kart: true },
   minis: { hi: './assets/car_minis_hi.glb.gz', lo: './assets/car_minis_lo.glb.gz', paint: /^COOPER$/, length: 3.7 },
 };

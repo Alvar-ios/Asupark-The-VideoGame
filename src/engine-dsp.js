@@ -41,6 +41,7 @@ Object.assign(PROFILES, {
   z240: derive('m3', 0.95, { name: 'Datsun 240Z (6 en línea clásico)', redline: 6800, gain: 1.05, sub: 1.0, rumble: 0.6, crackle: 1.3, burble: 0.6, rough: 0.2, miss: 0.08, tau: 0.5 }),
   mustang: derive('m3', 0.78, { name: 'Mustang 65 (V8 grave)', cyl: 8, idle: 700, redline: 5800, gain: 1.3, sub: 1.6, rumble: 1.0, crackle: 1.6, crkMin: 2200, thump: 1.7, burble: 1.3, rough: 0.28, miss: 0.1, tau: 0.58 }),
   s4: derive('m3', 1.0, { name: 'Audi S4 (V6 compresor)', redline: 7000, gain: 1.05, supercharger: 0.8, sub: 0.9, rumble: 0.5, crackle: 0.7, burble: 0.2 }),
+  rally911: derive('porsche', 1.1, { name: 'Porsche 911 SC Rally (bóxer atmosférico)', redline: 7600, gain: 1.2, sub: 0.8, rumble: 0.6, crackle: 1.8, crkMin: 2500, burble: 0.9, rough: 0.22, miss: 0.05, thump: 0.8 }),
   cobra: derive('m3', 0.7, { name: 'Cobra 427 (V8 7.0)', cyl: 8, idle: 700, redline: 6500, gain: 1.45, sub: 1.8, rumble: 1.2, crackle: 2.2, crkMin: 2000, thump: 2, burble: 1.7, rough: 0.3, miss: 0.12, tau: 0.6 }),
   stradale: derive('m3', 1.3, { name: 'Alfa 33 Stradale (V8 agudo)', cyl: 8, idle: 1100, redline: 9500, gain: 1.0, sub: 0.5, rumble: 0.4, crackle: 1.1, crkMin: 3500, thump: 0.8, burble: 0.3, rough: 0.1, tau: 0.34 }),
   slr: derive('m3', 0.85, { name: 'SLR (V8 sobrealimentado)', cyl: 8, idle: 750, redline: 6600, gain: 1.4, supercharger: 1, sub: 1.5, rumble: 1.0, crackle: 1.8, crkMin: 2300, thump: 1.5, burble: 1.0, rough: 0.2 }),
