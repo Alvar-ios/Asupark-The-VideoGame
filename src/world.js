@@ -4,6 +4,7 @@ import { ROAD_HALF, WALL, setRoad, rainAt } from './track.js';
 import { SURF, zoneAt, smoothstep, patchBoundary, puddleParams, mudParams, MARIO_OIL_PATCHES } from './surface.js';
 import { rngFromSeed } from './rng.js';
 import { getSponsorTexture } from './sponsors.js';
+import { palomappBoards, nightFloodlights } from './venue.js';
 import { madridDecor } from './madrid.js';
 import { fillWorld, backdrop, fillerBirds } from './filler.js';
 import { npcClock } from './npc.js';
@@ -235,9 +236,42 @@ function pavingTex() { // losas de piedra de la muralla
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'); x.fillStyle = '#8d8373'; x.fillRect(0, 0, 256, 256); const t = ['#efe7d6', '#e2d8c4', '#f6efe0', '#d9cfba']; for (let r = 0; r < 8; r++) for (let k = -1; k < 5; k++) { x.fillStyle = t[(r * 3 + k + 5) % 4]; x.fillRect(k * 64 + (r % 2 ? 32 : 0) + 1.5, r * 32 + 1.5, 61, 29); }
   pavingCache = new THREE.CanvasTexture(c); pavingCache.wrapS = pavingCache.wrapT = THREE.RepeatWrapping; pavingCache.colorSpace = THREE.SRGBColorSpace; pavingCache.anisotropy = 4; pavingCache.repeat.set(2, 2); return pavingCache;
 }
+// Tierra de rally: tierra compactada con terrones, guijarros, grietas secas y roderas longitudinales; textura de 1024 px que no se repite de forma evidente.
+function rallyDirtTex() {
+  const size = 1024, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d'), im = ctx.createImageData(size, size);
+  let sd = 424242; const rn = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const grids = [];
+  for (const g of [4, 8, 16, 32, 64]) { const a = new Float32Array(g * g); for (let i = 0; i < a.length; i++) a[i] = rn(); grids.push({ g, a }); }
+  const vn = (u, v, { g, a }) => { const x = u * g, y = v * g, x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy), X0 = x0 % g, Y0 = y0 % g, X1 = (x0 + 1) % g, Y1 = (y0 + 1) % g;
+    return (a[Y0 * g + X0] * (1 - sx) + a[Y0 * g + X1] * sx) * (1 - sy) + (a[Y1 * g + X0] * (1 - sx) + a[Y1 * g + X1] * sx) * sy; };
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const u = x / size, v = y / size;
+    let n = (vn(u, v, grids[0]) - 0.5) * 46 + (vn(u, v, grids[1]) - 0.5) * 38 + (vn(u, v, grids[2]) - 0.5) * 30 + (vn(u, v, grids[3]) - 0.5) * 22 + (vn(u, v, grids[4]) - 0.5) * 16;
+    n += (rn() - 0.5) * 26;                                           // grano fino
+    const dr = (cx) => { let d = Math.abs(u - cx); d = Math.min(d, 1 - d); return Math.exp(-(d * d) / 0.0016); };
+    const rut = Math.max(dr(0.27), dr(0.73));                         // dos roderas compactadas y más oscuras
+    n -= rut * (22 + 14 * vn(u * 0.25, v * 6, grids[2]));
+    n += Math.exp(-((u - 0.5) ** 2) / 0.006) * 14;                    // cresta central más clara y suelta
+    n += (Math.sin(v * 380 + vn(u, v, grids[1]) * 6) * 0.5 + 0.5) * rut * 8; // estrías dentro de la rodera
+    const lum = Math.max(0, Math.min(255, 172 + n)), i = (y * size + x) * 4;
+    im.data[i] = Math.min(255, lum + 12); im.data[i + 1] = lum; im.data[i + 2] = Math.max(0, lum - 6); im.data[i + 3] = 255;
+  }
+  ctx.putImageData(im, 0, 0);
+  for (let k = 0; k < 900; k++) { // guijarros con luz arriba-izquierda y sombra abajo-derecha
+    const x = rn() * size, y = rn() * size, r = 1.2 + rn() * rn() * 5.5;
+    ctx.fillStyle = 'rgba(0,0,0,0.30)'; ctx.beginPath(); ctx.ellipse(x + r * 0.45, y + r * 0.5, r * 1.05, r * 0.85, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = `rgba(${200 + rn() * 40},${180 + rn() * 40},${150 + rn() * 40},0.92)`; ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.82, rn() * 3, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.ellipse(x - r * 0.25, y - r * 0.28, r * 0.4, r * 0.3, 0, 0, 7); ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(40,24,12,0.5)'; ctx.lineWidth = 1.4; // grietas de tierra seca
+  for (let k = 0; k < 26; k++) { let x = rn() * size, y = rn() * size; ctx.beginPath(); ctx.moveTo(x, y); for (let m = 0; m < 7; m++) { x += (rn() - 0.5) * 60; y += (rn() - 0.5) * 60; ctx.lineTo(x, y); } ctx.stroke(); }
+  const tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(2, 8); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; return tex;
+}
 function asphaltTex(th) {
   const key = th.id || 'default';
   if (asphaltCache.has(key)) return asphaltCache.get(key);
+  if (th.id === 'rally') { const t = rallyDirtTex(); asphaltCache.set(key, t); return t; }
   const size = 256, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d'), im = ctx.createImageData(size, size);
   let baseLum = 120, noiseAmp = 30, speckRatio = 0.11, warmR = 0, coolB = 0;
@@ -1067,7 +1101,8 @@ function roadMesh(tr, th, stride = 1) {
 
   const roadMaterial = new THREE.MeshStandardMaterial({
     vertexColors: true, side: THREE.DoubleSide,
-    roughness: roadRough, metalness: roadMetal, envMapIntensity: envInt, map: rTex
+    roughness: roadRough, metalness: roadMetal, envMapIntensity: envInt, map: rTex,
+    ...(th.rally ? { bumpMap: rTex, bumpScale: 2.2 } : {})
   });
 
   const kerbMaterial = new THREE.MeshStandardMaterial({
@@ -2274,27 +2309,8 @@ function trackFeatures(tr, th, scene, q) {
       scene.add(g);
     }
   }
-  if (th.night && th.id === 'neon') { // torres de focos a los lados de la pista: luz cálida en la noche
-    const poles = [], heads = [];
-    for (let s = 60; s < tr.len - 60; s += 150) {
-      const i = Math.floor(s / tr.ds) % N, side = poles.length % 2 ? -1 : 1, l = WALL + 16;
-      const x = tr.X[i] + -tr.TZ[i] * l * side, z = tr.Z[i] + tr.TX[i] * l * side;
-      if (!offTrack(x, z, WALL + 8, s - 60, s + 60)) continue;
-      poles.push([x, tr.Y[i], z]); heads.push([x, tr.Y[i] + 22, z, Math.atan2(tr.TX[i], tr.TZ[i]) + side * 0.6]);
-    }
-    if (poles.length) {
-      const pm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.9, 22, 0.9).translate(0, 11, 0), new THREE.MeshStandardMaterial({ color: 0x5a6068, roughness: 0.7, metalness: 0.4 }), poles.length);
-      poles.forEach((p, k) => { dummy.position.set(p[0], p[1], p[2]); dummy.rotation.set(0, 0, 0); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); pm.setMatrixAt(k, dummy.matrix); });
-      pm.frustumCulled = false; scene.add(pm);
-      // proyectores LED: panel de cuatro focos inclinado hacia la pista + halo de luz
-      const hm = new THREE.InstancedMesh(new THREE.BoxGeometry(3.6, 2.4, 0.4), new THREE.MeshBasicMaterial({ color: 0xfff4da }), heads.length);
-      const glowMat = new THREE.SpriteMaterial({ map: glowTex(), color: 0xffe6b0, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.85 });
-      heads.forEach((h, k) => {
-        dummy.position.set(h[0], h[1], h[2]); dummy.rotation.set(0, h[3], 0.35); dummy.scale.set(1, 1, 1); dummy.updateMatrix(); hm.setMatrixAt(k, dummy.matrix);
-        const sp = new THREE.Sprite(glowMat); sp.position.set(h[0], h[1] - 0.4, h[2]); sp.scale.set(16, 16, 1); sp.renderOrder = 2; scene.add(sp);
-      });
-      hm.frustumCulled = false; scene.add(hm);
-    }
+  if (th.night) nightFloodlights(tr, th, scene, q, glowTex); // torres de focos de estadio a lo largo del trazado
+  if (th.night && th.id === 'neon') {
     neonBladeSigns(tr, scene, offTrack);
   }
 }
@@ -2905,6 +2921,7 @@ export function buildWorld(tr, th, opt = {}) {
   } else if (!th.privateClub) {
     distanceMarkers(tr, th, scene);
     sponsorHoardings(tr, th, scene);
+    palomappBoards(tr, th, scene, q);
     motorsportAmbiance(tr, th, scene, q);
   }
   if (th.oil) {

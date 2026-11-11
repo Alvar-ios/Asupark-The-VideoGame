@@ -2,6 +2,13 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.83
+- Tierra del Rally Safari más real y pesada: textura de 1024 px con roderas, guijarros, grietas secas y relieve.
+- Polvo realista: estela baja y ancha tras cada rueda que se queda flotando, chorro de tierra por las ruedas motrices y columna densa detrás del coche al ir rápido o derrapar.
+- Porsche 911 SC Rally: ahora lleva interior (salpicadero, volante, baquets con arneses, jaula antivuelco, rueda de repuesto), retrovisores exteriores e interior, faros de rally y faldillas antibarro.
+- Vallas publicitarias de PalomApp a ambos lados de casi todos los circuitos.
+- Circuitos nocturnos: torres de focos de estadio a lo largo del trazado, con haz de luz visible y charcos de luz sobre el asfalto.
+
 ## 0.0.82
 - Rally Safari: fuera los agujeros; ahora hay badenes (subes y bajas rápido de desnivel) en cuatro rectas.
 - Tierra mucho más resbaladiza: agarre, tracción y frenada bajan para todos los coches. El Porsche 911 SC Rally 4x4 conserva casi todo el agarre y es el único que se maneja bien.

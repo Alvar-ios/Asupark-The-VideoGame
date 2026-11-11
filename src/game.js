@@ -386,7 +386,7 @@ function makeGhost(root, gold, name) {
 
 // ---------- partículas ----------
 class Particles {
-  constructor(scene, max = MOBILE ? 260 : 600) {
+  constructor(scene, max = MOBILE ? 320 : 1400) {
     this.max = max; this.i = 0;
     this.pos = new Float32Array(max * 3); this.col = new Float32Array(max * 3); this.size = new Float32Array(max); this.alpha = new Float32Array(max);
     this.vel = new Float32Array(max * 3); this.life = new Float32Array(max); this.maxLife = new Float32Array(max); this.s0 = new Float32Array(max); this.s1 = new Float32Array(max); this.a0 = new Float32Array(max); this.drag = new Float32Array(max); this.grav = new Float32Array(max);
@@ -1139,9 +1139,18 @@ function emitFx(dt) {
       const dustCol = new THREE.Color(th.dust || th.dirt), snow = th.surface === 'snow';
       for (const sx of [-1, 1]) { wheelPos(c, sx, -1, wp); markTire(c, snow ? 0.035 : 0.06); if (Math.random() < 0.6) P.emit(wp.x, wp.y + 0.2, wp.z, (Math.random() - 0.5) * 3, 1 + Math.random() * 2, (Math.random() - 0.5) * 3, snow ? 0.9 : 0.7, 0.6, snow ? 3.4 : 2.4, dustCol.r + 0.04, dustCol.g + 0.04, dustCol.b + 0.04, 0.5, 2); }
     }
-    if (th.rally && c.speed > 8 && !c.air && !c.offroad && (c.puddleWater || 0) < 0.3) { // tierra suelta: polvareda tras cada coche
-      const dc = new THREE.Color(th.dust || th.dirt), sp = Math.min(1, c.speed / 45), slide = Math.min(1, Math.abs(c.vl) / 6);
-      for (const sx of [-1, 1]) { wheelPos(c, sx, -1, wp); if (Math.random() < 0.35 + 0.55 * sp + 0.3 * slide) P.emit(wp.x, wp.y + 0.15, wp.z, (Math.random() - 0.5) * 2.5, 0.8 + Math.random() * 1.6, (Math.random() - 0.5) * 2.5, 0.8 + sp * 0.6, 0.5, 2.8 + slide * 1.2, dc.r + 0.05, dc.g + 0.05, dc.b + 0.05, 0.32 + 0.2 * slide, 2); }
+    if (th.rally && c.speed > 6 && !c.air && !c.offroad && (c.puddleWater || 0) < 0.3) { // tierra suelta: estela de polvo pesada y persistente tras cada coche
+      const dc = new THREE.Color(th.dust || th.dirt), sp = Math.min(1, c.speed / 45), slide = Math.min(1, Math.abs(c.vl) / 6), pw = c === pl ? 1 : 0.6;
+      const sn = Math.sin(c.psi), cs = Math.cos(c.psi), thr = c.throttle || 0, spin = Math.min(1, 0.25 + thr * 0.6 + slide * 0.8);
+      for (const sx of [-1, 1]) {
+        wheelPos(c, sx, -1, wp);
+        // nube baja y ancha que sale de la rueda y se queda flotando atrás
+        if (Math.random() < (0.45 + 0.75 * sp + 0.5 * slide) * pw) { const sh = 0.84 + Math.random() * 0.2; P.emit(wp.x, wp.y + 0.2, wp.z, -sn * (1.2 + sp * 2.6) + (Math.random() - 0.5) * 2.4 + c.vx * 0.12, 0.7 + Math.random() * 1.5, -cs * (1.2 + sp * 2.6) + (Math.random() - 0.5) * 2.4 + c.vz * 0.12, 1.5 + sp * 1.0 + slide * 0.5, 0.7, 4.6 + slide * 2.2 + sp * 1.2, Math.min(1, dc.r * sh + 0.12), Math.min(1, dc.g * sh + 0.1), Math.min(1, dc.b * sh + 0.08), 0.3 + 0.2 * slide, 0.9); }
+        // chorro de tierra y guijarros que sale despedido por la rueda motriz (cola de gallo)
+        if (Math.random() < (0.25 + 0.5 * spin) * pw) P.emit(wp.x, wp.y + 0.15, wp.z, -sn * (3 + sp * 7 * spin) + (Math.random() - 0.5) * 3, 1.5 + Math.random() * 3.2 * spin, -cs * (3 + sp * 7 * spin) + (Math.random() - 0.5) * 3, 0.45 + Math.random() * 0.35, 0.25, 0.7, dc.r * 0.78, dc.g * 0.72, dc.b * 0.65, 0.85, 0.6, 14);
+      }
+      // columna de polvo densa justo detrás del coche cuando va rápido o derrapando
+      if (Math.random() < (sp * 0.7 + slide * 0.6) * pw) P.emit(c.x - sn * 3.4 + (Math.random() - 0.5) * 1.8, c.loc.h + 0.6, c.z - cs * 3.4 + (Math.random() - 0.5) * 1.8, -sn * 1.5 + (Math.random() - 0.5), 1.2 + Math.random() * 1.2, -cs * 1.5 + (Math.random() - 0.5), 2.2 + sp * 0.8, 1.6, 7.5 + slide * 2, Math.min(1, dc.r + 0.16), Math.min(1, dc.g + 0.14), Math.min(1, dc.b + 0.1), 0.2 + 0.12 * slide, 0.7);
     }
     if ((th.weather === 'rain' || (th.rally && c.puddleWater > 0.3)) && c.speed > 10 && !c.air) {
       const sn = Math.sin(c.psi), cs = Math.cos(c.psi), spray = Math.max(0.24, c.puddleWater || c.offroadFactor * 0.55 || (Math.abs(c.vl) > 2.5 ? 0.45 : 0));
