@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.82
+- Rally Safari: fuera los agujeros; ahora hay badenes (subes y bajas rápido de desnivel) en cuatro rectas.
+- Tierra mucho más resbaladiza: agarre, tracción y frenada bajan para todos los coches. El Porsche 911 SC Rally 4x4 conserva casi todo el agarre y es el único que se maneja bien.
+- Público del circuito: integrantes de tribus africanas con lanza alrededor de la pista.
+
 ## 0.0.81
 - Nuevo circuito: Rally Safari · Kenia. Tierra roja deslizante (África), horquillas apiladas inspiradas en el circuito de motocross de la foto, 1,8 km.
 - Peraltes en cuatro curvas rápidas, baches repartidos por las rectas (frenan y sacuden), tramos de arena y grava, y un salto de rally sobre un vado de agua.

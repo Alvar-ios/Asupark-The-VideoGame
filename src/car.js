@@ -132,7 +132,7 @@ export function stepCar(c, inp, dt, tr, env) {
     && absLat > HW - 0.15 && absLat < HW + curbWidth + 0.15;
   const offroadBlend = onPavedKerb ? 0 : smoothstep(HW - 0.7, HW + 2.4, absLat);
   surfaceAt(tr, env, loc.s, SP); applyRunoff(tr, env, loc.i, loc.lat, HW, offroadBlend, SP); c.surf = SP.key;
-  if (T.loose) { const lo = (LOOSE[SP.key] || 0) * T.loose; if (lo) { SP.g *= 1 + 0.2 * lo; SP.b *= 1 + 0.12 * lo; SP.a *= 1 + 0.1 * lo; SP.d *= 1 - 0.3 * lo; } } // coches de rally: más agarre, tracción y frenada en superficies sueltas // superficie bajo el coche (zonas mixtas + temperatura y humedad)
+  if (T.loose) { const lo = (LOOSE[SP.key] || 0) * T.loose; if (lo) { SP.g *= 1 + 0.5 * lo; SP.b *= 1 + 0.3 * lo; SP.a *= 1 + 0.25 * lo; SP.s *= 1 + 0.06 * lo; SP.d *= 1 - 0.3 * lo; } } // coches de rally: más agarre, tracción y frenada en superficies sueltas // superficie bajo el coche (zonas mixtas + temperatura y humedad)
   const off = offroadBlend > 0.5;
   c.offroadFactor = ground ? offroadBlend : 0;
   c.offroad = off && ground;

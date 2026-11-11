@@ -1,6 +1,6 @@
 import { NODES as MU_NODES, START as MU_START, CROSS as MU_CROSS, HILLS as MU_HILLS } from './muralla-data.js';
 import { NODES as MG_NODES, START as MG_START, HILLS as MG_HILLS, RUNOFF as MG_RUNOFF } from './magarigawa-data.js';
-import { NODES as RA_NODES, START as RA_START, HILLS as RA_HILLS, POTHOLES as RA_POTHOLES, FORDS as RA_FORDS } from './rally-data.js';
+import { NODES as RA_NODES, START as RA_START, HILLS as RA_HILLS, FORDS as RA_FORDS } from './rally-data.js';
 import { hashStr } from './rng.js';
 
 export const THEMES = {
@@ -151,20 +151,20 @@ export const THEMES = {
     hemiSky: 0xf2f2f0, hemiGround: 0xb8a88e, hemiI: 1.15, sunI: 1.35, deco: 'madrid', treeCount: 1, treeCol: 0x3f7a35, night: false, temp: 18, humidity: 0.4, wind: [3, 0.9], gripMul: 1, offroad: 0.96, offroadGrip: 0.96, rollingDrag: 0.08, steerOffroad: 1, slope: 0.9,
   },
   rally: {
-    id: 'rally', name: 'Rally Safari · Kenia', sub: 'Tierra roja deslizante: peraltes, baches, un salto sobre el vado y horquillas apiladas', seed: 'rally-1', noKerbs: true, rally: true,
+    id: 'rally', name: 'Rally Safari · Kenia', sub: 'Tierra roja muy deslizante: peraltes, badenes, un salto sobre el vado y horquillas apiladas. Solo el Porsche Rally lo domina', seed: 'rally-1', noKerbs: true, rally: true,
     style: {
       fixedNodes: RA_NODES, startNear: RA_START, scale: 0.26, half: 5.2, wall: 8.4, minR: 7, sep: 16,
       chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, hillPts: RA_HILLS, hillSmooth: 6,
       rampList: [{ u: 0.3016, len: 16, h: 2.4 }],
       zones: [[0.47, 0.5, 'sand'], [0.9, 0.935, 'gravel']],
       banks: [[0.108, 0.138, 12], [0.198, 0.24, 14], [0.6, 0.628, 10], [0.698, 0.719, 10]],
-      potholes: RA_POTHOLES, fords: RA_FORDS,
+      rollerList: [{ s0: 70, n: 6, wl: 14, amp: 0.34 }, { s0: 800, n: 6, wl: 14, amp: 0.34 }, { s0: 1330, n: 5, wl: 13, amp: 0.32 }, { s0: 1648, n: 5, wl: 13, amp: 0.32 }, { s0: 1000, n: 0, wl: 1, amp: 0 }].filter((r) => r.n), fords: RA_FORDS,
     },
     skyTop: 0x2f7fd0, skyHor: 0xf7d9a8, fog: 0xe8c79a, fogNear: 240, fogFar: 1700,
     ground: 0xa07a44, grass: 0xb59a55, dirt: 0x8a5a32, road: 0xeeb27a, kerb1: 0xc9a05a, kerb2: 0xd9b56e,
     wall1: 0xdcb35a, wall2: 0xc99a3f, mount: 0xb98c5e, sun: 0xffe0b0, sunDir: [-0.5, 0.55, 0.4],
     hemiSky: 0xcfe3ff, hemiGround: 0x7a5a38, hemiI: 1.05, sunI: 1.45, deco: 'savanna', treeCount: 1, treeCol: 0x7a8a3a, night: false, temp: 33, humidity: 0.15, wind: [5, 2.0],
-    gripMul: 0.8, offroad: 0.74, surface: 'dirt', offroadGrip: 0.66, brakeGrip: 0.8, rollingDrag: 0.7, steerOffroad: 0.7, dust: 0xd4a36a, brakeForce: 21, slope: 1.2,
+    gripMul: 0.62, traction: 0.82, offroad: 0.74, surface: 'dirt', offroadGrip: 0.55, brakeGrip: 0.72, rollingDrag: 0.7, steerOffroad: 0.7, dust: 0xd4a36a, brakeForce: 17, slope: 1.2,
   },
   // Fórmula 0 (kartódromo): pista estrecha y técnica, horquillas y eses, muros de neumáticos
   karting: {
