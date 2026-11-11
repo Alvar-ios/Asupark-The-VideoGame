@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { THEMES, THEME_LIST } from './themes.js';
 import { waShare, inviteUrl, WA_ICON } from './share.js';
+import { initLeagues } from './leagues.js';
 import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS, DAILY_LOCK_DAY } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo, isKartKind } from './car.js';
@@ -79,7 +80,7 @@ if (dailyKey === DAILY_LOCK_DAY && !store.get('purge.daily-madring')) { try { lo
 { const dth = THEMES[dailyPick.theme]; addTrack('daily', 'Reto del día', dth.sub, dth.seed, dth.style, dth); }
 for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco' && k !== 'spa') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
 
-const DAILY_CAR = Math.max(0, CARS.findIndex((c) => c.id === dailyPick.car)); // el mismo coche y circuito para todos cada día (cambia a las 4:00 de Madrid)
+const BASE_CAR = Math.max(0, CARS.findIndex((c) => c.id === dailyPick.car)); let DAILY_CAR = BASE_CAR; // el mismo coche y circuito para todos cada día (cambia a las 4:00 de Madrid)
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
 const sel = { track: 0, mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, touchMode: 'halves', ctlV: 2, colors: {}, vol: { master: 1, music: 0.7, engine: 0.65 }, gfx: 'auto' };
 const paintOf = (c) => { const v = sel.colors[c.id]; if (v && c.freeColor && /^#[0-9a-f]{6}$/i.test(v)) return v; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
@@ -757,8 +758,8 @@ async function radarCars(fastType, pool) {
   const mk = (t, col) => buildCarMesh(col, t.kind, 'lo', 2 + Math.floor(Math.random() * 90));
   return { fast: mk(fastType, '#' + new THREE.Color(fastType.color).getHexString()), traffic: pool.map((t, i) => mk(t, cols[i % cols.length])) };
 }
-D = createDaily({ radarCars, $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession, muted: () => !!sel.mute, volume: () => clamp(+sel.vol.master, 0, 1),
-  get track() { return tracks.find((t) => t.key === 'daily'); }, get car() { return CARS[DAILY_CAR]; } });
+D = createDaily({ groupName, radarCars, $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession, muted: () => !!sel.mute, volume: () => clamp(+sel.vol.master, 0, 1),
+  get track() { return tracks.find((t) => t.key === 'daily'); }, get car() { return CARS[DAILY_CAR]; }, get baseCar() { return CARS[BASE_CAR]; }, setCar(id) { const i = CARS.findIndex((c) => c.id === id); DAILY_CAR = i >= 0 ? i : BASE_CAR; } });
 $('shareBtn').innerHTML = WA_ICON + 'COMPARTIR POR WHATSAPP';
 $('shareBtn').onclick = () => {
   const p = S.player, ti = S.trackInfo, circ = ti ? ti.th.name.replace(/ · .*$/, '') : '', car = p ? p.type.name : '', big = $('rBig').textContent, title = $('rTitle').textContent;
@@ -1576,6 +1577,7 @@ async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62
 initProfile({ $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt });
 acc.onChange(() => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; try { buildHelmetEditor(); } catch (_) {} });
 acc.restore();
+initLeagues({ $, acc, esc, fmt, flagSvg, toast });
 // enlace de invitación ?add=usuario: añade al amigo al entrar (o en cuanto inicies sesión)
 { const q = new URLSearchParams(location.search).get('add'); if (q) { try { history.replaceState(null, '', location.pathname); } catch (_) {} let pend = q;
   const tryAdd = async () => { if (!pend || !acc.profile || pend.toLowerCase() === (acc.username || '').toLowerCase()) return; const u = pend; pend = null; try { await acc.addFriend(u); toast(`Solicitud enviada a @${u}`); } catch (e) { toast(acc.explain(e)); } };

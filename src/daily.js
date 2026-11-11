@@ -25,11 +25,27 @@ export function createDaily(ctx) {
   const { $, lb, acc, esc, fmt, fmtS } = ctx;
   const key = ctx.key;
   let st = load(); if (!st || st.day !== key) { st = { day: key, pr: 0, pa: 0, or: 0, oa: 0, best: null }; save(st); }
+  if (st.pick && st.pick !== 'base') ctx.setCar(st.pick);
   const rem = () => lb.remote;
   const rpc = (name, args) => lb.call('rpc/' + name, { method: 'POST', body: JSON.stringify(args) });
   const pid = () => lb.player.id;
   let tab = 'global', last = null, introTimer = null, boardRows = null;
 
+  // ---- Lentorro: el último de ayer en su liga elige coche (el del día o 1 de 3 de una categoría superior)
+  const CHAIN = ['cv100', 'cv150', 'cv200', 'rally', 'competicion', 'f1'];
+  const canPick = () => !!(st.ud && !st.pick && !st.pr && !st.or);
+  const upgrades = () => { // 3 coches de la categoría siguiente; si ésta no tiene 3, se completa con las superiores
+    const b = ctx.baseCar, i = CHAIN.indexOf(b.group), out = [];
+    for (let k = i < 0 ? 0 : Math.min(i + 1, CHAIN.length - 1); k < CHAIN.length && out.length < 3; k++) out.push(...ctx.cars.filter((c) => c.group === CHAIN[k] && c.id !== b.id).sort((x, y) => hashStr(key + pid() + x.id) - hashStr(key + pid() + y.id)));
+    if (out.length < 3 && i >= 0) out.push(...ctx.cars.filter((c) => c.group === b.group && c.id !== b.id && !out.includes(c)));
+    return out.slice(0, 3); };
+  function pickCar(id) { st.pick = id; ctx.setCar(id === 'base' ? ctx.baseCar.id : id); carsP = null; save(st); renderHero(); }
+  const lentorroHtml = () => { const b = ctx.baseCar, opt = (c, base) => `<button type="button" class="dy-ud" data-pick="${base ? 'base' : c.id}"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>${base ? 'Coche del día' : esc(ctx.groupName(c.group))}</small></button>`;
+    return `<div class="dy-card dy-lentorro"><h3>🐌 PREMIO LENTORRO</h3><p>Ayer fuiste el último en ${esc(st.ud.join(', '))}. Hoy puedes seguir con el coche del día o elegir uno de categoría superior.</p><div class="dy-udg">${opt(b, true)}${upgrades().map((c) => opt(c, false)).join('')}</div></div>`; };
+  function lentorro() {
+    cancelAnimationFrame(spinRaf); clearTimeout(introTimer); stopRadar();
+    setStage('lentorro', `${head('Premio Lentorro')}${lentorroHtml()}`);
+  }
   const left = (k) => 1 + st[k + 'a'] - st[k + 'r']; // sesiones que quedan de ese tipo
   const adAvail = (k) => st[k + 'a'] < 1 && st[k + 'r'] >= 1;
   async function sync() {
@@ -40,6 +56,7 @@ export function createDaily(ctx) {
       if (s.ms && (!st.best || s.ms < st.best.ms)) st.best = { ms: s.ms, s: [s.s1, s.s2, s.s3] };
       save(st); renderHero(); if (isOpen() && stage === 'hub') hub();
     } catch (e) { /* sin red: manda la caché local */ }
+    if (acc.loggedIn && !st.pick && !st.ud) { try { const u = await acc.rpc('daily_underdog'); if (u && u.length) { st.ud = u; save(st); renderHero(); if (isOpen() && stage === 'hub') hub(); } } catch (e) { /* sin liga o sin red */ } }
   }
   async function begin(kind) {
     const k = kind === 'practice' ? 'p' : 'o';
@@ -143,7 +160,7 @@ export function createDaily(ctx) {
     cancelAnimationFrame(spinRaf); clearTimeout(introTimer);
     const t = ctx.track, [cc, cname] = ctx.countryOf(t), env = ctx.envLabel(t);
     setStage('circuit', `${head('Circuito de hoy')}<div class="dy-card dy-reveal"><div class="dy-ct"><span class="flag">${ctx.flagSvg(cc)}</span><div><em>${esc(cname)}</em><b>${esc(t.th.name)}</b></div>${t.th.logo ? `<img class="dy-logo" src="./assets/logos/${t.th.logo}.webp" alt="">` : ''}</div><canvas id="dyCv" class="dy-cv"></canvas><div class="dy-chips"><span>${(t.tr.len / 1000).toFixed(2)} km</span><span>${esc(env)}</span><span>${esc(t.sub || '')}</span></div></div><button id="dyNext" class="dy-btn">PILLAR COCHE ›</button>`);
-    ctx.drawPreview($('dyCv'), t.tr, t.th, 560, 300, 1.5); $('dyNext').onclick = radar;
+    ctx.drawPreview($('dyCv'), t.tr, t.th, 560, 300, 1.5); $('dyNext').onclick = () => (canPick() ? lentorro() : radar());
   }
   // 3) radar: escena en perspectiva sobre una carretera de verdad; tráfico normal y, de pronto, el coche del reto a toda velocidad
   let rad = null;
@@ -186,7 +203,7 @@ export function createDaily(ctx) {
   function hub() {
     clearTimeout(introTimer); cancelAnimationFrame(spinRaf); stopRadar();
     const t = ctx.track, c = ctx.car;
-    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>Mismo coche y circuito para todos</small></div></div>${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard"><p class="dy-empty">Cargando…</p></div></div>`);
+    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>${st.pick && st.pick !== 'base' ? '🐌 Elegido con el premio Lentorro' : 'Mismo coche y circuito para todos'}</small></div></div>${canPick() ? lentorroHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard"><p class="dy-empty">Cargando…</p></div></div>`);
     ctx.drawPreview($('dyCv2'), t.tr, t.th, 240, 130);
     renderBoard();
   }
@@ -223,6 +240,7 @@ export function createDaily(ctx) {
     const b = e.target.closest('button'); if (!b) return;
     if (b.id === 'dyClose') return close();
     if (b.dataset.tab) { tab = b.dataset.tab; hub(); return; }
+    if (b.dataset.pick) { if (canPick()) { pickCar(b.dataset.pick); } return stage === 'lentorro' ? radar() : hub(); }
     const a = b.dataset.act; if (!a) return;
     if (a === 'practice' || a === 'official') return startKind(a);
     if (a === 'wa-result' || a === 'wa-challenge') {

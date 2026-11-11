@@ -2,6 +2,13 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.86
+- Ligas de amigos (botón «Ligas» del menú): crea una liga, invita por WhatsApp o enlace (?liga=CÓDIGO, te une al instante tras entrar) o únete con el código de 6 letras.
+- Temporadas de 14 días sobre el reto diario con puntos de F1 (25-18-15-12-10-8-6-4-2-1): clasificación con victorias, podios y mejor tiempo, y pestaña «Días» con el tiempo, la diferencia, los puntos, los sectores y los intentos de cada piloto cada día.
+- Chat de la liga integrado (se actualiza solo).
+- Cada intento oficial del reto diario queda registrado en el servidor.
+- Premio Lentorro: el último de cada día en su liga puede elegir al día siguiente entre el coche del reto o 3 de una categoría superior. Se ve con un 🐌 en la liga.
+
 ## 0.0.85
 - Palomring: el salto está ahora justo después de la salida y la recta es unos 70 m más larga, así aterrizas antes de la siguiente curva sin chocarte.
 
