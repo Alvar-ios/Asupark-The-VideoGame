@@ -2,6 +2,18 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.90
+- Experiencia pulida (recomendaciones de diseño):
+  - Esqueletos de carga con la forma del contenido (ligas, liga, chat, reto, perfil, clasificación) en lugar de «Cargando…».
+  - Datos al instante desde caché y refresco en segundo plano (ligas, liga, resumen, racha); precarga en reposo de lo siguiente que vas a abrir.
+  - Acciones optimistas con marcha atrás si falla: enviar mensaje, reaccionar y apostar.
+  - «Deshacer» al salir de una liga (se confirma a los 6 s o al cerrar la app) en vez de un cuadro de confirmación.
+  - Menú de comandos con Ctrl/⌘+K (o «/») y atajos D, L, T, R, C, A, P, S, M en el inicio, con pistas visibles solo con teclado.
+  - El botón Atrás cierra la pantalla abierta (Android/PWA) y se pueden cerrar deslizando hacia abajo; las pantallas entran con transiciones interrumpibles y el inicio/ligas usan transición de vista.
+  - Imágenes que aparecen desde un desenfoque, cifras tabulares, titulares equilibrados, radios unificados (8/12/16) y esquinas suaves donde el navegador las admite.
+  - Zonas táctiles de 44 px y márgenes seguros en las pantallas.
+  - Sin dobles envíos: peticiones idénticas se unifican, el chat lleva identificador, las reacciones fijan estado y crear liga repetido devuelve la misma.
+
 ## 0.0.89
 - Ligas y reto del día, más vivos:
   - Racha diaria 🔥 (días seguidos corriendo el reto), visible en el reto, en las tablas y en el perfil.

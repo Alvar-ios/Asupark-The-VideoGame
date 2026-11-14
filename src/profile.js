@@ -1,5 +1,6 @@
 // Pantalla de Perfil: entrar / crear cuenta, estadísticas, vitrina de logros, amigos, rivalidad y salón de la fama.
 import { waShare, inviteUrl, waBtn } from './share.js';
+import { sk } from './ux.js';
 export function initProfile(ctx) {
   const { $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt } = ctx;
   const S = { tab: 'perfil', mode: 'in', msg: '', rival: null, busy: false };
@@ -40,8 +41,8 @@ export function initProfile(ctx) {
   }
 
   async function profileView() {
-    const st = acc.profile; if (!st) { body().innerHTML = '<p class="keys" style="display:block">Cargando…</p>'; return; }
-    if (!body().children.length) body().innerHTML = '<p class="keys" style="display:block">Cargando…</p>';
+    const st = acc.profile; if (!st) { body().innerHTML = sk.rows(4); return; }
+    if (!body().children.length) body().innerHTML = sk.rows(4);
     let hall = null; try { hall = await acc.hall(); } catch (e) { /* sin salón */ }
     try { const fresh = await acc.stats(st.user_id); if (fresh) Object.assign(st, fresh); } catch (e) { /* datos en caché */ }
     const A = achievements(st, hall);
@@ -54,7 +55,7 @@ export function initProfile(ctx) {
   }
 
   async function friendsView() {
-    const st = acc.profile; body().innerHTML = `${head(st)}${tabs()}<p class="keys" style="display:block">Cargando amigos…</p>`;
+    const st = acc.profile; body().innerHTML = `${head(st)}${tabs()}${sk.rows(4)}`;
     let list = []; try { list = (await acc.friends()) || []; } catch (e) { S.msg = acc.explain(e); }
     const row = (f) => {
       const ic = `<span class="pf-fi">${drvIc({ flag: f.flag, helm: f.helmet }, 1)}</span>`;
@@ -68,7 +69,7 @@ export function initProfile(ctx) {
   }
 
   async function rivalView(id, uname) {
-    const st = acc.profile; body().innerHTML = `${head(st)}<p class="keys" style="display:block">Cargando rivalidad…</p>`;
+    const st = acc.profile; body().innerHTML = `${head(st)}${sk.rows(3)}`;
     let rows = []; try { rows = (await acc.rivalry(id)) || []; } catch (e) { body().innerHTML = `${head(st)}<div class="pf-msg">${esc(acc.explain(e))}</div><button id="pfBack" class="big" type="button">VOLVER</button>`; return; }
     let me = 0, they = 0; const lines = rows.map((r) => {
       const a = r.my_ms, b = r.their_ms; let cls = '', gap = '';
@@ -80,7 +81,7 @@ export function initProfile(ctx) {
   }
 
   async function hallView() {
-    const st = acc.profile; body().innerHTML = `${head(st)}${tabs()}<p class="keys" style="display:block">Cargando…</p>`;
+    const st = acc.profile; body().innerHTML = `${head(st)}${tabs()}${sk.rows(4)}`;
     let h = null; try { h = await acc.hall(); } catch (e) { /* vacío */ }
     const list = (a, unit) => (a && a.length ? a.map((x, i) => `<tr class="${x.name === st.username ? 'me' : ''}"><td class="rk">${i + 1}</td><td class="nm">${esc(x.name)}</td><td class="tm">${x.n} ${unit}</td></tr>`).join('') : '<tr><td colspan="3">Aún no hay datos.</td></tr>');
     body().innerHTML = `${head(st)}${tabs()}<h3 class="pf-h">♛ Más récords</h3><table class="lbt">${list(h && h.records, 'récords')}</table><h3 class="pf-h">🏆 Más victorias</h3><table class="lbt">${list(h && h.wins, 'victorias')}</table>`;

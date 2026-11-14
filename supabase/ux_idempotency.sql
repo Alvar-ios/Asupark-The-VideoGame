@@ -1,0 +1,1 @@
+-- Aplicada como migración "ux_idempotency": league_messages.cid + league_post(p_cid), league_react(p_on) con estado fijo y league_create sin duplicados.

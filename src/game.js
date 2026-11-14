@@ -6,6 +6,7 @@ import { initLeagues } from './leagues.js';
 import { initHome } from './home.js';
 import { initPwa } from './pwa.js';
 import { initPush } from './push.js';
+import { initUx, toastEl } from './ux.js';
 import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS, DAILY_LOCK_DAY } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo, isKartKind } from './car.js';
@@ -742,7 +743,7 @@ $('pauseCar').onclick = () => { toMenu(); setView('garage'); }; $('pauseTrack').
 $('restartBtn').onclick = () => { $('pause').classList.add('hidden'); startRace(true); };
 $('rbtn').onclick = () => { if (S.raceScene) startRace(true); };
 $('startBtn').onclick = () => { sound.stopPreview(true); sound.init(CARS[sel.car].id); startRace(false); };
-function toast(t) { let e = $('toast'); if (!e) { e = document.createElement('div'); e.id = 'toast'; document.body.appendChild(e); } e.textContent = t; e.className = 'show'; clearTimeout(toast.t); toast.t = setTimeout(() => { e.className = ''; }, 2400); }
+function toast(t) { toastEl.show(t); }
 function startDailySession(kind, rival) {
   if (!S.prevSel) S.prevSel = { car: sel.car, track: sel.track, mode: sel.mode, carId: sel.carId };
   const rf = store.get('dr.dailyref'); S.daily = { kind, laps: kind === 'practice' ? PRACTICE_LAPS : OFFICIAL_LAPS, times: [], cur: [null, null, null], done: false, rival: rival || null, ref: rf && rf.day === dailyKey ? rf : null };
@@ -1341,7 +1342,7 @@ async function renderBoard() {
   const ti = tracks[BD.track], st = $('boardStatus');
   $('boardTracks').innerHTML = tracks.map((t, i) => t.key === 'daily' ? '' : `<button type="button" class="${i === BD.track ? 'on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span>${t.key === 'daily' ? 'Del día' : esc(t.name.replace(/ · .*$/, ''))}</button>`).join('');
   $('boardGroups').innerHTML = [['all', 'Todos']].concat(GROUPS.map((g) => [g.id, g.name])).map(([id, n]) => `<button type="button" class="${id === BD.group ? 'on' : ''}" data-g="${id}">${esc(n)}</button>`).join('');
-  $('boardTable').innerHTML = '<tr><td>Cargando…</td></tr>'; st.textContent = '';
+  $('boardTable').innerHTML = '<tr class="skr"><td colspan="6"><i class="sk" style="width:70%;height:13px"></i></td></tr><tr class="skr"><td colspan="6"><i class="sk" style="width:55%;height:13px"></i></td></tr><tr class="skr"><td colspan="6"><i class="sk" style="width:62%;height:13px"></i></td></tr><tr class="skr"><td colspan="6"><i class="sk" style="width:48%;height:13px"></i></td></tr>'; st.textContent = '';
   const res = await getRows(ti);
   if (BD.track !== tracks.indexOf(ti)) return;
   if (!res.online) st.textContent = res.error ? 'Sin conexión con la clasificación: se muestran solo tus tiempos de este dispositivo.' : 'Clasificación online desactivada: solo ves tus tiempos de este dispositivo.';
@@ -1586,6 +1587,7 @@ const LG = initLeagues({ $, acc, esc, fmt, flagSvg, toast, daily: () => D, daily
 initHome({ $, acc, esc, LG, PF });
 initPwa({ $, store });
 initPush({ $, acc, esc });
+initUx({ $, acc });
 // enlace de invitación ?add=usuario: añade al amigo al entrar (o en cuanto inicies sesión)
 { const q = new URLSearchParams(location.search).get('add'); if (q) { try { history.replaceState(null, '', location.pathname); } catch (_) {} let pend = q;
   const tryAdd = async () => { if (!pend || !acc.profile || pend.toLowerCase() === (acc.username || '').toLowerCase()) return; const u = pend; pend = null; try { await acc.addFriend(u); toast(`Solicitud enviada a @${u}`); } catch (e) { toast(acc.explain(e)); } };

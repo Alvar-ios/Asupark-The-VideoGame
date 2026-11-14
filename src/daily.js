@@ -1,6 +1,7 @@
 // Reto del día: día de 4:00 a 4:00 (Madrid), circuito y coche aleatorios, práctica 5 vueltas + clasificación 3 vueltas.
 // Los intentos se controlan en el servidor (supabase/daily.sql) y se cachean en local. Sin servidor, solo local.
 import { hashStr } from './rng.js';
+import { sk } from './ux.js';
 import { createRadar3D } from './radar3d.js';
 import { waShare, inviteUrl, waBtn } from './share.js';
 
@@ -56,7 +57,7 @@ export function createDaily(ctx) {
       if (s.ms && (!st.best || s.ms < st.best.ms)) st.best = { ms: s.ms, s: [s.s1, s.s2, s.s3] };
       save(st); renderHero(); if (isOpen() && stage === 'hub') hub();
     } catch (e) { /* sin red: manda la caché local */ }
-    if (acc.loggedIn) { try { streak = await acc.rpc('my_streak'); renderHero(); } catch (e) { /* sin red */ } }
+    if (acc.loggedIn) { try { streak = await acc.swr('my_streak', {}, (d) => { streak = d; renderHero(); }); renderHero(); } catch (e) { /* sin red */ } }
     if (acc.loggedIn && !st.pick && !st.ud) { try { const u = await acc.rpc('daily_underdog'); if (u && u.length) { st.ud = u; save(st); renderHero(); if (isOpen() && stage === 'hub') hub(); } } catch (e) { /* sin liga o sin red */ } }
   }
   async function begin(kind) {
@@ -106,7 +107,7 @@ export function createDaily(ctx) {
   }
   async function renderMini() {
     const box = $('dyMini'); if (!box) return;
-    if (!boardRows) { box.innerHTML = '<p class="dy-empty">Cargando clasificación…</p>'; boardRows = await board('global'); }
+    if (!boardRows) { box.innerHTML = sk.rows(3); boardRows = await board('global'); }
     const rows = boardRows.rows.slice(0, 3), lead = rows[0] && rows[0].ms;
     const me = boardRows.rows.findIndex((r) => r.you);
     box.innerHTML = `<div class="dy-mh"><b>CLASIFICACIÓN DE HOY</b><span>${boardRows.rows.length} piloto${boardRows.rows.length === 1 ? '' : 's'}</span></div>` +
@@ -204,7 +205,7 @@ export function createDaily(ctx) {
   function hub() {
     clearTimeout(introTimer); cancelAnimationFrame(spinRaf); stopRadar();
     const t = ctx.track, c = ctx.car;
-    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>${st.pick && st.pick !== 'base' ? '🐌 Elegido con el premio Lentorro' : 'Mismo coche y circuito para todos'}</small></div></div>${canPick() ? lentorroHtml() : ''}${rival ? rivalHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard"><p class="dy-empty">Cargando…</p></div></div>`);
+    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>${st.pick && st.pick !== 'base' ? '🐌 Elegido con el premio Lentorro' : 'Mismo coche y circuito para todos'}</small></div></div>${canPick() ? lentorroHtml() : ''}${rival ? rivalHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard">${sk.rows(5)}</div></div>`);
     ctx.drawPreview($('dyCv2'), t.tr, t.th, 240, 130);
     renderBoard();
   }

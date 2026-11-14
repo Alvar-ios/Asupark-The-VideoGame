@@ -43,11 +43,26 @@ export class Account {
     }
     return this.session.access_token;
   }
-  async rpc(name, args = {}, authed = true) {
-    const t = authed ? await this.token() : null;
-    if (authed && !t) throw new Error('Sesión caducada: vuelve a entrar');
-    const r = await this.http('/rest/v1/rpc/' + name, { method: 'POST', body: JSON.stringify(args) }, t);
-    return r;
+  // Peticiones idénticas en vuelo se unifican (doble toque, reintentos): una sola llega al servidor.
+  rpc(name, args = {}, authed = true) {
+    this._fl = this._fl || new Map(); const k = name + '|' + authed + '|' + JSON.stringify(args);
+    if (this._fl.has(k)) return this._fl.get(k);
+    const p = (async () => {
+      const t = authed ? await this.token() : null;
+      if (authed && !t) throw new Error('Sesión caducada: vuelve a entrar');
+      return await this.http('/rest/v1/rpc/' + name, { method: 'POST', body: JSON.stringify(args) }, t);
+    })();
+    this._fl.set(k, p); p.then(() => this._fl.delete(k), () => this._fl.delete(k)); return p;
+  }
+  // Datos en caché al instante y refresco en segundo plano (stale-while-revalidate). onData(datos, esCaché).
+  cacheKey(name, args) { return 'dr.c.' + (this.session ? String(this.session.user.id).slice(0, 8) : 'x') + '.' + name + '.' + JSON.stringify(args || {}); }
+  cached(name, args = {}) { try { const j = localStorage.getItem(this.cacheKey(name, args)); return j === null ? undefined : JSON.parse(j); } catch (_) { return undefined; } }
+  async swr(name, args, onData) {
+    const c = this.cached(name, args); if (c !== undefined) onData(c, true);
+    const fresh = await this.rpc(name, args);
+    try { localStorage.setItem(this.cacheKey(name, args), JSON.stringify(fresh === undefined ? null : fresh)); } catch (_) { /* sin espacio */ }
+    if (c === undefined || JSON.stringify(c) !== JSON.stringify(fresh)) onData(fresh, false);
+    return fresh;
   }
   async usernameFree(u) { return await this.rpc('username_available', { p: u }, false); }
   async signUp(username, password) {
@@ -67,7 +82,7 @@ export class Account {
     if (!this.profile) { await this.rpc('create_profile', { p_username: u, p_flag: this.lb.flag, p_helmet: this.lb.helmet }); await this.refreshProfile(); } // cuenta creada sin perfil (registro interrumpido)
     return this.profile;
   }
-  signOut() { this.session = null; this.profile = null; save(null); this.lb.leaveAccount(); this.emit(); }
+  signOut() { try { Object.keys(localStorage).filter((k) => k.startsWith('dr.c.')).forEach((k) => localStorage.removeItem(k)); } catch (_) { /* nada */ } this.session = null; this.profile = null; save(null); this.lb.leaveAccount(); this.emit(); }
   async refreshProfile() {
     if (!this.loggedIn) return null;
     const st = await this.rpc('user_stats', { p_user: this.session.user.id }, false);

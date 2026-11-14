@@ -1,10 +1,12 @@
 // Pantalla de inicio tipo app: reto del día y ligas arriba, contrarreloj y clasificación debajo, Racing (carreras y Gran Premio) discreto,
 // y barra inferior con Inicio / Ligas / Ranking / Amigos / Perfil. Los ajustes y la música quedan arriba a la derecha.
+import { sk, vt } from './ux.js';
 export function initHome(ctx) {
   const { $, acc, esc, LG, PF } = ctx;
   const menu = $('menu');
   let screen = 'main';
-  const setScreen = (s, kind) => {
+  const setScreen = (s, kind) => { if (s === screen && !kind) return; vt(() => setScreenNow(s, kind)); };
+  const setScreenNow = (s, kind) => {
     screen = s; menu.dataset.screen = s;
     if (kind) {
       menu.dataset.play = kind;
@@ -15,7 +17,7 @@ export function initHome(ctx) {
     }
     const sc = $('menuLeft').querySelector('.menu-scroll'); if (sc) sc.scrollTop = 0;
   };
-  setScreen('main');
+  setScreenNow('main');
 
   $('hmTT').onclick = () => setScreen('play', 'tt');
   $('hmRacing').onclick = () => setScreen('play', 'racing');
@@ -41,10 +43,14 @@ export function initHome(ctx) {
       box.innerHTML = `<p class="hm-lg-n">Compite con tus amigos en el reto diario por temporadas, con puntos como en la F1 y chat.</p><div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" class="ghost" data-lg="join">Unirme con código</button></div>`;
       return;
     }
-    let list = null, ud = null;
-    try { list = (await acc.rpc('my_leagues')) || []; } catch (e) { /* sin red */ }
-    try { ud = await acc.rpc('daily_underdog'); } catch (e) { /* sin red */ }
-    if (!list) { box.innerHTML = '<p class="hm-lg-n">No se han podido cargar tus ligas.</p>'; return; }
+    let list = null, ud = null, shown = false;
+    const cl = acc.cached('my_leagues'); if (Array.isArray(cl)) { shown = true; draw(box, cl, acc.cached('daily_underdog')); } else if (!box.querySelector('.hm-lg-r,.hm-lg-cta')) box.innerHTML = sk.rows(2);
+    try { list = (await acc.swr('my_leagues', {}, () => {})) || []; } catch (e) { /* sin red */ }
+    try { ud = await acc.swr('daily_underdog', {}, () => {}); } catch (e) { /* sin red */ }
+    if (!list) { if (!shown) box.innerHTML = '<p class="hm-lg-n">No se han podido cargar tus ligas.</p>'; return; }
+    draw(box, list, ud);
+  }
+  function draw(box, list, ud) {
     const row = (l) => `<button type="button" class="hm-lg-r" data-lg-open="${l.id}"><i>${l.pos ? 'P' + l.pos : '–'}</i><span><b>${esc(l.name)}</b><small>Temporada ${l.season} · ${l.members} piloto${l.members === 1 ? '' : 's'}</small></span><em>${l.pts}<small>PTS</small></em></button>`;
     const seen = (() => { try { return JSON.parse(localStorage.getItem('dr.seasonSeen') || '{}'); } catch (_) { return {}; } })();
     const fin = list.filter((l) => l.last && !seen[l.id + ':' + l.last.season])[0];
