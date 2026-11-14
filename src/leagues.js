@@ -217,40 +217,49 @@ export function initLeagues(ctx) {
   const av = (m, col, cls = '') => `<span class="av ${cls}" style="--c:${col || '#111'}">${helmetSvg ? helmetSvg((m && m.helmet) || 'e63946|ffffff|111827|1') : ''}</span>`;
   const dd = (d) => new Date(d + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '');
   const leftTxt = (L) => { if (L.season < L.current) return 'Terminada'; const n = Math.round((Date.parse(L.to) - Date.parse(L.today)) / 864e5); return n <= 0 ? 'Último día' : `Quedan ${n} día${n === 1 ? '' : 's'}`; };
-  const laurel = (flip) => `<svg class="laurel${flip ? ' r' : ''}" viewBox="0 0 24 48" aria-hidden="true"><path d="M17 45C7 38 4 26 8 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>${[10, 17, 24, 31, 38].map((y, i) => `<ellipse cx="${6 + i * 1.3}" cy="${y}" rx="2.4" ry="5" transform="rotate(${-40 + i * 6} ${6 + i * 1.3} ${y})" fill="currentColor"/><ellipse cx="${12 + i * .8}" cy="${y + 2}" rx="2.2" ry="4.6" transform="rotate(${42 - i * 4} ${12 + i * .8} ${y + 2})" fill="currentColor"/>`).join('')}</svg>`;
+  // Identidad Daily Lapp: placas inclinadas como el logo, bordillos rojo y blanco, bandera a cuadros y torre de tiempos.
+  const flagChk = `<svg class="chk" viewBox="0 0 30 22" aria-hidden="true"><path d="M3 2v19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>${[0, 1, 2].map((r) => [0, 1, 2, 3].map((c) => ((r + c) % 2 ? '' : `<rect x="${5 + c * 6}" y="${2 + r * 5}" width="6" height="5" fill="currentColor"/>`)).join('')).join('')}<rect x="5" y="2" width="24" height="15" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>`;
+  const plate = (txt, cls = '') => `<span class="l2-plate ${cls}"><b>${txt}</b></span>`;
   function v2Head(L) {
-    return `<div class="l2-top"><button class="l2-ic" data-a="back" type="button" aria-label="Mis ligas">${ic('back')}</button><button class="l2-ic${S.tab === 'cal' ? ' on' : ''}" data-t="cal" type="button" aria-label="Calendario">${ic('calendar')}</button><button class="l2-ic${S.tab === 'dias' ? ' on' : ''}" data-t="dias" type="button" aria-label="Tiempos por día">${ic('history')}</button><span class="l2-sp"></span><button class="l2-ic" data-a="invite" type="button" aria-label="Invitar">${ic('share')}</button></div>
-      <div class="l2-title"><b class="l2-name">${esc(L.name)}</b><div class="l2-ss">${laurel(0)}<span><b>TEMPORADA ${L.season}</b><small>${leftTxt(L)}</small></span>${laurel(1)}</div><em class="l2-dates">${ic('trophy')} ${dd(L.from)} – ${dd(L.to)}</em></div>`;
+    const live = L.season === L.current, N = L.season_days, cur = live ? Math.min(N, Math.round((Date.parse(L.today) - Date.parse(L.from)) / 864e5) + 1) : N;
+    const segs = Array.from({ length: N }, (_, i) => `<i class="${i + 1 < cur || !live ? 'd' : i + 1 === cur ? 'n' : ''}"></i>`).join('');
+    return `<div class="l2-top"><button class="l2-ic" data-a="back" type="button" aria-label="Volver">${ic('back')}</button><span class="l2-sp"></span><button class="l2-ic${S.tab === 'cal' ? ' on' : ''}" data-t="cal" type="button" aria-label="Calendario">${ic('calendar')}</button><button class="l2-ic${S.tab === 'dias' ? ' on' : ''}" data-t="dias" type="button" aria-label="Tiempos por día">${ic('history')}</button><button class="l2-ic" data-a="invite" type="button" aria-label="Invitar">${ic('share')}</button></div>
+      <div class="l2-title"><b class="l2-name">${esc(L.name)}</b><div class="l2-ss"><b>TEMPORADA ${L.season}</b><span class="l2-lap">${live ? `DÍA <b>${cur}</b>/${N}` : 'FINAL'}</span></div>
+      <div class="l2-days" aria-label="Día ${cur} de ${N}">${segs}</div><small class="l2-left">${leftTxt(L)} · ${dd(L.from)} – ${dd(L.to)}</small></div>`;
   }
-  const v2Seg = () => `<div class="l2-seg" role="tablist"><button type="button" role="tab" data-t="chat" class="${S.tab === 'chat' ? 'on' : ''}">Chat</button><button type="button" role="tab" data-t="tabla" class="${S.tab === 'tabla' ? 'on' : ''}">Puntuación</button></div>`;
-  // podio: hoy (mejores tiempos) o, en una temporada cerrada, los tres primeros por puntos
+  const v2Seg = () => `<div class="l2-seg" role="tablist"><button type="button" role="tab" data-t="chat" class="${S.tab === 'chat' ? 'on' : ''}"><span>Chat</span></button><button type="button" role="tab" data-t="tabla" class="${S.tab === 'tabla' ? 'on' : ''}"><span>Puntuación</span></button></div>`;
+  // podio de verdad (cajones 2-1-3) con los tiempos de hoy o, si la temporada acabó, los puntos finales
   function v2Podium(L, mm, col) {
     const live = L.season === L.current, mine = S.state.standings.find((s) => s.user_id === me()), myPos = S.state.standings.indexOf(mine) + 1;
-    let top = [], who = [], best = null, label = 'Mejor de hoy';
+    let top = [], who = [], label = 'Vuelta más rápida de hoy';
     if (live) {
       const d = S.state.days.find((x) => x.day === L.today), rows = d ? d.rows : [];
-      top = rows.slice(0, 3).map((r) => ({ m: mm[r.user_id] || { username: '?' }, id: r.user_id, v: fmt(r.ms / 1000) }));
-      who = rows.map((r) => r.user_id); best = top[0] ? top[0] : null;
+      top = rows.slice(0, 3).map((r, i) => ({ m: mm[r.user_id] || { username: '?' }, id: r.user_id, v: fmt(r.ms / 1000), gap: i ? '+' + ((r.ms - rows[0].ms) / 1000).toFixed(3) : '' }));
+      who = rows.map((r) => r.user_id);
     } else {
-      top = S.state.standings.filter((x) => x.days > 0).slice(0, 3).map((x) => ({ m: mm[x.user_id] || { username: '?' }, id: x.user_id, v: x.pts + ' pts' }));
-      best = top[0] || null; label = 'Campeón';
+      top = S.state.standings.filter((x) => x.days > 0).slice(0, 3).map((x) => ({ m: mm[x.user_id] || { username: '?' }, id: x.user_id, v: x.pts + ' pts', gap: '' }));
+      label = 'Campeón de la temporada';
     }
-    const stack = who.slice(0, 5).map((id) => av(mm[id], col[id], 'xs')).join('') + (who.length > 5 ? `<span class="av xs more">+${who.length - 5}</span>` : '');
-    const hero = `<div class="l2-hero"><svg class="l2-track" viewBox="0 0 320 150" aria-hidden="true"><path d="M60 118c-34 0-40-36-18-52l70-48c18-12 40-6 50 10l14 22c8 12 24 14 36 6l30-20c22-14 52 2 50 30-2 30-20 52-60 52z" fill="none" stroke="#2b2b2b" stroke-width="26" stroke-linejoin="round"/><path d="M60 118c-34 0-40-36-18-52l70-48c18-12 40-6 50 10l14 22c8 12 24 14 36 6l30-20c22-14 52 2 50 30-2 30-20 52-60 52z" fill="none" stroke="#E10600" stroke-width="26" stroke-dasharray="7 7" stroke-linejoin="round" opacity=".9"/><path d="M60 118c-34 0-40-36-18-52l70-48c18-12 40-6 50 10l14 22c8 12 24 14 36 6l30-20c22-14 52 2 50 30-2 30-20 52-60 52z" fill="none" stroke="#3a3a3a" stroke-width="18" stroke-linejoin="round"/></svg>
-      <div class="l2-hrow">${stack ? `<div class="l2-stack">${stack}</div>` : `<div class="l2-stack none">${live ? 'Hoy aún no ha corrido nadie' : ''}</div>`}<div class="l2-me"><b>${mine ? mine.pts : 0}</b><small>PTS</small><i></i><b>#${myPos || '–'}</b>${ic('trophy')}</div></div></div>`;
-    const ord = top.length === 3 ? [1, 0, 2] : top.length === 2 ? [1, 0] : top.length ? [0] : [];
-    const pods = ord.map((i) => { const x = top[i]; return `<div class="l2-pod p${i + 1}${x.id === me() ? ' me' : ''}">${i === 0 ? `<span class="l2-crown">${ic('crown')}</span>` : ''}${av(x.m, col[x.id], i === 0 ? 'xl' : 'lg')}<span class="l2-tp">${esc(x.v)}</span></div>`; }).join('');
-    const empty = live ? `<div class="l2-nobody"><p>Sé el primero en marcar tiempo hoy.</p><button class="l2-cta" data-a="daily" type="button">${ic('play')} Correr el reto</button></div>` : '';
-    const laur = best ? `<div class="l2-best">${laurel(0)}<span><small>${label}</small><b>${esc(best.m.username)}</b><em>${esc(best.v)}</em></span>${laurel(1)}</div>` : '';
-    return hero + (pods ? `<div class="l2-pods">${pods}</div>${laur}` : empty);
+    const stack = who.slice(0, 6).map((id) => av(mm[id], col[id], 'xs')).join('') + (who.length > 6 ? `<span class="av xs more">+${who.length - 6}</span>` : '');
+    const status = `<div class="l2-hero"><div class="l2-hl"><small>${live ? 'Hoy han corrido' : 'Temporada cerrada'}</small>${stack ? `<div class="l2-stack">${stack}</div>` : `<b class="l2-none">${live ? 'Nadie todavía' : '—'}</b>`}</div><div class="l2-hr">${plate('P' + (myPos || '–'), 'big')}<span><b>${mine ? mine.pts : 0}</b><small>puntos</small></span></div></div>`;
+    if (!top.length) return status + (live ? `<div class="l2-nobody"><p>Sé el primero en marcar tiempo hoy.</p><button class="l2-cta" data-a="daily" type="button">${ic('play')} Correr el reto</button></div>` : '');
+    const ord = top.length === 3 ? [1, 0, 2] : top.length === 2 ? [1, 0] : [0];
+    const pods = ord.map((i) => { const x = top[i]; return `<div class="l2-pod p${i + 1}${x.id === me() ? ' me' : ''}">${av(x.m, col[x.id], i === 0 ? 'xl' : 'lg')}<b class="l2-pn">${esc(x.m.username)}</b><span class="l2-tp">${esc(x.v)}</span>${x.gap ? `<small class="l2-gap">${x.gap}</small>` : ''}<div class="l2-step"><b>${i + 1}</b></div></div>`; }).join('');
+    const best = top[0];
+    return `${status}<div class="l2-pods">${pods}</div><div class="l2-best">${flagChk}<span><small>${label}</small><b>${esc(best.m.username)}</b></span><em>${esc(best.v)}</em></div>`;
   }
+  // chat: los avisos de tiempos parecen una torre de cronometraje; los mensajes, globos con esquina recta
   const msg2 = (m) => {
     const mm = S.memo || {}, col = S.cols || {}, u = mm[m.user_id] || { username: m.username };
-    const tx = esc(String(m.body || '').replace(/^[^\p{L}@]+/u, '')).replace(/@(\S+)/g, '<b>$1</b>');
-    if (m.kind === 'sys') { const lead = /l[ií]der/i.test(m.body); return `<div class="l2-m sys${lead ? ' gold' : ''}">${av(u, col[m.user_id], 'sm')}<div class="l2-b">${lead ? ic('trophy') : ic('stopwatch')}<span><span>${tx}</span><small>${tm(m)}</small></span></div>${rxHtml(m)}</div>`; }
+    if (m.kind === 'sys') {
+      const body = String(m.body || '').replace(/^[^\p{L}@]+/u, ''), t = (body.match(/\d+:\d{2}\.\d{2,3}/) || [])[0], lead = /l[ií]der/i.test(body), pos = (body.match(/\(P(\d+)\)/) || [])[1];
+      const what = lead ? 'líder del día' : pos ? 'marca P' + pos : 'ha corrido';
+      return `<div class="l2-m sys${lead ? ' gold' : ''}"><div class="l2-tw" style="--c:${col[m.user_id] || '#111'}"><i></i>${lead ? `<span class="l2-twb">${ic('crown')}</span>` : ''}<b>${esc(u.username)}</b><small>${what}</small><em>${esc(t || '')}</em><time>${tm(m)}</time></div>${rxHtml(m)}</div>`;
+    }
     const mine = m.user_id === me();
-    return `<div class="l2-m${mine ? ' me' : ''}${m.pending ? ' pend' : ''}">${mine ? '' : av(u, col[m.user_id], 'sm')}<div class="l2-b">${mine ? '' : `<b class="l2-who">${esc(u.username)}</b>`}<span><span>${esc(m.body)}</span><small>${tm(m)}</small></span></div>${rxHtml(m)}</div>`;
+    return `<div class="l2-m${mine ? ' me' : ''}${m.pending ? ' pend' : ''}">${mine ? '' : av(u, col[m.user_id], 'sm')}<div class="l2-b">${mine ? '' : `<b class="l2-who" style="color:${col[m.user_id]}">${esc(u.username)}</b>`}<span><span>${esc(m.body)}</span><small>${tm(m)}</small></span></div>${rxHtml(m)}</div>`;
   };
+  // gráfica sobre asfalto: líneas por piloto, la tuya en rojo; al final de cada línea, su posición
   function v2Chart(L, col) {
     const st = S.state, dayIdx = (d) => Math.round((Date.parse(d) - Date.parse(L.from)) / 864e5) + 1;
     const upto = L.season < L.current ? L.season_days : Math.min(L.season_days, dayIdx(L.today)), N = Math.min(L.season_days, Math.max(upto, 5));
@@ -258,20 +267,21 @@ export function initLeagues(ctx) {
     for (const d of st.days) { const i = dayIdx(d.day); if (i < 1 || i > upto) continue; d.rows.forEach((r, k) => { if (per[r.user_id]) per[r.user_id][i] += PTS[k] || 0; }); }
     for (const id in per) { const a = per[id]; for (let i = 1; i <= upto; i++) a[i] += a[i - 1]; const s = st.standings.find((x) => x.user_id === id); if (s && s.pts > a[upto]) a[upto] = s.pts; }
     const max = Math.max(25, ...Object.values(per).map((a) => a[upto])), top = Math.ceil(max / 50) * 50 || 50;
-    const W = 330, H = 190, x0 = 8, x1 = 290, y0 = 172, y1 = 14, X = (i) => x0 + (x1 - x0) * i / N, Y = (v) => y0 - (y0 - y1) * v / top;
-    const grid = [0, top / 2, top].map((v) => `<line x1="${x0}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${x1 + 8}" y="${Y(v) + 4}">${v}</text>`).join('') + [N / 3, 2 * N / 3].map((i) => `<line class="v" x1="${X(i)}" x2="${X(i)}" y1="${y1}" y2="${y0}"/>`).join('');
-    const ids = Object.keys(per).sort((a, b) => (a === me()) - (b === me()));
-    const lines = ids.map((id) => { const a = per[id], pts = a.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`); return `<g style="--c:${col[id]}"${id === me() ? ' class="me"' : ''}><polyline points="${pts.join(' ')}"/>${a.map((v, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${i === upto ? 4 : 2.6}"/>`).join('')}</g>`; }).join('');
-    return `<div class="l2-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Puntos acumulados por día">${grid}${lines}</svg><div class="l2-axis"><span>Día 1</span><span>${L.season < L.current ? 'Final' : upto === N ? 'Hoy · día ' + N : 'Día ' + N}</span></div></div>`;
+    const W = 330, H = 180, x0 = 10, x1 = 300, y0 = 160, y1 = 14, X = (i) => x0 + (x1 - x0) * i / N, Y = (v) => y0 - (y0 - y1) * v / top;
+    const grid = [0, top / 2, top].map((v) => `<line x1="${x0}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${x0}" y="${Y(v) - 4}">${v}</text>`).join('');
+    const fin = `<g class="fin">${Array.from({ length: 12 }, (_, r) => `<rect x="${x1 + 4 + (r % 2) * 5}" y="${y1 + r * ((y0 - y1) / 12)}" width="5" height="${(y0 - y1) / 12}"/>`).join('')}</g>`;
+    const order = st.standings.map((s) => s.user_id), ids = Object.keys(per).sort((a, b) => (a === me()) - (b === me()));
+    const lines = ids.map((id) => { const a = per[id], pts = a.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`), ex = X(upto), ey = Y(a[upto]); return `<g style="--c:${col[id]}"${id === me() ? ' class="me"' : ''}><polyline points="${pts.join(' ')}"/><rect class="tag" x="${ex - 9}" y="${ey - 8}" width="18" height="16" rx="3" transform="skewX(-12) translate(${(ey * Math.tan(12 * Math.PI / 180)).toFixed(1)} 0)"/><text class="tg" x="${ex}" y="${ey + 4}">${order.indexOf(id) + 1}</text></g>`; }).join('');
+    return `<div class="l2-chart"><div class="l2-ch"><b>Puntos por día</b><small>${L.season < L.current ? 'Temporada completa' : 'Hasta hoy · día ' + upto}</small></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Puntos acumulados por día">${grid}${fin}${lines}</svg></div>`;
   }
   function v2Points(L, mm, col) {
-    const { standings } = S.state, yl = S.state.lentorro;
+    const { standings } = S.state, yl = S.state.lentorro, lead = standings[0] ? standings[0].pts : 0;
     const cards = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }, mine = s.user_id === me();
-      return `<div class="l2-card${mine ? ' me' : ''}" style="--c:${col[s.user_id]}">${av(m, col[s.user_id], 'lg')}<div class="l2-ci"><small><b>#${i + 1}</b>${mine ? '<em class="l2-you">TÚ</em>' : ''}${s.user_id === yl ? `<span class="l2-snail" title="Lentorro">${ic('snail')}</span>` : ''}${m.streak > 1 ? `<span class="l2-fire">${ic('flame')}${m.streak}</span>` : ''}</small><b>${esc(m.username)}</b><small>${s.wins} día${s.wins === 1 ? '' : 's'} ganado${s.wins === 1 ? '' : 's'}${s.best ? ' · mejor ' + fmt(s.best / 1000) : ''}</small></div><span class="l2-gem"><b>${s.pts}</b><small>PTS</small></span></div>`; }).join('');
+      return `<div class="l2-card${mine ? ' me' : ''}${i < 3 ? ' p' + (i + 1) : ''}" style="--c:${col[s.user_id]}"><span class="l2-pos"><b>${i + 1}</b></span>${av(m, col[s.user_id], 'md')}<div class="l2-ci"><b>${esc(m.username)}${mine ? '<em class="l2-you">TÚ</em>' : ''}${s.user_id === yl ? `<span class="l2-snail" title="Lentorro">${ic('snail')}</span>` : ''}${m.streak > 1 ? `<span class="l2-fire">${ic('flame')}${m.streak}</span>` : ''}</b><small>${s.wins} día${s.wins === 1 ? '' : 's'} ganado${s.wins === 1 ? '' : 's'}${s.best ? ' · ' + fmt(s.best / 1000) : ''}</small></div><div class="l2-pt"><b>${s.pts}</b><small>${i ? '−' + (lead - s.pts) : 'PTS'}</small></div></div>`; }).join('');
     return `${L.current > 1 ? seasonNav(L) : ''}${v2Chart(L, col)}<div class="l2-cards">${cards}</div>
       ${yl && mm[yl] && L.season === L.current ? `<p class="l2-len">${ic('snail')} Lentorro: ${esc(mm[yl].username)} · hoy puede elegir coche</p>` : ''}
       <div class="l2-inv"><div><small>Código de la liga</small><b>${esc(L.code)}</b></div><button class="l2-pill" data-a="copy" type="button">Copiar enlace</button></div>
-      <details class="l2-info"><summary>${ic('info')} Info</summary><p>Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto. Acertar quién gana el día suma +1. El Lentorro es quien menos puntos lleva y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p><button class="l2-pill danger" data-a="leave" type="button">Salir de la liga</button></details>`;
+      <details class="l2-info"><summary>${ic('info')} Reglas</summary><p>Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto. Acertar quién gana el día suma +1. El Lentorro es quien menos puntos lleva y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p><button class="l2-pill danger" data-a="leave" type="button">Salir de la liga</button></details>`;
   }
   async function v2View() {
     const L = S.state.league, mm = Object.fromEntries(S.state.members.map((m) => [m.user_id, m])), col = colorMap(); S.memo = mm; S.cols = col;
@@ -302,7 +312,7 @@ export function initLeagues(ctx) {
 
   $('lgBody').addEventListener('click', async (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.open) return enter(b.dataset.open);
+    if (b.dataset.open) { S.fromList = true; return enter(b.dataset.open); }
     if (b.dataset.t) { S.tab = b.dataset.t; return leagueView(); }
     if (b.dataset.rx) return react(b.dataset.id, b.dataset.rx);
     if (b.dataset.more) { S.rxOpen = S.rxOpen === +b.dataset.more ? null : +b.dataset.more; return pull(true); }
@@ -310,7 +320,7 @@ export function initLeagues(ctx) {
     if (b.dataset.ghost) { try { const g = await acc.rpc('daily_ghost', { p_player: b.dataset.ghost }); if (!g || !g.ghost) { toast('Todavía no tiene fantasma guardado'); return; } close(); daily().runGhost(g); } catch (er) { toast(err(er)); } return; }
     if (b.dataset.s) { try { await load(+b.dataset.s); } catch (er) { toast(err(er)); } return leagueView(); }
     const a = b.dataset.a;
-    if (a === 'back') { S.state = null; return listView(); }
+    if (a === 'back') { S.state = null; if (isUi2() && !S.fromList) return close(); return listView(); }
     if (a === 'create') return create();
     if (a === 'join') return doJoin($('lgCode').value);
     if (a === 'send') return send();
@@ -344,5 +354,5 @@ export function initLeagues(ctx) {
     }, 1800);
     acc.onChange(tryJoin);
   }
-  return { open: () => { show(); S.state = null; S.list = null; listView(); }, openLeague: async (id, season) => { show(); await enter(id, season); } };
+  return { open: () => { show(); S.state = null; S.list = null; listView(); }, openLeague: async (id, season) => { show(); S.fromList = false; await enter(id, season); } };
 }

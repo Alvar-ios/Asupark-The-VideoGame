@@ -70,9 +70,9 @@ export function initUx({ $, acc }) {
     let g = null;
     const panelOf = (t) => t.closest('.dy-panel,.lg-panel,.panel');
     addEventListener('touchstart', (e) => {
-      const o = e.target.closest && e.target.closest('.overlay'); if (!o || !SHEETS[o.id] || e.touches.length !== 1) return;
+      const o = e.target.closest && e.target.closest('.overlay'); if (!o || !SHEETS[o.id] || o.id === 'leagues' || e.touches.length !== 1) return; // de las ligas solo se sale con la flecha
       const p = panelOf(e.target); if (!p || e.target.closest('input,textarea,select,canvas,.dy-cv,[data-noswipe]')) return;
-      for (let n = e.target; n && n !== o; n = n.parentElement) { if (n.scrollTop > 0) return; if (n.scrollWidth > n.clientWidth + 4 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return; }
+      for (let n = e.target; n && n !== o.parentElement; n = n.parentElement) { if (n.scrollTop > 0) return; if (n.scrollWidth > n.clientWidth + 4 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return; }
       g = { o, p, x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false, t: Date.now() };
     }, { passive: true });
     addEventListener('touchmove', (e) => {

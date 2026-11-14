@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.93
+- Interfaz nueva con identidad propia de Daily Lapp: inclinación del logo en placas, pestañas y botones, bordillos rojo y blanco, bandera a cuadros y fondo de líneas de velocidad (sin los puntitos).
+- Liga: contador de días de la temporada por segmentos, podio con cajones 2-1-3 y diferencias, «Vuelta más rápida de hoy», avisos de tiempos como torre de cronometraje, gráfica sobre asfalto con meta a cuadros y clasificación con posición en placa y distancia al líder.
+- De la pantalla de liga ya no se sale deslizando hacia abajo: solo con la flecha. Si la abriste desde el inicio, la flecha vuelve al inicio.
+- Deslizar para cerrar ya no se activa si la pantalla está desplazada hacia abajo.
+
 ## 0.0.92
 - Nueva interfaz más simple y «cartoon» (rojo, negro y blanco) que convive con la actual: el botón Clásica / Nueva del inicio (y de Ajustes) cambia entre las dos al momento y se recuerda.
 - Ligas en la interfaz nueva: todo en una pantalla, con temporada y días que quedan, podio de hoy con tiempos, mejor del día y Chat / Puntuación. La puntuación tiene gráfica de puntos por día y tarjetas por piloto con puntos, días ganados y mejor tiempo.
