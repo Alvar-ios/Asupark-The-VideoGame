@@ -1,3 +1,4 @@
+import { ic } from './icons.js';
 // App instalable: service worker, tarjeta «Instalar» (Android/escritorio con el aviso nativo, iOS con instrucciones) y accesos directos (?go=daily|leagues).
 export const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 export const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -10,8 +11,8 @@ export function initPwa({ $, store }) {
   const dismissed = () => { try { return Date.now() < +store.get('pwaHide', 0); } catch (_) { return false; } };
   function render() {
     if (!card || isStandalone() || dismissed()) return hide();
-    if (deferred) card.innerHTML = '<span>📲</span><div><b>Instala Drift Rush</b><small>Icono en tu pantalla de inicio, a pantalla completa y con avisos del reto.</small></div><button type="button" data-i="go">Instalar</button><button type="button" class="x" data-i="x" aria-label="Ocultar">✕</button>';
-    else if (isIOS()) card.innerHTML = '<span>📲</span><div><b>Instala Drift Rush</b><small>Pulsa <b>Compartir</b> <i>⬆︎</i> y luego <b>Añadir a pantalla de inicio</b>.</small></div><button type="button" class="x" data-i="x" aria-label="Ocultar">✕</button>';
+    if (deferred) card.innerHTML = '<span class="hm-ic">' + ic('install') + '</span><div><b>Instala Daily Lapp</b><small>Icono en tu pantalla de inicio, a pantalla completa y con avisos del reto.</small></div><button type="button" data-i="go">Instalar</button><button type="button" class="x" data-i="x" aria-label="Ocultar">' + ic('x') + '</button>';
+    else if (isIOS()) card.innerHTML = '<span class="hm-ic">' + ic('install') + '</span><div><b>Instala Daily Lapp</b><small>Pulsa <b>Compartir</b> ' + ic('share') + ' y luego <b>Añadir a pantalla de inicio</b>.</small></div><button type="button" class="x" data-i="x" aria-label="Ocultar">' + ic('x') + '</button>';
     else return hide();
     card.classList.remove('hidden');
   }

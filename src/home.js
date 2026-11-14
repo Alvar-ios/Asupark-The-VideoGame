@@ -1,6 +1,7 @@
 // Pantalla de inicio tipo app: reto del día y ligas arriba, contrarreloj y clasificación debajo, Racing (carreras y Gran Premio) discreto,
 // y barra inferior con Inicio / Ligas / Ranking / Amigos / Perfil. Los ajustes y la música quedan arriba a la derecha.
 import { sk, vt } from './ux.js';
+import { ic } from './icons.js';
 export function initHome(ctx) {
   const { $, acc, esc, LG, PF } = ctx;
   const menu = $('menu');
@@ -51,13 +52,17 @@ export function initHome(ctx) {
     draw(box, list, ud);
   }
   function draw(box, list, ud) {
-    const row = (l) => `<button type="button" class="hm-lg-r" data-lg-open="${l.id}"><i>${l.pos ? 'P' + l.pos : '–'}</i><span><b>${esc(l.name)}</b><small>Temporada ${l.season} · ${l.members} piloto${l.members === 1 ? '' : 's'}</small></span><em>${l.pts}<small>PTS</small></em></button>`;
+    const prev = (l) => (l.last ? `<small class="prev">Temporada ${l.last.season}: campeón @${esc(l.last.champion || '?')}${l.last.me ? ` · tú P${l.last.me}` : ''}</small>` : '');
+    const row = (l) => {
+      const pct = l.days ? Math.max(4, Math.min(100, Math.round((l.day || 1) / l.days * 100))) : 0;
+      return `<button type="button" class="hm-lg-r" data-lg-open="${l.id}"><i class="pos">${l.pos ? 'P' + l.pos : '–'}</i><span class="nm"><b>${esc(l.name)}</b><small>Temporada ${l.season}${l.days ? ` · día ${Math.min(l.day || 1, l.days)} de ${l.days}` : ''} · ${l.members} piloto${l.members === 1 ? '' : 's'}</small>${l.days ? `<u class="lgb"><s style="width:${pct}%"></s></u>` : ''}${prev(l)}</span><span class="pt"><b>${l.pts}</b><small>PTS</small>${l.ran === false ? '<em class="tg warn">Hoy sin correr</em>' : ''}</span></button>`;
+    };
     const seen = (() => { try { return JSON.parse(localStorage.getItem('dr.seasonSeen') || '{}'); } catch (_) { return {}; } })();
     const fin = list.filter((l) => l.last && !seen[l.id + ':' + l.last.season])[0];
-    const finHtml = fin ? `<button type="button" class="hm-fin" data-fin="${fin.id}" data-season="${fin.last.season}">🏆 <span><b>Temporada ${fin.last.season} terminada</b> en ${esc(fin.name)}: campeón @${esc(fin.last.champion || '?')}${fin.last.me ? ` · tú P${fin.last.me}` : ''}</span><i>Ver ›</i></button>` : '';
-    box.innerHTML = finHtml + (ud && ud.length ? `<div class="hm-len">🐌 <b>Eres el Lentorro</b> en ${esc(ud.join(', '))}: hoy puedes elegir coche en el reto</div>` : '')
-      + (list.length ? list.slice(0, 3).map(row).join('') + `<div class="hm-lg-cta"><button type="button" class="ghost" data-lg="create">+ Crear liga</button><button type="button" class="ghost" data-lg="join">Unirme</button></div>`
-        : `<p class="hm-lg-n">Todavía no estás en ninguna liga. Crea una e invita a tus amigos.</p><div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" class="ghost" data-lg="join">Unirme con código</button></div>`);
+    const finHtml = fin ? `<button type="button" class="hm-fin" data-fin="${fin.id}" data-season="${fin.last.season}">${ic('trophy')} <span><b>Temporada ${fin.last.season} terminada</b> en ${esc(fin.name)}: campeón @${esc(fin.last.champion || '?')}${fin.last.me ? ` · tú P${fin.last.me}` : ''}</span></button>` : '';
+    box.innerHTML = finHtml + (ud && ud.length ? `<div class="hm-len">${ic('snail')} <b>Eres el Lentorro</b> en ${esc(ud.join(', '))}: hoy puedes elegir coche en el reto</div>` : '')
+      + (list.length ? list.map(row).join('') + `<div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" data-lg="join">Unirme con código</button></div>`
+        : `<p class="hm-lg-n">Todavía no estás en ninguna liga. Crea una e invita a tus amigos: cada día puntúa el reto como un Gran Premio.</p><div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" data-lg="join">Unirme con código</button></div>`);
   }
   $('hmLeagues').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;

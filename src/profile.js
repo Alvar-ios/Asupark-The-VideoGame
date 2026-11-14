@@ -1,5 +1,6 @@
 // Pantalla de Perfil: entrar / crear cuenta, estadísticas, vitrina de logros, amigos, rivalidad y salón de la fama.
 import { waShare, inviteUrl, waBtn } from './share.js';
+import { ic } from './icons.js';
 import { sk } from './ux.js';
 export function initProfile(ctx) {
   const { $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt } = ctx;
@@ -10,21 +11,21 @@ export function initProfile(ctx) {
   // —— logros calculados a partir de las estadísticas
   function achievements(st, hall) {
     const out = [], kings = st.kings || [];
-    for (const k of kings.slice(0, 8)) out.push({ ic: '♛', t: 'Rey de ' + trackName(k.track), s: groupName(k.grp) + ' · ' + fmt(k.ms / 1000), gold: true });
-    if (kings.length > 8) out.push({ ic: '♛', t: '+' + (kings.length - 8) + ' récords más', s: 'Mejor tiempo de la categoría', gold: true });
-    if (hall && hall.records && hall.records[0] && hall.records[0].name === st.username && kings.length) out.push({ ic: '⚡', t: 'El más rápido en contrarreloj', s: kings.length + ' récords: nadie tiene más', gold: true });
-    if (st.wins_rank === 1) out.push({ ic: '🏆', t: 'Jugador con más victorias', s: st.wins + ' victorias', gold: true });
+    for (const k of kings.slice(0, 8)) out.push({ ic: 'crown', t: 'Rey de ' + trackName(k.track), s: groupName(k.grp) + ' · ' + fmt(k.ms / 1000), gold: true });
+    if (kings.length > 8) out.push({ ic: 'crown', t: '+' + (kings.length - 8) + ' récords más', s: 'Mejor tiempo de la categoría', gold: true });
+    if (hall && hall.records && hall.records[0] && hall.records[0].name === st.username && kings.length) out.push({ ic: 'bolt', t: 'El más rápido en contrarreloj', s: kings.length + ' récords: nadie tiene más', gold: true });
+    if (st.wins_rank === 1) out.push({ ic: 'trophy', t: 'Jugador con más victorias', s: st.wins + ' victorias', gold: true });
     const m = (c, ic, t, s) => { if (c) out.push({ ic, t, s }); };
-    m(st.wins >= 1, '🥇', 'Primera victoria', 'Ganaste una carrera');
-    m(st.wins >= 10, '🥇', '10 victorias', 'Veterano de parrilla');
-    m(st.podiums >= 10, '🥉', '10 podios', 'Siempre arriba');
-    m(st.laps >= 25, '⏱', '25 vueltas guardadas', 'Constante');
-    m(st.laps >= 100, '⏱', '100 vueltas guardadas', 'Incansable');
-    m(st.tracks >= 5, '🌍', 'Trotamundos', st.tracks + ' circuitos con tiempo');
-    m(st.tracks >= 9, '🌍', 'Vuelta al mundo', 'Todos los circuitos');
+    m(st.wins >= 1, 'medal', 'Primera victoria', 'Ganaste una carrera');
+    m(st.wins >= 10, 'medal', '10 victorias', 'Veterano de parrilla');
+    m(st.podiums >= 10, 'medal', '10 podios', 'Siempre arriba');
+    m(st.laps >= 25, 'stopwatch', '25 vueltas guardadas', 'Constante');
+    m(st.laps >= 100, 'stopwatch', '100 vueltas guardadas', 'Incansable');
+    m(st.tracks >= 5, 'globe', 'Trotamundos', st.tracks + ' circuitos con tiempo');
+    m(st.tracks >= 9, 'globe', 'Vuelta al mundo', 'Todos los circuitos');
     return out;
   }
-  const ach = (a) => `<div class="ach${a.gold ? ' gold' : ''}"><i>${a.ic}</i><b>${esc(a.t)}</b><small>${esc(a.s)}</small></div>`;
+  const ach = (a) => `<div class="ach${a.gold ? ' gold' : ''}"><i>${ic(a.ic)}</i><b>${esc(a.t)}</b><small>${esc(a.s)}</small></div>`;
 
   function head(st) {
     return `<div class="pf-head"><div class="pf-ic">${drvIc(playerDrv(), 0)}</div><div><b class="pf-name">@${esc(st.username)}</b><small>Piloto desde ${esc(String(st.since || '').slice(0, 10))}</small></div><button id="pfOut" class="mini" type="button">Salir</button></div>`;
@@ -48,8 +49,8 @@ export function initProfile(ctx) {
     const A = achievements(st, hall);
     let tro = []; try { tro = (await acc.rpc('my_trophies')) || []; } catch (e) { /* sin trofeos */ }
     let stk = null; try { stk = await acc.rpc('my_streak'); } catch (e) { /* sin racha */ }
-    for (const x of tro) A.unshift(x.kind === 'champion' ? { gold: true, ic: '🏆', t: 'Campeón · Temporada ' + x.season, s: x.league + ' · ' + x.pts + ' pts' } : { ic: '🐌', t: 'Lentorro de la temporada ' + x.season, s: x.league });
-    if (stk && stk.best >= 2) A.unshift({ gold: stk.streak >= 7, ic: '🔥', t: 'Racha de ' + stk.streak + (stk.streak === 1 ? ' día' : ' días'), s: 'Mejor racha: ' + stk.best + ' días' });
+    for (const x of tro) A.unshift(x.kind === 'champion' ? { gold: true, ic: 'trophy', t: 'Campeón · Temporada ' + x.season, s: x.league + ' · ' + x.pts + ' pts' } : { ic: 'snail', t: 'Lentorro de la temporada ' + x.season, s: x.league });
+    if (stk && stk.best >= 2) A.unshift({ gold: stk.streak >= 7, ic: 'flame', t: 'Racha de ' + stk.streak + (stk.streak === 1 ? ' día' : ' días'), s: 'Mejor racha: ' + stk.best + ' días' });
     body().innerHTML = `${head(st)}${tabs()}<div class="pf-stats">${[['Vueltas', st.laps], ['Circuitos', st.tracks], ['Carreras', st.races], ['Victorias', st.wins], ['Podios', st.podiums], ['Récords', (st.kings || []).length]].map(([n, v]) => `<div><b>${v}</b><small>${n}</small></div>`).join('')}</div>
       <h3 class="pf-h">Vitrina</h3><div class="pf-shelf">${A.length ? A.map(ach).join('') : '<p class="keys" style="display:block">Aún no hay logros: gana carreras y bate récords para llenar la vitrina.</p>'}</div>`;
   }
@@ -84,7 +85,7 @@ export function initProfile(ctx) {
     const st = acc.profile; body().innerHTML = `${head(st)}${tabs()}${sk.rows(4)}`;
     let h = null; try { h = await acc.hall(); } catch (e) { /* vacío */ }
     const list = (a, unit) => (a && a.length ? a.map((x, i) => `<tr class="${x.name === st.username ? 'me' : ''}"><td class="rk">${i + 1}</td><td class="nm">${esc(x.name)}</td><td class="tm">${x.n} ${unit}</td></tr>`).join('') : '<tr><td colspan="3">Aún no hay datos.</td></tr>');
-    body().innerHTML = `${head(st)}${tabs()}<h3 class="pf-h">♛ Más récords</h3><table class="lbt">${list(h && h.records, 'récords')}</table><h3 class="pf-h">🏆 Más victorias</h3><table class="lbt">${list(h && h.wins, 'victorias')}</table>`;
+    body().innerHTML = `${head(st)}${tabs()}<h3 class="pf-h">${ic('crown')} Más récords</h3><table class="lbt">${list(h && h.records, 'récords')}</table><h3 class="pf-h">${ic('trophy')} Más victorias</h3><table class="lbt">${list(h && h.wins, 'victorias')}</table>`;
   }
 
   async function render() {
@@ -112,7 +113,7 @@ export function initProfile(ctx) {
     if (b.dataset.t) { S.tab = b.dataset.t; S.rival = null; S.msg = ''; return render(); }
     if (b.id === 'pfOut') { acc.signOut(); S.tab = 'perfil'; S.rival = null; return render(); }
     if (b.id === 'pfBack') { S.rival = null; return render(); }
-    if (b.id === 'pfWa') { const u = acc.username; waShare(`🏁 ¡Únete a Drift Rush y compite conmigo!${u ? ` Soy @${u}: abre el enlace y me añades como amigo al instante.` : ''} Un juego de carreras gratis en el navegador, con reto diario y clasificación.`, inviteUrl(u)); return; }
+    if (b.id === 'pfWa') { const u = acc.username; waShare(`Únete a Daily Lapp y compite conmigo.${u ? ` Soy @${u}: abre el enlace y me añades como amigo al instante.` : ''} Un juego de carreras gratis en el navegador, con reto diario y clasificación.`, inviteUrl(u)); return; }
     if (b.id === 'pfAdd') { const v = $('pfFriend').value; if (!v.trim()) return; try { S.msg = String(await acc.addFriend(v)); } catch (er) { S.msg = acc.explain(er); } return friendsView(); }
     if (b.dataset.riv) { S.rival = { id: b.dataset.riv, u: b.dataset.u }; return render(); }
     if (b.dataset.ok) { try { await acc.respond(b.dataset.ok, true); S.msg = ''; } catch (er) { S.msg = acc.explain(er); } return friendsView(); }

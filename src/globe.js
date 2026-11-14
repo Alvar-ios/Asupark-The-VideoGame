@@ -6,27 +6,32 @@ import { WORLD_EQ } from './worldmap.js';
 const D = Math.PI / 180;
 export const ll2v = (lat, lon, r = 1) => { const ph = (lon + 180) * D, th = (90 - lat) * D; return new THREE.Vector3(-Math.cos(ph) * Math.sin(th) * r, Math.cos(th) * r, Math.sin(ph) * Math.sin(th) * r); };
 
-function earthTexture() {
+let EARTH_CV = null;
+function earthCanvas() {
+  if (EARTH_CV) return EARTH_CV;
   const W = 2048, H = 1024, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
   const sea = x.createLinearGradient(0, 0, 0, H); sea.addColorStop(0, '#0d3a6b'); sea.addColorStop(.5, '#0a4f8f'); sea.addColorStop(1, '#0d3a6b');
   x.fillStyle = sea; x.fillRect(0, 0, W, H);
   const land = new Path2D(WORLD_EQ), g = x.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, '#e8eef2'); g.addColorStop(.12, '#8fa57a'); g.addColorStop(.3, '#5f8f4a'); g.addColorStop(.42, '#b9a566'); g.addColorStop(.5, '#4f9a3d'); g.addColorStop(.62, '#6fa04a'); g.addColorStop(.8, '#b7b08a'); g.addColorStop(.93, '#eef2f4'); g.addColorStop(1, '#ffffff');
-  x.lineJoin = 'round'; x.shadowColor = 'rgba(120,200,255,.55)'; x.shadowBlur = 10; x.fillStyle = g; x.fill(land); x.shadowBlur = 0;
+  x.lineJoin = 'round'; x.fillStyle = g; x.fill(land);  // sin sombra difuminada: era lo más caro de pintar
   x.strokeStyle = 'rgba(255,255,255,.45)'; x.lineWidth = 1.4; x.stroke(land);
   x.strokeStyle = 'rgba(190,225,255,.16)'; x.lineWidth = 1; x.beginPath();
   for (let lon = -180; lon <= 180; lon += 15) { const px = (lon + 180) / 360 * W; x.moveTo(px, 0); x.lineTo(px, H); }
   for (let lat = -75; lat <= 75; lat += 15) { const py = (90 - lat) / 180 * H; x.moveTo(0, py); x.lineTo(W, py); }
   x.stroke();
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+  EARTH_CV = c; return c;
 }
+function earthTexture(maxAniso) { const t = new THREE.CanvasTexture(earthCanvas()); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = Math.min(4, maxAniso || 1); return t; }
+// pintar la textura en un momento libre, antes de que el jugador abra el reto, para que el globo arranque sin tirón
+export const warmGlobe = () => { if (EARTH_CV) return; const f = window.requestIdleCallback || ((fn) => setTimeout(fn, 300)); f(() => { try { earthCanvas(); } catch (_) { /* se pinta al abrir */ } }); };
 
 export function createGlobe(host) {
   const cv = document.createElement('canvas'); cv.className = 'gl-cv'; host.prepend(cv);
-  const R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); R.setClearColor(0, 0); R.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.75), R = new THREE.WebGLRenderer({ canvas: cv, antialias: dpr < 1.5, alpha: true, powerPreference: 'high-performance' }); R.setClearColor(0, 0); R.setPixelRatio(dpr);
   const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(32, 1, .1, 20), grp = new THREE.Group(); scene.add(grp);
-  const earth = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), new THREE.MeshLambertMaterial({ map: earthTexture() })); grp.add(earth);
-  const glow = new THREE.Mesh(new THREE.SphereGeometry(1.14, 64, 48), new THREE.ShaderMaterial({
+  const earth = new THREE.Mesh(new THREE.SphereGeometry(1, 72, 48), new THREE.MeshLambertMaterial({ map: earthTexture(R.capabilities.getMaxAnisotropy()) })); grp.add(earth);
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(1.14, 40, 28), new THREE.ShaderMaterial({
     transparent: true, side: THREE.BackSide, depthWrite: false, blending: THREE.AdditiveBlending,
     uniforms: {}, vertexShader: 'varying vec3 n;void main(){n=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     fragmentShader: 'varying vec3 n;void main(){float i=pow(.72-dot(n,vec3(0,0,1.)),3.);gl_FragColor=vec4(.3,.6,1.,1.)*i*1.6;}' })); scene.add(glow);
@@ -40,9 +45,10 @@ export function createGlobe(host) {
 
   const tgt = () => { return { a: -(90 + st.lon) * D + st.yawOff, b: Math.max(-1.2, Math.min(1.2, (st.lat + st.latOff) * D)), z: st.zCam }; };
   const proj = new THREE.Vector3(), nrm = new THREE.Vector3();
+  const camDir = new THREE.Vector3();
   function frame(now) {
     requestAnimationFrame(frame);
-    if (!host.offsetParent) return; resize(); if (!st.w) return;
+    if (document.hidden || !host.offsetParent) { st.last = 0; return; } resize(); if (!st.w) return;
     const dt = Math.min(.25, (now - (st.last || now)) / 1000); st.last = now; const T = tgt(), k = 1 - Math.exp(-dt * (st.drag ? 18 : 4.5)), kz = 1 - Math.exp(-dt * 3.5), c = st.cur;
     c.a += (T.a - c.a) * k; c.b += (T.b - c.b) * k; c.z += (T.z - c.z) * kz;
     grp.rotation.set(c.b, c.a, 0);
@@ -54,7 +60,7 @@ export function createGlobe(host) {
     const shown = [], panel = host.parentElement && host.parentElement.querySelector('#contPanel'), maxX = panel && getComputedStyle(panel).position === 'absolute' ? st.w - panel.offsetWidth - 16 : st.w;
     for (const p of st.pins) {
       p.v.copy(p.base).applyMatrix4(grp.matrixWorld); nrm.copy(p.v).normalize();
-      const vis = nrm.dot(cam.position.clone().sub(p.v).normalize()) > .12;
+      const vis = nrm.dot(camDir.copy(cam.position).sub(p.v).normalize()) > .12;
       proj.copy(p.v).project(cam);
       p.ax = (proj.x * .5 + .5) * st.w; p.ay = (-proj.y * .5 + .5) * st.h;
       p.el.style.opacity = vis ? 1 : 0; p.el.style.pointerEvents = vis ? 'auto' : 'none'; p.line.style.opacity = vis ? 1 : 0; p.dot.style.opacity = vis ? 1 : 0;
@@ -64,7 +70,7 @@ export function createGlobe(host) {
     }
     shown.sort((a, b) => a.ax - b.ax || a.ay - b.ay);
     const clampP = (p) => { p.tx = Math.max(p.w / 2 + 4, Math.min(maxX - p.w / 2 - 4, p.tx)); p.ty = Math.max(p.h / 2 + 4, Math.min(st.h - p.h / 2 - 4, p.ty)); };
-    for (let it = 0; it < 90; it++) {
+    for (let it = 0; it < (shown.length > 1 ? 30 : 0); it++) {
       for (let i = 0; i < shown.length; i++) for (let j = i + 1; j < shown.length; j++) {
         const a = shown[i], b = shown[j], dx = a.tx - b.tx, dy = a.ty - b.ty, ox = (a.w + b.w) / 2 + 5 - Math.abs(dx), oy = (a.h + b.h) / 2 + 5 - Math.abs(dy);
         if (ox <= 0 || oy <= 0) continue;

@@ -1,3 +1,4 @@
+import { ic } from './icons.js';
 // Capa de experiencia: esqueletos de carga, transiciones de vista, botón Atrás y deslizar para cerrar en las pantallas,
 // menú de comandos (Ctrl/⌘+K) con atajos, avisos con «Deshacer», imágenes que aparecen con desenfoque y precarga en segundo plano.
 export const reduced = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) { return false; } };
@@ -103,24 +104,24 @@ export function initUx({ $, acc }) {
   const nav = (g) => { const b = document.querySelector(`#hmNav [data-go="${g}"]`); if (b) b.click(); };
   const CMDS = () => {
     const out = [
-      { k: 'd', n: 'Reto del día', s: 'Mismo coche y circuito para todos', i: '🏁', run: () => click('dailyCard') },
-      { k: 'l', n: 'Mis ligas', s: 'Tabla, días, calendario y chat', i: '🏆', run: () => nav('leagues') },
-      { k: 't', n: 'Contrarreloj', s: 'Tú contra el crono', i: '⏱️', run: () => click('hmTT') },
-      { k: 'r', n: 'Racing', s: 'Carreras y Gran Premio', i: '🏎️', run: () => click('hmRacing') },
-      { k: 'c', n: 'Clasificación', s: 'Ranking global y amigos', i: '📊', run: () => nav('board') },
-      { k: 'a', n: 'Amigos', s: 'Solicitudes y rivalidades', i: '👥', run: () => nav('friends') },
-      { k: 'p', n: 'Perfil', s: 'Vitrina, trofeos y racha', i: '👤', run: () => nav('profile') },
-      { k: 's', n: 'Ajustes', s: 'Controles, gráficos, avisos', i: '⚙️', run: () => click('hmSet') },
-      { k: 'm', n: 'Música', s: 'Elegir la banda sonora', i: '🎵', run: () => click('hmMusic') },
+      { k: 'd', n: 'Reto del día', s: 'Mismo coche y circuito para todos', i: 'flag', run: () => click('dailyCard') },
+      { k: 'l', n: 'Mis ligas', s: 'Tabla, días, calendario y chat', i: 'trophy', run: () => nav('leagues') },
+      { k: 't', n: 'Contrarreloj', s: 'Tú contra el crono', i: 'stopwatch', run: () => click('hmTT') },
+      { k: 'r', n: 'Racing', s: 'Carreras y Gran Premio', i: 'bolt', run: () => click('hmRacing') },
+      { k: 'c', n: 'Clasificación', s: 'Ranking global y amigos', i: 'chart', run: () => nav('board') },
+      { k: 'a', n: 'Amigos', s: 'Solicitudes y rivalidades', i: 'users', run: () => nav('friends') },
+      { k: 'p', n: 'Perfil', s: 'Vitrina, trofeos y racha', i: 'user', run: () => nav('profile') },
+      { k: 's', n: 'Ajustes', s: 'Controles, gráficos, avisos', i: 'gear', run: () => click('hmSet') },
+      { k: 'm', n: 'Música', s: 'Elegir la banda sonora', i: 'note', run: () => click('hmMusic') },
     ];
     const c = acc.cached && acc.loggedIn ? acc.cached('my_leagues') : null;
-    if (Array.isArray(c)) for (const l of c.slice(0, 6)) out.push({ n: l.name, s: `Liga · P${l.pos || '–'} · temporada ${l.season}`, i: '🏁', run: () => { const LGb = document.querySelector(`[data-lg-open="${l.id}"]`); if (LGb) LGb.click(); else nav('leagues'); } });
+    if (Array.isArray(c)) for (const l of c.slice(0, 6)) out.push({ n: l.name, s: `Liga · P${l.pos || '–'} · temporada ${l.season}`, i: 'flag', run: () => { const LGb = document.querySelector(`[data-lg-open="${l.id}"]`); if (LGb) LGb.click(); else nav('leagues'); } });
     return out;
   };
   const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   let cm = null, items = [], sel = 0;
   const draw = () => {
-    cm.list.innerHTML = items.length ? items.map((c, i) => `<button type="button" role="option" class="cm-i${i === sel ? ' on' : ''}" data-i="${i}"><i>${c.i}</i><span><b>${c.n}</b><small>${c.s}</small></span>${c.k ? `<kbd>${c.k.toUpperCase()}</kbd>` : ''}</button>`).join('') : '<p class="cm-n">Nada coincide</p>';
+    cm.list.innerHTML = items.length ? items.map((c, i) => `<button type="button" role="option" class="cm-i${i === sel ? ' on' : ''}" data-i="${i}"><i>${ic(c.i)}</i><span><b>${c.n}</b><small>${c.s}</small></span>${c.k ? `<kbd>${c.k.toUpperCase()}</kbd>` : ''}</button>`).join('') : '<p class="cm-n">Nada coincide</p>';
     const o = cm.list.querySelector('.on'); if (o) o.scrollIntoView({ block: 'nearest' });
   };
   const filt = () => { const q = norm(cm.input.value.trim()); items = CMDS().filter((c) => !q || norm(c.n + ' ' + c.s).includes(q)); sel = 0; draw(); };

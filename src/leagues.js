@@ -1,6 +1,7 @@
 // Ligas de amigos: temporadas de 14 días sobre el reto diario, puntos como en la F1, intentos por día y chat.
 // Toda la lógica vive en funciones RPC (supabase/leagues.sql) que identifican al jugador con auth.uid().
 import { waShare, baseUrl, waBtn } from './share.js';
+import { ic } from './icons.js';
 import { sk, vt, undoable } from './ux.js';
 
 const PTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
@@ -80,12 +81,12 @@ export function initLeagues(ctx) {
       acc.swr('league_recap', { p_league: id }, () => {}).then((r) => { const same = JSON.stringify(r) === JSON.stringify(S.recap); S.recap = r; if (!same && S.id === id && S.tab === 'tabla' && S.view === 'league' && open() && S.state) tableView(); }).catch(() => { if (S.recap === undefined) S.recap = null; });
     }
     const r = S.recap; if (!r) return '';
-    const line = (ic, t) => `<li><i>${ic}</i><span>${t}</span></li>`;
-    return `<div class="lg-recap"><div class="lg-rh"><b>☀️ RESUMEN DE AYER</b><small>${esc(dayTxt(r.day))} · ${r.players} piloto${r.players === 1 ? '' : 's'}</small></div><ul>
-      ${line('🏆', `<b>@${esc(r.winner.username)}</b> ganó con ${fms(r.winner.ms)}${r.second ? ` · <em>+${(r.second.gap / 1000).toFixed(3)}</em> sobre @${esc(r.second.username)}` : ''}`)}
-      ${r.me ? line('🎯', `Tú: <b>P${r.me.pos}</b> (${fms(r.me.ms)}) · +${r.me.pts} pts`) : line('😴', 'Ayer no corriste el reto')}
-      ${r.climber ? line('📈', `<b>@${esc(r.climber.username)}</b> sube de P${r.climber.from} a P${r.climber.to}`) : ''}
-      ${r.leader ? line('👑', `Líder: <b>@${esc(r.leader.username)}</b> (${r.leader.pts} pts)`) : ''}
+    const line = (k, t) => `<li><i>${ic(k)}</i><span>${t}</span></li>`;
+    return `<div class="lg-recap"><div class="lg-rh"><b>${ic('sun')} RESUMEN DE AYER</b><small>${esc(dayTxt(r.day))} · ${r.players} piloto${r.players === 1 ? '' : 's'}</small></div><ul>
+      ${line('trophy', `<b>@${esc(r.winner.username)}</b> ganó con ${fms(r.winner.ms)}${r.second ? ` · <em>+${(r.second.gap / 1000).toFixed(3)}</em> sobre @${esc(r.second.username)}` : ''}`)}
+      ${r.me ? line('target', `Tú: <b>P${r.me.pos}</b> (${fms(r.me.ms)}) · +${r.me.pts} pts`) : line('none', 'Ayer no corriste el reto')}
+      ${r.climber ? line('trend', `<b>@${esc(r.climber.username)}</b> sube de P${r.climber.from} a P${r.climber.to}`) : ''}
+      ${r.leader ? line('crown', `Líder: <b>@${esc(r.leader.username)}</b> (${r.leader.pts} pts)`) : ''}
     </ul><button class="lg-btn sm ghost" data-a="recap" type="button">Compartir resumen</button></div>`;
   }
   async function shareRecap() {
@@ -95,12 +96,12 @@ export function initLeagues(ctx) {
     const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#1a0a12'); g.addColorStop(0.5, '#0a0d16'); g.addColorStop(1, '#0a0d16'); c.fillStyle = g; c.fillRect(0, 0, W, H);
     c.fillStyle = '#e10600'; c.fillRect(0, 0, W, 18); const k = 54; for (let i = 0; i < W / k; i++) { c.fillStyle = i % 2 ? '#fff' : '#111'; c.fillRect(i * k, H - 36, k, 18); c.fillStyle = i % 2 ? '#111' : '#fff'; c.fillRect(i * k, H - 18, k, 18); }
     const T = (t, x, y, sz, col, w = 800, al = 'left') => { c.font = `italic ${w} ${sz}px "Jersey 10", Impact, sans-serif`; c.fillStyle = col; c.textAlign = al; c.fillText(t, x, y); };
-    T('DRIFT RUSH · RESUMEN', 70, 120, 44, '#ffd34e'); T(L.name.toUpperCase(), 70, 210, 84, '#fff'); T(dayTxt(r.day).toUpperCase(), 70, 270, 40, '#9fb0cf');
-    c.fillStyle = 'rgba(255,255,255,.07)'; c.fillRect(70, 330, W - 140, 330); T('🏆 GANADOR DEL DÍA', 110, 400, 40, '#ffd34e'); T('@' + r.winner.username, 110, 500, 100, '#fff'); T(fms(r.winner.ms) + (r.second ? `   +${(r.second.gap / 1000).toFixed(3)} sobre @${r.second.username}` : ''), 110, 600, 46, '#c8d2e6', 700);
-    const rows = []; if (r.climber) rows.push(['📈', `@${r.climber.username} sube de P${r.climber.from} a P${r.climber.to}`]); if (r.leader) rows.push(['👑', `Líder: @${r.leader.username} · ${r.leader.pts} pts`]); if (r.lentorro && mm[r.lentorro]) rows.push(['🐌', `Lentorro de hoy: @${mm[r.lentorro].username}`]); if (r.me) rows.push(['🎯', `Yo: P${r.me.pos} · ${fms(r.me.ms)}`]);
-    rows.forEach((x, i) => { T(x[0], 90, 790 + i * 120, 62, '#fff'); T(x[1], 190, 790 + i * 120, 54, '#eef2ff', 700); });
+    T('DAILY LAPP · RESUMEN', 70, 120, 44, '#ffd34e'); T(L.name.toUpperCase(), 70, 210, 84, '#fff'); T(dayTxt(r.day).toUpperCase(), 70, 270, 40, '#9fb0cf');
+    c.fillStyle = 'rgba(255,255,255,.07)'; c.fillRect(70, 330, W - 140, 330); T('GANADOR DEL DÍA', 110, 400, 40, '#ffd34e'); T('@' + r.winner.username, 110, 500, 100, '#fff'); T(fms(r.winner.ms) + (r.second ? `   +${(r.second.gap / 1000).toFixed(3)} sobre @${r.second.username}` : ''), 110, 600, 46, '#c8d2e6', 700);
+    const rows = []; if (r.climber) rows.push(['SUBE', `@${r.climber.username} sube de P${r.climber.from} a P${r.climber.to}`]); if (r.leader) rows.push(['LÍDER', `Líder: @${r.leader.username} · ${r.leader.pts} pts`]); if (r.lentorro && mm[r.lentorro]) rows.push(['LENTORRO', `Lentorro de hoy: @${mm[r.lentorro].username}`]); if (r.me) rows.push(['YO', `Yo: P${r.me.pos} · ${fms(r.me.ms)}`]);
+    rows.forEach((x, i) => { T(x[0], 70, 790 + i * 120, 34, '#ffd34e'); T(x[1], 290, 790 + i * 120, 50, '#eef2ff', 700); });
     T('¿Te atreves con el reto de hoy?', 70, H - 120, 46, '#ffd34e'); T(location.host + location.pathname.replace(/\/$/, ''), 70, H - 70, 36, '#9fb0cf', 700);
-    const text = `☀️ Resumen de «${L.name}» (${dayTxt(r.day)}): ganó @${r.winner.username} con ${fms(r.winner.ms)}${r.leader ? ` · líder @${r.leader.username} (${r.leader.pts} pts)` : ''}. ¿Te atreves con el reto de hoy?`;
+    const text = `Resumen de «${L.name}» (${dayTxt(r.day)}): ganó @${r.winner.username} con ${fms(r.winner.ms)}${r.leader ? ` · líder @${r.leader.username} (${r.leader.pts} pts)` : ''}. ¿Te atreves con el reto de hoy?`;
     try {
       const blob = await new Promise((res) => cv.toBlob(res, 'image/png')), f = new File([blob], 'resumen-drift-rush.png', { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], text }); return; }
@@ -112,9 +113,9 @@ export function initLeagues(ctx) {
   function predHtml(L, mm) {
     if (L.season !== L.current) return '';
     const P = S.state.pred || {}, pk = P.pick;
-    if (pk) return `<div class="lg-pred">🎯 <b>Tu apuesta de hoy:</b> @${esc((mm[pk] || {}).username || '?')} · +1 punto si gana el reto</div>`;
+    if (pk) return `<div class="lg-pred">${ic('target')} <b>Tu apuesta de hoy:</b> @${esc((mm[pk] || {}).username || '?')} · +1 punto si gana el reto</div>`;
     if (!P.can) return '';
-    return `<div class="lg-pred"><b>🎯 ¿Quién gana hoy?</b><small>Apuesta antes de correr: +1 punto si aciertas</small><div class="lg-chips">${S.state.members.map((m) => `<button type="button" data-pick="${m.user_id}">${flag(m.flag)} ${esc(m.username)}${m.user_id === me() ? ' (yo)' : ''}</button>`).join('')}</div></div>`;
+    return `<div class="lg-pred"><b>${ic('target')} ¿Quién gana hoy?</b><small>Apuesta antes de correr: +1 punto si aciertas</small><div class="lg-chips">${S.state.members.map((m) => `<button type="button" data-pick="${m.user_id}">${flag(m.flag)} ${esc(m.username)}${m.user_id === me() ? ' (yo)' : ''}</button>`).join('')}</div></div>`;
   }
 
   // ---------- podio de temporada cerrada ----------
@@ -123,17 +124,17 @@ export function initLeagues(ctx) {
     const pl = standings.filter((x) => x.days > 0); if (pl.length < 2) return '';
     const top = pl.slice(0, 3), order = top.length === 3 ? [1, 0, 2] : top.length === 2 ? [1, 0] : [0], hs = [100, 70, 50], cs = ['#ffd34e', '#d5dbe6', '#e0955a'];
     const last = pl.length >= 3 ? pl[pl.length - 1] : null;
-    return `<div class="lg-podium"><b class="lg-pt">🏆 TEMPORADA ${L.season} TERMINADA</b><div class="lg-pods">${order.map((i) => { const x = top[i], m = mm[x.user_id] || { username: '?' }; return `<div class="pod p${i + 1}"><span>${i === 0 ? '👑' : ''}${esc(m.username)}</span><div class="bar" style="--h:${hs[i]}px;background:${cs[i]}"><b>${i + 1}</b><small>${x.pts} pts</small></div></div>`; }).join('')}</div>${last ? `<p class="lg-note sm" style="text-align:center">🐌 Lentorro de la temporada: <b>@${esc((mm[last.user_id] || {}).username || '?')}</b></p>` : ''}</div>`;
+    return `<div class="lg-podium"><b class="lg-pt">${ic('trophy')} TEMPORADA ${L.season} TERMINADA</b><div class="lg-pods">${order.map((i) => { const x = top[i], m = mm[x.user_id] || { username: '?' }; return `<div class="pod p${i + 1}"><span>${i === 0 ? ic('crown') : ''}${esc(m.username)}</span><div class="bar" style="--h:${hs[i]}px;background:${cs[i]}"><b>${i + 1}</b><small>${x.pts} pts</small></div></div>`; }).join('')}</div>${last ? `<p class="lg-note sm" style="text-align:center">${ic('snail')} Lentorro de la temporada: <b>@${esc((mm[last.user_id] || {}).username || '?')}</b></p>` : ''}</div>`;
   }
 
   async function tableView() {
     const { league: L, members, standings } = S.state, mm = Object.fromEntries(members.map((m) => [m.user_id, m]));
-    const rows = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }; return `<tr class="${s.user_id === me() ? 'me' : ''}${i < 3 ? ' p' + (i + 1) : ''}"><td class="po">${i + 1}</td><td class="nm">${flag(m.flag)}<span>${esc(m.username)}${s.user_id === S.state.lentorro ? ' 🐌' : ''}</span>${m.streak > 1 ? `<small class="fire">🔥${m.streak}</small>` : ''}</td><td>${s.wins}</td><td>${s.podiums}</td><td>${s.best ? fmt(s.best / 1000) : '–'}</td><td class="pt">${s.pts}${s.bonus ? `<small class="bn">🎯${s.bonus}</small>` : ''}</td></tr>`; }).join('');
+    const rows = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }; return `<tr class="${s.user_id === me() ? 'me' : ''}${i < 3 ? ' p' + (i + 1) : ''}"><td class="po">${i + 1}</td><td class="nm">${flag(m.flag)}<span>${esc(m.username)}${s.user_id === S.state.lentorro ? ' ' + ic('snail') : ''}</span>${m.streak > 1 ? `<small class="fire">${ic('flame')}${m.streak}</small>` : ''}</td><td>${s.wins}</td><td>${s.podiums}</td><td>${s.best ? fmt(s.best / 1000) : '–'}</td><td class="pt">${s.pts}${s.bonus ? `<small class="bn">${ic('target')}${s.bonus}</small>` : ''}</td></tr>`; }).join('');
     const yl = S.state.lentorro;
-    const ban = yl && mm[yl] && L.season === L.current ? `<div class="lg-len">🐌 <b>Lentorro de hoy:</b> @${esc(mm[yl].username)}${yl === me() ? ' (¡eres tú! Hoy puedes elegir coche en el reto)' : ' · hoy puede elegir coche en el reto'}</div>` : '';
+    const ban = yl && mm[yl] && L.season === L.current ? `<div class="lg-len">${ic('snail')} <b>Lentorro de hoy:</b> @${esc(mm[yl].username)}${yl === me() ? ' (¡eres tú! Hoy puedes elegir coche en el reto)' : ' · hoy puede elegir coche en el reto'}</div>` : '';
     const rec = await recapHtml(L); if (S.tab !== 'tabla' || S.view !== 'league') return;
     paint.innerHTML = `${head(L)}${rec}${seasonNav(L)}${podiumHtml(L, mm, standings)}${ban}${predHtml(L, mm)}<table class="lg-t"><thead><tr><th>POS</th><th>PILOTO</th><th>VIC</th><th>POD</th><th>MEJOR</th><th>PTS</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="lg-note sm">Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto entre los miembros. 🎯 Acertar quién gana el día suma +1. 🐌 El Lentorro es quien menos puntos lleva (si ayer corrió) y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p>
+      <p class="lg-note sm">Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto entre los miembros. Acertar quién gana el día suma +1 punto. El Lentorro es quien menos puntos lleva (si ayer corrió) y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p>
       <button class="lg-btn ghost danger" data-a="leave" type="button">Salir de la liga</button><div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`;
     S.msg = '';
   }
@@ -144,7 +145,7 @@ export function initLeagues(ctx) {
     const out = [];
     for (let i = 0; i < L.season_days; i++) {
       const day = new Date(Date.parse(L.from + 'T12:00:00Z') + i * 864e5).toISOString().slice(0, 10), fut = day > L.today, isToday = day === L.today, info = !fut && dailyFor ? dailyFor(day) : null, d = byDay[day], w = d && d.rows[0];
-      out.push(`<div class="lg-gp${isToday ? ' now' : ''}${fut ? ' fut' : ''}"><div class="gpn"><small>GP</small><b>${i + 1}</b></div><div class="gpi">${fut ? '<b>? ? ?</b><small>Se revela ese día</small>' : `<b>${info ? `<span class="flag sm">${flagSvg(info.flag)}</span> ${esc(info.name)}` : 'Reto del día'}</b><small>${esc(dayTxt(day))}${info ? ' · ' + esc(info.car) : ''}</small>`}</div><div class="gpw">${isToday ? '<span class="live">HOY</span>' : ''}${w ? `<small>🏆</small><b>${esc((mm[w.user_id] || {}).username || '?')}</b>` : fut ? '' : '<small>sin tiempos</small>'}</div></div>`);
+      out.push(`<div class="lg-gp${isToday ? ' now' : ''}${fut ? ' fut' : ''}"><div class="gpn"><small>GP</small><b>${i + 1}</b></div><div class="gpi">${fut ? '<b>? ? ?</b><small>Se revela ese día</small>' : `<b>${info ? `<span class="flag sm">${flagSvg(info.flag)}</span> ${esc(info.name)}` : 'Reto del día'}</b><small>${esc(dayTxt(day))}${info ? ' · ' + esc(info.car) : ''}</small>`}</div><div class="gpw">${isToday ? '<span class="live">HOY</span>' : ''}${w ? `<small>${ic('trophy')}</small><b>${esc((mm[w.user_id] || {}).username || '?')}</b>` : fut ? '' : '<small>sin tiempos</small>'}</div></div>`);
     }
     paint.innerHTML = `${head(L)}${seasonNav(L)}<div class="lg-cal">${out.join('')}</div>`;
   }
@@ -155,7 +156,7 @@ export function initLeagues(ctx) {
       const rows = d.rows.map((r, i) => { const m = mm[r.user_id] || { username: '?' }, pts = PTS[i] || 0;
         const at = (r.attempts && r.attempts.length) ? r.attempts.map((a, k) => `<i${a === r.ms ? ' class="b"' : ''}>${k + 1}º ${fmt(a / 1000)}</i>`).join('') : '';
         const sec = r.s1 ? `<small class="sec">${[r.s1, r.s2, r.s3].map((x) => fmt(x / 1000)).join(' · ')}</small>` : '';
-        return `<div class="lg-dr${r.user_id === me() ? ' me' : ''}"><div class="lg-d1"><i class="po">${i + 1}</i>${flag(m.flag)}<b>${esc(m.username)}</b><em>${fmt(r.ms / 1000)}</em><small class="gp">${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'LÍDER'}</small><span class="pp">+${pts}</span></div>${d.day === L.today && r.user_id !== me() && m.ghost ? `<div class="lg-d2"><button type="button" class="lg-gh" data-ghost="${r.user_id}">👻 Correr contra su fantasma</button></div>` : ''}${at || sec ? `<div class="lg-d2">${at}${at ? '' : sec}</div>` : ''}</div>`; }).join('');
+        return `<div class="lg-dr${r.user_id === me() ? ' me' : ''}"><div class="lg-d1"><i class="po">${i + 1}</i>${flag(m.flag)}<b>${esc(m.username)}</b><em>${fmt(r.ms / 1000)}</em><small class="gp">${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'LÍDER'}</small><span class="pp">+${pts}</span></div>${d.day === L.today && r.user_id !== me() && m.ghost ? `<div class="lg-d2"><button type="button" class="lg-gh" data-ghost="${r.user_id}">${ic('ghost')} Correr contra su fantasma</button></div>` : ''}${at || sec ? `<div class="lg-d2">${at}${at ? '' : sec}</div>` : ''}</div>`; }).join('');
       const miss = members.filter((m) => !played.has(m.user_id)).map((m) => esc(m.username));
       return `<div class="lg-day"><div class="lg-dh"><b>${esc(dayTxt(d.day))}</b>${live ? '<span class="live">HOY · PROVISIONAL</span>' : ''}</div>${rows}${miss.length ? `<p class="lg-miss">Sin tiempo: ${miss.join(', ')}</p>` : ''}</div>`;
     };
@@ -164,9 +165,9 @@ export function initLeagues(ctx) {
 
   // ---------- chat ----------
   const RX = ['🔥', '😂', '🐌', '👏', '😱'], tm = (m) => new Date(m.at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  const rxHtml = (m) => { const e = Object.entries(m.rx || {}); return `<div class="lg-rx">${e.map(([k, v]) => `<button type="button" class="${v.me ? 'me' : ''}" data-rx="${k}" data-id="${m.id}">${k} ${v.n}</button>`).join('')}<button type="button" class="add" data-more="${m.id}" aria-label="Reaccionar">☺</button></div>${S.rxOpen === m.id ? `<div class="lg-rxp">${RX.map((k) => `<button type="button" data-rx="${k}" data-id="${m.id}">${k}</button>`).join('')}</div>` : ''}`; };
+  const rxHtml = (m) => { const e = Object.entries(m.rx || {}); return `<div class="lg-rx">${e.map(([k, v]) => `<button type="button" class="${v.me ? 'me' : ''}" data-rx="${k}" data-id="${m.id}">${k} ${v.n}</button>`).join('')}<button type="button" class="add" data-more="${m.id}" aria-label="Reaccionar">+</button></div>${S.rxOpen === m.id ? `<div class="lg-rxp">${RX.map((k) => `<button type="button" data-rx="${k}" data-id="${m.id}">${k}</button>`).join('')}</div>` : ''}`; };
   const msgHtml = (m) => m.kind === 'sys'
-    ? `<div class="lg-m sys"><span>${esc(m.body).replace(/@(\S+)/g, '<b>@$1</b>')}</span><small>${tm(m)}</small>${rxHtml(m)}</div>`
+    ? `<div class="lg-m sys"><span>${esc(m.body.replace(/^[^\p{L}@]+/u, '')).replace(/@(\S+)/g, '<b>@$1</b>')}</span><small>${tm(m)}</small>${rxHtml(m)}</div>`
     : `<div class="lg-m${m.user_id === me() ? ' me' : ''}"><b>${m.user_id === me() ? 'Tú' : '@' + esc(m.username)}</b><span>${esc(m.body)}</span><small>${tm(m)}</small>${rxHtml(m)}</div>`;
   const feedHtml = (r) => (r.length ? r.map(msgHtml).join('') : '<p class="lg-note">Rompe el hielo: escribe el primer mensaje.</p>');
   function paintFeed(first) {
@@ -230,7 +231,7 @@ export function initLeagues(ctx) {
     if (b.dataset.t) { S.tab = b.dataset.t; return leagueView(); }
     if (b.dataset.rx) return react(b.dataset.id, b.dataset.rx);
     if (b.dataset.more) { S.rxOpen = S.rxOpen === +b.dataset.more ? null : +b.dataset.more; return pull(true); }
-    if (b.dataset.pick) { const old = S.state.pred; S.state.pred = { ...(old || {}), pick: b.dataset.pick, can: false }; leagueView(); try { await acc.rpc('league_predict', { p_league: S.id, p_pick: b.dataset.pick }); toast('Apuesta guardada 🎯'); load().catch(() => {}); } catch (er) { S.state.pred = old; toast(err(er)); } return leagueView(); }
+    if (b.dataset.pick) { const old = S.state.pred; S.state.pred = { ...(old || {}), pick: b.dataset.pick, can: false }; leagueView(); try { await acc.rpc('league_predict', { p_league: S.id, p_pick: b.dataset.pick }); toast('Apuesta guardada'); load().catch(() => {}); } catch (er) { S.state.pred = old; toast(err(er)); } return leagueView(); }
     if (b.dataset.ghost) { try { const g = await acc.rpc('daily_ghost', { p_player: b.dataset.ghost }); if (!g || !g.ghost) { toast('Todavía no tiene fantasma guardado'); return; } close(); daily().runGhost(g); } catch (er) { toast(err(er)); } return; }
     if (b.dataset.s) { try { await load(+b.dataset.s); } catch (er) { toast(err(er)); } return leagueView(); }
     const a = b.dataset.a;
@@ -241,7 +242,7 @@ export function initLeagues(ctx) {
     if (a === 'recap') return shareRecap();
     if (a === 'profile') { $('leagues').classList.add('hidden'); stopPoll(); const pb = $('profBtn'); if (pb) pb.click(); return; }
     if (a === 'copy') return copy(leagueUrl(S.state.league.code));
-    if (a === 'invite') { const L = S.state.league; return waShare(`🏁 Te invito a mi liga «${L.name}» de Drift Rush: cada día se puntúa el reto diario como un GP de F1 y hay chat para picarnos. Entra con este enlace y te unes al instante (código ${L.code}):`, leagueUrl(L.code)); }
+    if (a === 'invite') { const L = S.state.league; return waShare(`Te invito a mi liga «${L.name}» de Daily Lapp: cada día se puntúa el reto diario como un GP de F1 y hay chat para picarnos. Entra con este enlace y te unes al instante (código ${L.code}):`, leagueUrl(L.code)); }
     if (a === 'leave') { const id = S.id, nm = S.state.league.name; S.hidden.add(id); S.state = null; undoable('Has salido de «' + nm + '»', async () => { try { await acc.rpc('league_leave', { p_league: id }); S.hidden.delete(id); S.list = null; try { Object.keys(localStorage).filter((k) => k.startsWith('dr.c.')).forEach((k) => localStorage.removeItem(k)); } catch (_) { /* nada */ } } catch (er) { S.hidden.delete(id); toast(err(er)); S.list = null; } if (open() && S.view === 'list') listView(); }, { ms: 6000, onUndo: () => { S.hidden.delete(id); if (open()) listView(); } }); return listView(); }
   });
   $('lgBody').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key !== 'Enter') return; if (e.target.id === 'lgMsgIn') send(); if (e.target.id === 'lgName') create(); if (e.target.id === 'lgCode') doJoin(e.target.value); });

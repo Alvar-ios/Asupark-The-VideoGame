@@ -9,8 +9,8 @@ function labelTex(draw, w = 256, h = 256) { const c = document.createElement('ca
 export function createRadar3D(cv, o) {
   // o: { traffic: [mesh], fast: mesh, kmh, cb: { onFlash, onTick, onEnd }, ac, vol }
   const w = cv.clientWidth || 360, h = cv.clientHeight || 480;
-  const R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: false, powerPreference: 'high-performance' });
-  R.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75)); R.setSize(w, h, false);
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5), R = new THREE.WebGLRenderer({ canvas: cv, antialias: dpr < 1.25, alpha: false, powerPreference: 'high-performance' });
+  R.setPixelRatio(dpr); R.setSize(w, h, false);
   R.toneMapping = THREE.ACESFilmicToneMapping; R.toneMappingExposure = 1.0;
   const FOG = 0xa7bbd1, scene = new THREE.Scene(); scene.background = new THREE.Color(FOG); scene.fog = new THREE.Fog(FOG, 55, 430);
   const pm = new THREE.PMREMGenerator(R); scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;

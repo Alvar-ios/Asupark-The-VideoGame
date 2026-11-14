@@ -1,0 +1,31 @@
+// Iconos propios (trazo de 1,8 px, esquinas redondeadas) para sustituir a los emojis y que toda la interfaz tenga la misma mano.
+const P = {
+  trophy: '<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3.5 3.5 0 0 0 3.5 3.5M17 6h3v1a3.5 3.5 0 0 1-3.5 3.5"/><path d="M12 14v4M8.5 21h7M9.5 18h5"/>',
+  crown: '<path d="M3.5 8.5l4 3.5L12 5l4.5 7 4-3.5-1.8 10.5H5.3z"/>',
+  flame: '<path d="M12 3c.6 3 4.7 5 4.7 10a4.7 4.7 0 0 1-9.4 0c0-1.9.9-3.1 2-4 .1 1.8.9 2.6 1.8 2.8C11 9.7 10.6 6 12 3z"/>',
+  target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
+  ghost: '<path d="M5 20.5V11a7 7 0 0 1 14 0v9.5l-2.6-2-2.2 2-2.2-2-2.2 2-2.2-2z"/><circle cx="9.5" cy="11" r=".9" fill="currentColor"/><circle cx="14.5" cy="11" r=".9" fill="currentColor"/>',
+  stopwatch: '<circle cx="12" cy="13.5" r="7"/><path d="M12 13.5V9.5M9.5 3h5M12 3v3.5"/>',
+  trend: '<path d="M3.5 17l5.5-5.5 4 4 7.5-7.5"/><path d="M15 8h5.5v5.5"/>',
+  sun: '<circle cx="12" cy="12" r="3.8"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
+  flag: '<path d="M5.5 21V3.5"/><path d="M5.5 4h13v10h-13z"/><path d="M10 4v10M14.5 4v10M5.5 9h13"/>',
+  bolt: '<path d="M13 2.5L5 13.5h6l-1 8 8-11h-6z"/>',
+  globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c3.2 3.4 3.2 13.6 0 17M12 3.5c-3.2 3.4-3.2 13.6 0 17"/>',
+  medal: '<circle cx="12" cy="15" r="5"/><path d="M8.6 3.5L12 10l3.4-6.5"/>',
+  bell: '<path d="M6 17v-6a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21.5h4"/>',
+  install: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M12 8v6M9.5 11.8l2.5 2.5 2.5-2.5"/>',
+  share: '<path d="M12 15V3.5M8 7.3l4-3.8 4 3.8"/><path d="M5 12.5V20h14v-7.5"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  none: '<circle cx="12" cy="12" r="8.5"/><path d="M8 12h8"/>',
+  note: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+  alert: '<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.4v.3"/>',
+  star: '<path d="M12 3.5l2.6 5.5 6 .8-4.4 4.1 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.8l6-.8z"/>',
+  users: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 5.5a3 3 0 0 1 0 6M18 14.8c1.8.6 3 2.2 3 5.2"/>',
+  user: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20.5c0-3.8 3.1-6 7-6s7 2.2 7 6"/>',
+  chart: '<path d="M6 20V11M12 20V4M18 20v-6"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/>',
+  snail: '<circle cx="14.5" cy="10" r="5.5"/><path d="M14.5 10a2 2 0 1 1-2-2"/><path d="M2.5 19.5h16.5a2.5 2.5 0 0 0 0-5H9c-3 0-4 3-6.500 5z"/><path d="M4.2 16.2V12.5M6.8 15.7V12.5"/>',
+};
+export const ic = (n, cls = '') => `<svg class="ic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${P[n] || ''}</svg>`;
+export const ICONS = P;

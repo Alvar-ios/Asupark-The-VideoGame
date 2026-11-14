@@ -1,7 +1,10 @@
 // Reto del día: día de 4:00 a 4:00 (Madrid), circuito y coche aleatorios, práctica 5 vueltas + clasificación 3 vueltas.
 // Los intentos se controlan en el servidor (supabase/daily.sql) y se cachean en local. Sin servidor, solo local.
 import { hashStr } from './rng.js';
+import { lp, lpBlock } from './loader.js';
+import { ic } from './icons.js';
 import { sk } from './ux.js';
+import { lpQ } from './loader.js';
 import { createRadar3D } from './radar3d.js';
 import { waShare, inviteUrl, waBtn } from './share.js';
 
@@ -42,7 +45,7 @@ export function createDaily(ctx) {
     return out.slice(0, 3); };
   function pickCar(id) { st.pick = id; ctx.setCar(id === 'base' ? ctx.baseCar.id : id); carsP = null; save(st); renderHero(); }
   const lentorroHtml = () => { const b = ctx.baseCar, opt = (c, base) => `<button type="button" class="dy-ud" data-pick="${base ? 'base' : c.id}"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>${base ? 'Coche del día' : esc(ctx.groupName(c.group))}</small></button>`;
-    return `<div class="dy-card dy-lentorro"><h3>🐌 PREMIO LENTORRO</h3><p>Ayer fuiste el último en ${esc(st.ud.join(', '))}. Hoy puedes seguir con el coche del día o elegir uno de categoría superior.</p><div class="dy-udg">${opt(b, true)}${upgrades().map((c) => opt(c, false)).join('')}</div></div>`; };
+    return `<div class="dy-card dy-lentorro"><h3>${ic('snail')} PREMIO LENTORRO</h3><p>Ayer fuiste el último en ${esc(st.ud.join(', '))}. Hoy puedes seguir con el coche del día o elegir uno de categoría superior.</p><div class="dy-udg">${opt(b, true)}${upgrades().map((c) => opt(c, false)).join('')}</div></div>`; };
   function lentorro() {
     cancelAnimationFrame(spinRaf); clearTimeout(introTimer); stopRadar();
     setStage('lentorro', `${head('Premio Lentorro')}${lentorroHtml()}`);
@@ -94,15 +97,29 @@ export function createDaily(ctx) {
   // ---------- tarjeta del menú ----------
   const dateTxt = () => new Date(key + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase().replace('.', '');
   const statusChips = () => {
-    const p = st.pr ? `<span class="on">Práctica ✓</span>` : `<span>Práctica ${PRACTICE_LAPS} vueltas</span>`;
+    const p = st.pr ? `<span class="on">Práctica ${ic('check')}</span>` : `<span>Práctica ${PRACTICE_LAPS} vueltas</span>`;
     const o = st.best ? `<span class="gold">Tu tiempo ${fmt(st.best.ms / 1000)}</span>` : st.or ? `<span class="on">Clasificación en curso</span>` : `<span>Clasificación ${OFFICIAL_LAPS} vueltas</span>`;
-    return p + o + (streak && streak.streak > 0 ? `<span class="fire">🔥 ${streak.streak}</span>` : '');
+    return p + o + (streak && streak.streak > 0 ? `<span class="fire">${ic('flame')} ${streak.streak}</span>` : '');
   };
+  // Lo que el jugador ya ha descubierto hoy: 0 nada, 1 el circuito, 2 circuito y coche. Hasta entonces la tarjeta no lo enseña.
+  const revealed = () => st.rev || (st.pr || st.or || st.best ? 2 : 0);
+  const reveal = (n) => { if ((st.rev || 0) < n) { st.rev = n; save(st); } };
   function renderHero() {
-    const t = ctx.track, c = ctx.car, [cc, cname] = ctx.countryOf(t);
-    $('dyDate').textContent = dateTxt(); $('dyHeroTrack').innerHTML = `<span class="flag">${ctx.flagSvg(cc)}</span>${esc(t.th.name.replace(/ · .*$/, ''))}`; $('dyHeroSub').textContent = `${cname} · ${(t.tr.len / 1000).toFixed(1)} km`;
-    $('dyHeroCar').textContent = c.name; $('dyHeroImg').src = `./assets/thumbs/${c.id}.webp`; $('dyHeroChips').innerHTML = statusChips();
-    ctx.drawPreview($('dyHeroCv'), t.tr, t.th, 220, 120);
+    const t = ctx.track, c = ctx.car, [cc, cname] = ctx.countryOf(t), rv = revealed(), card = $('dailyCard');
+    const started = st.pr || st.or, done = left('o') <= 0 && st.best;
+    const cta = done ? 'VER CLASIFICACIÓN ›' : started ? 'CONTINUAR ›' : rv ? 'ENTRAR AL RETO ›' : 'DESCUBRIR EL RETO ›';
+    const top = `<div class="hh-top"><span>Reto del día · <b id="dyDate">${dateTxt()}</b></span><span>Cambia en <b class="cdv">${hms(msToReset())}</b></span></div>`;
+    const steps = `<div id="dyHeroChips" class="hh-steps dy-chips">${statusChips()}</div>`;
+    if (!rv) {
+      card.className = 'dy-hbtn hero secret';
+      card.innerHTML = `${top}<div class="hh-body"><div class="hh-q">${lpQ(96)}</div><div class="hh-t"><b>Circuito y coche secretos</b><span>Es el mismo para todos. Descubre dónde corres y con qué coche al entrar.</span></div></div>${steps}<em class="dy-go">${cta}</em>`;
+      return renderMini();
+    }
+    card.className = 'dy-hbtn hero';
+    card.innerHTML = `${top}<div class="hh-body"><canvas id="dyHeroCv" width="280" height="152"></canvas><div class="hh-t"><b id="dyHeroTrack"><span class="flag">${ctx.flagSvg(cc)}</span>${esc(t.th.name.replace(/ · .*$/, ''))}</b><span id="dyHeroSub">${cname} · ${(t.tr.len / 1000).toFixed(1)} km</span></div></div>`
+      + (rv >= 2 ? `<div class="hh-car"><img id="dyHeroImg" alt="" src="./assets/thumbs/${c.id}.webp"><div><small>Coche de hoy</small><b id="dyHeroCar">${esc(c.name)}</b></div></div>` : '<div class="hh-car secret">Coche: se revela en el radar</div>')
+      + `${steps}<em class="dy-go">${cta}</em>`;
+    ctx.drawPreview($('dyHeroCv'), t.tr, t.th, 280, 152);
     renderMini();
   }
   async function renderMini() {
@@ -143,7 +160,7 @@ export function createDaily(ctx) {
   let dg = null, spinRaf = 0;
   function intro() {
     const t = ctx.track, ll = ctx.MAP_LL[t.th.id] || ctx.MAP_LL.pruebas, [cc, cname] = ctx.countryOf(t);
-    setStage('globe', `${head('Sorteando el circuito…')}<div class="dy-skip">Toca para saltar</div>`);
+    setStage('globe', `${head('<span class="dy-ld">' + lp(26) + 'Sorteando el circuito…</span>')}<div class="dy-skip">Toca para saltar</div>`);
     const host = $('dyGlobe'); if (!dg) dg = ctx.createGlobe(host);
     const others = ctx.tracks.filter((x) => x.key !== 'daily');
     dg.setPins(others.map((x) => { const l = ctx.MAP_LL[x.th.id] || ctx.MAP_LL.pruebas; return { lat: l[0], lon: l[1], on: x.th === t.th, title: x.th.name, html: ctx.flagSvg(ctx.countryOf(x)[0]), onClick() {} }; }));
@@ -159,7 +176,7 @@ export function createDaily(ctx) {
   }
   // 2) el circuito del día
   function circuit() {
-    cancelAnimationFrame(spinRaf); clearTimeout(introTimer);
+    cancelAnimationFrame(spinRaf); clearTimeout(introTimer); reveal(1);
     const t = ctx.track, [cc, cname] = ctx.countryOf(t), env = ctx.envLabel(t);
     setStage('circuit', `${head('Circuito de hoy')}<div class="dy-card dy-reveal"><div class="dy-ct"><span class="flag">${ctx.flagSvg(cc)}</span><div><em>${esc(cname)}</em><b>${esc(t.th.name)}</b></div>${t.th.logo ? `<img class="dy-logo" src="./assets/logos/${t.th.logo}.webp" alt="">` : ''}</div><canvas id="dyCv" class="dy-cv"></canvas><div class="dy-chips"><span>${(t.tr.len / 1000).toFixed(2)} km</span><span>${esc(env)}</span><span>${esc(t.sub || '')}</span></div></div><button id="dyNext" class="dy-btn">PILLAR COCHE ›</button>`);
     ctx.drawPreview($('dyCv'), t.tr, t.th, 560, 300, 1.5); $('dyNext').onclick = () => (canPick() ? lentorro() : radar());
@@ -172,9 +189,10 @@ export function createDaily(ctx) {
   async function radar() {
     stopRadar(); const ac = audioOk();
     const c = ctx.car;
-    setStage('radar', `${head('Control de velocidad')}<div class="dy-radar"><canvas id="dyRc"></canvas><div class="dy-gun"><small>RADAR</small><b id="dySpd">--</b><em>km/h</em></div><div class="dy-flash"></div></div><div id="dyTk"></div>`);
+    setStage('radar', `${head('Control de velocidad')}<div class="dy-radar"><canvas id="dyRc"></canvas><div class="dy-gun"><small>RADAR</small><b id="dySpd">--</b><em>km/h</em></div><div class="dy-flash"></div><div class="dy-rl" id="dyRl">${lpBlock('Preparando el radar', 64)}</div></div><div id="dyTk"></div>`);
     const cars = await prefetch(); carsP = null;
     if (stage !== 'radar') return;
+    { const rl = $('dyRl'); if (rl) rl.remove(); }
     const cb = {
       onFlash() { const f = document.querySelector('.dy-flash'); f && f.classList.add('on'); const sp = $('dySpd'); if (sp) { sp.textContent = Math.round(c.vmax * 3.6); sp.classList.add('hot'); sp.dataset.hit = 1; } },
       onTick(v) { const sp = $('dySpd'); if (sp && !sp.dataset.hit) sp.textContent = v; },
@@ -184,6 +202,7 @@ export function createDaily(ctx) {
     rad = createRadar3D($('dyRc'), { traffic: cars.traffic, fast: cars.fast, kmh: Math.round(c.vmax * 3.6), cb, ac, vol: ctx.volume ? ctx.volume() : 1 });
   }
   function ticket() {
+    reveal(2);
     const c = ctx.car, bar = (n, v, num) => `<div class="tk-st"><span>${n}</span><i><s style="width:${Math.min(100, Math.max(6, v * 100))}%"></s></i><b>${num}</b></div>`;
     const h = hashStr('tk' + key + c.id) >>> 0, plate = `${1000 + h % 9000} ${'BCDFGHJKLMNPRSTVWXYZ'[(h >>> 4) % 20]}${'BCDFGHJKLMNPRSTVWXYZ'[(h >>> 9) % 20]}${'BCDFGHJKLMNPRSTVWXYZ'[(h >>> 14) % 20]}`;
     const hh = 6 + h % 15, mm = pad((h >>> 5) % 60), ss = pad((h >>> 11) % 60), exp = `RD-${key.slice(2).replace(/-/g, '')}-${String(h % 10000).padStart(4, '0')}`;
@@ -203,9 +222,10 @@ export function createDaily(ctx) {
     return `<div class="dy-card dy-last"><h3>${last.kind === 'official' ? 'CLASIFICACIÓN' : 'PRÁCTICA'} · TUS VUELTAS</h3><table class="dy-t"><tr><th>V</th><th>S1</th><th>S2</th><th>S3</th><th>TIEMPO</th></tr>${last.laps.map((l, i) => `<tr class="${l.t === best ? 'best' : ''}"><td>${i + 1}</td><td>${l.s[0] != null ? fmtS(l.s[0]) : '–'}</td><td>${l.s[1] != null ? fmtS(l.s[1]) : '–'}</td><td>${l.s[2] != null ? fmtS(l.s[2]) : '–'}</td><td>${fmt(l.t)}</td></tr>`).join('')}</table></div>`;
   }
   function hub() {
+    reveal(2);
     clearTimeout(introTimer); cancelAnimationFrame(spinRaf); stopRadar();
     const t = ctx.track, c = ctx.car;
-    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>${st.pick && st.pick !== 'base' ? '🐌 Elegido con el premio Lentorro' : 'Mismo coche y circuito para todos'}</small></div></div>${canPick() ? lentorroHtml() : ''}${rival ? rivalHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard">${sk.rows(5)}</div></div>`);
+    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>${st.pick && st.pick !== 'base' ? ic('snail') + ' Elegido con el premio Lentorro' : 'Mismo coche y circuito para todos'}</small></div></div>${canPick() ? lentorroHtml() : ''}${rival ? rivalHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard">${sk.rows(5)}</div></div>`);
     ctx.drawPreview($('dyCv2'), t.tr, t.th, 240, 130);
     renderBoard();
   }
@@ -218,21 +238,21 @@ export function createDaily(ctx) {
     el.innerHTML = `<table class="dy-f1"><tr><th>P</th><th>PILOTO</th><th>S1</th><th>S2</th><th>S3</th><th>VUELTA</th><th>DIF</th></tr>${rows.slice(0, 30).map((r, i) => `<tr class="${r.you ? 'me' : ''}"><td>${i + 1}</td><td class="nm"><span class="flag sm">${ctx.flagSvg(r.flag || 'es')}</span>${esc(r.name)}<small class="dy-secs">${[0, 1, 2].map((k) => sc(r, k)).join(' · ')}</small></td><td>${sc(r, 0)}</td><td>${sc(r, 1)}</td><td>${sc(r, 2)}</td><td class="lp">${fmt(r.ms / 1000)}</td><td>${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : '—'}</td></tr>`).join('')}</table>${res.online ? '' : '<p class="dy-empty">Sin conexión: solo se ve tu tiempo en este dispositivo.</p>'}`;
   }
   let rival = null, streak = null;
-  const rivalHtml = () => `<div class="dy-card dy-rival"><h3>👻 FANTASMA DE @${esc(rival.name).toUpperCase()}</h3><p>Su mejor vuelta de hoy (${fmt(rival.ms / 1000)}) saldrá como fantasma dorado en tu próxima sesión.</p><button type="button" data-act="norival" class="dy-lnk">Quitar fantasma</button></div>`;
+  const rivalHtml = () => `<div class="dy-card dy-rival"><h3>${ic('ghost')} FANTASMA DE @${esc(rival.name).toUpperCase()}</h3><p>Su mejor vuelta de hoy (${fmt(rival.ms / 1000)}) saldrá como fantasma dorado en tu próxima sesión.</p><button type="button" data-act="norival" class="dy-lnk">Quitar fantasma</button></div>`;
   async function startKind(kind) {
     const ok = await begin(kind); if (!ok) { ctx.toast('Sin intentos disponibles'); hub(); return; }
     $('daily').classList.add('hidden'); document.body.classList.remove('in-daily'); const rv = rival; rival = null; ctx.startSession(kind, rv);
   }
   const ADS = [
-    { id: 'traced', logo: 'traced', name: 'Traced', url: 'https://ro-di-tracker.vercel.app/', kick: '⚠ ÚLTIMA HORA · GOLF', h: '¡TU BOLA DESAPARECE EN PLENO VUELO Y NADIE SABE POR QUÉ!', p: 'Traced dibuja la trayectoria de tu golpe sobre tu propio vídeo. Por fin sabrás dónde acabó esa bola que «iba recta».', cta: 'PROBAR TRACED ›', foot: '*Traced no garantiza que tu bola llegue al green. Solo que verás con todo detalle cómo no llegó.' },
-    { id: 'palomapp', logo: 'palomapp', name: 'PalomApp', url: 'https://urlife-zeta.vercel.app/', kick: '🚨 ALERTA FINANCIERA', h: '¡TU SUELDO SE ESCAPA VOLANDO Y PALOMA LO SABE!', p: 'PalomApp: la única Paloma que vigila tus euros. Gastos, tareas y cuentas claras, sin que nadie te pique.', cta: 'ABRIR PALOMAPP ›', foot: '*El 100 % de los usuarios deja de preguntarse a dónde fue el dinero. Estudio realizado por Paloma.' },
+    { id: 'traced', logo: 'traced', name: 'Traced', url: 'https://ro-di-tracker.vercel.app/', kick: 'ÚLTIMA HORA · GOLF', h: '¡TU BOLA DESAPARECE EN PLENO VUELO Y NADIE SABE POR QUÉ!', p: 'Traced dibuja la trayectoria de tu golpe sobre tu propio vídeo. Por fin sabrás dónde acabó esa bola que «iba recta».', cta: 'PROBAR TRACED ›', foot: '*Traced no garantiza que tu bola llegue al green. Solo que verás con todo detalle cómo no llegó.' },
+    { id: 'palomapp', logo: 'palomapp', name: 'PalomApp', url: 'https://urlife-zeta.vercel.app/', kick: 'ALERTA FINANCIERA', h: '¡TU SUELDO SE ESCAPA VOLANDO Y PALOMA LO SABE!', p: 'PalomApp: la única Paloma que vigila tus euros. Gastos, tareas y cuentas claras, sin que nadie te pique.', cta: 'ABRIR PALOMAPP ›', foot: '*El 100 % de los usuarios deja de preguntarse a dónde fue el dinero. Estudio realizado por Paloma.' },
   ];
   async function adFlow(n) {
     const o = $('dyAd'); o.classList.remove('hidden'); let prev = -1;
     for (let i = 1; i <= n; i++) {
       let k = Math.floor(Math.random() * ADS.length); if (k === prev) k = (k + 1) % ADS.length; prev = k; const a = ADS[k];
       const ok = await new Promise((res) => {
-        o.innerHTML = `<div class="dy-adbox ad-${a.id}"><div class="ad-top"><small>ANUNCIO ${i}/${n}</small><button type="button" class="ad-x" id="adX" aria-label="Salir">✕</button></div><img class="ad-logo" src="./assets/logos/${a.logo}.webp" alt="${a.name}"><em>${a.kick}</em><b>${a.h}</b><p>${a.p}</p><a class="ad-cta" href="${a.url}" target="_blank" rel="noopener noreferrer">${a.cta}</a><small class="ad-foot">${a.foot}</small><button type="button" class="dy-btn ad-next" id="adNext" disabled>CONTINÚA EN 5</button></div>`;
+        o.innerHTML = `<div class="dy-adbox ad-${a.id}"><div class="ad-top"><small>ANUNCIO ${i}/${n}</small><button type="button" class="ad-x" id="adX" aria-label="Salir">${ic('x')}</button></div><img class="ad-logo" src="./assets/logos/${a.logo}.webp" alt="${a.name}"><em>${a.kick}</em><b>${a.h}</b><p>${a.p}</p><a class="ad-cta" href="${a.url}" target="_blank" rel="noopener noreferrer">${a.cta}</a><small class="ad-foot">${a.foot}</small><button type="button" class="dy-btn ad-next" id="adNext" disabled>CONTINÚA EN 5</button></div>`;
         let left = 5; const nx = $('adNext'); const iv = setInterval(() => { left--; if (left > 0) nx.textContent = 'CONTINÚA EN ' + left; else { clearInterval(iv); nx.disabled = false; nx.textContent = i === n ? 'CONSEGUIR INTENTO EXTRA' : 'SIGUIENTE ANUNCIO'; } }, 1000);
         nx.onclick = () => { clearInterval(iv); res(true); }; $('adX').onclick = () => { clearInterval(iv); res(false); };
       });
@@ -250,13 +270,13 @@ export function createDaily(ctx) {
     if (a === 'practice' || a === 'official') return startKind(a);
     if (a === 'wa-result' || a === 'wa-challenge') {
       const t = ctx.track, c = ctx.car, circ = t.th.name.replace(/ · .*$/, ''), u = acc_user();
-      const txt = a === 'wa-result' && st.best ? `🏁 Reto del día de Drift Rush: ${fmt(st.best.ms / 1000)} en ${circ} con el ${c.name}. ¿Me ganas? Mismo coche y circuito para todos, solo un intento oficial.` : `🏎️ Hoy el reto de Drift Rush es ${circ} con el ${c.name}. Mismo coche para todos: ¡a ver quién hace mejor tiempo!`;
+      const txt = a === 'wa-result' && st.best ? `Reto del día de Daily Lapp: ${fmt(st.best.ms / 1000)} en ${circ} con el ${c.name}. ¿Me ganas? Mismo coche y circuito para todos, solo un intento oficial.` : `Hoy el reto de Daily Lapp es ${circ} con el ${c.name}. Mismo coche para todos: ¡a ver quién hace mejor tiempo!`;
       waShare(txt, inviteUrl(u)); return;
     }
     if (a === 'profile') { close(); $('profBtn').click(); return; }
     if (a === 'ad-practice' || a === 'ad-official') { const kind = a.slice(3), n = kind === 'practice' ? 1 : 2; b.disabled = true; const okAd = await adFlow(n); if (okAd) await grantAd(kind); renderHero(); hub(); }
   });
-  $('dailyCard').onclick = () => open(false); $('dailyBtn').onclick = () => open(false); $('dyAllBoard').onclick = () => { tab = 'global'; open(true); };
+  $('dailyCard').addEventListener('pointerdown', () => { prefetch(); if (ctx.warmGlobe) ctx.warmGlobe(); if (!dg && ctx.createGlobe) dg = ctx.createGlobe($('dyGlobe')); }, { passive: true }); $('dailyCard').onclick = () => open(false); $('dailyBtn').onclick = () => open(false); $('dyAllBoard').onclick = () => { tab = 'global'; open(true); };
   acc.onChange(() => { boardRows = null; sync(); });
   setInterval(() => {
     if (dailyKeyNow() !== key && !document.body.classList.contains('racing')) { location.reload(); return; }

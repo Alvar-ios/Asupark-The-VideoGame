@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { lp, lpBlock } from './loader.js';
+import { ic } from './icons.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { THEMES, THEME_LIST } from './themes.js';
 import { waShare, inviteUrl, WA_ICON } from './share.js';
@@ -15,7 +17,7 @@ import { buildSpeedProfile, aiInput, benchmark, aiType, AI_TOP } from './ai.js';
 import { buildWorld, disposeScene, updateWind } from './world.js';
 import { Sound } from './audio.js';
 import { SONGS } from './music.js';
-import { createGlobe } from './globe.js';
+import { createGlobe, warmGlobe } from './globe.js';
 import { addHeadlights, updateHeadlights } from './headlights.js';
 import { SURF } from './surface.js';
 import { Leaderboard } from './leaderboard.js';
@@ -254,7 +256,7 @@ function buildMap() {
   const here = tracks.map((t, i) => [t, i]).filter(([t]) => t.key !== 'daily' && contOf(t) === activeC);
   globe.focus(activeC.ll[0], activeC.ll[1], activeC.z);
   globe.setPins(tracks.map((t, i) => t.key === 'daily' ? null : t).map((t, i) => !t ? null : { t, i }).filter(Boolean).map(({ t, i }) => { const ll = MAP_LL[t.th.id] || MAP_LL.pruebas, daily = t.key === 'daily'; return { lat: ll[0] + (daily ? .7 : 0), lon: ll[1] + (daily ? .9 : 0), on: i === sel.track, title: t.name, label: t.name.replace(/ · .*$/, '').replace(/^Circuito de /, ''), html: flagSvg(countryOf(t)[0]), onClick: () => pick(i) }; }));
-  $('contPanel').innerHTML = `<div class="cp-tabs">${CONTS.map((c) => `<button type="button" data-c="${c.id}" class="${c === activeC ? 'on' : ''}">${c.name}</button>`).join('')}</div>` + here.map(([t, i]) => `<button type="button" class="cp-row${i === sel.track ? ' on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span><span>${t.key === 'daily' ? 'Pista del día' : t.name}<small>${countryOf(t)[1]} · ${(t.tr.len / 1000).toFixed(1)} km</small></span>${t.key === 'daily' ? '<b>★</b>' : ''}</button>`).join('');
+  $('contPanel').innerHTML = `<div class="cp-tabs">${CONTS.map((c) => `<button type="button" data-c="${c.id}" class="${c === activeC ? 'on' : ''}">${c.name}</button>`).join('')}</div>` + here.map(([t, i]) => `<button type="button" class="cp-row${i === sel.track ? ' on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span><span>${t.key === 'daily' ? 'Pista del día' : t.name}<small>${countryOf(t)[1]} · ${(t.tr.len / 1000).toFixed(1)} km</small></span>${t.key === 'daily' ? '<b>' + ic('star') + '</b>' : ''}</button>`).join('');
   $('contPanel').querySelectorAll('.cp-tabs button').forEach((b) => { b.onclick = () => { wmCont = b.dataset.c; buildMap(); }; });
   $('contPanel').querySelectorAll('.cp-row').forEach((b) => { b.onclick = () => pick(+b.dataset.i); });
   const t = tracks[sel.track], [cc, cname] = countryOf(t), env = envLabel(t); let best = null; for (const cc2 of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc2.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = r; }
@@ -531,7 +533,7 @@ async function startRace(restart = false) {
   if (S.mode === 'race') { if (gpMode) S.rivalTypes = S.gp.field.map((f) => f.rt); else if (!restart || !S.rivalTypes) S.rivalTypes = pickRivals(S.nRiv); }
   if (gpMode && S.gp.phase === 'quali') CARS.filter((c) => c.group === CARS[sel.car].group).forEach((r) => loadCarAsset(r, false).catch(() => {})); // los rivales se van cargando mientras clasificas
   const button = $('startBtn'), previousLabel = button.textContent, status = $('modelStatus');
-  button.disabled = true; button.textContent = 'CARGANDO COCHES…'; status.hidden = true;
+  button.disabled = true; button.classList.add('ld-btn'); button.innerHTML = lp(18) + 'CARGANDO COCHES…'; status.hidden = true;
   const pt = CARS[sel.car], pool = CARS.filter((_, i) => i !== sel.car);
   const need = [pt, ...(S.mode === 'race' ? S.rivalTypes : [])]; // los mismos rivales que luego se crean (antes no coincidían y la carrera se quedaba en «cargando»)
   try { await ensureModels(need, pt); }
@@ -764,13 +766,13 @@ async function radarCars(fastType, pool) {
   const mk = (t, col) => buildCarMesh(col, t.kind, 'lo', 2 + Math.floor(Math.random() * 90));
   return { fast: mk(fastType, '#' + new THREE.Color(fastType.color).getHexString()), traffic: pool.map((t, i) => mk(t, cols[i % cols.length])) };
 }
-D = createDaily({ groupName, radarCars, $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession, muted: () => !!sel.mute, volume: () => clamp(+sel.vol.master, 0, 1),
+D = createDaily({ groupName, radarCars, $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, warmGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession, muted: () => !!sel.mute, volume: () => clamp(+sel.vol.master, 0, 1),
   get track() { return tracks.find((t) => t.key === 'daily'); }, get car() { return CARS[DAILY_CAR]; }, get baseCar() { return CARS[BASE_CAR]; }, setCar(id) { const i = CARS.findIndex((c) => c.id === id); DAILY_CAR = i >= 0 ? i : BASE_CAR; } });
 $('shareBtn').innerHTML = WA_ICON + 'COMPARTIR POR WHATSAPP';
 $('shareBtn').onclick = () => {
   const p = S.player, ti = S.trackInfo, circ = ti ? ti.th.name.replace(/ · .*$/, '') : '', car = p ? p.type.name : '', big = $('rBig').textContent, title = $('rTitle').textContent;
-  const isTime = /^\d+:\d/.test(big), line = isTime ? `⏱️ ${big} en ${circ} con el ${car}` : `🏁 ${title} (${big}) en ${circ} con el ${car}`;
-  waShare(`${line} en Drift Rush. ¿Me ganas?`, inviteUrl(acc.username));
+  const isTime = /^\d+:\d/.test(big), line = isTime ? `${big} en ${circ} con el ${car}` : `${title} (${big}) en ${circ} con el ${car}`;
+  waShare(`${line} en Daily Lapp. ¿Me ganas?`, inviteUrl(acc.username));
 };
 $('againBtn').onclick = () => { if (S.gp && S.gp.phase === 'quali' && S.state === 'finished') S.gp.phase = 'race'; startRace(true); };
 const toMenu = () => { HB.at = 0; if (S.daily && !S.daily.done) { endDaily(); return; } if (S.prevSel) { Object.assign(sel, S.prevSel); S.prevSel = null; } setView('home'); S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; };
@@ -1094,7 +1096,7 @@ function showResults() {
   } else {
     const md = medalFor(S.lapPB, benchLap);
     $('rBig').textContent = S.lapPB != null ? fmt(S.lapPB) : '—'; $('rTitle').textContent = S.lapPB != null ? (md ? md + ' · ' : '') + 'TU MEJOR VUELTA' : 'SESIÓN TERMINADA';
-    rows.push('<tr class="gap"><td colspan="4">Cargando clasificación…</td></tr>'); fillResultsBoard();
+    rows.push('<tr class="gap"><td colspan="4">' + lp(20) + '</td></tr>'); fillResultsBoard();
     const st = streakInfo();
     if (S.trackInfo.key === 'daily') extra = `<div class="streak">Racha: ${st.n} día${st.n === 1 ? '' : 's'}</div>`;
   }
@@ -1361,7 +1363,7 @@ const HB = { key: '', at: 0, res: null, token: 0 };
 async function renderHomeBoard() {
   const ti = tracks[sel.track], car = CARS[sel.car], g = groupIdOfCar(car.id), token = ++HB.token, tb = $('hbTable');
   $('hbCtx').textContent = ti.name.replace(/ · .*$/, '') + ' · ' + groupName(g);
-  if (HB.key !== ti.key || Date.now() - HB.at > 30000 || !HB.res) { if (HB.key !== ti.key) tb.innerHTML = '<tr class="gap"><td colspan="4">Cargando…</td></tr>'; const res = await getRows(ti); if (token !== HB.token) return; HB.key = ti.key; HB.at = Date.now(); HB.res = res; }
+  if (HB.key !== ti.key || Date.now() - HB.at > 30000 || !HB.res) { if (HB.key !== ti.key) tb.innerHTML = '<tr class="gap"><td colspan="4">' + lp(20) + '</td></tr>'; const res = await getRows(ti); if (token !== HB.token) return; HB.key = ti.key; HB.at = Date.now(); HB.res = res; }
   const list = rankRows(HB.res.rows, (r) => groupIdOfCar(r.carId) === g), shown = list.filter((r) => r.rank <= 5 || r.you), out = [];
   shown.forEach((r, i) => { if (i && r.rank - shown[i - 1].rank > 1) out.push('<tr class="gap"><td colspan="4">···</td></tr>'); out.push(boardRow2(r, list[0].ms)); });
   tb.innerHTML = out.join('') || `<tr class="gap"><td colspan="4">${HB.res.error ? 'Sin conexión con la clasificación' : 'Aún no hay tiempos aquí. ¡Pon el primero!'}</td></tr>`;
@@ -1404,11 +1406,11 @@ const openSettings = () => { buildSettings(); $('settings').classList.remove('hi
 let songTimer = 0;
 function renderSongs() {
   const cur = sound.music && sound.music.playing ? sound.music.songIdx : -1;
-  $('songList').innerHTML = SONGS.map((sg, i) => `<button type="button" data-i="${i}" class="${i === cur ? 'on' : ''}"><i>${i === cur ? '♪' : i + 1}</i><b>${sg.name}</b><small>${sg.author ? sg.author : { chill: 'Chill', house: 'House jazz', robots: 'Robots', synthwave: 'Synthwave' }[sg.tag] || 'Fusión 80s'}</small></button>`).join('');
+  $('songList').innerHTML = SONGS.map((sg, i) => `<button type="button" data-i="${i}" class="${i === cur ? 'on' : ''}"><i>${i === cur ? ic('note') : i + 1}</i><b>${sg.name}</b><small>${sg.author ? sg.author : { chill: 'Chill', house: 'House jazz', robots: 'Robots', synthwave: 'Synthwave' }[sg.tag] || 'Fusión 80s'}</small></button>`).join('');
 }
 let songToastT = 0, curSong = null;
 function updateNowPlaying() { const el = $('nowPlaying'); if (!el) return; const show = curSong && !sel.mute && sel.vol.music > 0.001; el.hidden = !show; if (show) { el.querySelector('b').textContent = curSong.name; el.querySelector('small').textContent = curSong.author; } }
-sound.onSong = (sg) => { curSong = sg; updateNowPlaying(); if (sel.mute || !(sel.vol.music > 0.001)) return; const t = $('songToast'); t.innerHTML = `<i>♪</i><b>${sg.name}</b><small>${sg.author}</small>`; t.classList.add('on'); clearTimeout(songToastT); songToastT = setTimeout(() => t.classList.remove('on'), 4200); if (!$('musicPick').classList.contains('hidden')) renderSongs(); };
+sound.onSong = (sg) => { curSong = sg; updateNowPlaying(); if (sel.mute || !(sel.vol.music > 0.001)) return; const t = $('songToast'); t.innerHTML = `<i>${ic('note')}</i><b>${sg.name}</b><small>${sg.author}</small>`; t.classList.add('on'); clearTimeout(songToastT); songToastT = setTimeout(() => t.classList.remove('on'), 4200); if (!$('musicPick').classList.contains('hidden')) renderSongs(); };
 $('nowPlaying').onclick = () => $('musicBtn').click();
 $('musicBtn').onclick = () => { sound.init(); renderSongs(); $('musicPick').classList.remove('hidden'); clearInterval(songTimer); songTimer = setInterval(renderSongs, 1500); };
 $('songList').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; sound.init(); if (sound.music) { sound.music.choose(+b.dataset.i); setTimeout(renderSongs, 120); } };
@@ -1588,6 +1590,7 @@ initHome({ $, acc, esc, LG, PF });
 initPwa({ $, store });
 initPush({ $, acc, esc });
 initUx({ $, acc });
+{ const bt = $('boot'); if (bt) { bt.className = 'out'; setTimeout(() => bt.remove(), 450); } warmGlobe(); }
 // enlace de invitación ?add=usuario: añade al amigo al entrar (o en cuanto inicies sesión)
 { const q = new URLSearchParams(location.search).get('add'); if (q) { try { history.replaceState(null, '', location.pathname); } catch (_) {} let pend = q;
   const tryAdd = async () => { if (!pend || !acc.profile || pend.toLowerCase() === (acc.username || '').toLowerCase()) return; const u = pend; pend = null; try { await acc.addFriend(u); toast(`Solicitud enviada a @${u}`); } catch (e) { toast(acc.explain(e)); } };

@@ -1,5 +1,6 @@
 // Notificaciones push: avisos de adelantamientos, nuevo reto y recordatorio. Las envía la función send-push de Supabase (Web Push + VAPID).
 import { isStandalone, isIOS } from './pwa.js';
+import { ic } from './icons.js';
 const DEF = { overtaken: true, reminder: true, newday: true };
 const LABEL = { overtaken: 'Cuando me quiten el liderato', newday: 'Nuevo reto cada mañana', reminder: 'Recordatorio si no he corrido' };
 const b64 = (s) => { const p = '='.repeat((4 - (s.length % 4)) % 4), r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(r, (c) => c.charCodeAt(0)); };
@@ -51,7 +52,7 @@ export function initPush({ $, acc, esc }) {
     await refresh();
     const dismissed = (() => { try { return Date.now() < +JSON.parse(localStorage.getItem('dr.pushHide') || '0'); } catch (_) { return false; } })();
     if (!supported() || !acc.loggedIn || (S.sub && S.prefs) || dismissed || (typeof Notification !== 'undefined' && Notification.permission === 'denied')) { card.classList.add('hidden'); return; }
-    card.innerHTML = '<span>🔔</span><div><b>Activa los avisos</b><small>Te avisamos si te quitan el liderato, del nuevo reto y de tu racha.</small></div><button type="button" data-i="go">Activar</button><button type="button" class="x" data-i="x" aria-label="Ocultar">✕</button>';
+    card.innerHTML = '<span class="hm-ic">' + ic('bell') + '</span><div><b>Activa los avisos</b><small>Te avisamos si te quitan el liderato, del nuevo reto y de tu racha.</small></div><button type="button" data-i="go">Activar</button><button type="button" class="x" data-i="x" aria-label="Ocultar">' + ic('x') + '</button>';
     card.classList.remove('hidden');
   }
   if (card) card.addEventListener('click', async (e) => {

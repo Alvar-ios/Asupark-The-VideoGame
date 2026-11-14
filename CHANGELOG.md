@@ -2,6 +2,14 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.91
+- Nueva marca **Daily Lapp**: logo, wordmark, iconos de la app (PWA), favicon y nombre en toda la app.
+- Iconos propios en lugar de emojis; superficies planas y botones sin degradados ni brillos para quitar el aspecto genérico.
+- Carga con animación basada en el logo (arranque, botones, tablas, radar y globo).
+- Inicio rediseñado en tres bloques: Hoy, Tus ligas y Más modos. Muestra todas tus ligas con temporada, día, posición, puntos, si has corrido hoy y el campeón anterior.
+- El reto del día ya no enseña circuito ni coche hasta que los descubres al entrar.
+- Globo y radar más ligeros: textura precalentada, menos geometría y resolución limitada.
+
 ## 0.0.90
 - Experiencia pulida (recomendaciones de diseño):
   - Esqueletos de carga con la forma del contenido (ligas, liga, chat, reto, perfil, clasificación) en lugar de «Cargando…».
