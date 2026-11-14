@@ -9,6 +9,7 @@ import { initHome } from './home.js';
 import { initPwa } from './pwa.js';
 import { initPush } from './push.js';
 import { initUx, toastEl } from './ux.js';
+import { initUiToggle } from './uimode.js';
 import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS, DAILY_LOCK_DAY } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo, isKartKind } from './car.js';
@@ -89,7 +90,7 @@ for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco' && k !== 'spa'
 
 const BASE_CAR = Math.max(0, CARS.findIndex((c) => c.id === dailyPick.car)); let DAILY_CAR = BASE_CAR; // el mismo coche y circuito para todos cada día (cambia a las 4:00 de Madrid)
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
-const sel = { track: 0, mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, touchMode: 'halves', ctlV: 2, colors: {}, vol: { master: 1, music: 0.7, engine: 0.65 }, gfx: 'auto' };
+const sel = { track: 0, mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, touchMode: 'halves', ctlV: 2, colors: {}, vol: { master: 1, music: 0.5, engine: 0.2 }, gfx: 'auto' };
 const paintOf = (c) => { const v = sel.colors[c.id]; if (v && c.freeColor && /^#[0-9a-f]{6}$/i.test(v)) return v; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
 const kartNum = () => { const n = parseInt(sel.kartNum, 10); return n >= 0 && n <= 99 ? n : 7; };
 const halvesOn = () => MOBILE && sel.touchMode === 'halves'; // el control por mitades solo existe en pantallas táctiles
@@ -150,7 +151,7 @@ if (!store.get('purge.f0-reverse-2026-11-05')) {
   } catch (e) { /* sin almacenamiento */ }
   store.set('purge.f0-reverse-2026-11-05', true);
 }
-if (saved) { for (const k of ['camDist', 'camH']) if (typeof saved[k] === 'number') sel[k] = Math.min(1.4, Math.max(0.3, saved[k])); sel.raceMusic = !!saved.raceMusic; if (saved.vol) sel.vol = { ...sel.vol, ...saved.vol }; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
+if (saved) { sel.raceMusic = !!saved.raceMusic; sel.music = saved.music !== false; if (['auto', 'high', 'medium', 'low'].includes(saved.gfx)) sel.gfx = saved.gfx; }
 
 // ----- pilotos de la IA: nombre, país y nivel (de mejor a peor); en cada carrera se reparten al azar entre los coches rivales -----
 const DRIVERS = [
@@ -303,15 +304,14 @@ function buildMenu() {
   for (const b of $('modeSel').children) b.classList.toggle('on', b.dataset.v === sel.mode);
   for (const b of $('diffSel').children) b.classList.toggle('on', +b.dataset.v === sel.diff);
   buildPaints(); sound.setMuted(!!sel.mute); $('sndBtn').classList.toggle('on', !sel.mute); $('sndBtn').textContent = 'Sonido: ' + (sel.mute ? 'NO' : 'SÍ');
+  $('musicOnBtn').classList.toggle('on', sel.music !== false); $('musicOnBtn').textContent = 'Música: ' + (sel.music !== false ? 'SÍ' : 'NO');
   $('raceMusicBtn').classList.toggle('on', !!sel.raceMusic); $('raceMusicBtn').textContent = 'Música al conducir: ' + (sel.raceMusic ? 'SÍ' : 'NO');
   $('autoGas').classList.toggle('on', sel.autoGas); $('autoGas').textContent = 'Acelerador automático: ' + (sel.autoGas ? 'SÍ' : 'NO');
 }
 $('raceMusicBtn').onclick = () => { sel.raceMusic = !sel.raceMusic; store.set('sel', sel); buildMenu(); };
-// fantasmas de la contrarreloj: gris (tu mejor vuelta) y dorado (la mejor del circuito), activables por separado (por defecto, activados)
-$('ghostMineBtn').classList.toggle('on', sel.ghostMine !== false); $('ghostMineBtn').textContent = 'Fantasma gris (tu mejor de la categoría): ' + (sel.ghostMine !== false ? 'SÍ' : 'NO');
-$('ghostBestBtn').classList.toggle('on', sel.ghostBest !== false); $('ghostBestBtn').textContent = 'Fantasma dorado (mejor de la categoría): ' + (sel.ghostBest !== false ? 'SÍ' : 'NO');
-$('ghostMineBtn').onclick = () => { sel.ghostMine = sel.ghostMine === false; store.set('sel', sel); buildMenu(); };
-$('ghostBestBtn').onclick = () => { sel.ghostBest = sel.ghostBest === false; store.set('sel', sel); buildMenu(); };
+// volumen fijo y estándar: motor al 20 % y música al 50 %; solo se elige si suena la música
+const applyVol = () => { sel.vol = { master: 1, music: sel.music === false ? 0 : 0.5, engine: 0.2 }; sound.setVolumes(sel.vol); };
+$('musicOnBtn').onclick = () => { sel.music = sel.music === false; store.set('sel', sel); sound.init(); applyVol(); buildMenu(); updateNowPlaying(); };
 $('sndBtn').onclick = () => { sel.mute = !sel.mute; store.set('sel', sel); buildMenu(); };
 function buildPaints() {
   const box = $('paints'); box.innerHTML = '';
@@ -1395,11 +1395,8 @@ lb.flush();
 // ---------- ajustes ----------
 function buildSettings() {
   $('pname').value = lb.name; buildHelmetEditor();
-  for (const k of ['master', 'music', 'engine']) { $('v_' + k).value = Math.round(sel.vol[k] * 100); $('vt_' + k).textContent = Math.round(sel.vol[k] * 100) + '%'; }
   for (const b of $('gfxSel').children) b.classList.toggle('on', b.dataset.v === sel.gfx);
 }
-for (const k of ['camDist', 'camH']) { const dv = { camDist: 0.82, camH: 0.72 }[k]; $('v_' + k).value = Math.round((sel[k] == null ? dv : sel[k]) * 100); $('vt_' + k).textContent = $('v_' + k).value + '%'; $('v_' + k).oninput = (e) => { sel[k] = e.target.value / 100; $('vt_' + k).textContent = e.target.value + '%'; store.set('sel', sel); }; }
-for (const k of ['master', 'music', 'engine']) $('v_' + k).oninput = (e) => { sel.vol[k] = e.target.value / 100; $('vt_' + k).textContent = e.target.value + '%'; sound.init(); sound.setVolumes(sel.vol); store.set('sel', sel); if (k === 'music') updateNowPlaying(); };
 $('gfxSel').onclick = (e) => { if (e.target.dataset.v) { sel.gfx = e.target.dataset.v; store.set('sel', sel); applyGfx(); buildSettings(); } };
 const openSettings = () => { buildSettings(); $('settings').classList.remove('hidden'); };
 // selector de música
@@ -1561,7 +1558,7 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 buildMenu();
-applyGfx(); sound.setVolumes(sel.vol); sound.setMuted(!!sel.mute);
+applyGfx(); applyVol(); sound.setMuted(!!sel.mute);
 // miniaturas de los coches para el selector (se generan con tools/thumbs.cjs y se guardan en assets/thumbs)
 async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62, fov = 24, pose = null) {
   const type = CARS.find((c) => c.id === id); await loadCarAsset(type, true);
@@ -1585,11 +1582,11 @@ async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62
 const PF = initProfile({ $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt });
 acc.onChange(() => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; try { buildHelmetEditor(); } catch (_) {} });
 acc.restore();
-const LG = initLeagues({ $, acc, esc, fmt, flagSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/ · .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
+const LG = initLeagues({ $, acc, esc, fmt, flagSvg, helmetSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/ · .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
 initHome({ $, acc, esc, LG, PF });
 initPwa({ $, store });
 initPush({ $, acc, esc });
-initUx({ $, acc });
+initUx({ $, acc }); initUiToggle();
 { const bt = $('boot'); if (bt) { bt.className = 'out'; setTimeout(() => bt.remove(), 450); } warmGlobe(); }
 // enlace de invitación ?add=usuario: añade al amigo al entrar (o en cuanto inicies sesión)
 { const q = new URLSearchParams(location.search).get('add'); if (q) { try { history.replaceState(null, '', location.pathname); } catch (_) {} let pend = q;

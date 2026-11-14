@@ -3,17 +3,18 @@
 import { waShare, baseUrl, waBtn } from './share.js';
 import { ic } from './icons.js';
 import { sk, vt, undoable } from './ux.js';
+import { isUi2, onUi } from './uimode.js';
 
 const PTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 export const leagueUrl = (code) => baseUrl() + '?liga=' + encodeURIComponent(code);
 
 export function initLeagues(ctx) {
-  const { $, acc, esc, fmt, flagSvg, toast, dailyFor, daily } = ctx;
+  const { $, acc, esc, fmt, flagSvg, helmetSvg, toast, dailyFor, daily } = ctx;
   const S = { view: 'list', id: null, tab: 'tabla', season: null, state: null, list: null, msg: '', chatSig: '', rx: null, recap: undefined, poll: null, busy: false, hidden: new Set(), pend: [], msgs: [], over: new Map() };
   const body = () => $('lgBody');
   // Escritura de la vista: transición suave al cambiar de pantalla/pestaña, directa en refrescos; conserva lo que se está escribiendo.
   const paint = { set innerHTML(h) {
-    const el = body(), key = S.view + '|' + S.tab + '|' + S.id + '|' + S.season, nav = key !== S.paintKey; S.paintKey = key;
+    const el = body(), key = S.view + '|' + S.tab + '|' + S.id + '|' + S.season, nav = key !== S.paintKey; S.paintKey = key; $('leagues').dataset.v = S.view; $('leagues').dataset.t = S.tab;
     const keep = ['lgName', 'lgCode', 'lgMsgIn'].map((id) => [id, $(id) && $(id).value]);
     const put = () => { el.innerHTML = h; for (const [id, v] of keep) if (v && $(id)) $(id).value = v; };
     if (nav && el.firstElementChild) S.p = vt(put); else { S.p = null; put(); }
@@ -29,7 +30,7 @@ export function initLeagues(ctx) {
 
   // ---------- listado de mis ligas ----------
   const listHtml = () => {
-    const card = (l) => `<button class="lg-card" data-open="${l.id}" type="button"><div class="lg-pos">${l.pos ? 'P' + l.pos : '–'}</div><div class="lg-info"><b>${esc(l.name)}</b><small>Temporada ${l.season} · ${l.members} piloto${l.members === 1 ? '' : 's'}</small></div><div class="lg-pts"><b>${l.pts}</b><small>PTS</small></div></button>`;
+    const card = (l) => `<button class="lg-card" data-open="${l.id}" type="button"><div class="lg-pos">${l.pos ? 'P' + l.pos : '–'}</div><div class="lg-info"><b>${esc(l.name)}</b><small>Temporada ${l.season}${l.days ? ` · día ${Math.min(l.day || 1, l.days)} de ${l.days}` : ''} · ${l.members} piloto${l.members === 1 ? '' : 's'}</small>${l.days ? `<u class="lgb"><s style="width:${Math.max(4, Math.min(100, Math.round((l.day || 1) / l.days * 100)))}%"></s></u>` : ''}</div><div class="lg-pts"><b>${l.pts}</b><small>PTS</small></div></button>`;
     const L = S.list.filter((l) => !S.hidden.has(l.id));
     return `${L.length ? L.map(card).join('') : '<p class="lg-note">Todavía no estás en ninguna liga. Crea una e invita a tus amigos: cada día puntúa el reto diario como un Gran Premio de F1.</p>'}
       <h3 class="lg-h">Crear una liga</h3><div class="lg-row"><input id="lgName" class="lg-in" maxlength="30" placeholder="Nombre (ej. Los del Grupo)"><button class="lg-btn sm" data-a="create" type="button">Crear</button></div>
@@ -61,7 +62,7 @@ export function initLeagues(ctx) {
       if (c && c.league && c.league.id === S.id) { S.state = c; S.season = c.league.season; S.fromCache = true; }
       else { paint.innerHTML = sk.league(); try { await load(); } catch (e) { S.msg = err(e); return listView(); } }
     }
-    const draw = () => (S.tab === 'chat' ? chatView() : S.tab === 'cal' ? calView() : S.tab === 'dias' ? daysView() : tableView());
+    const draw = () => (isUi2() ? (S.tab === 'cal' ? calView() : S.tab === 'dias' ? daysView() : v2View()) : S.tab === 'chat' ? chatView() : S.tab === 'cal' ? calView() : S.tab === 'dias' ? daysView() : tableView());
     const first = draw();
     if (S.fromCache) {   // se enseña lo guardado y se refresca en segundo plano
       S.fromCache = false; const id = S.id;
@@ -147,7 +148,7 @@ export function initLeagues(ctx) {
       const day = new Date(Date.parse(L.from + 'T12:00:00Z') + i * 864e5).toISOString().slice(0, 10), fut = day > L.today, isToday = day === L.today, info = !fut && dailyFor ? dailyFor(day) : null, d = byDay[day], w = d && d.rows[0];
       out.push(`<div class="lg-gp${isToday ? ' now' : ''}${fut ? ' fut' : ''}"><div class="gpn"><small>GP</small><b>${i + 1}</b></div><div class="gpi">${fut ? '<b>? ? ?</b><small>Se revela ese día</small>' : `<b>${info ? `<span class="flag sm">${flagSvg(info.flag)}</span> ${esc(info.name)}` : 'Reto del día'}</b><small>${esc(dayTxt(day))}${info ? ' · ' + esc(info.car) : ''}</small>`}</div><div class="gpw">${isToday ? '<span class="live">HOY</span>' : ''}${w ? `<small>${ic('trophy')}</small><b>${esc((mm[w.user_id] || {}).username || '?')}</b>` : fut ? '' : '<small>sin tiempos</small>'}</div></div>`);
     }
-    paint.innerHTML = `${head(L)}${seasonNav(L)}<div class="lg-cal">${out.join('')}</div>`;
+    paint.innerHTML = `${isUi2() ? v2Head(L) + v2Seg() : head(L)}${seasonNav(L)}<div class="lg-cal">${out.join('')}</div>`;
   }
   function daysView() {
     const { league: L, members, days } = S.state, mm = Object.fromEntries(members.map((m) => [m.user_id, m]));
@@ -160,7 +161,7 @@ export function initLeagues(ctx) {
       const miss = members.filter((m) => !played.has(m.user_id)).map((m) => esc(m.username));
       return `<div class="lg-day"><div class="lg-dh"><b>${esc(dayTxt(d.day))}</b>${live ? '<span class="live">HOY · PROVISIONAL</span>' : ''}</div>${rows}${miss.length ? `<p class="lg-miss">Sin tiempo: ${miss.join(', ')}</p>` : ''}</div>`;
     };
-    paint.innerHTML = `${head(L)}${seasonNav(L)}${days.length ? days.map(dayHtml).join('') : '<p class="lg-note">Aún no hay tiempos en esta temporada. Corre el reto diario y aparecerás aquí.</p>'}`;
+    paint.innerHTML = `${isUi2() ? v2Head(L) + v2Seg() : head(L)}${seasonNav(L)}${days.length ? days.map(dayHtml).join('') : '<p class="lg-note">Aún no hay tiempos en esta temporada. Corre el reto diario y aparecerás aquí.</p>'}`;
   }
 
   // ---------- chat ----------
@@ -172,6 +173,7 @@ export function initLeagues(ctx) {
   const feedHtml = (r) => (r.length ? r.map(msgHtml).join('') : '<p class="lg-note">Rompe el hielo: escribe el primer mensaje.</p>');
   function paintFeed(first) {
     const box = $('lgFeed'); if (!box) return; const all = (S.msgs || []).concat(S.pend || []);
+    if (isUi2()) { const sc = $('leagues'), near = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 90; box.innerHTML = all.length ? all.map(msg2).join('') : '<p class="l2-empty">Aún no hay mensajes. Rompe el hielo.</p>'; if (near && !first) sc.scrollTop = sc.scrollHeight; return; }
     const stick = first || box.scrollHeight - box.scrollTop - box.clientHeight < 70, top = box.scrollTop;
     box.innerHTML = feedHtml(all); box.scrollTop = stick ? box.scrollHeight : top;
   }
@@ -209,8 +211,81 @@ export function initLeagues(ctx) {
     catch (e) { S.over.delete(ok); m.rx = JSON.parse(prev); paintFeed(false); toast(err(e)); }
   }
 
+  // ---------- interfaz nueva: todo en una pantalla (cabecera de temporada, podio de hoy, chat o puntuación) ----------
+  const COLS = ['#E10600', '#111111', '#F5A623', '#2F80ED', '#18A957', '#8B5CF6', '#EC4899', '#7A7F87', '#0EA5A4', '#A0522D'];
+  const colorMap = () => { const m = {}; let k = 1; for (const s of S.state.standings) m[s.user_id] = s.user_id === me() ? COLS[0] : COLS[k++ % COLS.length]; for (const x of S.state.members) if (!m[x.user_id]) m[x.user_id] = x.user_id === me() ? COLS[0] : COLS[k++ % COLS.length]; return m; };
+  const av = (m, col, cls = '') => `<span class="av ${cls}" style="--c:${col || '#111'}">${helmetSvg ? helmetSvg((m && m.helmet) || 'e63946|ffffff|111827|1') : ''}</span>`;
+  const dd = (d) => new Date(d + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '');
+  const leftTxt = (L) => { if (L.season < L.current) return 'Terminada'; const n = Math.round((Date.parse(L.to) - Date.parse(L.today)) / 864e5); return n <= 0 ? 'Último día' : `Quedan ${n} día${n === 1 ? '' : 's'}`; };
+  const laurel = (flip) => `<svg class="laurel${flip ? ' r' : ''}" viewBox="0 0 24 48" aria-hidden="true"><path d="M17 45C7 38 4 26 8 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>${[10, 17, 24, 31, 38].map((y, i) => `<ellipse cx="${6 + i * 1.3}" cy="${y}" rx="2.4" ry="5" transform="rotate(${-40 + i * 6} ${6 + i * 1.3} ${y})" fill="currentColor"/><ellipse cx="${12 + i * .8}" cy="${y + 2}" rx="2.2" ry="4.6" transform="rotate(${42 - i * 4} ${12 + i * .8} ${y + 2})" fill="currentColor"/>`).join('')}</svg>`;
+  function v2Head(L) {
+    return `<div class="l2-top"><button class="l2-ic" data-a="back" type="button" aria-label="Mis ligas">${ic('back')}</button><button class="l2-ic${S.tab === 'cal' ? ' on' : ''}" data-t="cal" type="button" aria-label="Calendario">${ic('calendar')}</button><button class="l2-ic${S.tab === 'dias' ? ' on' : ''}" data-t="dias" type="button" aria-label="Tiempos por día">${ic('history')}</button><span class="l2-sp"></span><button class="l2-ic" data-a="invite" type="button" aria-label="Invitar">${ic('share')}</button></div>
+      <div class="l2-title"><b class="l2-name">${esc(L.name)}</b><div class="l2-ss">${laurel(0)}<span><b>TEMPORADA ${L.season}</b><small>${leftTxt(L)}</small></span>${laurel(1)}</div><em class="l2-dates">${ic('trophy')} ${dd(L.from)} – ${dd(L.to)}</em></div>`;
+  }
+  const v2Seg = () => `<div class="l2-seg" role="tablist"><button type="button" role="tab" data-t="chat" class="${S.tab === 'chat' ? 'on' : ''}">Chat</button><button type="button" role="tab" data-t="tabla" class="${S.tab === 'tabla' ? 'on' : ''}">Puntuación</button></div>`;
+  // podio: hoy (mejores tiempos) o, en una temporada cerrada, los tres primeros por puntos
+  function v2Podium(L, mm, col) {
+    const live = L.season === L.current, mine = S.state.standings.find((s) => s.user_id === me()), myPos = S.state.standings.indexOf(mine) + 1;
+    let top = [], who = [], best = null, label = 'Mejor de hoy';
+    if (live) {
+      const d = S.state.days.find((x) => x.day === L.today), rows = d ? d.rows : [];
+      top = rows.slice(0, 3).map((r) => ({ m: mm[r.user_id] || { username: '?' }, id: r.user_id, v: fmt(r.ms / 1000) }));
+      who = rows.map((r) => r.user_id); best = top[0] ? top[0] : null;
+    } else {
+      top = S.state.standings.filter((x) => x.days > 0).slice(0, 3).map((x) => ({ m: mm[x.user_id] || { username: '?' }, id: x.user_id, v: x.pts + ' pts' }));
+      best = top[0] || null; label = 'Campeón';
+    }
+    const stack = who.slice(0, 5).map((id) => av(mm[id], col[id], 'xs')).join('') + (who.length > 5 ? `<span class="av xs more">+${who.length - 5}</span>` : '');
+    const hero = `<div class="l2-hero"><svg class="l2-track" viewBox="0 0 320 150" aria-hidden="true"><path d="M60 118c-34 0-40-36-18-52l70-48c18-12 40-6 50 10l14 22c8 12 24 14 36 6l30-20c22-14 52 2 50 30-2 30-20 52-60 52z" fill="none" stroke="#2b2b2b" stroke-width="26" stroke-linejoin="round"/><path d="M60 118c-34 0-40-36-18-52l70-48c18-12 40-6 50 10l14 22c8 12 24 14 36 6l30-20c22-14 52 2 50 30-2 30-20 52-60 52z" fill="none" stroke="#E10600" stroke-width="26" stroke-dasharray="7 7" stroke-linejoin="round" opacity=".9"/><path d="M60 118c-34 0-40-36-18-52l70-48c18-12 40-6 50 10l14 22c8 12 24 14 36 6l30-20c22-14 52 2 50 30-2 30-20 52-60 52z" fill="none" stroke="#3a3a3a" stroke-width="18" stroke-linejoin="round"/></svg>
+      <div class="l2-hrow">${stack ? `<div class="l2-stack">${stack}</div>` : `<div class="l2-stack none">${live ? 'Hoy aún no ha corrido nadie' : ''}</div>`}<div class="l2-me"><b>${mine ? mine.pts : 0}</b><small>PTS</small><i></i><b>#${myPos || '–'}</b>${ic('trophy')}</div></div></div>`;
+    const ord = top.length === 3 ? [1, 0, 2] : top.length === 2 ? [1, 0] : top.length ? [0] : [];
+    const pods = ord.map((i) => { const x = top[i]; return `<div class="l2-pod p${i + 1}${x.id === me() ? ' me' : ''}">${i === 0 ? `<span class="l2-crown">${ic('crown')}</span>` : ''}${av(x.m, col[x.id], i === 0 ? 'xl' : 'lg')}<span class="l2-tp">${esc(x.v)}</span></div>`; }).join('');
+    const empty = live ? `<div class="l2-nobody"><p>Sé el primero en marcar tiempo hoy.</p><button class="l2-cta" data-a="daily" type="button">${ic('play')} Correr el reto</button></div>` : '';
+    const laur = best ? `<div class="l2-best">${laurel(0)}<span><small>${label}</small><b>${esc(best.m.username)}</b><em>${esc(best.v)}</em></span>${laurel(1)}</div>` : '';
+    return hero + (pods ? `<div class="l2-pods">${pods}</div>${laur}` : empty);
+  }
+  const msg2 = (m) => {
+    const mm = S.memo || {}, col = S.cols || {}, u = mm[m.user_id] || { username: m.username };
+    const tx = esc(String(m.body || '').replace(/^[^\p{L}@]+/u, '')).replace(/@(\S+)/g, '<b>$1</b>');
+    if (m.kind === 'sys') { const lead = /l[ií]der/i.test(m.body); return `<div class="l2-m sys${lead ? ' gold' : ''}">${av(u, col[m.user_id], 'sm')}<div class="l2-b">${lead ? ic('trophy') : ic('stopwatch')}<span><span>${tx}</span><small>${tm(m)}</small></span></div>${rxHtml(m)}</div>`; }
+    const mine = m.user_id === me();
+    return `<div class="l2-m${mine ? ' me' : ''}${m.pending ? ' pend' : ''}">${mine ? '' : av(u, col[m.user_id], 'sm')}<div class="l2-b">${mine ? '' : `<b class="l2-who">${esc(u.username)}</b>`}<span><span>${esc(m.body)}</span><small>${tm(m)}</small></span></div>${rxHtml(m)}</div>`;
+  };
+  function v2Chart(L, col) {
+    const st = S.state, dayIdx = (d) => Math.round((Date.parse(d) - Date.parse(L.from)) / 864e5) + 1;
+    const upto = L.season < L.current ? L.season_days : Math.min(L.season_days, dayIdx(L.today)), N = Math.min(L.season_days, Math.max(upto, 5));
+    const per = {}; for (const s of st.standings) per[s.user_id] = new Array(upto + 1).fill(0);
+    for (const d of st.days) { const i = dayIdx(d.day); if (i < 1 || i > upto) continue; d.rows.forEach((r, k) => { if (per[r.user_id]) per[r.user_id][i] += PTS[k] || 0; }); }
+    for (const id in per) { const a = per[id]; for (let i = 1; i <= upto; i++) a[i] += a[i - 1]; const s = st.standings.find((x) => x.user_id === id); if (s && s.pts > a[upto]) a[upto] = s.pts; }
+    const max = Math.max(25, ...Object.values(per).map((a) => a[upto])), top = Math.ceil(max / 50) * 50 || 50;
+    const W = 330, H = 190, x0 = 8, x1 = 290, y0 = 172, y1 = 14, X = (i) => x0 + (x1 - x0) * i / N, Y = (v) => y0 - (y0 - y1) * v / top;
+    const grid = [0, top / 2, top].map((v) => `<line x1="${x0}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${x1 + 8}" y="${Y(v) + 4}">${v}</text>`).join('') + [N / 3, 2 * N / 3].map((i) => `<line class="v" x1="${X(i)}" x2="${X(i)}" y1="${y1}" y2="${y0}"/>`).join('');
+    const ids = Object.keys(per).sort((a, b) => (a === me()) - (b === me()));
+    const lines = ids.map((id) => { const a = per[id], pts = a.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`); return `<g style="--c:${col[id]}"${id === me() ? ' class="me"' : ''}><polyline points="${pts.join(' ')}"/>${a.map((v, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="${i === upto ? 4 : 2.6}"/>`).join('')}</g>`; }).join('');
+    return `<div class="l2-chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Puntos acumulados por día">${grid}${lines}</svg><div class="l2-axis"><span>Día 1</span><span>${L.season < L.current ? 'Final' : upto === N ? 'Hoy · día ' + N : 'Día ' + N}</span></div></div>`;
+  }
+  function v2Points(L, mm, col) {
+    const { standings } = S.state, yl = S.state.lentorro;
+    const cards = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }, mine = s.user_id === me();
+      return `<div class="l2-card${mine ? ' me' : ''}" style="--c:${col[s.user_id]}">${av(m, col[s.user_id], 'lg')}<div class="l2-ci"><small><b>#${i + 1}</b>${mine ? '<em class="l2-you">TÚ</em>' : ''}${s.user_id === yl ? `<span class="l2-snail" title="Lentorro">${ic('snail')}</span>` : ''}${m.streak > 1 ? `<span class="l2-fire">${ic('flame')}${m.streak}</span>` : ''}</small><b>${esc(m.username)}</b><small>${s.wins} día${s.wins === 1 ? '' : 's'} ganado${s.wins === 1 ? '' : 's'}${s.best ? ' · mejor ' + fmt(s.best / 1000) : ''}</small></div><span class="l2-gem"><b>${s.pts}</b><small>PTS</small></span></div>`; }).join('');
+    return `${L.current > 1 ? seasonNav(L) : ''}${v2Chart(L, col)}<div class="l2-cards">${cards}</div>
+      ${yl && mm[yl] && L.season === L.current ? `<p class="l2-len">${ic('snail')} Lentorro: ${esc(mm[yl].username)} · hoy puede elegir coche</p>` : ''}
+      <div class="l2-inv"><div><small>Código de la liga</small><b>${esc(L.code)}</b></div><button class="l2-pill" data-a="copy" type="button">Copiar enlace</button></div>
+      <details class="l2-info"><summary>${ic('info')} Info</summary><p>Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto. Acertar quién gana el día suma +1. El Lentorro es quien menos puntos lleva y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p><button class="l2-pill danger" data-a="leave" type="button">Salir de la liga</button></details>`;
+  }
+  async function v2View() {
+    const L = S.state.league, mm = Object.fromEntries(S.state.members.map((m) => [m.user_id, m])), col = colorMap(); S.memo = mm; S.cols = col;
+    const pred = predHtml(L, mm), top = `${v2Head(L)}${v2Podium(L, mm, col)}${v2Seg()}`;
+    if (S.tab !== 'chat') { stopPoll(); paint.innerHTML = `${top}${v2Points(L, mm, col)}<div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`; S.msg = ''; return; }
+    S.chatSig = ''; S.rxOpen = null; S.msgs = S.msgs && S.msgsFor === S.id ? S.msgs : []; S.msgsFor = S.id; S.pend = S.pend || [];
+    paint.innerHTML = `${top}${pred}<div id="lgFeed" class="l2-feed"></div><div class="l2-in"><input id="lgMsgIn" maxlength="300" autocomplete="off" enterkeyhint="send" placeholder="Tu chat" aria-label="Mensaje para la liga"><button data-a="send" type="button" aria-label="Enviar">${ic('send')}</button></div>`;
+    await S.p; if (S.msgs.length) paintFeed(true); else $('lgFeed').innerHTML = sk.rows(4);
+    await pull(true); stopPoll(); S.poll = setInterval(() => pull(false), 4000);
+  }
+  onUi(() => { if (!open()) return; if (S.view === 'league' && S.state) leagueView(); else listView(); });
+
   // ---------- acciones ----------
-  async function enter(id, season) { S.id = id; S.state = null; S.tab = 'tabla'; S.season = null; S.recap = undefined; if (season) { try { await load(season); } catch (_) { /* se carga la actual */ } } await leagueView(); }
+  async function enter(id, season) { S.id = id; S.state = null; S.tab = isUi2() ? 'chat' : 'tabla'; S.season = null; S.recap = undefined; if (season) { try { await load(season); } catch (_) { /* se carga la actual */ } } await leagueView(); }
   async function join(code) {
     const l = await acc.rpc('league_join', { p_code: code }); S.list = null; return l;
   }
@@ -239,6 +314,7 @@ export function initLeagues(ctx) {
     if (a === 'create') return create();
     if (a === 'join') return doJoin($('lgCode').value);
     if (a === 'send') return send();
+    if (a === 'daily') { close(); const dc = $('dailyCard'); if (dc) dc.click(); return; }
     if (a === 'recap') return shareRecap();
     if (a === 'profile') { $('leagues').classList.add('hidden'); stopPoll(); const pb = $('profBtn'); if (pb) pb.click(); return; }
     if (a === 'copy') return copy(leagueUrl(S.state.league.code));

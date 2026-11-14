@@ -26,6 +26,15 @@ const P = {
   chart: '<path d="M6 20V11M12 20V4M18 20v-6"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/>',
   snail: '<circle cx="14.5" cy="10" r="5.5"/><path d="M14.5 10a2 2 0 1 1-2-2"/><path d="M2.5 19.5h16.5a2.5 2.5 0 0 0 0-5H9c-3 0-4 3-6.500 5z"/><path d="M4.2 16.2V12.5M6.8 15.7V12.5"/>',
+  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+  send: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  history: '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4M12 8v4l3 2"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l3 3"/>',
+  play: '<path d="M8 5.5v13l11-6.5z"/>',
 };
 export const ic = (n, cls = '') => `<svg class="ic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${P[n] || ''}</svg>`;
 export const ICONS = P;

@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.92
+- Nueva interfaz más simple y «cartoon» (rojo, negro y blanco) que convive con la actual: el botón Clásica / Nueva del inicio (y de Ajustes) cambia entre las dos al momento y se recuerda.
+- Ligas en la interfaz nueva: todo en una pantalla, con temporada y días que quedan, podio de hoy con tiempos, mejor del día y Chat / Puntuación. La puntuación tiene gráfica de puntos por día y tarjetas por piloto con puntos, días ganados y mejor tiempo.
+- Inicio en la interfaz nueva: reto del día y ligas arriba, modos en fichas grandes y barra inferior blanca.
+- Ajustes simplificados: volumen fijo (motor 20 %, música 50 %) con interruptores de sonido, música y música al conducir; fuera las barras de volumen y de cámara y la opción de quitar fantasmas. Nombre, bandera y casco pasan a Perfil.
+
 ## 0.0.91
 - Nueva marca **Daily Lapp**: logo, wordmark, iconos de la app (PWA), favicon y nombre en toda la app.
 - Iconos propios en lugar de emojis; superficies planas y botones sin degradados ni brillos para quitar el aspecto genérico.
