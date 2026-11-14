@@ -1,0 +1,2 @@
+-- Aplicada como migración "push_notifications": tablas push_*, RPCs, avisos de adelantamiento en daily_submit y jobs de pg_cron.
+-- Las claves VAPID viven en la tabla bloqueada public.push_config (no están en el repo). Función: send-push (Edge Function).

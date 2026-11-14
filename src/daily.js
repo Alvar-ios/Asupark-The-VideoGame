@@ -56,6 +56,7 @@ export function createDaily(ctx) {
       if (s.ms && (!st.best || s.ms < st.best.ms)) st.best = { ms: s.ms, s: [s.s1, s.s2, s.s3] };
       save(st); renderHero(); if (isOpen() && stage === 'hub') hub();
     } catch (e) { /* sin red: manda la caché local */ }
+    if (acc.loggedIn) { try { streak = await acc.rpc('my_streak'); renderHero(); } catch (e) { /* sin red */ } }
     if (acc.loggedIn && !st.pick && !st.ud) { try { const u = await acc.rpc('daily_underdog'); if (u && u.length) { st.ud = u; save(st); renderHero(); if (isOpen() && stage === 'hub') hub(); } } catch (e) { /* sin liga o sin red */ } }
   }
   async function begin(kind) {
@@ -72,7 +73,7 @@ export function createDaily(ctx) {
   }
   async function submit(r) { // r = { ms, s:[ms,ms,ms], car, track }
     if (!st.best || r.ms < st.best.ms) { st.best = { ms: r.ms, s: r.s }; save(st); }
-    if (rem()) { try { await rpc('daily_submit', { p_player: pid(), p_name: lb.name, p_flag: lb.flag, p_helmet: lb.helmet, p_car: r.car, p_track: r.track, p_ms: r.ms, p_s1: r.s[0], p_s2: r.s[1], p_s3: r.s[2] }); } catch (e) { /* queda en local */ } }
+    if (rem()) { try { await rpc('daily_submit', { p_player: pid(), p_name: lb.name, p_flag: lb.flag, p_helmet: lb.helmet, p_car: r.car, p_track: r.track, p_ms: r.ms, p_s1: r.s[0], p_s2: r.s[1], p_s3: r.s[2], p_ghost: r.g && r.g.length ? r.g : null }); } catch (e) { /* queda en local */ } }
     boardRows = null; renderMini();
   }
   async function board(mode) {
@@ -94,7 +95,7 @@ export function createDaily(ctx) {
   const statusChips = () => {
     const p = st.pr ? `<span class="on">Práctica ✓</span>` : `<span>Práctica ${PRACTICE_LAPS} vueltas</span>`;
     const o = st.best ? `<span class="gold">Tu tiempo ${fmt(st.best.ms / 1000)}</span>` : st.or ? `<span class="on">Clasificación en curso</span>` : `<span>Clasificación ${OFFICIAL_LAPS} vueltas</span>`;
-    return p + o;
+    return p + o + (streak && streak.streak > 0 ? `<span class="fire">🔥 ${streak.streak}</span>` : '');
   };
   function renderHero() {
     const t = ctx.track, c = ctx.car, [cc, cname] = ctx.countryOf(t);
@@ -203,7 +204,7 @@ export function createDaily(ctx) {
   function hub() {
     clearTimeout(introTimer); cancelAnimationFrame(spinRaf); stopRadar();
     const t = ctx.track, c = ctx.car;
-    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>${st.pick && st.pick !== 'base' ? '🐌 Elegido con el premio Lentorro' : 'Mismo coche y circuito para todos'}</small></div></div>${canPick() ? lentorroHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard"><p class="dy-empty">Cargando…</p></div></div>`);
+    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>${st.pick && st.pick !== 'base' ? '🐌 Elegido con el premio Lentorro' : 'Mismo coche y circuito para todos'}</small></div></div>${canPick() ? lentorroHtml() : ''}${rival ? rivalHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard"><p class="dy-empty">Cargando…</p></div></div>`);
     ctx.drawPreview($('dyCv2'), t.tr, t.th, 240, 130);
     renderBoard();
   }
@@ -215,9 +216,11 @@ export function createDaily(ctx) {
     const sc = (r, k) => r.s[k] == null ? '–' : `<span class="${r.s[k] === bestS[k] ? 'pu' : ''}">${fmtS(r.s[k] / 1000)}</span>`;
     el.innerHTML = `<table class="dy-f1"><tr><th>P</th><th>PILOTO</th><th>S1</th><th>S2</th><th>S3</th><th>VUELTA</th><th>DIF</th></tr>${rows.slice(0, 30).map((r, i) => `<tr class="${r.you ? 'me' : ''}"><td>${i + 1}</td><td class="nm"><span class="flag sm">${ctx.flagSvg(r.flag || 'es')}</span>${esc(r.name)}<small class="dy-secs">${[0, 1, 2].map((k) => sc(r, k)).join(' · ')}</small></td><td>${sc(r, 0)}</td><td>${sc(r, 1)}</td><td>${sc(r, 2)}</td><td class="lp">${fmt(r.ms / 1000)}</td><td>${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : '—'}</td></tr>`).join('')}</table>${res.online ? '' : '<p class="dy-empty">Sin conexión: solo se ve tu tiempo en este dispositivo.</p>'}`;
   }
+  let rival = null, streak = null;
+  const rivalHtml = () => `<div class="dy-card dy-rival"><h3>👻 FANTASMA DE @${esc(rival.name).toUpperCase()}</h3><p>Su mejor vuelta de hoy (${fmt(rival.ms / 1000)}) saldrá como fantasma dorado en tu próxima sesión.</p><button type="button" data-act="norival" class="dy-lnk">Quitar fantasma</button></div>`;
   async function startKind(kind) {
     const ok = await begin(kind); if (!ok) { ctx.toast('Sin intentos disponibles'); hub(); return; }
-    $('daily').classList.add('hidden'); document.body.classList.remove('in-daily'); ctx.startSession(kind);
+    $('daily').classList.add('hidden'); document.body.classList.remove('in-daily'); const rv = rival; rival = null; ctx.startSession(kind, rv);
   }
   const ADS = [
     { id: 'traced', logo: 'traced', name: 'Traced', url: 'https://ro-di-tracker.vercel.app/', kick: '⚠ ÚLTIMA HORA · GOLF', h: '¡TU BOLA DESAPARECE EN PLENO VUELO Y NADIE SABE POR QUÉ!', p: 'Traced dibuja la trayectoria de tu golpe sobre tu propio vídeo. Por fin sabrás dónde acabó esa bola que «iba recta».', cta: 'PROBAR TRACED ›', foot: '*Traced no garantiza que tu bola llegue al green. Solo que verás con todo detalle cómo no llegó.' },
@@ -240,6 +243,7 @@ export function createDaily(ctx) {
     const b = e.target.closest('button'); if (!b) return;
     if (b.id === 'dyClose') return close();
     if (b.dataset.tab) { tab = b.dataset.tab; hub(); return; }
+    if (b.dataset.act === 'norival') { rival = null; return hub(); }
     if (b.dataset.pick) { if (canPick()) { pickCar(b.dataset.pick); } return stage === 'lentorro' ? radar() : hub(); }
     const a = b.dataset.act; if (!a) return;
     if (a === 'practice' || a === 'official') return startKind(a);
@@ -259,7 +263,8 @@ export function createDaily(ctx) {
   }, 1000);
   renderHero(); sync();
   return {
-    open, close, hub, submit, left, refresh: renderHero, key,
+    open, close, hub, submit, left, refresh: renderHero, key, getStreak: () => streak,
+    runGhost(r) { rival = r; open(true); },
     sessionDone(l) { last = l; },
   };
 }

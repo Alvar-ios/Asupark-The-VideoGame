@@ -45,6 +45,10 @@ export function initProfile(ctx) {
     let hall = null; try { hall = await acc.hall(); } catch (e) { /* sin salón */ }
     try { const fresh = await acc.stats(st.user_id); if (fresh) Object.assign(st, fresh); } catch (e) { /* datos en caché */ }
     const A = achievements(st, hall);
+    let tro = []; try { tro = (await acc.rpc('my_trophies')) || []; } catch (e) { /* sin trofeos */ }
+    let stk = null; try { stk = await acc.rpc('my_streak'); } catch (e) { /* sin racha */ }
+    for (const x of tro) A.unshift(x.kind === 'champion' ? { gold: true, ic: '🏆', t: 'Campeón · Temporada ' + x.season, s: x.league + ' · ' + x.pts + ' pts' } : { ic: '🐌', t: 'Lentorro de la temporada ' + x.season, s: x.league });
+    if (stk && stk.best >= 2) A.unshift({ gold: stk.streak >= 7, ic: '🔥', t: 'Racha de ' + stk.streak + (stk.streak === 1 ? ' día' : ' días'), s: 'Mejor racha: ' + stk.best + ' días' });
     body().innerHTML = `${head(st)}${tabs()}<div class="pf-stats">${[['Vueltas', st.laps], ['Circuitos', st.tracks], ['Carreras', st.races], ['Victorias', st.wins], ['Podios', st.podiums], ['Récords', (st.kings || []).length]].map(([n, v]) => `<div><b>${v}</b><small>${n}</small></div>`).join('')}</div>
       <h3 class="pf-h">Vitrina</h3><div class="pf-shelf">${A.length ? A.map(ach).join('') : '<p class="keys" style="display:block">Aún no hay logros: gana carreras y bate récords para llenar la vitrina.</p>'}</div>`;
   }

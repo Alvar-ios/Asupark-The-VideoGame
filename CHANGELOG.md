@@ -2,6 +2,18 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.89
+- Ligas y reto del día, más vivos:
+  - Racha diaria 🔥 (días seguidos corriendo el reto), visible en el reto, en las tablas y en el perfil.
+  - Resumen diario de la liga (ganador, remontada, Lentorro) que se puede compartir como imagen.
+  - Fantasma de un amigo: corre contra su vuelta del día con un fantasma dorado.
+  - Predicción diaria: apuesta quién ganará; acertar da +1 punto.
+  - Calendario de la temporada estilo F1, con los días futuros ocultos.
+  - Fin de temporada: podio, trofeos en el perfil y Lentorro de la temporada.
+  - Chat con reacciones y mensajes automáticos (nuevo líder, quién ya ha corrido).
+- App instalable (PWA): icono, pantalla completa, funciona con mala cobertura y tarjeta para instalarla (con instrucciones para iPhone).
+- Avisos push (configurables en Ajustes): cuando te quitan el liderato, nuevo reto por la mañana y recordatorio por la tarde con tu racha.
+
 ## 0.0.88
 - Lavado de cara en móvil:
   - Clasificación, ajustes, perfil, música, pausa y resultados se abren a pantalla completa, con el botón de cerrar fijo abajo.

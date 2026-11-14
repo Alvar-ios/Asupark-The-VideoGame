@@ -4,6 +4,8 @@ import { THEMES, THEME_LIST } from './themes.js';
 import { waShare, inviteUrl, WA_ICON } from './share.js';
 import { initLeagues } from './leagues.js';
 import { initHome } from './home.js';
+import { initPwa } from './pwa.js';
+import { initPush } from './push.js';
 import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS, DAILY_LOCK_DAY } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo, isKartKind } from './car.js';
@@ -72,7 +74,8 @@ window.addEventListener('resize', resize); resize();
 // ---------- pistas ----------
 const tracks = [];
 function addTrack(key, name, sub, seed, style, th) { const tr = buildTrack(seed, style); tracks.push({ key, name, sub, tr, th }); }
-const dailyKey = dailyKeyNow(), dailyPick = pickDaily(dailyKey, dailyKey === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => (k !== 'madring' || dailyKey >= '2026-11-10') && (k !== 'magarigawa' || dailyKey >= '2026-11-11') && (k !== 'muralla' || dailyKey >= '2026-11-12') && (k !== 'rally' || dailyKey >= '2026-11-13') && (k !== 'palomring' || dailyKey >= '2026-11-14')), (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos' || th === 'muralla') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
+const pickFor = (k) => pickDaily(k, k === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => (k !== 'madring' || k >= '2026-11-10') && (k !== 'magarigawa' || k >= '2026-11-11') && (k !== 'muralla' || k >= '2026-11-12') && (k !== 'rally' || k >= '2026-11-13') && (k !== 'palomring' || k >= '2026-11-14')), (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos' || th === 'muralla') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
+const dailyKey = dailyKeyNow(), dailyPick = pickFor(dailyKey);
 addTrack('pruebas', THEMES.pruebas.name, THEMES.pruebas.sub, THEMES.pruebas.seed, THEMES.pruebas.style, THEMES.pruebas);
 addTrack('monaco', THEMES.monaco.name, THEMES.monaco.sub, THEMES.monaco.seed, THEMES.monaco.style, THEMES.monaco);
 addTrack('spa', THEMES.spa.name, THEMES.spa.sub, THEMES.spa.seed, THEMES.spa.style, THEMES.spa);
@@ -599,7 +602,8 @@ async function startRace(restart = false) {
         const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold, (rec && rec.name) || lb.name); m.root.visible = false; scene.add(m.root); return m;
       };
       const gr = S.ghostRecs && S.ghostRecs.g, tr2 = S.ghostRecs && S.ghostRecs.t, same = gr && tr2 && Math.abs(gr.time - tr2.time) < 1e-6;
-      S.ghostMesh = mkGhost(same ? tr2 : gr, !!same); S.ghostGold = tr2 && !same ? mkGhost(tr2, true) : null; // si el mejor de tu grupo también es el de la pista, es uno solo (dorado)
+      S.ghostMesh = mkGhost(same ? tr2 : gr, !!same); S.ghostGold = tr2 && !same ? mkGhost(tr2, true) : null;
+      if (S.daily && S.daily.rival) S.ghostGold = mkGhost({ car: S.daily.rival.car, name: S.daily.rival.name }, true); // fantasma de un amigo de la liga // si el mejor de tu grupo también es el de la pista, es uno solo (dorado)
     }
     // minimapa
     const mc = document.createElement('canvas'); mc.width = mc.height = 900; const mx = mc.getContext('2d'); mx.scale(3, 3); // mapa a triple resolución: se amplía al seguir al coche sin pixelarse
@@ -641,7 +645,7 @@ async function startRace(restart = false) {
       setGhost('ghostMesh', ctOf(same ? trec : rec), !!same, ((same ? trec : rec) || {}).name); setGhost('ghostGold', S.ghostBestGold ? ctOf(trec) : null, true, (trec || {}).name);
     }
     if (S.ghostMesh) S.ghostMesh.root.visible = false; if (S.ghostGold) S.ghostGold.root.visible = false;
-    if (S.daily) { S.ghostBest = S.daily.ref ? Float32Array.from(S.daily.ref.ghost) : null; S.ghostBestGold = null; }
+    if (S.daily) { S.ghostBest = S.daily.ref ? Float32Array.from(S.daily.ref.ghost) : null; S.ghostBestGold = S.daily.rival ? Float32Array.from(S.daily.rival.ghost) : null; }
   }
   S.ghostRec = [];
   migrateGroupBest(ti.key + '.' + tr.seed, type.group);
@@ -739,16 +743,16 @@ $('restartBtn').onclick = () => { $('pause').classList.add('hidden'); startRace(
 $('rbtn').onclick = () => { if (S.raceScene) startRace(true); };
 $('startBtn').onclick = () => { sound.stopPreview(true); sound.init(CARS[sel.car].id); startRace(false); };
 function toast(t) { let e = $('toast'); if (!e) { e = document.createElement('div'); e.id = 'toast'; document.body.appendChild(e); } e.textContent = t; e.className = 'show'; clearTimeout(toast.t); toast.t = setTimeout(() => { e.className = ''; }, 2400); }
-function startDailySession(kind) {
+function startDailySession(kind, rival) {
   if (!S.prevSel) S.prevSel = { car: sel.car, track: sel.track, mode: sel.mode, carId: sel.carId };
-  const rf = store.get('dr.dailyref'); S.daily = { kind, laps: kind === 'practice' ? PRACTICE_LAPS : OFFICIAL_LAPS, times: [], cur: [null, null, null], done: false, ref: rf && rf.day === dailyKey ? rf : null };
+  const rf = store.get('dr.dailyref'); S.daily = { kind, laps: kind === 'practice' ? PRACTICE_LAPS : OFFICIAL_LAPS, times: [], cur: [null, null, null], done: false, rival: rival || null, ref: rf && rf.day === dailyKey ? rf : null };
   sel.track = tracks.findIndex((t) => t.key === 'daily'); sel.mode = 'tt'; sel.car = DAILY_CAR; sel.carId = CARS[DAILY_CAR].id; sound.init(CARS[sel.car].id); startRace(false);
 }
 // termina la sesión del reto: envía la mejor vuelta si era oficial y vuelve al panel del reto con el resumen
 function endDaily() {
   const d = S.daily; if (!d || d.done) return; d.done = true;
   const laps = d.times.map((l) => ({ t: l.t, s: l.s }));
-  if (d.kind === 'official' && laps.length) { const b = d.times.reduce((a, c) => (c.t < a.t ? c : a)); markDaily(); D.submit({ ms: Math.round(b.t * 1000), s: b.s.map((v) => (v == null ? null : Math.round(v * 1000))), car: CARS[DAILY_CAR].id, track: 'daily:' + dailyKey }); }
+  if (d.kind === 'official' && laps.length) { const b = d.times.reduce((a, c) => (c.t < a.t ? c : a)); markDaily(); D.submit({ ms: Math.round(b.t * 1000), s: b.s.map((v) => (v == null ? null : Math.round(v * 1000))), car: CARS[DAILY_CAR].id, track: 'daily:' + dailyKey, g: b.g }); }
   S.daily = null; D.sessionDone({ kind: d.kind, laps });
   toMenu(); D.open(true);
 }
@@ -966,7 +970,7 @@ function dailyLap(c, lt, done) {
   const s1 = d.cur[0], s2 = d.cur[1], s3 = s1 != null && s2 != null ? lt - s1 - s2 : null; d.cur = [null, null, null];
   const prev = d.ref ? d.ref.time : null; let newBest = false;
   if (valid) {
-    d.times.push({ t: lt, s: [s1, s2, s3] }); S.lastLap = lt;
+    d.times.push({ t: lt, s: [s1, s2, s3], g: d.kind === 'official' ? Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) : null }); S.lastLap = lt;
     if (prev == null || lt < prev - 1e-6) { // nueva mejor vuelta personal del día: pasa a ser el fantasma y la referencia del diferencial
       newBest = true; d.ref = { day: dailyKey, time: lt, prof: Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000)), ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) };
       store.set('dr.dailyref', d.ref); S.refProf = d.ref.prof; S.refFill = fillProf(S.refProf); S.ghostBest = Float32Array.from(S.ghostRec); S.lapPB = lt; S.bestLap = lt;
@@ -1578,8 +1582,10 @@ async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62
 const PF = initProfile({ $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt });
 acc.onChange(() => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; try { buildHelmetEditor(); } catch (_) {} });
 acc.restore();
-const LG = initLeagues({ $, acc, esc, fmt, flagSvg, toast });
+const LG = initLeagues({ $, acc, esc, fmt, flagSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/ · .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
 initHome({ $, acc, esc, LG, PF });
+initPwa({ $, store });
+initPush({ $, acc, esc });
 // enlace de invitación ?add=usuario: añade al amigo al entrar (o en cuanto inicies sesión)
 { const q = new URLSearchParams(location.search).get('add'); if (q) { try { history.replaceState(null, '', location.pathname); } catch (_) {} let pend = q;
   const tryAdd = async () => { if (!pend || !acc.profile || pend.toLowerCase() === (acc.username || '').toLowerCase()) return; const u = pend; pend = null; try { await acc.addFriend(u); toast(`Solicitud enviada a @${u}`); } catch (e) { toast(acc.explain(e)); } };

@@ -10,6 +10,7 @@ fs.mkdirSync('dist/assets', { recursive: true });
 for (const name of fs.readdirSync('src/assets')) if (name.endsWith('.glb.gz')) fs.copyFileSync(`src/assets/${name}`, `dist/assets/${name}`);
 for (const name of ['jersey10-latin.woff2', 'jersey10-OFL.txt']) fs.copyFileSync(`src/assets/${name}`, `dist/assets/${name}`);
 fs.copyFileSync('config.js', 'dist/config.js');
+for (const n of fs.readdirSync('src/pwa')) fs.copyFileSync(`src/pwa/${n}`, `dist/${n}`);
 fs.copyFileSync('src/engine-dsp.js', 'dist/engine-dsp.js');
 fs.copyFileSync('src/engine-worklet.js', 'dist/engine-worklet.js');
 fs.mkdirSync('dist/lab', { recursive: true });

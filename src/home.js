@@ -46,17 +46,23 @@ export function initHome(ctx) {
     try { ud = await acc.rpc('daily_underdog'); } catch (e) { /* sin red */ }
     if (!list) { box.innerHTML = '<p class="hm-lg-n">No se han podido cargar tus ligas.</p>'; return; }
     const row = (l) => `<button type="button" class="hm-lg-r" data-lg-open="${l.id}"><i>${l.pos ? 'P' + l.pos : '–'}</i><span><b>${esc(l.name)}</b><small>Temporada ${l.season} · ${l.members} piloto${l.members === 1 ? '' : 's'}</small></span><em>${l.pts}<small>PTS</small></em></button>`;
-    box.innerHTML = (ud && ud.length ? `<div class="hm-len">🐌 <b>Eres el Lentorro</b> en ${esc(ud.join(', '))}: hoy puedes elegir coche en el reto</div>` : '')
+    const seen = (() => { try { return JSON.parse(localStorage.getItem('dr.seasonSeen') || '{}'); } catch (_) { return {}; } })();
+    const fin = list.filter((l) => l.last && !seen[l.id + ':' + l.last.season])[0];
+    const finHtml = fin ? `<button type="button" class="hm-fin" data-fin="${fin.id}" data-season="${fin.last.season}">🏆 <span><b>Temporada ${fin.last.season} terminada</b> en ${esc(fin.name)}: campeón @${esc(fin.last.champion || '?')}${fin.last.me ? ` · tú P${fin.last.me}` : ''}</span><i>Ver ›</i></button>` : '';
+    box.innerHTML = finHtml + (ud && ud.length ? `<div class="hm-len">🐌 <b>Eres el Lentorro</b> en ${esc(ud.join(', '))}: hoy puedes elegir coche en el reto</div>` : '')
       + (list.length ? list.slice(0, 3).map(row).join('') + `<div class="hm-lg-cta"><button type="button" class="ghost" data-lg="create">+ Crear liga</button><button type="button" class="ghost" data-lg="join">Unirme</button></div>`
         : `<p class="hm-lg-n">Todavía no estás en ninguna liga. Crea una e invita a tus amigos.</p><div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" class="ghost" data-lg="join">Unirme con código</button></div>`);
   }
   $('hmLeagues').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.fin) { try { const k = JSON.parse(localStorage.getItem('dr.seasonSeen') || '{}'); k[b.dataset.fin + ':' + b.dataset.season] = 1; localStorage.setItem('dr.seasonSeen', JSON.stringify(k)); } catch (_) { /* sin almacenamiento */ } return LG.openLeague(b.dataset.fin, +b.dataset.season); }
     if (b.dataset.lgOpen) return LG.openLeague(b.dataset.lgOpen);
     LG.open(); // "ver todas", crear y unirme llevan a la pantalla de ligas, donde están los formularios
   });
   const label = () => { const t = $('hmNavUser'); if (t) t.textContent = acc.loggedIn && acc.username ? '@' + acc.username : 'Perfil'; };
   let tm = 0; const refresh = () => { clearTimeout(tm); tm = setTimeout(() => { label(); renderLeagues(); }, 250); };
+  // accesos directos de la app instalada (?go=daily / ?go=leagues)
+  try { const go = new URLSearchParams(location.search).get('go'); if (go) { const u = new URL(location.href); u.searchParams.delete('go'); history.replaceState(null, '', u.pathname + u.search + u.hash); setTimeout(() => { if (go === 'leagues') LG.open(); else if (go === 'daily') { const c = $('dailyCard'); if (c) c.click(); } }, 900); } } catch (_) { /* sin history */ }
   acc.onChange(refresh); label(); setTimeout(refresh, 1200);
   document.addEventListener('click', (e) => { if (e.target.closest('#lgClose,#dyClose,#profClose')) setTimeout(refresh, 400); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });

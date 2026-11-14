@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Drift Rush</title>
+<link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#0a0d16"><link rel="icon" href="./icon-192.png"><link rel="apple-touch-icon" href="./apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Drift Rush"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 :root{--bg:#0a0d16;--panel:rgba(14,18,30,.82);--line:rgba(255,255,255,.10);--txt:#eef2ff;--dim:#8f9ab8;--acc:#ffc928;--cy:#38e1ff;--mg:#ff3fb4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none}
@@ -1265,6 +1266,32 @@ body.mobile #hud #h-rec{top:8px;left:0;padding:5px 18px 6px 10px}body.mobile #hu
   #menu[data-screen=play] #homePlay #startBtn{margin-top:auto!important}
 }
 @media (max-width:620px){#settings .row{display:block!important}#settings .row label{display:block}#settings input[type=range]{width:100%!important;max-width:none!important}}
+.hm-install{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:10px 12px;border-radius:14px;background:rgba(56,225,255,.09);border:1px solid rgba(56,225,255,.3)}.hm-install>span{font-size:22px}.hm-install div{flex:1;min-width:0}.hm-install b{display:block;font-size:14px}.hm-install small{display:block;font-size:11px;color:#b4c7dc;line-height:1.3}.hm-install button{padding:9px 13px;border-radius:10px;border:0;background:#38e1ff;color:#04202a;font:800 12px inherit;cursor:pointer}.hm-install button.x{background:none;color:#9fb0cf;padding:6px}
+
+/* ===== v0.0.89 · ligas: resumen, predicción, calendario, reacciones, podio ===== */
+.lg-m{min-width:140px}.lg-gp.fut small{text-transform:none!important}
+.fire{color:#ffb347;font-weight:800}.lg-t td.nm small.fire{margin-left:5px;font-size:11px}.lg-t td.pt small.bn{display:block;font-size:9px;color:#9fe0ff;font-weight:700}
+.lg-recap{margin:0 0 12px;padding:12px;border-radius:14px;background:linear-gradient(135deg,rgba(255,211,78,.14),rgba(255,255,255,.04));border:1px solid rgba(255,211,78,.35)}
+.lg-rh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}.lg-rh b{font-size:13px;letter-spacing:.1em;color:#ffd34e}.lg-rh small{font-size:11px;color:#b4c0d8;text-transform:capitalize}
+.lg-recap ul{list-style:none;margin:0 0 8px;padding:0}.lg-recap li{display:flex;gap:8px;align-items:baseline;padding:4px 0;font-size:13px;line-height:1.35;color:#e8edf8}.lg-recap li i{font-style:normal;width:22px;text-align:center}.lg-recap em{font-style:normal;color:#9fb0cf}
+.lg-recap .lg-btn{width:100%;margin:2px 0 0}
+.lg-pred{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:rgba(56,225,255,.09);border:1px solid rgba(56,225,255,.3);font-size:13px;color:#d6ecf7}.lg-pred small{display:block;font-size:11px;color:#9fb0cf;margin:2px 0 8px}
+.lg-chips{display:flex;flex-wrap:wrap;gap:6px}.lg-chips button{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;font:700 13px inherit;cursor:pointer}.lg-chips button:active{background:#38e1ff;color:#04202a}
+.lg-podium{margin:0 0 14px;padding:12px;border-radius:14px;background:linear-gradient(180deg,rgba(255,211,78,.12),rgba(255,255,255,.03));border:1px solid rgba(255,211,78,.35)}.lg-pt{display:block;text-align:center;font-size:14px;letter-spacing:.12em;color:#ffd34e;margin-bottom:10px}
+.lg-pods{display:flex;align-items:flex-end;justify-content:center;gap:8px;min-height:150px}.pod{flex:1;max-width:120px;text-align:center;display:flex;flex-direction:column;justify-content:flex-end;font-size:12px}.pod span{margin-bottom:4px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .bar{height:0;border-radius:8px 8px 0 0;color:#161006;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:podUp 1.1s cubic-bezier(.2,.9,.3,1) forwards}.pod.p2 .bar{animation-delay:.25s}.pod.p3 .bar{animation-delay:.5s}.pod .bar b{font-size:24px;font-style:italic}.pod .bar small{font-size:10px;font-weight:700}
+@keyframes podUp{to{height:var(--h)}}
+.lg-gp{display:grid;grid-template-columns:46px minmax(0,1fr) auto;align-items:center;gap:10px;margin:0 0 8px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-left:4px solid rgba(255,255,255,.2)}
+.lg-gp.now{border-left-color:#e10600;background:rgba(225,6,0,.12)}.lg-gp.fut{opacity:.5}.lg-gp .gpn{text-align:center}.lg-gp .gpn small{display:block;font-size:9px;letter-spacing:.14em;color:#8f9ab8}.lg-gp .gpn b{font:900 20px inherit;font-style:italic}
+.lg-gp .gpi b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lg-gp .gpi small{font-size:11px;color:#9fb0cf;text-transform:capitalize}.lg-gp .gpi .flag{width:18px;display:inline-block;vertical-align:middle}
+.lg-gp .gpw{text-align:right;font-size:12px}.lg-gp .gpw b{display:block;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lg-gp .gpw small{font-size:10px;color:#8f9ab8}.lg-gp .live{display:block;font-size:9px;letter-spacing:.12em;color:#ff7b7b}
+.lg-m.sys{align-self:center;max-width:92%;text-align:center;background:rgba(255,211,78,.1);border:1px solid rgba(255,211,78,.25);border-radius:12px;font-size:12px;color:#ffe7a0}.lg-m.sys b{display:inline;color:#fff;font-size:12px}
+.lg-rx{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;justify-content:flex-start}.lg-rx button{padding:2px 8px;border-radius:99px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.25);color:#fff;font:600 12px inherit;cursor:pointer}.lg-rx button.me{border-color:#ffd34e;background:rgba(255,211,78,.2)}.lg-rx button.add{opacity:.55;padding:2px 7px}
+.lg-m.me .lg-rx{justify-content:flex-end}.lg-rxp{display:flex;gap:4px;margin-top:4px;padding:4px;border-radius:10px;background:rgba(0,0,0,.4)}.lg-rxp button{flex:1;padding:6px 0;border:0;border-radius:8px;background:rgba(255,255,255,.08);font-size:18px;cursor:pointer}
+.lg-gh{padding:6px 12px;border-radius:99px;border:1px solid rgba(155,92,255,.5);background:rgba(155,92,255,.18);color:#e4d4ff;font:700 11px inherit;cursor:pointer}
+.hm-fin{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 8px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,211,78,.5);background:linear-gradient(135deg,rgba(255,211,78,.2),rgba(255,211,78,.05));color:#fff;font:inherit;font-size:12px;text-align:left;cursor:pointer}.hm-fin>span{flex:1;line-height:1.3}.hm-fin b{color:#ffd34e}.hm-fin i{font-style:normal;color:#ffd34e;font-weight:800}
+.dy-rival{border-color:rgba(155,92,255,.5);background:rgba(155,92,255,.12)}.dy-rival h3{margin:0 0 6px;font-size:13px;letter-spacing:.1em;color:#e4d4ff}.dy-rival p{margin:0 0 6px;font-size:12px;color:#d6c8f0}.dy-lnk{background:none;border:0;color:#b6a0ff;font:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:0}
+.dy-chips .fire{background:rgba(255,179,71,.18)!important;color:#ffb347!important;border-color:rgba(255,179,71,.5)!important}
 </style>
 </head>
 <body>
@@ -1309,6 +1336,7 @@ body.mobile #hud #h-rec{top:8px;left:0;padding:5px 18px 6px 10px}body.mobile #hu
           </button>
           <button id="dyAllBoard" type="button" style="display:none"></button>
         </div>
+          <div id="hmInstall" class="hm-install hidden"></div><div id="hmPush" class="hm-install hidden"></div>
           <section id="hmLeagues" class="hm-lg" aria-label="Ligas"><div class="hm-lg-h"><b>LIGAS</b><button type="button" data-lg="all">Ver todas ›</button></div><div id="hmLgBody"><p class="hm-lg-n">Cargando…</p></div></section>
           <div class="hm-grid"><button id="hmTT" class="hm-tile tt" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7.500"/><path d="M12 9v4l2.500 2M9.500 3h5"/></svg><b>Contrarreloj</b><small>Bate tu mejor vuelta</small></button><button id="hmRank" class="hm-tile rk" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><b>Clasificación</b><small>Récords y rankings</small></button></div>
           <button id="hmRacing" class="hm-racing" type="button"><span>RACING</span><em>Carreras · Gran Premio</em><i>›</i></button>
@@ -1359,6 +1387,8 @@ body.mobile #hud #h-rec{top:8px;left:0;padding:5px 18px 6px 10px}body.mobile #hu
   <h3>Opciones</h3>
   <div class="row" style="gap:8px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="ctlMode" class="tog">Control: BOTONES</button><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="raceMusicBtn" class="tog">Música al conducir: NO</button><button id="ghostMineBtn" class="tog">Fantasma gris (tu mejor de la categoría): SÍ</button><button id="ghostBestBtn" class="tog">Fantasma dorado (mejor de la categoría): SÍ</button><button id="fsBtn" class="tog">⛶ Pantalla completa</button></div>
   <p class="keys" style="display:block;margin-top:8px"><b>WASD</b> o flechas para conducir · <b>ESPACIO</b> freno de mano · <b>R</b> recolocar · <b>T</b> reiniciar · <b>C</b> cámara · <b>ESC</b> pausa · también con mando</p>
+  <h3>Avisos</h3>
+  <div id="pushBox" class="row" style="gap:8px"></div>
   <h3>Piloto</h3>
   <div class="row"><label style="flex:1">Nombre en la clasificación<input id="pname" maxlength="20" class="sel" style="width:100%;margin-top:4px"></label></div>
   <div class="row"><label style="flex:1">Nacionalidad<select id="pflag" class="sel" style="width:100%;margin-top:4px"></select></label></div>
