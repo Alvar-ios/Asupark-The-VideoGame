@@ -3,7 +3,7 @@
 import { hashStr } from './rng.js';
 import { lp, lpBlock } from './loader.js';
 import { ic } from './icons.js';
-import { sk } from './ux.js';
+import { sk, toastEl } from './ux.js';
 import { lpQ } from './loader.js';
 import { createRadar3D } from './radar3d.js';
 import { waShare, inviteUrl, waBtn } from './share.js';
@@ -75,11 +75,32 @@ export function createDaily(ctx) {
     if (rem()) { try { const ok = await rpc('daily_ad', { p_player: pid(), p_kind: kind }); if (ok === false) return false; } catch (e) { /* offline */ } }
     st[k + 'a'] = 1; save(st); return true;
   }
+  // Resultados que no llegaron al servidor: se guardan y se reintentan solos
+  const PQ = 'dr.pendSub', pq = () => { try { return JSON.parse(localStorage.getItem(PQ) || '[]'); } catch (_) { return []; } }, pqSave = (a) => { try { localStorage.setItem(PQ, JSON.stringify(a.slice(-5))); } catch (_) { /* sin almacenamiento */ } };
+  const body = (r) => ({ p_player: pid(), p_name: lb.name, p_flag: lb.flag, p_helmet: lb.helmet, p_car: r.car, p_track: r.track, p_ms: r.ms, p_s1: r.s[0], p_s2: r.s[1], p_s3: r.s[2], p_ghost: r.g && r.g.length ? r.g : null });
+  let flushing = false;
+  async function flush() {
+    if (flushing || !rem()) return; const q = pq(); if (!q.length) return; flushing = true;
+    const left = [];
+    for (const it of q) {
+      if (it.day !== dailyKeyNow()) continue; // el día ya pasó: el servidor lo rechazaría
+      try { await rpc('daily_submit', { ...it.b, p_player: pid() }); } catch (e) { left.push(it); }
+    }
+    pqSave(left); flushing = false;
+    if (left.length < q.length) { toastEl.show('Resultado reenviado'); boardRows = null; renderMini(); }
+  }
   async function submit(r) { // r = { ms, s:[ms,ms,ms], car, track }
     if (!st.best || r.ms < st.best.ms) { st.best = { ms: r.ms, s: r.s }; save(st); }
-    if (rem()) { try { await rpc('daily_submit', { p_player: pid(), p_name: lb.name, p_flag: lb.flag, p_helmet: lb.helmet, p_car: r.car, p_track: r.track, p_ms: r.ms, p_s1: r.s[0], p_s2: r.s[1], p_s3: r.s[2], p_ghost: r.g && r.g.length ? r.g : null }); } catch (e) { /* queda en local */ } }
+    if (rem()) {
+      try { await rpc('daily_submit', body(r)); }
+      catch (e) {
+        const q = pq(); q.push({ day: dailyKeyNow(), b: body(r) }); pqSave(q);
+        toastEl.show('No se ha podido enviar tu tiempo. Se reintentará solo', { ms: 5000 });
+      }
+    }
     boardRows = null; renderMini();
   }
+  window.addEventListener('online', flush); setTimeout(flush, 4000);
   async function board(mode) {
     const own = st.best ? [{ id: pid(), name: lb.name, flag: lb.flag, car: ctx.car.id, ms: st.best.ms, s: st.best.s, you: true }] : [];
     if (!rem()) return { rows: own, online: false };
@@ -151,7 +172,7 @@ export function createDaily(ctx) {
     prefetch();
     ctx.onOpen && ctx.onOpen();
     $('daily').classList.remove('hidden'); document.body.classList.add('in-daily'); sync();
-    if (locked()) lockScreen(skipIntro); else if (skipIntro) hub(); else intro();
+    if (locked()) lockScreen(skipIntro || (st.rev || 0) >= 2); else if (skipIntro || (st.rev || 0) >= 2) hub(); else intro(); // la animación de sorteo solo la primera vez del día
   }
   function close() { clearTimeout(introTimer); cancelAnimationFrame(spinRaf); stopRadar(); $('daily').classList.add('hidden'); document.body.classList.remove('in-daily'); stage = ''; renderHero(); }
   const head = (sub) => `<div class="dy-head"><small>RETO DEL DÍA · ${dateTxt()}</small><h2>${sub}</h2><span class="dy-cd">Cambia en <b class="cdv">${hms(msToReset())}</b></span></div>`;

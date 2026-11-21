@@ -2,6 +2,13 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.95
+- Seguridad: el servidor toma el piloto de la sesión (no del cliente) al enviar tiempos del reto y usar intentos.
+- Si falla el envío del tiempo del reto, se avisa y se reintenta solo (cola local, también al recuperar conexión).
+- Chat de liga: solo se ve el del día. Los avisos de tiempos indican posición, puntos y diferencia con el líder.
+- Puntuación: barra frente al líder, puntos de hoy, victorias, días, mejor tiempo y tiempo de hoy de cada piloto.
+- El sorteo animado del circuito y el coche solo sale la primera vez de cada día.
+
 ## 0.0.94
 - Comunicado de la FIA: sanción de 100 puntos a fredillotraviesillo (Liga Granjo, Gran Premio de Suiza). Aviso en el inicio para todos, con el documento y apelaciones públicas (solo el sancionado puede apelar).
 - Liga: los 100 puntos se restan en clasificación, el chat muestra la sanción (pulsable) y la gráfica marca el punto con «!» y la caída de −100.

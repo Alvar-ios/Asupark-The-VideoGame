@@ -4,6 +4,7 @@ import { waShare, baseUrl, waBtn } from './share.js';
 import { ic } from './icons.js';
 import { sk, vt, undoable } from './ux.js';
 import { isUi2, onUi } from './uimode.js';
+import { dailyKeyNow } from './daily.js';
 
 const PTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 export const leagueUrl = (code) => baseUrl() + '?liga=' + encodeURIComponent(code);
@@ -166,6 +167,9 @@ export function initLeagues(ctx) {
 
   // ---------- chat ----------
   const sancOf = (uid) => { const l = (S.state && S.state.sanctions || []).filter((x) => x.user_id === uid); return l.length ? l[l.length - 1].id : ''; };
+  const isToday = (m) => dailyKeyNow(Date.parse(m.at)) === dailyKeyNow();
+  // posición y diferencia de hoy de cada piloto, para la torre del chat
+  const todayRows = () => { const d = (S.state && S.state.days || []).find((x) => x.day === S.state.league.today); return d ? d.rows : []; };
   const RX = ['🔥', '😂', '🐌', '👏', '😱'], tm = (m) => new Date(m.at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   const rxHtml = (m) => { const e = Object.entries(m.rx || {}); return `<div class="lg-rx">${e.map(([k, v]) => `<button type="button" class="${v.me ? 'me' : ''}" data-rx="${k}" data-id="${m.id}">${k} ${v.n}</button>`).join('')}<button type="button" class="add" data-more="${m.id}" aria-label="Reaccionar">+</button></div>${S.rxOpen === m.id ? `<div class="lg-rxp">${RX.map((k) => `<button type="button" data-rx="${k}" data-id="${m.id}">${k}</button>`).join('')}</div>` : ''}`; };
   const msgHtml = (m) => m.kind === 'sys'
@@ -174,7 +178,7 @@ export function initLeagues(ctx) {
   const feedHtml = (r) => (r.length ? r.map(msgHtml).join('') : '<p class="lg-note">Rompe el hielo: escribe el primer mensaje.</p>');
   function paintFeed(first) {
     const box = $('lgFeed'); if (!box) return; const all = (S.msgs || []).concat(S.pend || []);
-    if (isUi2()) { const sc = $('leagues'), near = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 90; box.innerHTML = all.length ? all.map(msg2).join('') : '<p class="l2-empty">Aún no hay mensajes. Rompe el hielo.</p>'; if (near && !first) sc.scrollTop = sc.scrollHeight; return; }
+    if (isUi2()) { const sc = $('leagues'), near = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 90; box.innerHTML = all.length ? all.map(msg2).join('') : '<p class="l2-empty">Hoy todavía no hay nada. Marca tu tiempo o escribe a la liga.</p>'; if (near && !first) sc.scrollTop = sc.scrollHeight; return; }
     const stick = first || box.scrollHeight - box.scrollTop - box.clientHeight < 70, top = box.scrollTop;
     box.innerHTML = feedHtml(all); box.scrollTop = stick ? box.scrollHeight : top;
   }
@@ -184,7 +188,7 @@ export function initLeagues(ctx) {
     if (!open() || S.view !== 'league' || S.tab !== 'chat') return stopPoll();
     try {
       const r = (await acc.rpc('league_chat', { p_league: S.id, p_after: 0 })) || [], sig = JSON.stringify(r) + '|' + S.rxOpen + '|' + (S.pend || []).length;
-      if (!first && sig === S.chatSig) return; S.chatSig = sig; S.msgs = withOver(r); paintFeed(first);
+      if (!first && sig === S.chatSig) return; S.chatSig = sig; S.msgs = withOver(r.filter(isToday)); paintFeed(first);
     } catch (e) { /* sin red: se reintenta */ }
   }
   async function chatView() {
@@ -258,7 +262,8 @@ export function initLeagues(ctx) {
     }
     if (m.kind === 'sys') {
       const body = String(m.body || '').replace(/^[^\p{L}@]+/u, ''), t = (body.match(/\d+:\d{2}\.\d{2,3}/) || [])[0], lead = /l[ií]der/i.test(body), pos = (body.match(/\(P(\d+)\)/) || [])[1];
-      const what = lead ? 'líder del día' : pos ? 'marca P' + pos : 'ha corrido';
+      const rows = todayRows(), ri = rows.findIndex((r) => r.user_id === m.user_id), gap = ri > 0 ? '+' + ((rows[ri].ms - rows[0].ms) / 1000).toFixed(3) : '';
+      const what = (ri >= 0 ? 'P' + (ri + 1) + ' hoy' : pos ? 'marca P' + pos : 'ha corrido') + (ri >= 0 && PTS[ri] ? ' · +' + PTS[ri] + ' pts' : '') + (gap ? ' · ' + gap : '');
       return `<div class="l2-m sys${lead ? ' gold' : ''}"><div class="l2-tw" style="--c:${col[m.user_id] || '#111'}"><i></i>${lead ? `<span class="l2-twb">${ic('crown')}</span>` : ''}<b>${esc(u.username)}</b><small>${what}</small><em>${esc(t || '')}</em><time>${tm(m)}</time></div>${rxHtml(m)}</div>`;
     }
     const mine = m.user_id === me();
@@ -286,8 +291,10 @@ export function initLeagues(ctx) {
   const pen = (uid) => (S.state.sanctions || []).filter((x) => x.user_id === uid).reduce((n, x) => n + x.points, 0);
   function v2Points(L, mm, col) {
     const { standings } = S.state, yl = S.state.lentorro, lead = standings[0] ? standings[0].pts : 0;
-    const cards = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }, mine = s.user_id === me();
-      return `<div class="l2-card${mine ? ' me' : ''}${i < 3 ? ' p' + (i + 1) : ''}" style="--c:${col[s.user_id]}"><span class="l2-pos"><b>${i + 1}</b></span>${av(m, col[s.user_id], 'md')}<div class="l2-ci"><b>${esc(m.username)}${mine ? '<em class="l2-you">TÚ</em>' : ''}${s.user_id === yl ? `<span class="l2-snail" title="Lentorro">${ic('snail')}</span>` : ''}${pen(s.user_id) ? `<span class="l2-pen" data-sanc="${sancOf(s.user_id)}">${ic('alert')}−${pen(s.user_id)}</span>` : ''}${m.streak > 1 ? `<span class="l2-fire">${ic('flame')}${m.streak}</span>` : ''}</b><small>${s.wins} día${s.wins === 1 ? '' : 's'} ganado${s.wins === 1 ? '' : 's'}${s.best ? ' · ' + fmt(s.best / 1000) : ''}</small></div><div class="l2-pt"><b>${s.pts}</b><small>${i ? '−' + (lead - s.pts) : 'PTS'}</small></div></div>`; }).join('');
+    const tr = todayRows(), live = L.season === L.current;
+    const cards = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }, mine = s.user_id === me(), ti = live ? tr.findIndex((r) => r.user_id === s.user_id) : -1, tp = ti >= 0 ? PTS[ti] || 0 : 0, pc = lead > 0 ? Math.max(3, Math.round(100 * Math.max(0, s.pts) / lead)) : 3;
+      const chips = [`<span><b>${s.wins}</b> vict.</span>`, `<span><b>${s.days || 0}</b> días</span>`, s.best ? `<span>mejor <b>${fmt(s.best / 1000)}</b></span>` : '', ti >= 0 ? `<span>hoy <b>P${ti + 1}</b> ${fmt(tr[ti].ms / 1000)}</span>` : (live ? '<span class="no">hoy sin tiempo</span>' : '')].filter(Boolean).join('');
+      return `<div class="l2-card${mine ? ' me' : ''}${i < 3 ? ' p' + (i + 1) : ''}" style="--c:${col[s.user_id]}"><span class="l2-pos"><b>${i + 1}</b></span>${av(m, col[s.user_id], 'md')}<div class="l2-ci"><b>${esc(m.username)}${mine ? '<em class="l2-you">TÚ</em>' : ''}${s.user_id === yl ? `<span class="l2-snail" title="Lentorro">${ic('snail')}</span>` : ''}${pen(s.user_id) ? `<span class="l2-pen" data-sanc="${sancOf(s.user_id)}">${ic('alert')}−${pen(s.user_id)}</span>` : ''}${m.streak > 1 ? `<span class="l2-fire">${ic('flame')}${m.streak}</span>` : ''}</b><div class="l2-bar"><i style="width:${pc}%"></i></div><div class="l2-chips">${chips}</div></div><div class="l2-pt"><b>${s.pts}</b><small>${i ? '−' + (lead - s.pts) : 'PTS'}</small>${tp ? `<em class="l2-td">+${tp}</em>` : ''}</div></div>`; }).join('');
     return `${L.current > 1 ? seasonNav(L) : ''}${v2Chart(L, col)}<div class="l2-cards">${cards}</div>
       ${yl && mm[yl] && L.season === L.current ? `<p class="l2-len">${ic('snail')} Lentorro: ${esc(mm[yl].username)} · hoy puede elegir coche</p>` : ''}
       <div class="l2-inv"><div><small>Código de la liga</small><b>${esc(L.code)}</b></div><button class="l2-pill" data-a="copy" type="button">Copiar enlace</button></div>
@@ -298,7 +305,7 @@ export function initLeagues(ctx) {
     const pred = predHtml(L, mm), top = `${v2Head(L)}${v2Podium(L, mm, col)}${v2Seg()}`;
     if (S.tab !== 'chat') { stopPoll(); paint.innerHTML = `${top}${v2Points(L, mm, col)}<div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`; S.msg = ''; return; }
     S.chatSig = ''; S.rxOpen = null; S.msgs = S.msgs && S.msgsFor === S.id ? S.msgs : []; S.msgsFor = S.id; S.pend = S.pend || [];
-    paint.innerHTML = `${top}${pred}<div id="lgFeed" class="l2-feed"></div><div class="l2-in"><input id="lgMsgIn" maxlength="300" autocomplete="off" enterkeyhint="send" placeholder="Tu chat" aria-label="Mensaje para la liga"><button data-a="send" type="button" aria-label="Enviar">${ic('send')}</button></div>`;
+    paint.innerHTML = `${top}${pred}<div class="l2-day"><b>Hoy</b><small>${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} · solo el reto del día</small></div><div id="lgFeed" class="l2-feed"></div><div class="l2-in"><input id="lgMsgIn" maxlength="300" autocomplete="off" enterkeyhint="send" placeholder="Tu chat" aria-label="Mensaje para la liga"><button data-a="send" type="button" aria-label="Enviar">${ic('send')}</button></div>`;
     await S.p; if (S.msgs.length) paintFeed(true); else $('lgFeed').innerHTML = sk.rows(4);
     await pull(true); stopPoll(); S.poll = setInterval(() => pull(false), 4000);
   }

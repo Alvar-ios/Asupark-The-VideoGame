@@ -6,7 +6,7 @@ const save = (v) => { try { if (v) localStorage.setItem(KEY, JSON.stringify(v));
 export const cleanUser = (u) => String(u || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
 
 export class Account {
-  constructor(lb) { this.lb = lb; this.session = load(); this.profile = null; this.listeners = []; this.lb.onChange = () => this.pushProfile(); }
+  constructor(lb) { this.lb = lb; this.session = load(); this.profile = null; this.listeners = []; this.lb.onChange = () => this.pushProfile(); this.lb.tokenFn = () => (this.loggedIn ? this.token() : null); }
   get cfg() { return (typeof window !== 'undefined' && window.DRIFT_CONFIG) || {}; }
   get enabled() { return !!(this.cfg.supabaseUrl && this.cfg.supabaseKey); }
   get loggedIn() { return !!(this.session && this.session.user); }

@@ -26,8 +26,9 @@ export class Leaderboard {
   setName(n) { if (this.account) return this.player.name; /* el nombre de una cuenta es su usuario */ const c = cleanName(n); if (c.length >= 2) { this.player.name = c; this.persist(); } return this.player.name; }
   async call(path, init = {}) {
     const c = this.cfg, ac = new AbortController(), to = setTimeout(() => ac.abort(), 7000);
+    let tk = null; if (this.account && this.tokenFn) { try { tk = await this.tokenFn(); } catch (_) { /* sin sesión: clave anónima */ } }
     try {
-      const r = await fetch(c.supabaseUrl.replace(/\/$/, '') + '/rest/v1/' + path, { ...init, signal: ac.signal, headers: { apikey: c.supabaseKey, Authorization: 'Bearer ' + c.supabaseKey, 'Content-Type': 'application/json', ...(init.headers || {}) } });
+      const r = await fetch(c.supabaseUrl.replace(/\/$/, '') + '/rest/v1/' + path, { ...init, signal: ac.signal, headers: { apikey: c.supabaseKey, Authorization: 'Bearer ' + (tk || c.supabaseKey), 'Content-Type': 'application/json', ...(init.headers || {}) } });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const t = await r.text(); return t ? JSON.parse(t) : null;
     } finally { clearTimeout(to); }
