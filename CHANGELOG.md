@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.94
+- Comunicado de la FIA: sanción de 100 puntos a fredillotraviesillo (Liga Granjo, Gran Premio de Suiza). Aviso en el inicio para todos, con el documento y apelaciones públicas (solo el sancionado puede apelar).
+- Liga: los 100 puntos se restan en clasificación, el chat muestra la sanción (pulsable) y la gráfica marca el punto con «!» y la caída de −100.
+
 ## 0.0.93
 - Interfaz nueva con identidad propia de Daily Lapp: inclinación del logo en placas, pestañas y botones, bordillos rojo y blanco, bandera a cuadros y fondo de líneas de velocidad (sin los puntitos).
 - Liga: contador de días de la temporada por segmentos, podio con cajones 2-1-3 y diferencias, «Vuelta más rápida de hoy», avisos de tiempos como torre de cronometraje, gráfica sobre asfalto con meta a cuadros y clasificación con posición en placa y distancia al líder.

@@ -9,6 +9,7 @@ fs.writeFileSync('dist/index.html', tpl.replace('<script>/*BUNDLE*/</script>', '
 fs.mkdirSync('dist/assets', { recursive: true });
 for (const name of fs.readdirSync('src/assets')) if (name.endsWith('.glb.gz')) fs.copyFileSync(`src/assets/${name}`, `dist/assets/${name}`);
 for (const name of ['jersey10-latin.woff2', 'jersey10-OFL.txt', 'lilita-latin.woff2', 'nunito-600.woff2', 'nunito-800.woff2']) fs.copyFileSync(`src/assets/${name}`, `dist/assets/${name}`);
+fs.cpSync('src/assets/sanciones', 'dist/assets/sanciones', { recursive: true });
 fs.copyFileSync('config.js', 'dist/config.js');
 for (const n of fs.readdirSync('src/pwa')) fs.copyFileSync(`src/pwa/${n}`, `dist/${n}`);
 fs.copyFileSync('src/engine-dsp.js', 'dist/engine-dsp.js');

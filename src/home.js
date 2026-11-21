@@ -2,9 +2,11 @@
 // y barra inferior con Inicio / Ligas / Ranking / Amigos / Perfil. Los ajustes y la música quedan arriba a la derecha.
 import { sk, vt } from './ux.js';
 import { ic } from './icons.js';
+import { initSanctions } from './sanctions.js';
 export function initHome(ctx) {
   const { $, acc, esc, LG, PF } = ctx;
   const menu = $('menu');
+  const SN = initSanctions({ $, acc, esc });
   let screen = 'main';
   const setScreen = (s, kind) => { if (s === screen && !kind) return; vt(() => setScreenNow(s, kind)); };
   const setScreenNow = (s, kind) => {
@@ -71,7 +73,7 @@ export function initHome(ctx) {
     LG.open(); // "ver todas", crear y unirme llevan a la pantalla de ligas, donde están los formularios
   });
   const label = () => { const t = $('hmNavUser'); if (t) t.textContent = acc.loggedIn && acc.username ? '@' + acc.username : 'Perfil'; };
-  let tm = 0; const refresh = () => { clearTimeout(tm); tm = setTimeout(() => { label(); renderLeagues(); }, 250); };
+  let tm = 0; const refresh = () => { clearTimeout(tm); tm = setTimeout(() => { label(); renderLeagues(); SN.render(); }, 250); };
   // accesos directos de la app instalada (?go=daily / ?go=leagues)
   try { const go = new URLSearchParams(location.search).get('go'); if (go) { const u = new URL(location.href); u.searchParams.delete('go'); history.replaceState(null, '', u.pathname + u.search + u.hash); setTimeout(() => { if (go === 'leagues') LG.open(); else if (go === 'daily') { const c = $('dailyCard'); if (c) c.click(); } }, 900); } } catch (_) { /* sin history */ }
   acc.onChange(refresh); label(); setTimeout(refresh, 1200);

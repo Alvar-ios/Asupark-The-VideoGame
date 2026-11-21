@@ -130,7 +130,7 @@ export function initLeagues(ctx) {
 
   async function tableView() {
     const { league: L, members, standings } = S.state, mm = Object.fromEntries(members.map((m) => [m.user_id, m]));
-    const rows = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }; return `<tr class="${s.user_id === me() ? 'me' : ''}${i < 3 ? ' p' + (i + 1) : ''}"><td class="po">${i + 1}</td><td class="nm">${flag(m.flag)}<span>${esc(m.username)}${s.user_id === S.state.lentorro ? ' ' + ic('snail') : ''}</span>${m.streak > 1 ? `<small class="fire">${ic('flame')}${m.streak}</small>` : ''}</td><td>${s.wins}</td><td>${s.podiums}</td><td>${s.best ? fmt(s.best / 1000) : '–'}</td><td class="pt">${s.pts}${s.bonus ? `<small class="bn">${ic('target')}${s.bonus}</small>` : ''}</td></tr>`; }).join('');
+    const rows = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }; return `<tr class="${s.user_id === me() ? 'me' : ''}${i < 3 ? ' p' + (i + 1) : ''}"><td class="po">${i + 1}</td><td class="nm">${flag(m.flag)}<span>${esc(m.username)}${s.user_id === S.state.lentorro ? ' ' + ic('snail') : ''}</span>${pen(s.user_id) ? `<small class="lg-pen" data-sanc="${sancOf(s.user_id)}">${ic('alert')}−${pen(s.user_id)}</small>` : ''}${m.streak > 1 ? `<small class="fire">${ic('flame')}${m.streak}</small>` : ''}</td><td>${s.wins}</td><td>${s.podiums}</td><td>${s.best ? fmt(s.best / 1000) : '–'}</td><td class="pt">${s.pts}${s.bonus ? `<small class="bn">${ic('target')}${s.bonus}</small>` : ''}</td></tr>`; }).join('');
     const yl = S.state.lentorro;
     const ban = yl && mm[yl] && L.season === L.current ? `<div class="lg-len">${ic('snail')} <b>Lentorro de hoy:</b> @${esc(mm[yl].username)}${yl === me() ? ' (¡eres tú! Hoy puedes elegir coche en el reto)' : ' · hoy puede elegir coche en el reto'}</div>` : '';
     const rec = await recapHtml(L); if (S.tab !== 'tabla' || S.view !== 'league') return;
@@ -165,10 +165,11 @@ export function initLeagues(ctx) {
   }
 
   // ---------- chat ----------
+  const sancOf = (uid) => { const l = (S.state && S.state.sanctions || []).filter((x) => x.user_id === uid); return l.length ? l[l.length - 1].id : ''; };
   const RX = ['🔥', '😂', '🐌', '👏', '😱'], tm = (m) => new Date(m.at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   const rxHtml = (m) => { const e = Object.entries(m.rx || {}); return `<div class="lg-rx">${e.map(([k, v]) => `<button type="button" class="${v.me ? 'me' : ''}" data-rx="${k}" data-id="${m.id}">${k} ${v.n}</button>`).join('')}<button type="button" class="add" data-more="${m.id}" aria-label="Reaccionar">+</button></div>${S.rxOpen === m.id ? `<div class="lg-rxp">${RX.map((k) => `<button type="button" data-rx="${k}" data-id="${m.id}">${k}</button>`).join('')}</div>` : ''}`; };
   const msgHtml = (m) => m.kind === 'sys'
-    ? `<div class="lg-m sys"><span>${esc(m.body.replace(/^[^\p{L}@]+/u, '')).replace(/@(\S+)/g, '<b>@$1</b>')}</span><small>${tm(m)}</small>${rxHtml(m)}</div>`
+    ? `<div class="lg-m sys${/sancionad/i.test(m.body) ? ' sanc' : ''}"${/sancionad/i.test(m.body) ? ` data-sanc="${sancOf(m.user_id)}"` : ''}><span>${esc(m.body.replace(/^[^\p{L}@]+/u, '')).replace(/@(\S+)/g, '<b>@$1</b>')}</span><small>${tm(m)}</small>${rxHtml(m)}</div>`
     : `<div class="lg-m${m.user_id === me() ? ' me' : ''}"><b>${m.user_id === me() ? 'Tú' : '@' + esc(m.username)}</b><span>${esc(m.body)}</span><small>${tm(m)}</small>${rxHtml(m)}</div>`;
   const feedHtml = (r) => (r.length ? r.map(msgHtml).join('') : '<p class="lg-note">Rompe el hielo: escribe el primer mensaje.</p>');
   function paintFeed(first) {
@@ -251,6 +252,10 @@ export function initLeagues(ctx) {
   // chat: los avisos de tiempos parecen una torre de cronometraje; los mensajes, globos con esquina recta
   const msg2 = (m) => {
     const mm = S.memo || {}, col = S.cols || {}, u = mm[m.user_id] || { username: m.username };
+    if (m.kind === 'sys' && /sancionad/i.test(m.body || '')) {
+      const pts = ((m.body.match(/(\d+)\s*puntos/) || [])[1]) || '', why = /side practice/i.test(m.body) ? 'side practice' : 'infracción';
+      return `<div class="l2-m sys"><div class="l2-tw sanc" role="button" tabindex="0" data-sanc="${sancOf(m.user_id)}" style="--c:#E10600"><i></i><span class="l2-twb">${ic('alert')}</span><b>${esc(u.username)}</b><small>sancionado · ${why}</small><em>−${pts}</em><time>${tm(m)}</time></div>${rxHtml(m)}</div>`;
+    }
     if (m.kind === 'sys') {
       const body = String(m.body || '').replace(/^[^\p{L}@]+/u, ''), t = (body.match(/\d+:\d{2}\.\d{2,3}/) || [])[0], lead = /l[ií]der/i.test(body), pos = (body.match(/\(P(\d+)\)/) || [])[1];
       const what = lead ? 'líder del día' : pos ? 'marca P' + pos : 'ha corrido';
@@ -265,19 +270,24 @@ export function initLeagues(ctx) {
     const upto = L.season < L.current ? L.season_days : Math.min(L.season_days, dayIdx(L.today)), N = Math.min(L.season_days, Math.max(upto, 5));
     const per = {}; for (const s of st.standings) per[s.user_id] = new Array(upto + 1).fill(0);
     for (const d of st.days) { const i = dayIdx(d.day); if (i < 1 || i > upto) continue; d.rows.forEach((r, k) => { if (per[r.user_id]) per[r.user_id][i] += PTS[k] || 0; }); }
-    for (const id in per) { const a = per[id]; for (let i = 1; i <= upto; i++) a[i] += a[i - 1]; const s = st.standings.find((x) => x.user_id === id); if (s && s.pts > a[upto]) a[upto] = s.pts; }
-    const max = Math.max(25, ...Object.values(per).map((a) => a[upto])), top = Math.ceil(max / 50) * 50 || 50;
-    const W = 330, H = 180, x0 = 10, x1 = 300, y0 = 160, y1 = 14, X = (i) => x0 + (x1 - x0) * i / N, Y = (v) => y0 - (y0 - y1) * v / top;
-    const grid = [0, top / 2, top].map((v) => `<line x1="${x0}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${x0}" y="${Y(v) - 4}">${v}</text>`).join('');
+    const sanc = (st.sanctions || []).map((x) => ({ ...x, i: Math.min(upto, Math.max(1, dayIdx(x.day))) }));
+    for (const id in per) { const a = per[id]; for (let i = 1; i <= upto; i++) a[i] += a[i - 1]; for (const x of sanc) if (x.user_id === id) for (let i = x.i; i <= upto; i++) a[i] -= x.points; const s = st.standings.find((x) => x.user_id === id); if (s && s.pts > a[upto]) a[upto] = s.pts; }
+    const all = Object.values(per).flat(), max = Math.max(25, ...all), min = Math.min(0, ...all), top = Math.ceil(max / 50) * 50 || 50, lo = min < 0 ? Math.floor(min / 50) * 50 : 0;
+    const W = 330, H = 180, x0 = 10, x1 = 300, y0 = 160, y1 = 14, X = (i) => x0 + (x1 - x0) * i / N, Y = (v) => y0 - (y0 - y1) * (v - lo) / (top - lo);
+    const ticks = lo < 0 ? [lo, 0, top] : [0, top / 2, top];
+    const grid = ticks.map((v) => `<line${v === 0 && lo < 0 ? ' class="z"' : ''} x1="${x0}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${x0}" y="${Y(v) - 4}">${v}</text>`).join('');
     const fin = `<g class="fin">${Array.from({ length: 12 }, (_, r) => `<rect x="${x1 + 4 + (r % 2) * 5}" y="${y1 + r * ((y0 - y1) / 12)}" width="5" height="${(y0 - y1) / 12}"/>`).join('')}</g>`;
     const order = st.standings.map((s) => s.user_id), ids = Object.keys(per).sort((a, b) => (a === me()) - (b === me()));
     const lines = ids.map((id) => { const a = per[id], pts = a.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`), ex = X(upto), ey = Y(a[upto]); return `<g style="--c:${col[id]}"${id === me() ? ' class="me"' : ''}><polyline points="${pts.join(' ')}"/><rect class="tag" x="${ex - 9}" y="${ey - 8}" width="18" height="16" rx="3" transform="skewX(-12) translate(${(ey * Math.tan(12 * Math.PI / 180)).toFixed(1)} 0)"/><text class="tg" x="${ex}" y="${ey + 4}">${order.indexOf(id) + 1}</text></g>`; }).join('');
-    return `<div class="l2-chart"><div class="l2-ch"><b>Puntos por día</b><small>${L.season < L.current ? 'Temporada completa' : 'Hasta hoy · día ' + upto}</small></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Puntos acumulados por día">${grid}${fin}${lines}</svg></div>`;
+    const marks = sanc.map((x) => { const a = per[x.user_id]; if (!a) return ''; const px = X(x.i), yb = Y(a[x.i] + x.points), ya = Y(a[x.i]); return `<g class="sm" data-sanc="${x.id}"><line x1="${px}" x2="${px}" y1="${yb}" y2="${ya}"/><circle class="hit" cx="${px}" cy="${yb}" r="18"/><circle cx="${px}" cy="${yb}" r="9"/><text class="ex" x="${px}" y="${yb + 4}">!</text><text class="sl" x="${px - 14}" y="${(yb + ya) / 2 + 4}">−${x.points}</text></g>`; }).join('');
+    const legend = sanc.map((x) => `<button type="button" class="l2-sl" data-sanc="${x.id}">${ic('alert')}<span>Sancionado: <b>${esc(x.driver || ((S.memo || {})[x.user_id] || {}).username || '')}</b> −${x.points} pts</span><i>›</i></button>`).join('');
+    return `<div class="l2-chart"><div class="l2-ch"><b>Puntos por día</b><small>${L.season < L.current ? 'Temporada completa' : 'Hasta hoy · día ' + upto}</small></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Puntos acumulados por día">${grid}${fin}${lines}${marks}</svg>${legend}</div>`;
   }
+  const pen = (uid) => (S.state.sanctions || []).filter((x) => x.user_id === uid).reduce((n, x) => n + x.points, 0);
   function v2Points(L, mm, col) {
     const { standings } = S.state, yl = S.state.lentorro, lead = standings[0] ? standings[0].pts : 0;
     const cards = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }, mine = s.user_id === me();
-      return `<div class="l2-card${mine ? ' me' : ''}${i < 3 ? ' p' + (i + 1) : ''}" style="--c:${col[s.user_id]}"><span class="l2-pos"><b>${i + 1}</b></span>${av(m, col[s.user_id], 'md')}<div class="l2-ci"><b>${esc(m.username)}${mine ? '<em class="l2-you">TÚ</em>' : ''}${s.user_id === yl ? `<span class="l2-snail" title="Lentorro">${ic('snail')}</span>` : ''}${m.streak > 1 ? `<span class="l2-fire">${ic('flame')}${m.streak}</span>` : ''}</b><small>${s.wins} día${s.wins === 1 ? '' : 's'} ganado${s.wins === 1 ? '' : 's'}${s.best ? ' · ' + fmt(s.best / 1000) : ''}</small></div><div class="l2-pt"><b>${s.pts}</b><small>${i ? '−' + (lead - s.pts) : 'PTS'}</small></div></div>`; }).join('');
+      return `<div class="l2-card${mine ? ' me' : ''}${i < 3 ? ' p' + (i + 1) : ''}" style="--c:${col[s.user_id]}"><span class="l2-pos"><b>${i + 1}</b></span>${av(m, col[s.user_id], 'md')}<div class="l2-ci"><b>${esc(m.username)}${mine ? '<em class="l2-you">TÚ</em>' : ''}${s.user_id === yl ? `<span class="l2-snail" title="Lentorro">${ic('snail')}</span>` : ''}${pen(s.user_id) ? `<span class="l2-pen" data-sanc="${sancOf(s.user_id)}">${ic('alert')}−${pen(s.user_id)}</span>` : ''}${m.streak > 1 ? `<span class="l2-fire">${ic('flame')}${m.streak}</span>` : ''}</b><small>${s.wins} día${s.wins === 1 ? '' : 's'} ganado${s.wins === 1 ? '' : 's'}${s.best ? ' · ' + fmt(s.best / 1000) : ''}</small></div><div class="l2-pt"><b>${s.pts}</b><small>${i ? '−' + (lead - s.pts) : 'PTS'}</small></div></div>`; }).join('');
     return `${L.current > 1 ? seasonNav(L) : ''}${v2Chart(L, col)}<div class="l2-cards">${cards}</div>
       ${yl && mm[yl] && L.season === L.current ? `<p class="l2-len">${ic('snail')} Lentorro: ${esc(mm[yl].username)} · hoy puede elegir coche</p>` : ''}
       <div class="l2-inv"><div><small>Código de la liga</small><b>${esc(L.code)}</b></div><button class="l2-pill" data-a="copy" type="button">Copiar enlace</button></div>
@@ -311,6 +321,7 @@ export function initLeagues(ctx) {
   const copy = async (t) => { try { await navigator.clipboard.writeText(t); toast('Enlace copiado'); } catch (e) { prompt('Copia este enlace', t); } };
 
   $('lgBody').addEventListener('click', async (e) => {
+    const sn = e.target.closest('[data-sanc]'); if (sn && sn.dataset.sanc) { document.dispatchEvent(new CustomEvent('dr:sanction', { detail: { id: sn.dataset.sanc } })); return; }
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.open) { S.fromList = true; return enter(b.dataset.open); }
     if (b.dataset.t) { S.tab = b.dataset.t; return leagueView(); }

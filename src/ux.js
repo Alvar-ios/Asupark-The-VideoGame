@@ -45,7 +45,7 @@ export function initUx({ $, acc }) {
   addEventListener('pagehide', () => { [...pending].forEach((f) => f()); });
 
   // ----- pantallas superpuestas: botón Atrás las cierra (Android/PWA) y se cierran deslizando hacia abajo -----
-  const SHEETS = { daily: 'dyClose', leagues: 'lgClose', profile: 'profClose', board: 'boardClose', musicPick: 'musicClose', settings: 'setClose' };
+  const SHEETS = { daily: 'dyClose', leagues: 'lgClose', profile: 'profClose', board: 'boardClose', musicPick: 'musicClose', settings: 'setClose', sanction: 'sancClose' };
   const stack = []; let navBack = 0;
   const visible = (id) => { const o = $(id); return !!o && !o.classList.contains('hidden'); };
   const closeBtn = (id) => $(SHEETS[id]);
