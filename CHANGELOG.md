@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.97
+- Riviera · Italia, mucho más detallada: casas con zócalo de piedra, impostas, cornisa, tejado de tejas, ventanas con marco, contraventanas, balcones de forja, macetas, puertas y tiendas con toldo.
+- Paseo del lago con balaustrada de balaustres torneados, pilastras con remate, farolas clásicas, bordillo y aceras de losa. Muros de mampostería irregular.
+- Coliseo con arcos huecos de verdad, columnas adosadas, ático, galería interior y graderío; arco de triunfo de tres vanos.
+- Cipreses, pinos piñoneros, olivos, adelfas en flor, matas de hierba y rocas; coches de época aparcados, terrazas con sombrillas, barcas y veleros, pueblos en la otra orilla y lago con ondas en movimiento.
+
 ## 0.0.96
 - Nuevo circuito de prueba «Riviera · Italia» (781 m) con estilo PS2: pocos polígonos, color por vértice con sombreado horneado, texturas pequeñas y luz cálida de tarde.
 - Paseo junto al lago con pretil de piedra y farolas, pueblo de casas con contraventanas, cipreses y pinos piñoneros, coliseo con arco de triunfo, casas de colores en el acantilado (estilo Cinque Terre), barcas y montañas con bruma.
