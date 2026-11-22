@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.99
+- Farolas de la Riviera con halo más suave y dilatado: dos capas de luz muy difuminadas en lugar de un foco intenso, charco de luz más amplio y tenue, y el farol algo menos saturado.
+
 ## 0.0.98
 - Riviera · Italia al atardecer (hora dorada): el sol baja sobre el agua con disco y resplandor, cielo con banda naranja y lavanda, nubes teñidas, niebla cálida y luz rasante naranja con relleno azulado en las sombras. Sombras largas y reflejo del sol en el lago.
 - Las farolas están encendidas, con farol brillante, halo borroso y charco de luz cálida sobre el asfalto. Ventanas de las casas encendidas con su resplandor, y arcos del Coliseo iluminados desde dentro con focos al pie.

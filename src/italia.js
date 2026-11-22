@@ -418,13 +418,13 @@ export function italiaDecor(tr, th, scene, q) {
   }
   // farolas: pie moldurado, fuste y farol de cuatro caras
   { const pole = paint(new THREE.LatheGeometry([[0, 0], [0.22, 0], [0.22, 0.25], [0.14, 0.32], [0.1, 0.6], [0.07, 0.7], [0.06, 3.4], [0.1, 3.5], [0.12, 3.6], [0, 3.6]].map(([a, b]) => new THREE.Vector2(a, b)), 8), 0x1f2224, 0.2);
-    const glass = paint(new THREE.CylinderGeometry(0.16, 0.24, 0.62, 4).rotateY(Math.PI / 4).translate(0, 3.95, 0), dusk ? 0xffd890 : 0xffe3a0, 0), lan = mergeGeometries([paint(new THREE.ConeGeometry(0.36, 0.32, 4).rotateY(Math.PI / 4).translate(0, 4.42, 0), 0x1f2224, 0), paint(B(0.06, 0.66, 0.06).translate(0.2, 3.95, 0.2), 0x1f2224, 0), paint(B(0.06, 0.66, 0.06).translate(-0.2, 3.95, -0.2), 0x1f2224, 0), paint(new THREE.SphereGeometry(0.06, 5, 3).translate(0, 4.62, 0), 0x1f2224, 0)]);
+    const glass = paint(new THREE.CylinderGeometry(0.16, 0.24, 0.62, 4).rotateY(Math.PI / 4).translate(0, 3.95, 0), dusk ? 0xf2c58a : 0xffe3a0, 0), lan = mergeGeometries([paint(new THREE.ConeGeometry(0.36, 0.32, 4).rotateY(Math.PI / 4).translate(0, 4.42, 0), 0x1f2224, 0), paint(B(0.06, 0.66, 0.06).translate(0.2, 3.95, 0.2), 0x1f2224, 0), paint(B(0.06, 0.66, 0.06).translate(-0.2, 3.95, -0.2), 0x1f2224, 0), paint(new THREE.SphereGeometry(0.06, 5, 3).translate(0, 4.62, 0), 0x1f2224, 0)]);
     inst(mergeGeometries([pole, lan]), lamps, () => [1, 1], 0xffffff, new THREE.MeshLambertMaterial({ vertexColors: true }), true);
     inst(glass, lamps, () => [1, 1], 0xffffff, new THREE.MeshBasicMaterial({ vertexColors: true }), false);
-    if (dusk) { for (const l of lamps) { glow(l[0], l[2] + 3.78, l[1], 7.5, 0xffb25a, 1.0); glow(l[0], l[2] + 3.78, l[1], 22, 0xff8e3a, 0.32); }
+    if (dusk) { for (const l of lamps) { glow(l[0], l[2] + 3.78, l[1], 13, 0xffb25a, 0.5); glow(l[0], l[2] + 3.78, l[1], 34, 0xff9a48, 0.2); glow(l[0], l[2] + 3.78, l[1], 62, 0xff8e3a, 0.07); }
       // charco de luz cálida sobre el asfalto bajo cada farola
-      const pt = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: softTex(), color: 0xff9a4c, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), pools.length), m4 = new THREE.Matrix4();
-      pools.forEach((q2, k) => { m4.compose(V.set(q2[0], q2[2], q2[1]), Q.identity(), S3.set(12, 1, 12)); pt.setMatrixAt(k, m4); }); pt.frustumCulled = false; pt.renderOrder = 2; G.add(pt); } }
+      const pt = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: softTex(), color: 0xff9a4c, transparent: true, opacity: 0.38, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), pools.length), m4 = new THREE.Matrix4();
+      pools.forEach((q2, k) => { m4.compose(V.set(q2[0], q2[2], q2[1]), Q.identity(), S3.set(22, 1, 22)); pt.setMatrixAt(k, m4); }); pt.frustumCulled = false; pt.renderOrder = 2; G.add(pt); } }
   // balaustres torneados del paseo
   inst(paint(new THREE.LatheGeometry([[0, 0], [0.1, 0], [0.1, 0.06], [0.06, 0.1], [0.075, 0.2], [0.12, 0.36], [0.07, 0.5], [0.06, 0.54], [0.1, 0.58], [0.1, 0.62], [0, 0.62]].map(([a, b]) => new THREE.Vector2(a, b)), mobile ? 5 : 7), 0xefe4cf, 0.35), balus, () => [0.75, 1.1], 0xffffff, new THREE.MeshLambertMaterial({ vertexColors: true }), false);
 
