@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.101
+- Farolas de la Riviera: sin haz de luz sobre la pista; solo un brillo pequeño y suave alrededor del farol.
+
 ## 0.0.100
 - Riviera al atardecer: halos de las farolas casi al mínimo (solo un resplandor muy tenue) y charco de luz más discreto. Luz ambiental y del sol subida un poco para que el escenario no quede tan oscuro.
 
