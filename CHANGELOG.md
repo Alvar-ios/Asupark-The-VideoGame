@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.98
+- Riviera · Italia al atardecer (hora dorada): el sol baja sobre el agua con disco y resplandor, cielo con banda naranja y lavanda, nubes teñidas, niebla cálida y luz rasante naranja con relleno azulado en las sombras. Sombras largas y reflejo del sol en el lago.
+- Las farolas están encendidas, con farol brillante, halo borroso y charco de luz cálida sobre el asfalto. Ventanas de las casas encendidas con su resplandor, y arcos del Coliseo iluminados desde dentro con focos al pie.
+- Faros del coche con resplandor suave al atardecer. Los halos son un único InstancedMesh, así que casi no cuestan rendimiento.
+
 ## 0.0.97
 - Riviera · Italia, mucho más detallada: casas con zócalo de piedra, impostas, cornisa, tejado de tejas, ventanas con marco, contraventanas, balcones de forja, macetas, puertas y tiendas con toldo.
 - Paseo del lago con balaustrada de balaustres torneados, pilastras con remate, farolas clásicas, bordillo y aceras de losa. Muros de mampostería irregular.

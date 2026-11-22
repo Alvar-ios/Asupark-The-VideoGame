@@ -25,11 +25,12 @@ function skyMesh(th) {
       top: { value: isKart ? col(0x289ef5) : col(th.skyTop).lerp(col(0x424e5a), storm ? 0.52 : 0) },
       hor: { value: isKart ? col(0xfef6a2) : col(th.skyHor).lerp(col(0x7d8995), storm ? 0.54 : 0) },
       sunC: { value: col(th.sun).lerp(col(0xa9b3bf), storm ? 0.65 : 0) },
-      sunD: { value: new THREE.Vector3(...th.sunDir).normalize() }
+      sunD: { value: new THREE.Vector3(...th.sunDir).normalize() },
+      dusk: { value: th.dusk ? 1 : 0 }
     },
     vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
     fragmentShader: `
-      uniform vec3 top; uniform vec3 hor; uniform vec3 sunC; uniform vec3 sunD;
+      uniform vec3 top; uniform vec3 hor; uniform vec3 sunC; uniform vec3 sunD; uniform float dusk;
       varying vec3 vD;
       void main(){
         float h = clamp(vD.y, 0.0, 1.0);
@@ -39,7 +40,19 @@ function skyMesh(th) {
         float s = max(dot(normalize(vD), sunD), 0.0);
         float sunDisk = pow(s, 1200.0) * 2.2;
         float sunGlow = pow(s, 72.0) * 0.42 + pow(s, 9.0) * 0.12;
+        if (dusk > 0.5) {
+          // atardecer: banda naranja pegada al horizonte, más intensa hacia el sol, y lavanda en el lado opuesto
+          float az = max(dot(normalize(vD.xz + 1e-4), normalize(sunD.xz)), 0.0);
+          float low = pow(1.0 - clamp(vD.y * 2.4, 0.0, 1.0), 2.6);
+          float up = pow(1.0 - clamp(vD.y * 1.1, 0.0, 1.0), 2.0);
+          c = mix(c, vec3(1.0, 0.46, 0.18), low * (0.18 + 0.72 * pow(az, 2.5)));
+          c = mix(c, vec3(0.93, 0.5, 0.52), up * pow(az, 5.0) * 0.45);
+          c = mix(c, vec3(0.62, 0.52, 0.72), low * (1.0 - az) * 0.42);
+          sunDisk = pow(s, 700.0) * 3.4;
+          sunGlow = pow(s, 90.0) * 0.9 + pow(s, 16.0) * 0.38 + pow(s, 4.0) * 0.22;
+        }
         c += sunC * (sunDisk + sunGlow);
+        if (dusk > 0.5) c += vec3(1.0, 0.93, 0.74) * pow(s, 4000.0) * 5.0;
         if(vD.y < 0.0) c = hor;
         gl_FragColor = vec4(c, 1.0);
       }
@@ -526,7 +539,7 @@ function skyGroup(th, rng) {
     const cloudy = th.weather === 'rain', cloudGroups = cloudy ? 27 : 18;
     const cm = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: cloudy ? 0.84 : 0.54, fog: false, depthWrite: false });
     const cg = new THREE.IcosahedronGeometry(1, 1), clouds = new THREE.InstancedMesh(cg, cm, cloudGroups * 4), d = new THREE.Object3D();
-    const cloudCol = col(th.weather === 'rain' ? 0x505d6b : th.skyHor).lerp(col(th.weather === 'rain' ? 0x758392 : 0xffffff), th.weather === 'rain' ? 0.34 : 0.78);
+    const cloudCol = th.dusk ? col(0xffb08a).lerp(col(0xffe2c4), 0.3) : col(th.weather === 'rain' ? 0x505d6b : th.skyHor).lerp(col(th.weather === 'rain' ? 0x758392 : 0xffffff), th.weather === 'rain' ? 0.34 : 0.78);
     for (let i = 0; i < cloudGroups; i++) {
       const a = rng() * 6.283, r = (cloudy ? 480 : 800) + rng() * 1000, x = Math.cos(a) * r, z = Math.sin(a) * r;
       const y = (cloudy ? 170 : 220) + rng() * 220, width = (cloudy ? 150 : 100) + rng() * (cloudy ? 150 : 100), height = (cloudy ? 30 : 18) + rng() * (cloudy ? 26 : 18);
@@ -540,8 +553,8 @@ function skyGroup(th, rng) {
     }
     clouds.renderOrder = -9; clouds.frustumCulled = false; g.add(clouds);
   }
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: th.sun, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true, opacity: th.night ? 0.5 : th.weather === 'rain' ? 0.18 : 0.9 }));
-  const d = new THREE.Vector3(...th.sunDir).normalize().multiplyScalar(1500); sp.position.copy(d); sp.scale.setScalar(th.night ? 220 : th.weather === 'rain' ? 260 : 520); sp.renderOrder = -8; g.add(sp);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: th.sun, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true, opacity: th.night ? 0.5 : th.weather === 'rain' ? 0.18 : th.dusk ? 0.62 : 0.9 }));
+  const d = new THREE.Vector3(...th.sunDir).normalize().multiplyScalar(1500); sp.position.copy(d); sp.scale.setScalar(th.night ? 220 : th.weather === 'rain' ? 260 : th.dusk ? 720 : 520); sp.renderOrder = -8; g.add(sp);
   g.frustumCulled = false;
   return g;
 }
@@ -2859,8 +2872,9 @@ export function buildWorld(tr, th, opt = {}) {
   if (opt.shadows) {
     sun.castShadow = true;
     const ms = opt.mobile ? 1024 : 2048; sun.shadow.mapSize.set(ms, ms);
-    const c = sun.shadow.camera; c.left = -45; c.right = 45; c.top = 45; c.bottom = -45; c.near = 1; c.far = 320; c.updateProjectionMatrix();
-    sun.shadow.bias = -0.00015; sun.shadow.normalBias = 0.025; sun.shadow.radius = 2.2;
+    const c = sun.shadow.camera, hb = th.dusk ? 58 : 45; c.left = -hb; c.right = hb; c.top = hb; c.bottom = -hb; c.near = 1; c.far = th.dusk ? 520 : 320; c.updateProjectionMatrix();
+    sun.userData.dist = th.dusk ? 210 : 110;
+    sun.shadow.bias = th.dusk ? -0.0004 : -0.00015; sun.shadow.normalBias = th.dusk ? 0.04 : 0.025; // sol bajo: más margen para evitar rayas en el suelo sun.shadow.radius = 2.2;
   }
   const microRain = !!(tr.rain && tr.rain.length); // chaparrón local: la lluvia solo se ve (y se oye) dentro de su tramo
   const ambientRain = th.weather === 'rain' || microRain, ambientSnow = th.surface === 'snow';

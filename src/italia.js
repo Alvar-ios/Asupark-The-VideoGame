@@ -114,10 +114,14 @@ function hipRoof(W, D, rh) {
   return [g, cap];
 }
 
+function softTex() { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); }
 export function italiaDecor(tr, th, scene, q) {
   const N = tr.N, L = WALL, mobile = q.density < 1, shadow = !!q.shadows, G = new THREE.Group(); scene.add(G);
   const bins = { plain: [], plaster: [], facade: [], stone: [], trav: [], roof: [] };
   const add = (k, g) => bins[k].push(g);
+  bins.lit = [];
+  const dusk = !!th.dusk, glows = []; // luces con halo: [x, y, z, tamaño, color, intensidad]
+  const glow = (x, y, z, size, hex, k) => glows.push([x, y, z, size, hex, k]);
   let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9; for (let i = 0; i < N; i += 4) { minX = Math.min(minX, tr.X[i]); maxX = Math.max(maxX, tr.X[i]); minZ = Math.min(minZ, tr.Z[i]); maxZ = Math.max(maxZ, tr.Z[i]); }
   const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
   const cs = 16, gridT = new Map(); for (let i = 0; i < N; i += 2) { const k = Math.floor(tr.X[i] / cs) + ',' + Math.floor(tr.Z[i] / cs); (gridT.get(k) || gridT.set(k, []).get(k)).push(i); }
@@ -173,11 +177,11 @@ export function italiaDecor(tr, th, scene, q) {
   }
   // ---- lago: turquesa en la orilla, azul profundo mar adentro; ondas que se mueven y reflejo del sol ----
   {
-    const S = 3200, seg = mobile ? 48 : 80, g = new THREE.PlaneGeometry(S, S, seg, seg).rotateX(-Math.PI / 2).translate(cx, SEA, cz - 400), p = g.attributes.position, col = new Float32Array(p.count * 3), sh = new THREE.Color(0x5cb8b0), deep = new THREE.Color(0x1f5a84), c = new THREE.Color();
+    const S = 3200, seg = mobile ? 48 : 80, g = new THREE.PlaneGeometry(S, S, seg, seg).rotateX(-Math.PI / 2).translate(cx, SEA, cz - 400), p = g.attributes.position, col = new Float32Array(p.count * 3), sh = new THREE.Color(dusk ? 0x4c9f9c : 0x5cb8b0), deep = new THREE.Color(dusk ? 0x1a3f6c : 0x1f5a84), c = new THREE.Color();
     for (let i = 0; i < p.count; i++) { const dep = SEA - hAt(p.getX(i), p.getZ(i)); c.copy(sh).lerp(deep, sstep(0.3, 6, dep)); col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     const nm = waterNormals(); nm.repeat.set(140, 140);
-    const mat = new THREE.MeshPhongMaterial({ vertexColors: true, specular: 0xc29a62, shininess: 110, normalMap: nm, normalScale: new THREE.Vector2(0.55, 0.55), transparent: true, opacity: 0.93 });
+    const mat = new THREE.MeshPhongMaterial({ vertexColors: true, specular: dusk ? 0xffa352 : 0xc29a62, shininess: dusk ? 46 : 110, normalMap: nm, normalScale: dusk ? new THREE.Vector2(0.8, 0.8) : new THREE.Vector2(0.55, 0.55), transparent: true, opacity: 0.93 });
     const m = new THREE.Mesh(g, mat); m.frustumCulled = false; m.renderOrder = 1; m.onBeforeRender = () => { const t = performance.now() / 1000; nm.offset.set(t * 0.006, t * 0.004); }; G.add(m);
   }
 
@@ -254,6 +258,8 @@ export function italiaDecor(tr, th, scene, q) {
         add('trav', paint(place(g, px, y, pz, yaw), 0xf3e6cb, 0.32, (hash(k, t) - 0.5) * 0.05));
         if (t === 0) add('trav', paint(place(boxM(bw, 2.6, depth, 4, 4, false).translate(0, -1.3, depth / 2), px, y, pz, yaw), 0xe6d6b4, 0.45));
         if (!broken) add('plain', paint(place(B(bw + 0.05, 0.55, 0.6).translate(0, (t === 3 ? tierH * 0.75 : tierH) - 0.1, -0.05), px, y, pz, yaw), 0xeadcc0, 0.2));
+        if (dusk && t < 3 && !broken && (k % 2 === 0 || !mobile)) glow(px - nx * 1.5, y + tierH * (t === 0 ? 0.36 : 0.4), pz - nz * 1.5, 6.5, 0xff9440, 0.55);
+        if (dusk && t === 0 && !broken && k % 3 === 0) glow(px + nx * 3.2, y + 1.2, pz + nz * 3.2, 11, 0xffb464, 0.3);
         if (colG && t < 3 && !broken) add('trav', paint(place(colG.clone().translate(bw / 2, (tierH - 1.4) / 2 + 0.5, 0), px, y, pz, yaw), 0xf1e3c6, 0.3));
       }
       if (tiers === 4 && k % 2 === 0) add('plain', paint(place(B(1.1, 1.6, 0.2).translate(0, 3 * tierH + tierH * 0.42, -0.05), px, base + 2.5, pz, yaw), 0x3a2b1f, 0));
@@ -289,7 +295,7 @@ export function italiaDecor(tr, th, scene, q) {
   // casa detallada: zócalo, impostas, cornisa, tejado de tejas, ventanas con marco y contraventanas, balcones de forja, macetas, puerta, tiendas con toldo
   const houseD = (x, z, yaw, w, d, floors, wallHex, roofHex, k, rich) => {
     const corners = [[0, 0], [w / 2, d / 2], [-w / 2, d / 2], [w / 2, -d / 2], [-w / 2, -d / 2]].map(([a, b]) => hAt(x + Math.cos(yaw) * a + Math.sin(yaw) * b, z - Math.sin(yaw) * a + Math.cos(yaw) * b));
-    const gmin = Math.min(...corners), gmax = Math.max(...corners), y0 = gmin - 1, gb = gmax - y0 + 0.25, fh = 3.1, Hh = gb + floors * fh + 0.3, parts = [];
+    const gmin = Math.min(...corners), gmax = Math.max(...corners), y0 = gmin - 1, gb = gmax - y0 + 0.25, fh = 3.1, Hh = gb + floors * fh + 0.3, parts = [], wins = [];
     const pc = (bin, g, hex, ao, px, py, pz, ry = 0, pitch = 0) => parts.push([bin, paint(place(g, px, py, pz, ry, 1, 1, 1, pitch), hex, ao)]);
     const shut = shutC[k % shutC.length], frameHex = 0xf1e8d6, shop = hash(k, 21) < 0.4;
     pc('plaster', boxM(w, Hh, d, 4, 4, false), wallHex, 0.28, 0, Hh / 2, 0);
@@ -311,7 +317,9 @@ export function italiaDecor(tr, th, scene, q) {
         if (f === 0 && hash(k * 7 + b, fi) < 0.35) continue;
         const closed = hash(k * 13 + b, f + fi * 5) < 0.3, bal = rich && f >= 1 && fi === 0 && hash(k * 3 + b, f) < 0.3, flower = !bal && hash(k * 5 + b, f + fi) < 0.25, wh = bal ? 2.2 : 1.5, wy = bal ? yb + 1.15 : cy;
         if (!mobile && rich !== 0) { p = at(u, 0.03); pc('plain', B(1.4, wh + 0.35, 0.06), frameHex, 0, p[0], wy + 0.02, p[1], fa); }
-        p = at(u, 0.06); pc('plain', B(1.0, wh, 0.06), closed ? shut : 0x26211c, closed ? 0.35 : 0, p[0], wy, p[1], fa);
+        const lit = dusk && !closed && hash(k * 17 + b, f * 3 + fi) < (mobile ? 0.3 : 0.45);
+        p = at(u, 0.06); pc(lit ? 'lit' : 'plain', B(1.0, wh, 0.06), closed ? shut : lit ? 0xffc27a : 0x26211c, closed ? 0.35 : 0, p[0], wy, p[1], fa);
+        if (lit) { p = at(u, 0.8); wins.push([p[0], wy, p[1]]); }
         if (!closed) for (const sgn of [-1, 1]) { p = at(u + sgn * 0.82, 0.07); pc('plain', B(0.52, wh, 0.05), shut, 0.35, p[0], wy, p[1], fa); }
         if (bal) { p = at(u, 0.5); pc('stone', boxM(1.9, 0.16, 0.95, 1, 1, false), 0xd8cab0, 0, p[0], yb + 0.08, p[1], fa); p = at(u, 0.95); pc('plain', B(1.9, 0.06, 0.06), 0x262626, 0, p[0], yb + 1.05, p[1], fa);
           for (let r = 0; r < 7; r++) { p = at(u - 0.9 + r * 0.3, 0.95); pc('plain', B(0.035, 0.95, 0.035), 0x262626, 0, p[0], yb + 0.6, p[1], fa); }
@@ -325,6 +333,7 @@ export function italiaDecor(tr, th, scene, q) {
     if (rich && hash(k, 30) < 0.3) for (let t = 0; t < 5; t++) pc('plain', lumpy(new THREE.IcosahedronGeometry(0.9, 1), 0.7, k + t).scale(0.6, 1, 1.3), t % 2 ? 0x3f6a2c : 0xd03f82, 0.4, -(w / 2 + 0.1), gb + 0.6 + t * 0.9, d * 0.1 + (hash(k, t) - 0.5) * 2); // buganvilla trepando
     const mat = new THREE.Matrix4().compose(V.set(x, y0, z), Q.setFromEuler(E.set(0, yaw, 0)), S3.set(1, 1, 1));
     for (const [bin, g] of parts) add(bin, g.applyMatrix4(mat));
+    for (const w2 of wins) { V.set(w2[0], w2[1], w2[2]).applyMatrix4(mat); glow(V.x, V.y, V.z, 3.6, 0xffa347, 0.6); }
     houses.push([x, z, Math.max(w, d) * 0.6]);
   };
   // casa lejana (barata): caja con textura de vanos, cornisa y tejado de tejas
@@ -355,10 +364,10 @@ export function italiaDecor(tr, th, scene, q) {
   }
 
   // ---- terraza de café, coches aparcados detrás del muro y farolas ----
-  const umbrellas = [], cars = [], lamps = [];
+  const umbrellas = [], cars = [], lamps = [], pools = [];
   for (let i = 0; i < N; i += Math.max(2, Math.round(7 / tr.ds))) for (const s of [-1, 1]) { if (isLake(i, s)) continue; const [x, z] = side(i, s, L + 2.6 + hash(i, s) * 1.5); if (roadDist(x, z) < L + 1.3 || !free(x, z, 1.6) || ellD(x, z) < 1.3 || z - shoreZ(x) < 5) continue;
     const r = hash(i * 3, s); if (tr.Y[i] < 1.5 && r < 0.35) umbrellas.push([x, z, hAt(x, z), hash(i, 9)]); else if (r < 0.62) cars.push([x, z, hAt(x, z), yawAt(i) / 6.283 + (hash(i, 4) < 0.5 ? 0 : 0.5)]); }
-  for (let i = 0; i < N; i += Math.max(2, Math.round(24 / tr.ds))) for (const s of [-1, 1]) { const [x, z] = side(i, s, L - 0.35); lamps.push([x, z, tr.Y[i] + 0.43, 0]); }
+  for (let i = 0; i < N; i += Math.max(2, Math.round(24 / tr.ds))) for (const s of [-1, 1]) { const [x, z] = side(i, s, L - 0.35), [px, pz] = side(i, s, L - 3.6); lamps.push([x, z, tr.Y[i] + 0.43, 0]); pools.push([px, pz, tr.Y[i] + 0.06]); }
 
   // ---- vegetación ----
   const cypress = [], pines = [], bushes = [], olives = [], flowers = [], tufts = [], rocks = [];
@@ -409,14 +418,20 @@ export function italiaDecor(tr, th, scene, q) {
   }
   // farolas: pie moldurado, fuste y farol de cuatro caras
   { const pole = paint(new THREE.LatheGeometry([[0, 0], [0.22, 0], [0.22, 0.25], [0.14, 0.32], [0.1, 0.6], [0.07, 0.7], [0.06, 3.4], [0.1, 3.5], [0.12, 3.6], [0, 3.6]].map(([a, b]) => new THREE.Vector2(a, b)), 8), 0x1f2224, 0.2);
-    const lan = mergeGeometries([paint(new THREE.CylinderGeometry(0.16, 0.24, 0.62, 4).rotateY(Math.PI / 4).translate(0, 3.95, 0), 0xffe3a0, 0), paint(new THREE.ConeGeometry(0.36, 0.32, 4).rotateY(Math.PI / 4).translate(0, 4.42, 0), 0x1f2224, 0), paint(B(0.06, 0.66, 0.06).translate(0.2, 3.95, 0.2), 0x1f2224, 0), paint(B(0.06, 0.66, 0.06).translate(-0.2, 3.95, -0.2), 0x1f2224, 0), paint(new THREE.SphereGeometry(0.06, 5, 3).translate(0, 4.62, 0), 0x1f2224, 0)]);
-    inst(mergeGeometries([pole, lan]), lamps, () => [1, 1], 0xffffff, new THREE.MeshLambertMaterial({ vertexColors: true }), true); }
+    const glass = paint(new THREE.CylinderGeometry(0.16, 0.24, 0.62, 4).rotateY(Math.PI / 4).translate(0, 3.95, 0), dusk ? 0xffd890 : 0xffe3a0, 0), lan = mergeGeometries([paint(new THREE.ConeGeometry(0.36, 0.32, 4).rotateY(Math.PI / 4).translate(0, 4.42, 0), 0x1f2224, 0), paint(B(0.06, 0.66, 0.06).translate(0.2, 3.95, 0.2), 0x1f2224, 0), paint(B(0.06, 0.66, 0.06).translate(-0.2, 3.95, -0.2), 0x1f2224, 0), paint(new THREE.SphereGeometry(0.06, 5, 3).translate(0, 4.62, 0), 0x1f2224, 0)]);
+    inst(mergeGeometries([pole, lan]), lamps, () => [1, 1], 0xffffff, new THREE.MeshLambertMaterial({ vertexColors: true }), true);
+    inst(glass, lamps, () => [1, 1], 0xffffff, new THREE.MeshBasicMaterial({ vertexColors: true }), false);
+    if (dusk) { for (const l of lamps) { glow(l[0], l[2] + 3.78, l[1], 7.5, 0xffb25a, 1.0); glow(l[0], l[2] + 3.78, l[1], 22, 0xff8e3a, 0.32); }
+      // charco de luz cálida sobre el asfalto bajo cada farola
+      const pt = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: softTex(), color: 0xff9a4c, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), pools.length), m4 = new THREE.Matrix4();
+      pools.forEach((q2, k) => { m4.compose(V.set(q2[0], q2[2], q2[1]), Q.identity(), S3.set(12, 1, 12)); pt.setMatrixAt(k, m4); }); pt.frustumCulled = false; pt.renderOrder = 2; G.add(pt); } }
   // balaustres torneados del paseo
   inst(paint(new THREE.LatheGeometry([[0, 0], [0.1, 0], [0.1, 0.06], [0.06, 0.1], [0.075, 0.2], [0.12, 0.36], [0.07, 0.5], [0.06, 0.54], [0.1, 0.58], [0.1, 0.62], [0, 0.62]].map(([a, b]) => new THREE.Vector2(a, b)), mobile ? 5 : 7), 0xefe4cf, 0.35), balus, () => [0.75, 1.1], 0xffffff, new THREE.MeshLambertMaterial({ vertexColors: true }), false);
 
   // ---- montañas: al otro lado del lago y detrás de las colinas, con bosque, roca y bruma ----
   const mounts = [];
   { const geos = []; for (let k = 0; k < 30; k++) { const north = k < 10, a = north ? 0.25 + (k / 10) * 2.65 : Math.PI + 0.05 + ((k - 10) / 20) * (Math.PI - 0.1), r = north ? 900 + hash(k, 51) * 500 : 980 + hash(k, 52) * 600, R = 260 + hash(k, 53) * 280, hgt = 230 + hash(k, 54) * 320;
+      if (dusk && Math.abs(((a - Math.atan2(th.sunDir[2], th.sunDir[0]) + 9.4248) % 6.2832) - 3.1416) < 0.55) continue; // hueco para ver ponerse el sol sobre el agua
       const mx = cx + Math.cos(a) * r, mz = (north ? cz : cz - 400) + Math.sin(a) * r; mounts.push([mx, mz, R, hgt, north]);
       const g = new THREE.ConeGeometry(R, hgt, mobile ? 12 : 20, mobile ? 5 : 9), p = g.attributes.position;
       for (let v = 0; v < p.count; v++) { const y = p.getY(v), t = (y + hgt / 2) / hgt; if (t < 0.999) { const ang = Math.atan2(p.getZ(v), p.getX(v)), j = 1 + (fbm(Math.cos(ang) * 1.8 + k, Math.sin(ang) * 1.8 + t * 4) - 0.5) * 0.7; p.setX(v, p.getX(v) * j); p.setZ(v, p.getZ(v) * j); p.setY(v, y + (fbm(Math.cos(ang) * 3 + k * 2, Math.sin(ang) * 3 + t * 6) - 0.5) * hgt * 0.12); } }
@@ -445,8 +460,18 @@ export function italiaDecor(tr, th, scene, q) {
     stone: new THREE.MeshLambertMaterial({ vertexColors: true, map: stoneTex() }),
     trav: new THREE.MeshLambertMaterial({ vertexColors: true, map: travTex(), side: THREE.DoubleSide }),
     roof: new THREE.MeshLambertMaterial({ vertexColors: true, map: roofTex(), side: THREE.DoubleSide }),
+    lit: new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }),
   };
   const keep = ['position', 'normal', 'uv', 'color'];
   for (const k in bins) { if (!bins[k].length) continue; const list = bins[k].map((g) => { const o = g.index ? g.toNonIndexed() : g; if (!o.attributes.normal) o.computeVertexNormals(); for (const a of Object.keys(o.attributes)) if (!keep.includes(a)) o.deleteAttribute(a); return o; });
-    const m = new THREE.Mesh(mergeGeometries(list), mats[k]); m.frustumCulled = false; m.castShadow = shadow; m.receiveShadow = shadow; G.add(m); }
+    const m = new THREE.Mesh(mergeGeometries(list), mats[k]); m.frustumCulled = false; m.castShadow = shadow && k !== 'lit'; m.receiveShadow = shadow; G.add(m); }
+  // halos de luz: un solo InstancedMesh de quads que miran a cámara, con caída suave y mezcla aditiva
+  if (glows.length) {
+    const gm = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
+      vertexShader: 'varying vec2 vU; varying vec3 vC; varying float vF; void main(){ vU = uv; vC = instanceColor; vec3 ctr = instanceMatrix[3].xyz; float sz = length(instanceMatrix[0].xyz); vec4 mv = modelViewMatrix * vec4(ctr, 1.0); vF = 1.0 - 0.6 * smoothstep(260.0, 1200.0, -mv.z); mv.xy += position.xy * sz; gl_Position = projectionMatrix * mv; }',
+      fragmentShader: 'varying vec2 vU; varying vec3 vC; varying float vF; void main(){ float d = clamp(1.0 - length(vU - 0.5) * 2.0, 0.0, 1.0); float a = pow(d, 2.2) + 0.5 * pow(d, 6.0); gl_FragColor = vec4(vC * vF, a);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}' });
+    const gl = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), gm, glows.length), m4 = new THREE.Matrix4(), c3 = new THREE.Color();
+    glows.forEach((g2, k) => { m4.compose(V.set(g2[0], g2[1], g2[2]), Q.identity(), S3.set(g2[3], g2[3], 1)); gl.setMatrixAt(k, m4); gl.setColorAt(k, c3.set(g2[4]).multiplyScalar(g2[5])); });
+    gl.instanceColor.needsUpdate = true; gl.frustumCulled = false; gl.renderOrder = 3; G.add(gl);
+  }
 }

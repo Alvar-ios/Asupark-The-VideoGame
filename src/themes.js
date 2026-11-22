@@ -142,15 +142,15 @@ export const THEMES = {
   },
   // Riviera (Italia): prueba de estilo PS2. Paseo del lago, pueblo de piedra, cipreses, coliseo y casas de colores; luz de tarde
   italia: {
-    id: 'italia', name: 'Riviera · Italia', sub: 'Paseo junto al lago, muros de piedra, cipreses y el coliseo. Menos de 1 km, con luz de tarde', seed: 'italia-1', privateClub: true, ownTerrain: true, ownEdge: true, noKerbs: true, ps2: true, exposure: 1.02,
+    id: 'italia', name: 'Riviera · Italia', sub: 'Paseo junto al lago, muros de piedra, cipreses y el coliseo. Menos de 1 km, con el sol poniéndose sobre el agua', seed: 'italia-1', privateClub: true, ownTerrain: true, ownEdge: true, noKerbs: true, ps2: true, dusk: true, exposure: 1.1,
     style: {
       fixedNodes: IT_NODES, startNear: IT_START, scale: 1, half: 4.2, wall: 6.4, minR: 6, sep: 12, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [],
       runoff: { gravel: 0, open: [] }, hillPts: IT_HILLS, hillSmooth: 10, noAir: true, noKerb: true,
     },
-    skyTop: 0x4a9ae6, skyHor: 0xf2e2c4, fog: 0xcfd3cc, fogNear: 140, fogFar: 1900,
+    skyTop: 0x3b62ab, skyHor: 0xffb97c, fog: 0xe6ad84, fogNear: 110, fogFar: 1600,
     ground: 0x6f8a3c, grass: 0xb9b2a5, dirt: 0xb9b2a5, road: 0x6b665f, kerb1: 0xb9b2a5, kerb2: 0xb9b2a5,
-    wall1: 0xd8cbb0, wall2: 0xb5532f, mount: 0x6d7f6a, sun: 0xffbe72, sunDir: [-0.72, 0.5, -0.4],
-    hemiSky: 0xbfc8cf, hemiGround: 0xa07850, hemiI: 0.85, sunI: 2.6, deco: 'madrid', treeCount: 1, treeCol: 0x3d5a2c, night: false, temp: 24, humidity: 0.45, wind: [2, 0.5], gripMul: 1, offroad: 0.6, slope: 1.1,
+    wall1: 0xd8cbb0, wall2: 0xb5532f, mount: 0x6d7f6a, sun: 0xff9340, sunDir: [-0.5, 0.17, -0.85],
+    hemiSky: 0x93a5d6, hemiGround: 0xb77c52, hemiI: 1.25, sunI: 3.8, deco: 'madrid', treeCount: 1, treeCol: 0x3d5a2c, night: false, temp: 24, humidity: 0.45, wind: [2, 0.5], gripMul: 1, offroad: 0.6, slope: 1.1,
   },
   muralla: {
     id: 'muralla', name: 'Gran Muralla · China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,

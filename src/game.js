@@ -454,7 +454,7 @@ function clearRace() {
 const _sunV = new THREE.Vector3();
 function followSun(world, x, y, z) {
   const sun = world && world.sun; if (!sun || !sun.castShadow) return;
-  sun.target.position.set(x, y, z); sun.position.copy(sun.userData.dir).multiplyScalar(110).add(sun.target.position);
+  sun.target.position.set(x, y, z); sun.position.copy(sun.userData.dir).multiplyScalar(sun.userData.dist || 110).add(sun.target.position);
   sun.target.updateMatrixWorld();
 }
 
@@ -593,7 +593,8 @@ async function startRace(restart = false) {
     const mkCar = (ct, color, name, isPlayer) => {
       const c = makeCar(ct, name, isPlayer);
       c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer ? (MOBILE ? 'lo' : 'hi') : 'lo', isPlayer ? kartNum() : 2 + (hashStr(name + color) % 97)); scene.add(c.mesh.root);
-      addHeadlights(c.mesh, ct.id, S.th.night ? 1 : S.th.weather === 'rain' ? 0.8 : 0, isPlayer && !MOBILE); // faros encendidos si está oscuro
+      addHeadlights(c.mesh, ct.id, S.th.night ? 1 : S.th.weather === 'rain' ? 0.8 : S.th.dusk ? 0.35 : 0, isPlayer && !MOBILE && !S.th.dusk); // faros encendidos si está oscuro
+      if (S.th.dusk && c.mesh.hl) c.mesh.hl.ground.visible = false; // al atardecer solo el resplandor del faro, sin charcos rectangulares en el asfalto
       c.blob = new THREE.Mesh(blobGeo, new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
       c.blob.scale.set(3.6 * CS, 1, 5.4 * CS); scene.add(c.blob);
       return c;
