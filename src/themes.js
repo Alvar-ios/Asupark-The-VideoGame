@@ -1,3 +1,4 @@
+import { NODES as IT_NODES, START as IT_START, HILLS as IT_HILLS } from './italia.js';
 import { NODES as MU_NODES, START as MU_START, CROSS as MU_CROSS, HILLS as MU_HILLS } from './muralla-data.js';
 import { NODES as MG_NODES, START as MG_START, HILLS as MG_HILLS, RUNOFF as MG_RUNOFF } from './magarigawa-data.js';
 import { NODES as PR_NODES, START as PR_START, CROSS as PR_CROSS, RAMP_U as PR_RAMP, TUNNEL as PR_TUNNEL, HILLS as PR_HILLS } from './palomring-data.js';
@@ -139,6 +140,18 @@ export const THEMES = {
     wall1: 0xdedcd3, wall2: 0xc42a2a, mount: 0x4f8050, sun: 0xfff6e2, sunDir: [-0.35, 0.78, 0.4],
     hemiSky: 0xeaf4ff, hemiGround: 0x7c8f62, hemiI: 1.25, sunI: 1.5, deco: 'madrid', treeCount: 1, treeCol: 0x3f7a35, night: false, temp: 22, humidity: 0.35, wind: [2, 0.6], gripMul: 1, offroad: 0.74, offroadGrip: 0.8, slope: 1.1,
   },
+  // Riviera (Italia): prueba de estilo PS2. Paseo del lago, pueblo de piedra, cipreses, coliseo y casas de colores; luz de tarde
+  italia: {
+    id: 'italia', name: 'Riviera · Italia', sub: 'Paseo junto al lago, muros de piedra, cipreses y el coliseo. Menos de 1 km, con luz de tarde', seed: 'italia-1', privateClub: true, ownTerrain: true, ownEdge: true, noKerbs: true, ps2: true, exposure: 1.02,
+    style: {
+      fixedNodes: IT_NODES, startNear: IT_START, scale: 1, half: 4.2, wall: 6.4, minR: 6, sep: 12, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [],
+      runoff: { gravel: 0, open: [] }, hillPts: IT_HILLS, hillSmooth: 10, noAir: true, noKerb: true,
+    },
+    skyTop: 0x4a9ae6, skyHor: 0xf2e2c4, fog: 0xcfd3cc, fogNear: 140, fogFar: 1900,
+    ground: 0x6f8a3c, grass: 0xb9b2a5, dirt: 0xb9b2a5, road: 0x6b665f, kerb1: 0xb9b2a5, kerb2: 0xb9b2a5,
+    wall1: 0xd8cbb0, wall2: 0xb5532f, mount: 0x6d7f6a, sun: 0xffbe72, sunDir: [-0.72, 0.5, -0.4],
+    hemiSky: 0xbfc8cf, hemiGround: 0xa07850, hemiI: 0.85, sunI: 2.6, deco: 'madrid', treeCount: 1, treeCol: 0x3d5a2c, night: false, temp: 24, humidity: 0.45, wind: [2, 0.5], gripMul: 1, offroad: 0.6, slope: 1.1,
+  },
   muralla: {
     id: 'muralla', name: 'Gran Muralla · China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,
     style: {
@@ -221,7 +234,7 @@ export const THEMES = {
     hemiSky: 0xf0f4ff, hemiGround: 0x9a8058, hemiI: 1.0, sunI: 1.35, deco: 'cactus', treeCol: 0x5b7a3a, treeCount: 40, night: false, temp: 31, humidity: 0.15, wind: [2, 0.4], gripMul: 1, offroad: 0.6,
   },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring'];
+export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

@@ -11,6 +11,7 @@ import { npcClock } from './npc.js';
 import { computeWalk, walkwayMesh } from './walkway.js';
 import { magarigawaDecor } from './magarigawa.js';
 import { murallaDecor } from './muralla.js';
+import { italiaDecor } from './italia.js';
 import { rallyDecor } from './rally.js';
 
 const col = (hex) => new THREE.Color(hex);
@@ -980,7 +981,7 @@ function roadMesh(tr, th, stride = 1) {
     const hi = tr.Y[i], hj = tr.Y[j];
     const hwI = tr.hw ? tr.hw[i] : hw, hwJ = tr.hw ? tr.hw[j] : hw; // semianchura del asfalto (variable en algunos circuitos)
     const brI = !!tr.bridge && cycD(i, tr.bridge.i) < tr.bridge.span, brJ = !!tr.bridge && cycD(j, tr.bridge.i) < tr.bridge.span; // sobre el cruce: laterales verticales de hormigón en vez de talud
-    const eoI = brI || th.wallTop ? L + 0.35 : L + 2.5 + hi * 1.1, eoJ = brJ || th.wallTop ? L + 0.35 : L + 2.5 + hj * 1.1;
+    const eoI = brI || th.wallTop || th.ownEdge ? L + 0.35 : L + 2.5 + hi * 1.1, eoJ = brJ || th.wallTop || th.ownEdge ? L + 0.35 : L + 2.5 + hj * 1.1;
     const KWI = isKart ? 1.4 : Math.min(1.9, L - hwI - 0.2, kerbFit(i, hwI)), KWJ = isKart ? 1.4 : Math.min(1.9, L - hwJ - 0.2, kerbFit(j, hwJ));
     const GW = tr.rg ? hwI + tr.rg[i] : hwI + KWI + 0.02, GWj = tr.rg ? hwJ + tr.rg[j] : hwJ + KWJ + 0.02;
 
@@ -2570,6 +2571,7 @@ function scenery(tr, th, scene, rng, q) {
 // Elementos fuera de las vallas, según el paisaje de cada circuito: relieves, rocas, mesetas, cactus, bosques y pequeños poblados.
 // Se añade después de la decoración existente, así que no altera la colocación de árboles ni montañas.
 function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
+  if (th.id === 'italia') { windLeaves.length = 0; makeBirds(tr, scene, q.density < 1 ? 4 : 8); return; } // todo su entorno lo construye italia.js
   if (th.id === 'muralla') { windLeaves.length = 0; backdrop(scene, 'karst', cxm, czm, R, 1250); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
   if (th.id === 'magarigawa') { windLeaves.length = 0; backdrop(scene, 'jungle', cxm, czm, R, 1500); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
   if (th.id === 'palomring') { windLeaves.length = 0; fillWorld(tr, th, scene, rng, q, clearance, cxm, czm, R); makeBirds(tr, scene, q.density < 1 ? 8 : 16); return; }
@@ -2996,6 +2998,7 @@ export function buildWorld(tr, th, opt = {}) {
   if (th.id === 'madring') madridDecor(tr, th, scene, extraAnim, q);
   if (th.id === 'magarigawa') magarigawaDecor(tr, th, scene, q);
   if (th.id === 'muralla') murallaDecor(tr, th, scene, q);
+  if (th.id === 'italia') italiaDecor(tr, th, scene, q);
   if (th.id === 'rally') rallyDecor(tr, th, scene, q, extraAnim);
   const info = scenery(tr, th, scene, rng, q);
   const windDummy = new THREE.Object3D();

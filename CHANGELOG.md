@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.96
+- Nuevo circuito de prueba «Riviera · Italia» (781 m) con estilo PS2: pocos polígonos, color por vértice con sombreado horneado, texturas pequeñas y luz cálida de tarde.
+- Paseo junto al lago con pretil de piedra y farolas, pueblo de casas con contraventanas, cipreses y pinos piñoneros, coliseo con arco de triunfo, casas de colores en el acantilado (estilo Cinque Terre), barcas y montañas con bruma.
+- Rendimiento: el entorno va en muy pocas mallas y los circuitos PS2 renderizan a menor resolución interna. No entra todavía en el reto del día.
+
 ## 0.0.95
 - Seguridad: el servidor toma el piloto de la sesión (no del cliente) al enviar tiempos del reto y usar intentos.
 - Si falla el envío del tiempo del reto, se avisa y se reintenta solo (cola local, también al recuperar conexión).
