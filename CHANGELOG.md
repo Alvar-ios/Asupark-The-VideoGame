@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.100
+- Riviera al atardecer: halos de las farolas casi al mínimo (solo un resplandor muy tenue) y charco de luz más discreto. Luz ambiental y del sol subida un poco para que el escenario no quede tan oscuro.
+
 ## 0.0.99
 - Farolas de la Riviera con halo más suave y dilatado: dos capas de luz muy difuminadas en lugar de un foco intenso, charco de luz más amplio y tenue, y el farol algo menos saturado.
 
