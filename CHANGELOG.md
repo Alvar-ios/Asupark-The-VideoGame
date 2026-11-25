@@ -2,6 +2,8 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+- (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
+
 ## 0.0.110
 - Modo oscuro: botón luna/sol arriba a la derecha del inicio; se recuerda la elección.
 - Vitrina: Calendario y Carreras unidos. Se ve el calendario de la temporada y al tocar una carrera sale su detalle (con «‹ Calendario» para volver).
