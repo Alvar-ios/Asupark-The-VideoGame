@@ -5,6 +5,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { THEMES, THEME_LIST } from './themes.js';
 import { waShare, inviteUrl, WA_ICON } from './share.js';
 import { initLeagues } from './leagues.js';
+import { createReplay } from './replay.js';
 import { initHome } from './home.js';
 import { initPwa } from './pwa.js';
 import { initPush } from './push.js';
@@ -1505,6 +1506,7 @@ function frame(now) {
     slowAcc = 0; slowN = 0;
   }
   { const driving = S.state === 'racing' || S.state === 'countdown' || S.state === 'finished'; sound.setEngineActive(driving); const wantMusic = !sel.mute && sel.vol.music > 0.001 && (S.state === 'menu' || (!!sel.raceMusic && !!S.scene)); sound.setMusicDuck(S.state !== 'menu'); if (wantMusic !== S.musicOn) { S.musicOn = wantMusic; sound.setMusic(wantMusic); } }
+  if (RP.active) { RP.frame(dt); return; } // repetición de liga en pantalla
   if (S.state === 'menu') { menuPreviewFrame(dt); return; }
   ps2View(S.th); // resolución interna según el circuito (los de estilo PS2 van más bajos)
   if (camera.view && camera.view.enabled) camera.clearViewOffset();
@@ -1590,7 +1592,10 @@ async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62
 const PF = initProfile({ $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt });
 acc.onChange(() => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; try { buildHelmetEditor(); } catch (_) {} });
 acc.restore();
-const LG = initLeagues({ $, acc, esc, fmt, flagSvg, helmetSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/ · .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
+const _trk = new Map();
+const RP = createReplay({ $, esc, renderer, camera, buildWorld, disposeScene, buildCar: (c, k, l, n) => buildCarMesh(c, k, l, n), ensureModels: (t) => ensureModels(t, null), carList: CARS, followSun, ps2View, MOBILE, freeMenu: menuWorldFree, toast, flagSvg: null, shadowsOn: () => QUAL.shadows,
+  trackFor: (day) => { if (!_trk.has(day)) { try { const th = THEMES[pickFor(day).theme]; _trk.set(day, { tr: buildTrack(th.seed, th.style), th, flag: FLAGS[countryOf({ th })[0]] }); } catch (e) { return null; } } return _trk.get(day); } });
+const LG = initLeagues({ replay: (o) => RP.open(o), $, acc, esc, fmt, flagSvg, helmetSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/ · .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
 initHome({ $, acc, esc, LG, PF });
 initPwa({ $, store });
 initPush({ $, acc, esc });
@@ -1600,4 +1605,4 @@ initUx({ $, acc }); initUiToggle();
 { const q = new URLSearchParams(location.search).get('add'); if (q) { try { history.replaceState(null, '', location.pathname); } catch (_) {} let pend = q;
   const tryAdd = async () => { if (!pend || !acc.profile || pend.toLowerCase() === (acc.username || '').toLowerCase()) return; const u = pend; pend = null; try { await acc.addFriend(u); toast(`Solicitud enviada a @${u}`); } catch (e) { toast(acc.explain(e)); } };
   setTimeout(() => { if (pend && !acc.profile) toast(`Inicia sesión en tu Perfil para añadir a @${pend}`); }, 2500); acc.onChange(tryAdd); setTimeout(tryAdd, 1500); } }
-window.__dr = { acc, placeCar, renderThumb, showRaceBanner, pointAt, makeGhost, lb, S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };
+window.__dr = { RP, acc, placeCar, renderThumb, showRaceBanner, pointAt, makeGhost, lb, S, sel, tracks, input, startRace, CARS, sound, QUAL, setShadows, boraReady, modelCarReady, loadModelCar };

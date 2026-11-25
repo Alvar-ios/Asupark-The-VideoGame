@@ -10,7 +10,7 @@ const PTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 export const leagueUrl = (code) => baseUrl() + '?liga=' + encodeURIComponent(code);
 
 export function initLeagues(ctx) {
-  const { $, acc, esc, fmt, flagSvg, helmetSvg, toast, dailyFor, daily } = ctx;
+  const { $, acc, esc, fmt, flagSvg, helmetSvg, toast, dailyFor, daily, replay } = ctx;
   const S = { view: 'list', id: null, tab: 'tabla', season: null, state: null, list: null, msg: '', chatSig: '', rx: null, recap: undefined, poll: null, busy: false, hidden: new Set(), pend: [], msgs: [], over: new Map() };
   const body = () => $('lgBody');
   // Escritura de la vista: transición suave al cambiar de pantalla/pestaña, directa en refrescos; conserva lo que se está escribiendo.
@@ -158,9 +158,10 @@ export function initLeagues(ctx) {
       const rows = d.rows.map((r, i) => { const m = mm[r.user_id] || { username: '?' }, pts = PTS[i] || 0;
         const at = (r.attempts && r.attempts.length) ? r.attempts.map((a, k) => `<i${a === r.ms ? ' class="b"' : ''}>${k + 1}º ${fmt(a / 1000)}</i>`).join('') : '';
         const sec = r.s1 ? `<small class="sec">${[r.s1, r.s2, r.s3].map((x) => fmt(x / 1000)).join(' · ')}</small>` : '';
-        return `<div class="lg-dr${r.user_id === me() ? ' me' : ''}"><div class="lg-d1"><i class="po">${i + 1}</i>${flag(m.flag)}<b>${esc(m.username)}</b><em>${fmt(r.ms / 1000)}</em><small class="gp">${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'LÍDER'}</small><span class="pp">+${pts}</span></div>${d.day === L.today && r.user_id !== me() && m.ghost ? `<div class="lg-d2"><button type="button" class="lg-gh" data-ghost="${r.user_id}">${ic('ghost')} Correr contra su fantasma</button></div>` : ''}${at || sec ? `<div class="lg-d2">${at}${at ? '' : sec}</div>` : ''}</div>`; }).join('');
+        return `<div class="lg-dr${r.user_id === me() ? ' me' : ''}"><div class="lg-d1"><i class="po">${i + 1}</i>${flag(m.flag)}<b>${esc(m.username)}</b><em>${fmt(r.ms / 1000)}</em><small class="gp">${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'LÍDER'}</small><span class="pp">+${pts}</span></div>${d.day === L.today && r.user_id !== me() && m.ghost ? `<div class="lg-d2"><button type="button" class="lg-gh" data-ghost="${r.user_id}">${ic('ghost')} Correr contra su fantasma</button></div>` : ''}${r.gh ? `<div class="lg-d2"><button type="button" class="lg-gh rp" data-rp="${d.day}|${r.user_id}">${ic('play')} Ver su vuelta</button></div>` : ''}${at || sec ? `<div class="lg-d2">${at}${at ? '' : sec}</div>` : ''}</div>`; }).join('');
+      const nGh = d.rows.filter((r) => r.gh).length;
       const miss = members.filter((m) => !played.has(m.user_id)).map((m) => esc(m.username));
-      return `<div class="lg-day"><div class="lg-dh"><b>${esc(dayTxt(d.day))}</b>${live ? '<span class="live">HOY · PROVISIONAL</span>' : ''}</div>${rows}${miss.length ? `<p class="lg-miss">Sin tiempo: ${miss.join(', ')}</p>` : ''}</div>`;
+      return `<div class="lg-day"><div class="lg-dh"><b>${esc(dayTxt(d.day))}</b>${live ? '<span class="live">HOY · PROVISIONAL</span>' : ''}</div>${!live && nGh > 1 ? `<button type="button" class="lg-cine" data-rpall="${d.day}">${ic('play')} Repetición del día · todos los pilotos</button>` : ''}${rows}${miss.length ? `<p class="lg-miss">Sin tiempo: ${miss.join(', ')}</p>` : ''}</div>`;
     };
     paint.innerHTML = `${isUi2() ? v2Head(L) + v2Seg() : head(L)}${seasonNav(L)}${days.length ? days.map(dayHtml).join('') : '<p class="lg-note">Aún no hay tiempos en esta temporada. Corre el reto diario y aparecerás aquí.</p>'}`;
   }
@@ -335,6 +336,7 @@ export function initLeagues(ctx) {
     if (b.dataset.rx) return react(b.dataset.id, b.dataset.rx);
     if (b.dataset.more) { S.rxOpen = S.rxOpen === +b.dataset.more ? null : +b.dataset.more; return pull(true); }
     if (b.dataset.pick) { const old = S.state.pred; S.state.pred = { ...(old || {}), pick: b.dataset.pick, can: false }; leagueView(); try { await acc.rpc('league_predict', { p_league: S.id, p_pick: b.dataset.pick }); toast('Apuesta guardada'); load().catch(() => {}); } catch (er) { S.state.pred = old; toast(err(er)); } return leagueView(); }
+    if (b.dataset.rp || b.dataset.rpall) { const [day, uid] = (b.dataset.rp || b.dataset.rpall).split('|'); return playReplay(day, uid || null); }
     if (b.dataset.ghost) { try { const g = await acc.rpc('daily_ghost', { p_player: b.dataset.ghost }); if (!g || !g.ghost) { toast('Todavía no tiene fantasma guardado'); return; } close(); daily().runGhost(g); } catch (er) { toast(err(er)); } return; }
     if (b.dataset.s) { try { await load(+b.dataset.s); } catch (er) { toast(err(er)); } return leagueView(); }
     const a = b.dataset.a;
@@ -353,6 +355,15 @@ export function initLeagues(ctx) {
   $('lgBody').addEventListener('keyup', (e) => e.stopPropagation());
   $('lgBody').addEventListener('input', (e) => { if (e.target.id === 'lgCode') e.target.value = e.target.value.toUpperCase(); });
   const show = () => { $('leagues').classList.remove('hidden'); };
+  async function playReplay(day, uid) {
+    try {
+      const rows = await acc.rpc('league_day_ghosts', { p_league: S.id, p_day: day, p_user: uid });
+      if (!rows || !rows.length) { toast('Esa repetición ya no está disponible (solo se guardan 24 h)'); return; }
+      const id = S.id, season = S.season; close();
+      const ok = await replay({ day, drivers: rows, title: `${uid ? 'Vuelta' : 'Repetición'} · ${dayTxt(day)}`, onClose: () => { show(); S.fromList = false; enter(id, season).catch(() => {}); } });
+      if (ok === false) { show(); S.fromList = false; enter(id, season).catch(() => {}); }
+    } catch (er) { toast(err(er)); }
+  }
   const close = () => { stopPoll(); $('leagues').classList.add('hidden'); };
   $('lgClose').onclick = close;
   const btn = $('leaguesBtn'); if (btn) btn.onclick = () => { show(); S.state = null; S.list = null; listView(); };

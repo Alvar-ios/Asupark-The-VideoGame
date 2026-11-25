@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.102
+- Repeticiones de liga: en la pestaña de días, cada piloto tiene «Ver su vuelta» (su mejor vuelta del día, con la trazada coloreada por velocidad) y, al acabar el día, «Repetición del día · todos los pilotos»: todos los fantasmas juntos con cámara cinemática (persecución, lateral, aérea, a bordo, cenital), trazadas de cada color, torre de posiciones, línea de tiempo y velocidad 0,5×/1×/2×.
+- Las vueltas de repetición se guardan solo 24 horas: se ven las de hoy y las de ayer; un borrado diario elimina las anteriores.
+
 ## 0.0.101
 - Farolas de la Riviera: sin haz de luz sobre la pista; solo un brillo pequeño y suave alrededor del farol.
 
