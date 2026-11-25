@@ -3,6 +3,7 @@
 import { sk, vt } from './ux.js';
 import { ic } from './icons.js';
 import { initSanctions } from './sanctions.js';
+import { isStandalone } from './pwa.js';
 export function initHome(ctx) {
   const { $, acc, esc, LG, PF, helmetSvg } = ctx;
   const menu = $('menu');
@@ -43,7 +44,9 @@ export function initHome(ctx) {
     const box = $('hmLgBody'); if (!box) return;
     if (!acc.enabled) { box.innerHTML = '<p class="hm-lg-n">Las ligas necesitan conexión con el servidor.</p>'; return; }
     if (!acc.loggedIn) {
-      box.innerHTML = `<p class="hm-lg-n">Compite con tus amigos cada día.</p><div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" class="ghost" data-lg="join">Unirme con código</button></div>`;
+      // En la app instalada (iPhone) la sesión de Safari no se comparte: hay que entrar otra vez dentro de la app
+      const sep = isStandalone() ? `<p class="hm-lg-n">Esta app guarda su propia sesión. Inicia sesión en tu perfil para ver tus ligas y amigos.</p><div class="hm-lg-cta"><button type="button" data-lg-login="1">Iniciar sesión</button></div>` : '';
+      box.innerHTML = sep || `<p class="hm-lg-n">Compite con tus amigos cada día.</p><div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" class="ghost" data-lg="join">Unirme con código</button></div>`;
       return;
     }
     let list = null, ud = null, shown = false;
@@ -69,6 +72,7 @@ export function initHome(ctx) {
   }
   $('hmLeagues').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.lgLogin) return PF.open('perfil');
     if (b.dataset.fin) { try { const k = JSON.parse(localStorage.getItem('dr.seasonSeen') || '{}'); k[b.dataset.fin + ':' + b.dataset.season] = 1; localStorage.setItem('dr.seasonSeen', JSON.stringify(k)); } catch (_) { /* sin almacenamiento */ } return LG.openLeague(b.dataset.fin, +b.dataset.season); }
     if (b.dataset.lgOpen) return LG.openLeague(b.dataset.lgOpen);
     LG.open(); // "ver todas", crear y unirme llevan a la pantalla de ligas, donde están los formularios

@@ -4,6 +4,10 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.112
+- Móvil: la barra inferior (Inicio · Ligas · Ranking · Amigos · Perfil) queda pegada al borde de la pantalla; antes dejaba unos 16 px de hueco en iPhone.
+- App instalada en la pantalla de inicio: como su sesión no se comparte con Safari, la tarjeta de ligas explica que hay que iniciar sesión dentro de la app, con un botón directo.
+
 ## 0.0.111
 - Escritorio: el inicio ocupa una columna centrada de 720 px en lugar de quedar pegado a la izquierda.
 - Escritorio: «Comandos Ctrl K» se ve en una sola línea y con forma de pastilla.
