@@ -161,7 +161,7 @@ export function initLeagues(ctx) {
         return `<div class="lg-dr${r.user_id === me() ? ' me' : ''}"><div class="lg-d1"><i class="po">${i + 1}</i>${flag(m.flag)}<b>${esc(m.username)}</b><em>${fmt(r.ms / 1000)}</em><small class="gp">${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'LÍDER'}</small><span class="pp">+${pts}</span></div>${d.day === L.today && r.user_id !== me() && m.ghost ? `<div class="lg-d2"><button type="button" class="lg-gh" data-ghost="${r.user_id}">${ic('ghost')} Correr contra su fantasma</button></div>` : ''}${r.gh ? `<div class="lg-d2"><button type="button" class="lg-gh rp" data-rp="${d.day}|${r.user_id}">${ic('play')} Ver su vuelta</button></div>` : ''}${at || sec ? `<div class="lg-d2">${at}${at ? '' : sec}</div>` : ''}</div>`; }).join('');
       const nGh = d.rows.filter((r) => r.gh).length;
       const miss = members.filter((m) => !played.has(m.user_id)).map((m) => esc(m.username));
-      return `<div class="lg-day"><div class="lg-dh"><b>${esc(dayTxt(d.day))}</b>${live ? '<span class="live">HOY · PROVISIONAL</span>' : ''}</div>${!live && nGh > 1 ? `<button type="button" class="lg-cine" data-rpall="${d.day}">${ic('play')} Repetición del día · todos los pilotos</button>` : ''}${rows}${miss.length ? `<p class="lg-miss">Sin tiempo: ${miss.join(', ')}</p>` : ''}</div>`;
+      return `<div class="lg-day"><div class="lg-dh"><b>${esc(dayTxt(d.day))}</b>${live ? '<span class="live">HOY · PROVISIONAL</span>' : ''}</div>${nGh > 1 ? `<button type="button" class="lg-cine" data-rpall="${d.day}">${ic('play')} Repetición del día · todos los pilotos</button>` : ''}${rows}${miss.length ? `<p class="lg-miss">Sin tiempo: ${miss.join(', ')}</p>` : ''}</div>`;
     };
     paint.innerHTML = `${isUi2() ? v2Head(L) + v2Seg() : head(L)}${seasonNav(L)}${days.length ? days.map(dayHtml).join('') : '<p class="lg-note">Aún no hay tiempos en esta temporada. Corre el reto diario y aparecerás aquí.</p>'}`;
   }
@@ -173,8 +173,21 @@ export function initLeagues(ctx) {
   const todayRows = () => { const d = (S.state && S.state.days || []).find((x) => x.day === S.state.league.today); return d ? d.rows : []; };
   const RX = ['🔥', '😂', '🐌', '👏', '😱'], tm = (m) => new Date(m.at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   const rxHtml = (m) => { const e = Object.entries(m.rx || {}); return `<div class="lg-rx">${e.map(([k, v]) => `<button type="button" class="${v.me ? 'me' : ''}" data-rx="${k}" data-id="${m.id}">${k} ${v.n}</button>`).join('')}<button type="button" class="add" data-more="${m.id}" aria-label="Reaccionar">+</button></div>${S.rxOpen === m.id ? `<div class="lg-rxp">${RX.map((k) => `<button type="button" data-rx="${k}" data-id="${m.id}">${k}</button>`).join('')}</div>` : ''}`; };
-  const msgHtml = (m) => m.kind === 'sys'
-    ? `<div class="lg-m sys${/sancionad/i.test(m.body) ? ' sanc' : ''}"${/sancionad/i.test(m.body) ? ` data-sanc="${sancOf(m.user_id)}"` : ''}><span>${esc(m.body.replace(/^[^\p{L}@]+/u, '')).replace(/@(\S+)/g, '<b>@$1</b>')}</span><small>${tm(m)}</small>${rxHtml(m)}</div>`
+  // repeticiones desde el chat: botones bajo el tiempo de cada piloto y tarjeta del resultado de ayer
+  const prevDay = (d) => new Date(Date.parse(d + 'T12:00:00Z') - 864e5).toISOString().slice(0, 10);
+  const isDayMsg = (m) => m.kind === 'sys' && /^🎬/.test(m.body || '');
+  const lapActs = (m) => {
+    if (!S.state || m.kind !== 'sys' || isDayMsg(m)) return ''; const L = S.state.league, rows = todayRows(), r = rows.find((x) => x.user_id === m.user_id); if (!r || !r.gh) return '';
+    const n = rows.filter((x) => x.gh).length;
+    return `<div class="l2-act"><button type="button" data-rp="${L.today}|${m.user_id}">${ic('play')} Su vuelta</button>${n > 1 ? `<button type="button" data-rpall="${L.today}">${ic('play')} Todos · ${n}</button>` : ''}</div>`;
+  };
+  const dayCard = (m) => {
+    const mm = S.memo || {}, day = prevDay(dailyKeyNow(Date.parse(m.at))), d = S.state && S.state.days.find((x) => x.day === day), rows = d ? d.rows : [];
+    const pod = rows.slice(0, 3).map((r, i) => `<li><i>${i + 1}</i><b>${esc((mm[r.user_id] || { username: '?' }).username)}</b><em>${fmt(r.ms / 1000)}</em>${r.gh ? `<button type="button" data-rp="${day}|${r.user_id}" aria-label="Ver su vuelta">${ic('play')}</button>` : ''}</li>`).join('');
+    return `<div class="l2-m sys"><div class="l2-yd"><div class="l2-yh"><b>${ic('sun')} Resultado de ayer</b><small>${esc(dayTxt(day))}${rows.length ? ' · ' + rows.length + ' piloto' + (rows.length === 1 ? '' : 's') : ''}</small></div>${rows.length ? `<ol>${pod}</ol>` : `<p>${esc(m.body.replace(/^[^\p{L}@]+/u, '').replace(/^Resultado de ayer:\s*/, ''))}</p>`}<button type="button" class="lg-cine" data-rpall="${day}">${ic('play')} Ver la repetición con todas las vueltas</button></div>${rxHtml(m)}</div>`;
+  };
+  const msgHtml = (m) => isDayMsg(m) ? dayCard(m) : m.kind === 'sys'
+    ? `<div class="lg-m sys${/sancionad/i.test(m.body) ? ' sanc' : ''}"${/sancionad/i.test(m.body) ? ` data-sanc="${sancOf(m.user_id)}"` : ''}><span>${esc(m.body.replace(/^[^\p{L}@]+/u, '')).replace(/@(\S+)/g, '<b>@$1</b>')}</span><small>${tm(m)}</small>${lapActs(m)}${rxHtml(m)}</div>`
     : `<div class="lg-m${m.user_id === me() ? ' me' : ''}"><b>${m.user_id === me() ? 'Tú' : '@' + esc(m.username)}</b><span>${esc(m.body)}</span><small>${tm(m)}</small>${rxHtml(m)}</div>`;
   const feedHtml = (r) => (r.length ? r.map(msgHtml).join('') : '<p class="lg-note">Rompe el hielo: escribe el primer mensaje.</p>');
   function paintFeed(first) {
@@ -261,11 +274,12 @@ export function initLeagues(ctx) {
       const pts = ((m.body.match(/(\d+)\s*puntos/) || [])[1]) || '', why = /side practice/i.test(m.body) ? 'side practice' : 'infracción';
       return `<div class="l2-m sys"><div class="l2-tw sanc" role="button" tabindex="0" data-sanc="${sancOf(m.user_id)}" style="--c:#E10600"><i></i><span class="l2-twb">${ic('alert')}</span><b>${esc(u.username)}</b><small>sancionado · ${why}</small><em>−${pts}</em><time>${tm(m)}</time></div>${rxHtml(m)}</div>`;
     }
+    if (isDayMsg(m)) return dayCard(m);
     if (m.kind === 'sys') {
       const body = String(m.body || '').replace(/^[^\p{L}@]+/u, ''), t = (body.match(/\d+:\d{2}\.\d{2,3}/) || [])[0], lead = /l[ií]der/i.test(body), pos = (body.match(/\(P(\d+)\)/) || [])[1];
       const rows = todayRows(), ri = rows.findIndex((r) => r.user_id === m.user_id), gap = ri > 0 ? '+' + ((rows[ri].ms - rows[0].ms) / 1000).toFixed(3) : '';
       const what = (ri >= 0 ? 'P' + (ri + 1) + ' hoy' : pos ? 'marca P' + pos : 'ha corrido') + (ri >= 0 && PTS[ri] ? ' · +' + PTS[ri] + ' pts' : '') + (gap ? ' · ' + gap : '');
-      return `<div class="l2-m sys${lead ? ' gold' : ''}"><div class="l2-tw" style="--c:${col[m.user_id] || '#111'}"><i></i>${lead ? `<span class="l2-twb">${ic('crown')}</span>` : ''}<b>${esc(u.username)}</b><small>${what}</small><em>${esc(t || '')}</em><time>${tm(m)}</time></div>${rxHtml(m)}</div>`;
+      return `<div class="l2-m sys${lead ? ' gold' : ''}"><div class="l2-tw" style="--c:${col[m.user_id] || '#111'}"><i></i>${lead ? `<span class="l2-twb">${ic('crown')}</span>` : ''}<b>${esc(u.username)}</b><small>${what}</small><em>${esc(t || '')}</em><time>${tm(m)}</time></div>${lapActs(m)}${rxHtml(m)}</div>`;
     }
     const mine = m.user_id === me();
     return `<div class="l2-m${mine ? ' me' : ''}${m.pending ? ' pend' : ''}">${mine ? '' : av(u, col[m.user_id], 'sm')}<div class="l2-b">${mine ? '' : `<b class="l2-who" style="color:${col[m.user_id]}">${esc(u.username)}</b>`}<span><span>${esc(m.body)}</span><small>${tm(m)}</small></span></div>${rxHtml(m)}</div>`;

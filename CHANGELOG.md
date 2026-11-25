@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.103
+- Repeticiones en el chat de la liga: cada aviso de tiempo lleva «Su vuelta» y «Todos» (repetición con todas las vueltas del día) para elegir cuál ver.
+- Al abrirse el día nuevo (04:00) aparece como primer mensaje del chat «Resultado de ayer»: podio, botón por piloto y «Ver la repetición con todas las vueltas».
+- La repetición de todos también está disponible durante el día (provisional) desde la pestaña de días.
+
 ## 0.0.102
 - Repeticiones de liga: en la pestaña de días, cada piloto tiene «Ver su vuelta» (su mejor vuelta del día, con la trazada coloreada por velocidad) y, al acabar el día, «Repetición del día · todos los pilotos»: todos los fantasmas juntos con cámara cinemática (persecución, lateral, aérea, a bordo, cenital), trazadas de cada color, torre de posiciones, línea de tiempo y velocidad 0,5×/1×/2×.
 - Las vueltas de repetición se guardan solo 24 horas: se ven las de hoy y las de ayer; un borrado diario elimina las anteriores.
