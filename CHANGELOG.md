@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.109
+- Selector Chat · Puntuación · Vitrina sin inclinación ni cursiva (se veía mal y a veces se descuadraba).
+
 ## 0.0.108
 - Vitrina integrada en la barra de la liga: Chat · Puntuación · Vitrina. Desaparecen los iconos del trofeo, calendario y días de la cabecera.
 - La vitrina agrupa Calendario, Carreras, Pilotos y Premios sin repetir la clasificación (que queda en Puntuación). Tocar una carrera del calendario abre su detalle.
