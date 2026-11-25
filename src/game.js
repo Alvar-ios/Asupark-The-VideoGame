@@ -10,7 +10,7 @@ import { initHome } from './home.js';
 import { initPwa } from './pwa.js';
 import { initPush } from './push.js';
 import { initUx, toastEl } from './ux.js';
-import { initUiToggle } from './uimode.js';
+import { initUiToggle, initTheme } from './uimode.js';
 import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS, DAILY_LOCK_DAY } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo, isKartKind } from './car.js';
@@ -1597,6 +1597,7 @@ const RP = createReplay({ $, esc, renderer, camera, buildWorld, disposeScene, bu
   trackFor: (day) => { if (!_trk.has(day)) { try { const th = THEMES[pickFor(day).theme]; _trk.set(day, { tr: buildTrack(th.seed, th.style), th, flag: FLAGS[countryOf({ th })[0]] }); } catch (e) { return null; } } return _trk.get(day); } });
 const LG = initLeagues({ replay: (o) => RP.open(o), $, acc, esc, fmt, flagSvg, helmetSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/ · .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
 initHome({ $, acc, esc, LG, PF, helmetSvg });
+initTheme();
 initPwa({ $, store });
 initPush({ $, acc, esc });
 initUx({ $, acc }); initUiToggle();

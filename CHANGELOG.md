@@ -2,6 +2,10 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.110
+- Modo oscuro: botón luna/sol arriba a la derecha del inicio; se recuerda la elección.
+- Vitrina: Calendario y Carreras unidos. Se ve el calendario de la temporada y al tocar una carrera sale su detalle (con «‹ Calendario» para volver).
+
 ## 0.0.109
 - Selector Chat · Puntuación · Vitrina sin inclinación ni cursiva (se veía mal y a veces se descuadraba).
 

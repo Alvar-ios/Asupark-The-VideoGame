@@ -2,13 +2,13 @@
 // con selectores en forma de pastilla que abren una hoja inferior con «Hecho».
 export function createVit(E) {
   const { S, esc, fmt, flagSvg, ic, me, PTS, dailyFor, av, colorMap, v2Head, v2Seg, calHtml, dayTxt, paint, redraw, load, acc, toast } = E;
-  const TABS = [['cal', 'Calendario'], ['car', 'Carreras'], ['pil', 'Pilotos'], ['pre', 'Premios']];
+  const TABS = [['car', 'Carreras'], ['pil', 'Pilotos'], ['pre', 'Premios']];
   const mmOf = () => Object.fromEntries(S.state.members.map((m) => [m.user_id, m]));
   const fl = (f) => `<span class="flag sm">${flagSvg(f || 'es')}</span>`;
   const dshort = (d) => new Date(d + 'T12:00:00Z').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }).replace('.', '');
   const track = (d) => { try { return dailyFor(d) || { name: 'Reto del día', flag: 'es' }; } catch (_) { return { name: 'Reto del día', flag: 'es' }; } };
   const days = () => [...((S.state && S.state.days) || [])].sort((a, b) => (a.day < b.day ? 1 : -1));
-  const curDay = () => { const ds = days(); return ds.find((d) => d.day === S.vday) || ds[0] || null; };
+  const curDay = () => days().find((d) => d.day === S.vday) || null;
   const hallAv = (h, cls = 'md') => av({ helmet: h.h }, '#111', cls);
   const pill = (kind, inner) => `<button type="button" class="vt-pill" data-vo="${kind}">${inner}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
 
@@ -23,11 +23,11 @@ export function createVit(E) {
   }
 
   function races() {
-    const d = curDay(); if (!d) return '<p class="lg-note">Aún no hay carreras en esta temporada.</p>';
+    const d = curDay(); if (!d) return calHtml(true);
     const mm = mmOf(), t = track(d.day), lead = d.rows[0].ms, nGh = d.rows.filter((r) => r.gh).length;
     const rows = d.rows.map((r, i) => { const m = mm[r.user_id] || { username: '?' };
       return `<div class="vt-r${r.user_id === me() ? ' me' : ''}"><i>${i + 1}</i>${av(m, '#111', 'sm')}<span class="vt-n"><b>${esc(m.username)}</b><small>${r.gh ? `<button type="button" class="vt-rp" data-rp="${d.day}|${r.user_id}">${ic('play')} Vuelta</button>` : ''}</small></span><span class="vt-t"><b>${fmt(r.ms / 1000)}</b><small>${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'Líder'}</small></span><em>${PTS[i] || 0}</em></div>`; }).join('');
-    return `<div class="vt-sel">${pill('race', `${fl(t.flag)}<b>${esc(t.name)}</b>`)}</div>
+    return `<button type="button" class="vt-back" data-vp="race|">‹ Calendario</button>
       <div class="vt-h"><b>${esc(t.name)}</b><small>${esc(dayTxt(d.day))}${t.car ? ' · ' + esc(t.car) : ''}</small></div>
       ${nGh > 1 ? `<button type="button" class="vt-cine" data-rpall="${d.day}">${ic('play')} Repetición · todos los pilotos</button>` : ''}
       <div class="vt-cols"><span>Pos.</span><span>Piloto</span><span>Tiempo</span><span>Pts</span></div><div class="vt-tb">${rows}</div>`;
@@ -73,10 +73,10 @@ export function createVit(E) {
   }
 
   function render() {
-    const L = S.state.league; S.vt = S.vt || 'cal';
-    const seasonPill = S.vt === 'pre' ? '' : `<div class="vt-sel">${pill('season', `<b>Temporada ${L.season}${L.season === L.current ? ' · en curso' : ''}</b>`)}</div>`;
+    const L = S.state.league; S.vt = S.vt || 'car';
+    const seasonPill = S.vt === 'pre' || (S.vt === 'car' && S.vday) ? '' : `<div class="vt-sel">${pill('season', `<b>Temporada ${L.season}${L.season === L.current ? ' · en curso' : ''}</b>`)}</div>`;
     const tabs = `<div class="vt-tabs" role="tablist">${TABS.map(([k, n]) => `<button type="button" role="tab" data-vt="${k}" class="${S.vt === k ? 'on' : ''}">${n}</button>`).join('')}</div>`;
-    const body = S.vt === 'pil' ? drivers() : S.vt === 'pre' ? awards() : S.vt === 'car' ? races() : calHtml(true);
+    const body = S.vt === 'pil' ? drivers() : S.vt === 'pre' ? awards() : races();
     paint.innerHTML = `${v2Head(L)}${v2Seg()}${tabs}${seasonPill}<div class="vt-body">${body}</div>${sheet()}`;
   }
 
@@ -87,7 +87,7 @@ export function createVit(E) {
     if (d.vp) {
       const [k, v] = d.vp.split('|'); S.vpick = null;
       if (k === 'season') { try { await load(+v); S.vday = null; S.vdrv = null; } catch (e) { toast(acc.explain(e)); } return redraw(); }
-      if (k === 'race') { S.vday = v; S.vt = 'car'; return render(); }
+      if (k === 'race') { S.vday = v || null; S.vt = 'car'; return render(); }
       if (k === 'drv') { S.vdrv = v; S.vt = 'pil'; return render(); }
     }
   }

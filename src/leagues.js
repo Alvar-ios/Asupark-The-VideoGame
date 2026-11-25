@@ -332,7 +332,7 @@ export function initLeagues(ctx) {
   onUi(() => { if (!open()) return; if (S.view === 'league' && S.state) leagueView(); else listView(); });
 
   // ---------- acciones ----------
-  async function enter(id, season) { S.id = id; S.state = null; S.tab = isUi2() ? 'chat' : 'tabla'; S.season = null; S.recap = undefined; S.hall = undefined; S.vday = null; S.vdrv = null; S.vpick = null; S.vt = 'cal'; if (season) { try { await load(season); } catch (_) { /* se carga la actual */ } } await leagueView(); }
+  async function enter(id, season) { S.id = id; S.state = null; S.tab = isUi2() ? 'chat' : 'tabla'; S.season = null; S.recap = undefined; S.hall = undefined; S.vday = null; S.vdrv = null; S.vpick = null; S.vt = 'car'; if (season) { try { await load(season); } catch (_) { /* se carga la actual */ } } await leagueView(); }
   async function join(code) {
     const l = await acc.rpc('league_join', { p_code: code }); S.list = null; return l;
   }
