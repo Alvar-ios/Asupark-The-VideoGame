@@ -11,7 +11,7 @@ import { initHome } from './home.js';
 import { initPwa } from './pwa.js';
 import { initPush } from './push.js';
 import { initUx, toastEl } from './ux.js';
-import { initUiToggle, initTheme } from './uimode.js';
+import { initUiToggle } from './uimode.js';
 import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS, DAILY_LOCK_DAY } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo, isKartKind } from './car.js';
@@ -699,6 +699,7 @@ function setLights(n) { const l = $('lights').children; for (let i = 0; i < l.le
 const KEYMAP = { ArrowLeft: 1, KeyA: 1, ArrowRight: 1, KeyD: 1, ArrowUp: 1, KeyW: 1, ArrowDown: 1, KeyS: 1, Space: 1 };
 window.addEventListener('keydown', (e) => {
   if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) { if (e.code === 'Enter') e.target.blur(); return; }
+  if (S.state === 'menu') return; // en la app, el teclado navega con normalidad
   if (KEYMAP[e.code] || e.code === 'Escape' || e.code === 'KeyR' || e.code === 'KeyC') e.preventDefault();
   if (e.repeat) return;
   input.keys.add(e.code);
@@ -707,7 +708,6 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyC') S.camMode = (S.camMode + 1) % 2;
   if (e.code === 'KeyT' && S.raceScene && S.state !== 'menu') startRace(true);
   if (e.code === 'KeyM') { sel.mute = !sel.mute; sound.setMuted(sel.mute); store.set('sel', sel); showMsg(sel.mute ? 'Sonido desactivado' : 'Sonido activado', 900, 'cy'); }
-  if (e.code === 'Enter' && S.state === 'menu') $('startBtn').click();
   sound.init(CARS[sel.car].id);
 });
 window.addEventListener('keyup', (e) => { if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return; input.keys.delete(e.code); });
@@ -751,7 +751,7 @@ function togglePause(force) {
 }
 $('pbtn').onclick = () => togglePause(); $('endBtn').onclick = () => { $('pause').classList.add('hidden'); if (S.state === 'paused' || S.state === 'racing') { S.state = 'finished'; showResults(); } };
 $('resumeBtn').onclick = () => togglePause();
-$('pauseCar').onclick = () => { toMenu(); setView('garage'); }; $('pauseTrack').onclick = () => { toMenu(); setView('tracks'); };
+$('pauseCar').onclick = () => { toMenu(); APP.go('garage'); }; $('pauseTrack').onclick = () => { toMenu(); APP.go('race', { to: 'hmCircuits' }); };
 $('restartBtn').onclick = () => { $('pause').classList.add('hidden'); startRace(true); };
 $('rbtn').onclick = () => { if (S.raceScene) startRace(true); };
 $('startBtn').onclick = () => { sound.stopPreview(true); sound.init(CARS[sel.car].id); startRace(false); };
@@ -785,7 +785,7 @@ $('shareBtn').onclick = () => {
   waShare(`${line} en KartlosApp. ¿Me ganas?`, inviteUrl(acc.username));
 };
 $('againBtn').onclick = () => { if (S.gp && S.gp.phase === 'quali' && S.state === 'finished') S.gp.phase = 'race'; startRace(true); };
-const toMenu = () => { HB.at = 0; if (S.daily && !S.daily.done) { endDaily(); return; } if (S.prevSel) { Object.assign(sel, S.prevSel); S.prevSel = null; } setView('home'); S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; };
+const toMenu = () => { HB.at = 0; if (S.daily && !S.daily.done) { endDaily(); return; } if (S.prevSel) { Object.assign(sel, S.prevSel); S.prevSel = null; } setView('home'); S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; if (APP) APP.refresh(); };
 $('menuBtn').onclick = toMenu; $('menuBtn2').onclick = toMenu;
 
 function doReset() { const p = S.player; if (!p || p.finished) return; resetToTrack(p, S.tr); S.secInvalid = true; S.lapInvalid = true; S.flash = 0.4; sound.play('land', 2); }
@@ -1349,6 +1349,7 @@ window.addEventListener('pointerdown', firstGesture); window.addEventListener('k
 
 // ---------- clasificación ----------
 const BD = { track: 0, group: 'all' };
+let APP = null;
 const boardRow2 = (r, best) => `<tr class="${r.you ? 'me ' : ''}${r.rank <= 3 ? 'p' + r.rank : ''}"><td class="rk"><i>${r.rank}</i></td><td class="nm"><b>${r.you ? drvIc(playerDrv(), 1) : ''}<span>${esc(r.name)}</span></b><small>${esc(carName(r.carId))}</small></td><td class="tm">${fmt(r.ms / 1000)}</td><td class="gp">${r.rank === 1 ? '' : '+' + ((r.ms - best) / 1000).toFixed(2)}</td></tr>`;
 async function renderBoard() {
   const ti = tracks[BD.track], st = $('boardStatus');
@@ -1508,7 +1509,7 @@ function frame(now) {
   }
   { const driving = S.state === 'racing' || S.state === 'countdown' || S.state === 'finished'; sound.setEngineActive(driving); const wantMusic = !sel.mute && sel.vol.music > 0.001 && (S.state === 'menu' || (!!sel.raceMusic && !!S.scene)); sound.setMusicDuck(S.state !== 'menu'); if (wantMusic !== S.musicOn) { S.musicOn = wantMusic; sound.setMusic(wantMusic); } }
   if (RP.active) { RP.frame(dt); return; } // repetición de liga en pantalla
-  if (S.state === 'menu') { menuPreviewFrame(dt); return; }
+  if (S.state === 'menu') return; // la app tapa el lienzo: no hace falta dibujar nada
   ps2View(S.th); // resolución interna según el circuito (los de estilo PS2 van más bajos)
   if (camera.view && camera.view.enabled) camera.clearViewOffset();
   if (!S.scene) { renderer.setClearColor(0x0a0d16); renderer.clear(); return; }
@@ -1571,13 +1572,15 @@ requestAnimationFrame(frame);
 buildMenu();
 applyGfx(); applyVol(); sound.setMuted(!!sel.mute);
 // miniaturas de los coches para el selector (se generan con tools/thumbs.cjs y se guardan en assets/thumbs)
-async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62, fov = 24, pose = null) {
+let thumbEnv = null;
+async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62, fov = 24, pose = null, lod = 'hi') {
   const type = CARS.find((c) => c.id === id); await loadCarAsset(type, true);
-  const b = buildCarMesh(paintOf(type), type.kind, 'hi', kartNum()), sc = new THREE.Scene();
+  const b = buildCarMesh(paintOf(type), type.kind, lod, kartNum()), sc = new THREE.Scene();
   sc.add(new THREE.HemisphereLight(0xffffff, 0x303844, 0.9));
   const k = new THREE.DirectionalLight(0xfff2dd, 2.2); k.position.set(4, 6, 5); sc.add(k);
   const f = new THREE.DirectionalLight(0x9db8ff, 0.9); f.position.set(-6, 3, -3); sc.add(f);
-  const pm = new THREE.PMREMGenerator(renderer); sc.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose();
+  if (!thumbEnv) { const pm = new THREE.PMREMGenerator(renderer); thumbEnv = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose(); }
+  sc.environment = thumbEnv;
   if (pose) for (const w of b.wheels) { w.spin.rotation.x = pose.spin; if (w.front) w.pivot.rotation.y = pose.steer; }
   sc.add(b.root); b.root.rotation.y = 0.0;
   const rt = new THREE.WebGLRenderTarget(w, h, { samples: 4 }); rt.texture.colorSpace = THREE.SRGBColorSpace;
@@ -1590,19 +1593,47 @@ async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62
   for (let y = 0; y < h; y++) img.data.set(px.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4);
   x.putImageData(img, 0, 0); return cv.toDataURL('image/png');
 }
-const PF = initProfile({ $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt });
+const PF = initProfile({ $, acc, esc, lb, tracks, groupName, drvIc, playerDrv, helmetSvg, flagSvg, fmt, show: () => APP.go('profile') });
+$('pflag').addEventListener('change', () => PF.paintCard()); $('pname').addEventListener('change', () => PF.paintCard()); $('helGrid').addEventListener('click', () => PF.paintCard());
 acc.onChange(() => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; try { buildHelmetEditor(); } catch (_) {} });
 acc.restore();
 const _trk = new Map();
 const RP = createReplay({ $, esc, renderer, camera, buildWorld, disposeScene, buildCar: (c, k, l, n) => buildCarMesh(c, k, l, n), ensureModels: (t) => ensureModels(t, null), carList: CARS, followSun, ps2View, MOBILE, freeMenu: menuWorldFree, toast, flagSvg: null, shadowsOn: () => QUAL.shadows,
   trackFor: (day) => { if (!_trk.has(day)) { try { const th = THEMES[pickFor(day).theme]; _trk.set(day, { tr: buildTrack(th.seed, th.style), th, flag: FLAGS[countryOf({ th })[0]] }); } catch (e) { return null; } } return _trk.get(day); } });
-const LG = initLeagues({ replay: (o) => RP.open(o), $, acc, esc, fmt, flagSvg, helmetSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/, .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
-// miniaturas de los circuitos para la pantalla de inicio
-const circuitCards = () => tracks.filter((t) => t.key !== 'daily').map((t) => { const [cc, cname] = countryOf(t); return { key: t.key, name: t.name, meta: `${cc === 'es' ? 'España' : cname}, ${Math.round(t.tr.len)} m`, art: trackSvg(t.tr) }; });
-const openCircuit = (key) => { const i = tracks.findIndex((t) => t.key === key); if (i < 0) return; sel.track = i; sel.mode = 'tt'; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
-initHome({ $, acc, esc, LG, PF, helmetSvg, circuits: circuitCards, openCircuit });
-initTheme();
-initPwa({ $, store });
+const LG = initLeagues({ onList: (msg) => { if (APP) APP.go('champs', { msg }); }, openProfile: () => PF.open('perfil'), replay: (o) => RP.open(o), $, acc, esc, fmt, flagSvg, helmetSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/, .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
+// datos de la app: circuitos, tiempos y garaje
+const trackAt = (key) => tracks.find((t) => t.key === key);
+const placeOf = (t) => { const [cc, cname] = countryOf(t); return cc === 'es' ? 'España' : cname; };
+const circuitCards = () => tracks.filter((t) => t.key !== 'daily').map((t) => ({ key: t.key, name: t.name, meta: `${placeOf(t)}, ${Math.round(t.tr.len)} m`, art: trackSvg(t.tr) }));
+function circuitInfo(key) {
+  const t = trackAt(key); let best = null;
+  for (const c of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + c.id); if (r && r.lap != null && (best == null || r.lap * 1000 < best)) best = Math.round(r.lap * 1000); }
+  return { key, name: t.name, meta: `${placeOf(t)}, ${Math.round(t.tr.len)} m`, env: envLabel(t), art: trackSvg(t.tr), best };
+}
+async function circuitRows(key) { const res = await getRows(trackAt(key)); return { ...res, rows: rankRows(res.rows, (r) => groupIdOfCar(r.carId) === 'karts') }; }
+function raceCircuit(key) {
+  const i = tracks.findIndex((t) => t.key === key); if (i < 0) return;
+  sel.track = i; sel.mode = 'tt'; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); $('startBtn').click();
+}
+const shots = new Map();
+const garageApi = {
+  list: () => CARS,
+  current: () => CARS[sel.car],
+  color: (id) => paintOf(CARS.find((c) => c.id === id)),
+  num: () => kartNum(),
+  pick(id) { const i = CARS.findIndex((c) => c.id === id); if (i < 0) return; sel.car = i; sel.carId = id; store.set('sel', sel); MP.key = ''; buildMenu(); this.rev(); },
+  rev() { sound.init(); sound.enginePreview(CARS[sel.car].id); },
+  setColor(hex) { sel.colors[CARS[sel.car].id] = hex; store.set('sel', sel); MP.key = ''; buildMenu(); },
+  setNum(n) { sel.kartNum = n; store.set('sel', sel); MP.key = ''; },
+  // foto del kart con el mismo modelo que se conduce
+  shot(id, w, h) {
+    const type = CARS.find((c) => c.id === id), k = [id, paintOf(type), kartNum(), w, h].join('|');
+    if (!shots.has(k)) { if (shots.size > 40) shots.clear(); shots.set(k, renderThumb(id, w, h, [4.5, 2.5, 5.4], 0.3, 13.5, null, MOBILE ? 'lo' : 'hi').catch((e) => { console.warn('Foto del kart no disponible', String(e && e.stack || e)); shots.delete(k); return ''; })); }
+    return shots.get(k);
+  },
+};
+APP = initHome({ $, acc, esc, LG, PF, helmetSvg, fmt, toast, carName, circuits: circuitCards, circuit: circuitInfo, rows: circuitRows, race: raceCircuit, daily: () => D, garage: garageApi, buildHelmets: () => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; buildHelmetEditor(); } });
+initPwa();
 initPush({ $, acc, esc });
 initUx({ $, acc }); initUiToggle();
 { const bt = $('boot'); if (bt) { bt.className = 'out'; setTimeout(() => bt.remove(), 450); } warmGlobe(); }

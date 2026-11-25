@@ -1,127 +1,60 @@
-/* KartlosApp: identidad de karting. Dorsal amarillo, piano rojo y blanco, asfalto y hormigón.
-   Se inyecta al final de la hoja de estilos (build.mjs), así que manda sobre las capas anteriores. */
+/* KartlosApp: identidad de karting. Piano rojo y blanco, asfalto y amarillo de box.
+   Se inyecta al final de la hoja de estilos (build.mjs), así que manda sobre las capas anteriores.
+   Aquí van las fuentes, los colores y las ventanas del juego; la app está en app.css. */
 @font-face{font-family:"KartDisplay";src:url("./assets/barlowc-800i.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
 @font-face{font-family:"KartBody";src:url("./assets/barlow-500.woff2") format("woff2");font-weight:100 600;font-display:swap}
 @font-face{font-family:"KartBody";src:url("./assets/barlow-700.woff2") format("woff2");font-weight:700 900;font-display:swap}
 
-html.ui2{--fd:"KartDisplay","Arial Narrow",sans-serif;--fb:"KartBody",system-ui,sans-serif;--y:#ffc400;--yd:#b98c00;
-  --spring:cubic-bezier(.3,1.45,.5,1)}
+html.ui2{--fd:"KartDisplay","Arial Narrow",sans-serif;--fb:"KartBody",system-ui,sans-serif;--y:#ffc400;--yd:#a67f00;--red:#e5352b;
+  --bg:#101216;--box:#181b22;--card:#212631;--line:#333a48;--txt:#f4f5f7;--mut:#9da6b6;
+  --kx-hdr:calc(60px + env(safe-area-inset-top));--kx-nav:calc(66px + env(safe-area-inset-bottom));
+  --spring:cubic-bezier(.3,1.45,.5,1);color-scheme:dark;background:var(--bg)}
 @supports (transition-timing-function:linear(0,1)){html.ui2{--spring:linear(0,.14 6%,.72 15%,1.02 22%,1.12 28%,1.1 33%,1.02 42%,.985 52%,.99 62%,1.005 78%,1)}}
 
-html.ui2 #menu,html.ui2 #menu .panel,html.ui2 #menuLeft,html.ui2 #leagues{background:var(--cr)!important}
-
-/* ---------- cabecera y logo ---------- */
-#menu .hm-top{margin-bottom:14px}
-#menu .hm-top .wmrow{display:flex;align-items:center;gap:8px;min-width:0}
-#menu .hm-top .wm{display:flex;align-items:center;gap:9px;margin:0;font-size:0}
-#menu .kx-mark{width:40px;height:34px;flex:0 0 auto}
-html.ui2 #menu .wm .wm-txt{font:400 31px/1 var(--fd)!important;letter-spacing:0;text-transform:none;color:var(--k)!important;-webkit-text-fill-color:var(--k);padding-right:3px}
-html.dark #menu .wm .wm-txt{color:var(--k)!important;-webkit-text-fill-color:var(--k)}
-html.ui2 #menu .hm-tools>button:not(.ui-tg){width:40px;height:40px;border-radius:8px;border:2px solid var(--k)!important;box-shadow:none!important;background:#fff!important}
-@media (max-width:420px){#menu .kx-mark{width:33px;height:28px}html.ui2 #menu .wm .wm-txt{font-size:26px!important}#menu .ver{display:none}html.ui2 #menu .hm-tools>button:not(.ui-tg){width:38px;height:38px}}
-
-/* ---------- títulos de sección ---------- */
-html.ui2 #menu .hm-sec{font:400 28px/1 var(--fd)!important;text-transform:none;letter-spacing:0;margin:24px 0 12px}
-html.ui2 #menu .hm-sec.row button{font:700 14px var(--fb)!important;color:var(--k);text-decoration:underline;text-decoration-color:var(--y);text-decoration-thickness:3px;text-underline-offset:5px}
-
-/* ---------- reto diario: panel de asfalto con piano ---------- */
-html.ui2 #menu #dailyCard.hero{position:relative;display:block;width:100%;text-align:left;border-radius:12px!important;background:#1a1c21!important;box-shadow:none!important;padding:0!important;overflow:hidden}
-#dailyCard.hero::before{content:"";display:block!important;height:10px;background:repeating-linear-gradient(115deg,#dc1f17 0 22px,#fff 22px 44px)}
-#dailyCard .kx-d{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:start;padding:16px 16px 0}
-#dailyCard .kx-d h2{margin:0;font:400 38px/.95 var(--fd)!important;color:#fff}
-#dailyCard .kx-d p{margin:6px 0 0;font:500 14px/1.35 var(--fb);color:#c3c8cf}
-#dailyCard .kx-clock{display:grid;justify-items:end;gap:2px;font:500 12px var(--fb);color:#c3c8cf}
-#dailyCard .kx-clock b{font:400 26px/1 var(--fd);font-variant-numeric:tabular-nums;color:var(--y);letter-spacing:.02em}
-#dailyCard .kx-art{position:relative;height:150px;margin:10px 16px 0;display:grid;place-items:center;border-radius:8px;background:#23262d;overflow:hidden}
-#dailyCard .kx-art .kx-line{width:100%;height:100%;padding:12px;box-sizing:border-box}
-#dailyCard .kx-art .kx-q{width:78%;height:80%;fill:none;stroke:#4b515c;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
-#dailyCard .kx-art .kx-run{stroke:var(--y);stroke-dasharray:60 940;animation:kx-lap 3.4s linear infinite}
-@keyframes kx-lap{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}
-#dailyCard .kx-steps{padding:10px 16px 0}
-html.ui2 #menu #dailyCard .dy-chips>*{border-radius:6px!important;background:#2b2f36!important}
-html.ui2 #menu #dailyCard .dy-go{display:block;position:relative;overflow:hidden;margin:12px 16px 16px;padding:13px!important;border-radius:8px!important;background:var(--y)!important;color:#15171b!important;box-shadow:0 4px 0 var(--yd)!important;font:400 24px/1 var(--fd)!important;letter-spacing:.01em;text-align:center;text-transform:none}
-#dailyCard .dy-go::after{content:"";position:absolute;top:0;bottom:0;width:46px;left:-70px;background:rgba(255,255,255,.65);transform:skewX(-20deg);animation:kx-sweep 4.6s ease-in-out infinite}
-@keyframes kx-sweep{0%,62%{left:-70px}88%,100%{left:115%}}
-
-/* ---------- entrenar: circuitos ---------- */
-.kx-tracks{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);gap:10px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;scrollbar-width:none;touch-action:pan-x pan-y}
-.kx-tracks::-webkit-scrollbar{display:none}
-html.ui2 #menu .kx-track{scroll-snap-align:start;display:grid;gap:2px;text-align:left;padding:0 0 10px;border:2px solid var(--k);border-radius:10px;background:#fff;color:var(--k);overflow:hidden;cursor:pointer;transition:transform .35s var(--spring)}
-html.ui2 #menu .kx-track:active{transform:scale(.96)}
-.kx-line{fill:none;stroke:#fff;stroke-linejoin:round;stroke-linecap:round}.kx-line circle{fill:var(--y);stroke:none}
-.kx-track svg{width:100%;height:104px;padding:10px;box-sizing:border-box;background:#1a1c21}
-html.ui2 #menu .kx-track b{padding:7px 10px 0;font:400 22px/1.05 var(--fd)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kx-track span{padding:0 10px;font:500 13px var(--fb);color:#5a5f66}
-
-/* ---------- campeonatos ---------- */
-html.ui2 #menu .hm-lg-r{border-radius:10px;border-width:2px;box-shadow:none;transition:transform .35s var(--spring)}
-html.ui2 #menu .hm-lg-r:active{transform:scale(.97)}
-html.ui2 #menu .hm-lg-r .pos{border-radius:6px;background:var(--y);color:#15171b}
-html.ui2 #menu .hm-lg-cta button{border-radius:8px!important;box-shadow:none!important;min-height:48px;font:400 20px var(--fd)!important}
-html.ui2 #menu .hm-lg-cta button+button{border:2px solid var(--k)}
-html.ui2 #menu :is(.hm-fin,.hm-install){border-radius:10px;border-width:2px;box-shadow:none}
-
-/* ---------- barra inferior: ficha que se desliza con muelle y botón de garaje como dorsal ---------- */
-html.ui2 #hmNav{border-radius:0!important;box-shadow:none!important;background:#1a1c21!important;gap:0!important;padding-left:4px!important;padding-right:4px!important;--i:0}
-html.ui2 #hmNav .kx-ind{position:absolute;top:6px;left:4px;width:calc((100% - 8px) / 5);height:50px;border-radius:8px;background:#2f333c;transform:translateX(calc(var(--i) * 100%));transition:transform .5s var(--spring);pointer-events:none}
-html.ui2 #hmNav button{position:relative;z-index:1;min-height:50px;justify-content:center;color:#a9afb8!important;font:700 11px var(--fb)!important;letter-spacing:0}
-html.ui2 #hmNav button.on{color:#fff!important}
-html.ui2 #hmNav button.on svg{color:var(--y)}
-html.ui2 #hmNav button.on::after{display:none!important}
-html.ui2 #hmNav button svg{transition:transform .45s var(--spring)}
-html.ui2 #hmNav button:active svg{transform:scale(.8)}
-html.ui2 #hmNav button.kx-garage{color:#fff!important}
-html.ui2 #hmNav button.kx-garage i{display:grid;place-items:center;width:58px;height:38px;margin-top:-22px;border-radius:8px;border:3px solid #1a1c21;background:var(--y);color:#15171b;transition:transform .45s var(--spring)}
-html.ui2 #hmNav button.kx-garage:active i{transform:scale(.9) rotate(-4deg)}
-html.ui2 #hmNav button.kx-garage i svg{color:#15171b!important}
-@media (min-width:761px){html.ui2 #hmNav{border-radius:10px 10px 0 0!important}}
-
-/* ---------- botones principales del resto de pantallas ---------- */
-html.ui2 :is(#daily,#profile,#board,#settings,#musicPick,#results,#pause,#leagues,#menu) button.big:not(.ghost):not(.wa),html.ui2 #startBtn,html.ui2 #daily .dy-btn:not(.ghost):not(.ad){background:var(--y)!important;color:#15171b!important;border-radius:8px!important;box-shadow:0 4px 0 var(--yd)!important;text-transform:none}
-html.ui2 :is(button.big,#startBtn,.l2-cta,.dy-btn):active{transform:translateY(3px);box-shadow:0 1px 0 var(--yd)!important}
-html.ui2 :is(#profile,#board,#settings,#musicPick,#results,#pause)>.panel>h1,html.ui2 :is(#profile,#board,#settings,#musicPick,#results,#pause) h3{text-transform:none!important}
-
-/* sin etiquetas en mayúsculas en los menús */
-html.ui2 :is(#menu,#daily,#leagues,#profile,#board,#settings,#musicPick,#results,#pause) :is(small,h3,.hm-sec,.hm-ph b,.pick small){text-transform:none!important;letter-spacing:0!important}
-
-/* ---------- fuera degradados y adornos heredados ---------- */
-html.ui2 #menu #menuLeft.panel::before,html.ui2 #menu .panel::before{display:none!important}
-#menu .hm-top .wmrow,#menu .hm-top{background:none!important;box-shadow:none!important;text-shadow:none!important}
-
-/* ---------- entrenar ---------- */
-html.ui2 #menu #startBtn{background:var(--y)!important;color:#15171b!important;border:0!important;border-radius:8px!important;box-shadow:0 4px 0 var(--yd)!important;font:400 28px/1 var(--fd)!important;letter-spacing:0!important;text-transform:none!important;min-height:58px}
-html.ui2 #menu #hmBack{width:40px;height:40px;border-radius:8px;background:#fff!important;border:2px solid var(--k)!important;color:var(--k)!important}
-html.ui2 #menu .pick{border-width:2px!important;box-shadow:none!important}
-html.ui2 #menu #homeBoard{border-radius:10px;box-shadow:none}
-html.ui2 #menu #homeBoard .hb-h b{font:400 22px/1 var(--fd)!important;letter-spacing:0;text-transform:none;color:var(--y)}
-
-/* ---------- garaje ---------- */
-html.ui2 #menu #flyout .vhead h2{font:400 34px/1 var(--fd)!important;text-transform:none;color:var(--y)}
-html.ui2 #menu #groupTabs,html.ui2 #boardGroups{display:none!important}
-html.ui2 #menu #flyout #carList .card :is(small,.brand){display:none}
-html.ui2 #menu #flyout :is(.card,.stat,.card b,.stat span,#kartCfg label){text-transform:none!important;letter-spacing:0!important}
-html.ui2 #menu #flyout .card{border-radius:10px}
-
-/* ---------- reto: tarjeta de trazado a todo el ancho ---------- */
-html.ui2 #daily .dy-sum{display:block}html.ui2 #daily .dy-sum canvas{width:100%!important;height:auto!important;max-height:200px;object-fit:contain}
-html.ui2 #daily .dy-step h3{font:400 24px/1 var(--fd)!important;text-transform:none!important}
-html.ui2 #daily .dy-x,html.ui2 #leagues .dy-x{border-radius:8px!important;box-shadow:none!important}
-html.ui2 #daily{background:rgba(12,13,16,.94)!important}
-html.ui2 #leagues .lg-panel h1,html.ui2 #leagues .lg-panel h2{text-transform:none!important}
-html.ui2 #leagues button:is(.lg-btn,.dy-btn):not(.ghost){background:var(--y)!important;color:#15171b!important;box-shadow:0 4px 0 var(--yd)!important;border-radius:8px!important}
-html.ui2 :is(#profile,#board,#settings,#musicPick,#results,#pause)>.panel>h1{text-transform:none!important}
-html.ui2 :is(#board,#profile) :is(.tabs,.pf-tabs) button{border-radius:6px!important}
-
-/* ---------- modo oscuro: lo que ya es de color propio se vuelve a invertir para no perderlo ---------- */
-html.dark :is(#hmNav,.kx-mark,.kx-track svg){filter:invert(1) hue-rotate(180deg)}
-
-html.ui2 body #menu #menuLeft #startBtn#startBtn{background:var(--y)!important;color:#15171b!important;letter-spacing:0!important;box-shadow:0 4px 0 var(--yd)!important;font:400 28px/1 var(--fd)!important}
+/* ---------- ventanas del juego ---------- */
+.overlay:not(#menu){z-index:9}
+#leagues.overlay{z-index:8}
+#sanction.overlay{z-index:14}
+html.ui2 :is(#board,#settings,#musicPick,#results,#pause,#sanction){background:rgba(8,9,12,.86)!important}
+html.ui2 #daily{background:rgba(10,11,14,.96)!important}
+html.ui2 :is(#board,#settings,#musicPick,#results,#pause)>.panel,html.ui2 #sanction>.panel{background:var(--box)!important}
+html.ui2 :is(#daily,#board,#settings,#musicPick,#results,#pause,#leagues) button.big:not(.ghost):not(.wa),html.ui2 #daily .dy-btn:not(.ghost):not(.ad){background:var(--y)!important;color:#15171b!important;border-radius:8px!important;box-shadow:0 4px 0 var(--yd)!important;text-transform:none}
+html.ui2 :is(button.big,.l2-cta,.dy-btn):active{transform:translateY(3px);box-shadow:0 1px 0 var(--yd)!important}
+html.ui2 :is(#board,#settings,#musicPick,#results,#pause)>.panel>h1,html.ui2 :is(#board,#settings,#musicPick,#results,#pause,#sanction) :is(h1,h3){text-transform:none!important}
+html.ui2 :is(#daily,#leagues,#board,#settings,#musicPick,#results,#pause) :is(small,h3){text-transform:none!important;letter-spacing:0!important}
 html.ui2 body #board #boardGroups#boardGroups{display:none!important}
 html.ui2 #board .lbt :is(th,tr.gh td,td){text-transform:none!important;letter-spacing:0!important}
-html.ui2 body #menu #flyout#flyout{background:#15171b!important}
+html.ui2 #board .tabs button{border-radius:6px!important}
 html.ui2 body #settings#settings .tog.on,html.ui2 body #settings#settings .set-tg button.on{background:var(--y)!important;color:#15171b!important;box-shadow:0 3px 0 var(--yd)!important}
-html.ui2 body #leagues#leagues .lg-panel :is(button.lg-btn:not(.ghost),button.big:not(.ghost),.dy-btn:not(.ghost)){background:var(--y)!important;color:#15171b!important;box-shadow:0 4px 0 var(--yd)!important}
-/* solo karts y sin rivales: no hay selector de modo */
-#menu .modes{display:none!important}
+html.ui2 #daily .dy-sum{display:block}html.ui2 #daily .dy-sum canvas{width:100%!important;height:auto!important;max-height:200px;object-fit:contain}
+html.ui2 #daily .dy-step h3{font:400 24px/1 var(--fd)!important}
+html.ui2 :is(#daily,#leagues) .dy-x{background:var(--card)!important;color:#fff!important;border:1px solid var(--line)!important;border-radius:10px!important;box-shadow:none!important}
 
-@media (prefers-reduced-motion:reduce){#dailyCard .kx-run,#dailyCard .dy-go::after{animation:none}html.ui2 #hmNav .kx-ind,html.ui2 #hmNav button svg{transition:none}}
+/* ---------- dentro de un campeonato, en oscuro ---------- */
+html.ui2 body #leagues#leagues{background:var(--bg)!important}
+html.ui2 #leagues .lg-panel{color:var(--txt)}
+html.ui2 #leagues .lg-title{display:none}
+html.ui2 #leagues .dy-x{display:none!important}   /* se sale con la flecha o con la barra inferior */
+html.ui2 #leagues :is(.l2-ss>b,.l2-name,.l2-left,.l2-pn,.l2-day,.vt-title,.vt-h b,.lg-note){color:var(--txt)!important}
+html.ui2 #leagues :is(.l2-name,.l2-left,.l2-gap,.l2-day small,.vt-h small,.l2-empty,.l2-nobody p,.l2-info p,.l2-len,.vt-cols,.vt-n small,.vt-t small){color:var(--mut)!important}
+html.ui2 #leagues :is(.l2-name,.l2-hl small,.l2-hr span small,.l2-best small,.l2-inv small,.vt-cols,.vt-aw small,.vt-stats span,.l2-act button,.l2-tw b){text-transform:none!important;letter-spacing:0!important}
+html.ui2 #leagues :is(.l2-ic,.l2-tp,.l2-best,.l2-b,.l2-card,.l2-inv,.l2-info summary,.l2-in,.l2-m .lg-rx button,.vt-back,.vt-pill,.vt-stats span,.vt-cup.live,.vt-aw,.vt-cab){background:var(--box)!important;border-color:var(--line)!important;color:var(--txt)!important;box-shadow:none!important}
+html.ui2 #leagues :is(.l2-card.me,.l2-pod.p1 .l2-tp){border-color:var(--y)!important}
+html.ui2 #leagues .l2-card.me{background:#2a2510!important}
+html.ui2 #leagues .l2-pod.p1 .l2-tp{background:var(--y)!important;color:#15171b!important}
+html.ui2 #leagues :is(.l2-best b,.l2-best .chk,.l2-inv b,.l2-info summary,.l2-in input,.l2-ci>b,.l2-pt b,.l2-chips b,.vt-aw b,.vt-aw em,.vt-who b,.vt-ic,.vt-stats b,.vt-r){color:var(--txt)!important}
+html.ui2 #leagues :is(.l2-ci>small,.l2-chips,.l2-pt small){color:var(--mut)!important}
+html.ui2 #leagues .l2-card.p1 .l2-pt b{color:var(--y)!important}
+html.ui2 #leagues .l2-m.me .l2-b{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important}
+html.ui2 #leagues .l2-b small{color:var(--mut)}html.ui2 #leagues .l2-m.me .l2-b small{color:#ffd0cc}
+html.ui2 #leagues :is(.l2-seg,.vt-tabs,.l2-chart,.l2-hero,.l2-tw:not(.sanc),.l2-lap){background:#07080a!important}
+html.ui2 #leagues :is(.l2-bar,.l2-days i){background:#343b49!important}html.ui2 #leagues .l2-days i.d{background:#8b95a8!important}html.ui2 #leagues .l2-days i.n{background:var(--y)!important}
+html.ui2 #leagues .l2-bar i{background:var(--c,var(--red))!important}
+html.ui2 #leagues .l2-step{background:repeating-linear-gradient(115deg,#dc1f17 0 12px,#fff 12px 24px) top/100% 6px no-repeat,var(--card)!important}
+html.ui2 #leagues .l2-pill:not(.danger){background:#fff!important;color:#15171b!important}
+html.ui2 #leagues .l2-pill.danger{background:transparent!important}
+html.ui2 #leagues .l2-in input{background:transparent!important}
+html.ui2 #leagues .vt-cols{border-bottom-color:var(--line)}html.ui2 #leagues .vt-r{border-bottom-color:var(--line)}
+html.ui2 #leagues .lg-in{background:#0e1014!important;color:#fff!important;border:1px solid var(--line)!important}
+html.ui2 body #leagues#leagues .lg-panel :is(button.lg-btn:not(.ghost),button.big:not(.ghost),.l2-cta){background:var(--y)!important;color:#15171b!important;box-shadow:0 4px 0 var(--yd)!important}
+html.ui2 #leagues .l2-cta svg{fill:#15171b}

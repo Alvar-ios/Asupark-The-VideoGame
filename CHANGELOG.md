@@ -4,6 +4,17 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.117
+- La app tiene cabecera y barra inferior fijas: Campeonatos, Garaje, Correr (en el centro), Tiempos y Perfil se abren como pestañas, sin taparlas.
+- Un solo tema, oscuro. Se quita el modo claro y el sistema que invertía los colores.
+- Correr: reto diario, campeonatos y entrenar en tres zonas con su propio delineado. Cada circuito de entrenamiento tiene ficha con su trazado, tu mejor vuelta, el récord y los más rápidos.
+- Campeonatos: de cada uno se ve la carrera de hoy, el botón para correrla y la clasificación resumida. El chat, la puntuación y la vitrina se abren entre la cabecera y la barra, en oscuro.
+- Garaje nuevo: foto del kart con tu color y dorsal, prestaciones y personalización. Los karts pasan a llamarse «Kart de alquiler» y «Sodi Sigma».
+- Tiempos nuevo: selector con el trazado, récord en grande y clasificación. Solo cuentan las marcas hechas con karts.
+- Perfil nuevo: ficha de piloto con casco, cuenta, trofeos y amigos.
+- Logo e iconos nuevos: un circuito que dibuja una K con la línea de salida en amarillo.
+- Se quita el aviso de instalar la app. El menú ya no dibuja un fondo 3D que quedaba tapado.
+
 ## 0.0.116
 - Imagen nueva de KartlosApp: dorsal amarillo con piano rojo y blanco, tipografía Barlow (inspirada en la señalización de carretera), asfalto y hormigón. Iconos nuevos de la app.
 - Inicio rehecho: reto diario, campeonatos y «Entrenar» con el dibujo de cada circuito. Barra inferior con Inicio, Campeonatos, Garaje, Tiempos y Perfil, con ficha deslizante.

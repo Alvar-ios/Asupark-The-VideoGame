@@ -1,0 +1,268 @@
+
+/* ============ La app: cabecera y barra fijas, una página por pestaña. Un solo tema, oscuro. ============ */
+#menu{visibility:hidden!important}              /* el menú antiguo sigue vivo por dentro, pero ya no se ve */
+#menu.hidden~#app,body.in-replay #app{display:none!important}
+
+#app{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;background:var(--bg);color:var(--txt);font:500 15px/1.4 var(--fb);text-align:left;touch-action:pan-y}
+#app *{box-sizing:border-box;font-family:var(--fb);letter-spacing:0;text-transform:none}
+#app :is(h1,h2,h3,p){margin:0;padding:0}
+:where(#app ol,#app li){margin:0;padding:0;list-style:none}
+#app button{margin:0;font:700 15px var(--fb);color:inherit;cursor:pointer;text-shadow:none;-webkit-tap-highlight-color:transparent;width:auto;min-width:0}
+#app button:focus-visible,#app input:focus-visible,#app select:focus-visible{outline:3px solid var(--y);outline-offset:2px}
+#app :is(.kx-title,.kx-h h2,.kx-card h3,.kx-champ h3,.kx-kartname,.kx-sub,.kx-cta,.kx-brand span,.kx-brand em,.kx-pos,.kx-pts>b,.kx-big,.kx-num,.kx-duo b,.kx-track>b,.kx-lgn>b,.kx-pilot b,.pf-stats b,.pf-h,.kx-table em,.kx-times i,.kx-scale b,.pf-score b){font-family:var(--fd)!important;font-weight:400}
+
+/* ---------- cabecera ---------- */
+.kx-top{flex:none;height:var(--kx-hdr);padding:env(safe-area-inset-top) max(14px,calc((100% - 640px)/2)) 0;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);background:var(--bg)}
+#app .kx-brand{display:flex;align-items:center;gap:9px;min-width:0;font-size:0;line-height:1}
+.kx-mark{width:34px;height:34px;flex:none}
+#app .kx-brand span{font-size:29px;line-height:1;color:var(--txt);white-space:nowrap;padding-right:3px}
+#app .kx-brand em{font-size:29px;font-style:normal;color:var(--y)}
+.kx-tools{display:flex;gap:8px}
+#app .kx-tools button{width:40px;height:40px;padding:0;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--box);color:var(--txt)}
+.kx-tools svg{width:21px;height:21px}
+
+/* ---------- cuerpo ---------- */
+#kxMain{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.kx-page{max-width:640px;margin:0 auto;padding:14px 14px 28px;display:flex;flex-direction:column;gap:16px}
+.kx-page[hidden]{display:none}
+.kx-page>div:not(.kx-map):not(.kx-duo):empty{display:none}
+#kxChamps,#kxGarage,#kxTimes,#kxTrack,#profBody,#kxBoard{display:flex;flex-direction:column;gap:12px;min-width:0}
+html.ui2 #app :is(h1,h2,h3){color:var(--txt);text-transform:none}
+#app .kx-title{font-size:38px;line-height:1}
+#app .kx-lead{color:var(--mut);margin-top:-6px}
+#app .kx-lead.center{text-align:center;font-size:13px;margin-top:-2px}
+#app .kx-note{color:var(--mut);margin:0}
+
+/* botón principal: amarillo de box, con canto */
+#app .kx-cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;padding:10px 16px;border:0;border-radius:10px;background:var(--y);color:#15171b;box-shadow:0 4px 0 var(--yd);font-size:24px;line-height:1.1;margin-bottom:4px;transition:transform .35s var(--spring)}
+#app .kx-cta:active{transform:translateY(3px);box-shadow:0 1px 0 var(--yd)}
+#app .kx-cta:disabled{opacity:.6}
+
+/* ---------- las tres zonas de «Correr», cada una con su delineado ---------- */
+.kx-box{border:2px solid var(--line);border-radius:16px;background:var(--box);padding:14px;min-width:0}
+.kx-box.champ{border-color:var(--red)}
+.kx-box.train{border-color:#6a7488}
+.kx-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+#app .kx-h h2{font-size:31px;line-height:1}
+#app .kx-h button{background:none;border:0;padding:8px 0;font-size:14px;text-decoration:underline;text-decoration-color:var(--red);text-decoration-thickness:3px;text-underline-offset:6px}
+#hmLgBody{display:flex;flex-direction:column;gap:10px}
+
+/* reto diario */
+html.ui2 #app #dailyCard.hero{display:block;width:100%;position:relative;overflow:hidden;text-align:left;padding:0!important;border:2px solid var(--y)!important;border-radius:16px!important;background:var(--box)!important;box-shadow:none!important;color:var(--txt);transform:none}
+#app #dailyCard.hero::before{content:"";display:block;height:10px;background:repeating-linear-gradient(115deg,#dc1f17 0 22px,#fff 22px 44px)}
+#app #dailyCard .kx-d{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;align-items:start;padding:14px 14px 0}
+#app #dailyCard .kx-d>span:first-child{min-width:0;display:block}
+#app #dailyCard .kx-d h2{font:400 36px/1 var(--fd)!important;color:#fff}
+#app #dailyCard .kx-d p{margin-top:3px;color:var(--mut);font-size:14px}
+#app #dailyCard .kx-clock{display:grid;justify-items:end;font-size:12px;color:var(--mut)}
+#app #dailyCard .kx-clock b{font:400 27px/1.1 var(--fd)!important;font-variant-numeric:tabular-nums;color:var(--y)}
+#app #dailyCard .kx-art{display:grid;place-items:center;height:160px;margin:12px 14px 0;border-radius:10px;background:var(--card);overflow:hidden}
+#app #dailyCard .kx-art svg{width:100%;height:100%;padding:12px}
+#app #dailyCard .kx-art .kx-q{width:78%;height:84%;padding:0;fill:none;stroke:#4b5362;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+#app #dailyCard .kx-art .kx-run{stroke:var(--y);stroke-dasharray:60 940;animation:kx-lap 3.4s linear infinite}
+@keyframes kx-lap{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}
+html.ui2 #app #dailyCard .kx-steps{display:flex;flex-wrap:wrap;gap:8px;margin:0!important;padding:12px 14px 0}
+html.ui2 #app #dailyCard .dy-chips>*{padding:5px 10px;border:0!important;border-radius:7px!important;background:var(--card)!important;color:#fff!important;font-size:13px}
+#app #dailyCard .dy-chips .ic{width:14px;height:14px;vertical-align:-2px}
+html.ui2 #app #dailyCard .dy-go{display:block;position:relative;overflow:hidden;margin:12px 14px 18px;padding:14px!important;border-radius:10px!important;background:var(--y)!important;color:#15171b!important;box-shadow:0 4px 0 var(--yd)!important;font:400 25px/1 var(--fd)!important;font-style:normal;text-align:center}
+#app #dailyCard .dy-go::after{content:"";position:absolute;top:0;bottom:0;width:46px;left:-70px;background:rgba(255,255,255,.65);transform:skewX(-20deg);animation:kx-sweep 4.6s ease-in-out infinite}
+@keyframes kx-sweep{0%,62%{left:-70px}88%,100%{left:115%}}
+
+/* resumen de campeonatos */
+#app .kx-lgrow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;padding:14px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);text-align:left;transition:transform .35s var(--spring)}
+#app .kx-lgrow:active{transform:scale(.97)}
+#app .kx-pos{display:grid;place-items:center;height:46px;border-radius:9px;background:#3a4252;font-size:24px;font-style:normal}
+#app .kx-pos.p1{background:var(--y);color:#15171b}
+.kx-lgn{display:flex;flex-direction:column;gap:2px;min-width:0}
+#app .kx-lgn>b{font-size:23px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kx-lgn small{display:flex;flex-wrap:wrap;gap:2px 8px;color:var(--mut);font-size:13px}
+.kx-lgn em{font-style:normal;font-weight:700;color:var(--y)}
+.kx-pts{display:flex;flex-direction:column;align-items:flex-end;min-width:48px;max-width:96px}
+#app .kx-pts>b{font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.kx-pts small{color:var(--mut);font-size:12px}
+#app .kx-fin{display:flex;gap:10px;align-items:center;width:100%;padding:12px;border:1px solid var(--y);border-radius:12px;background:var(--card);text-align:left;font-weight:500;font-size:14px}
+.kx-fin .ic{width:26px;height:26px;flex:none;color:var(--y)}
+.kx-fin b{display:block}
+
+/* entrenar */
+.kx-tracks{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;touch-action:pan-x pan-y}
+.kx-tracks::-webkit-scrollbar{display:none}
+#app .kx-track{scroll-snap-align:start;display:grid;gap:2px;text-align:left;padding:0 0 10px;border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden;transition:transform .35s var(--spring)}
+#app .kx-track:active{transform:scale(.96)}
+.kx-line{fill:none;stroke:#fff;stroke-linejoin:round;stroke-linecap:round}.kx-line circle{fill:var(--y);stroke:none}
+#app .kx-track svg{width:100%;height:104px;padding:10px;background:#0c0e12}
+#app .kx-track>b{padding:7px 10px 0;font-size:21px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kx-track>span{padding:0 10px;color:var(--mut);font-size:13px}
+
+/* ---------- ficha de circuito ---------- */
+#app .kx-back{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:8px 14px 8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--box)}
+.kx-back .ic{width:18px;height:18px}
+.kx-map{height:230px;border:1px solid var(--line);border-radius:14px;background:#0c0e12}
+#app .kx-map svg{width:100%;height:100%;padding:18px}
+.kx-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kx-duo>div{display:flex;flex-direction:column;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--box)}
+.kx-duo span,.kx-duo small{color:var(--mut);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app .kx-duo b{font-size:28px;line-height:1.15;font-variant-numeric:tabular-nums}
+#app .kx-kartline{display:grid;grid-template-columns:84px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;padding:8px 14px 8px 8px;border:1px solid var(--line);border-radius:12px;background:var(--box);text-align:left}
+.kx-kartline img{width:84px;height:52px;object-fit:contain}
+.kx-kartline span{display:flex;flex-direction:column}.kx-kartline small{color:var(--mut);font-weight:500}
+.kx-kartline em{font-style:normal;font-size:14px;color:var(--y)}
+#app .kx-sub{font-size:25px;margin-top:6px}
+
+/* ---------- listas de tiempos ---------- */
+#app .kx-times{display:flex;flex-direction:column;gap:6px}
+.kx-times li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 12px 9px 8px;border:1px solid var(--line);border-radius:12px;background:var(--box)}
+.kx-times li.me{border-color:var(--y);background:#2a2510}
+#app .kx-times i{font-size:22px;font-style:normal;text-align:center;color:var(--mut)}
+#app .kx-times li.p1 i{color:var(--y)}#app .kx-times li.p2 i{color:#dfe5ee}#app .kx-times li.p3 i{color:#e29a62}
+.kx-times li>span{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.kx-times li>span>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kx-times small{color:var(--mut);font-size:12px}
+.kx-times .t{align-items:flex-end;font-variant-numeric:tabular-nums}.kx-times .t b{font-size:17px}
+
+/* ---------- tiempos ---------- */
+.kx-pick{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(104px,1fr);gap:8px;overflow-x:auto;scrollbar-width:none;touch-action:pan-x pan-y}
+.kx-pick::-webkit-scrollbar{display:none}
+#app .kx-pick button{display:flex;flex-direction:column;gap:4px;min-width:0;padding:0 0 7px;border:2px solid var(--line);border-radius:12px;background:var(--box);overflow:hidden;color:var(--mut)}
+#app .kx-pick button.on{border-color:var(--y);color:#fff}
+#app .kx-pick svg{width:100%;height:58px;padding:7px;background:#0c0e12}
+.kx-pick span{padding:0 6px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kx-record{display:flex;flex-direction:column;align-items:center;gap:2px;padding:16px 14px 14px;border:2px solid var(--y);border-radius:16px;background:var(--box);text-align:center;position:relative;overflow:hidden}
+.kx-record::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8px;background:repeating-linear-gradient(115deg,#dc1f17 0 18px,#fff 18px 36px)}
+.kx-record>span:first-child{color:var(--mut)}
+#app .kx-big{font-size:62px;line-height:1.05;color:var(--y);font-variant-numeric:tabular-nums}
+.kx-who{display:flex;flex-direction:column;color:var(--mut);font-size:13px;padding-bottom:8px}.kx-who b{color:#fff;font-size:18px}
+.kx-record.loading{min-height:150px;justify-content:center}
+#app .kx-mine{padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card);text-align:center}
+
+/* ---------- tarjetas genéricas y campos ---------- */
+.kx-card{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--box);min-width:0}
+#app .kx-card h3{font-size:25px;line-height:1.05}
+#app .kx-label{display:flex;flex-direction:column;gap:5px;color:var(--mut);font-size:13px;font-weight:700}
+#app :is(input:not([type=color]),select){width:100%;min-width:0;min-height:48px;margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#0e1014;color:#fff;font:700 16px var(--fb);-webkit-user-select:text;user-select:text}
+#app input::placeholder{color:#697283;font-weight:500}
+.kx-field{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+#app .kx-field button{padding:0 18px;border:0;border-radius:10px;background:#fff;color:#15171b}
+#app .kx-msg:empty,#app .pf-msg:empty{display:none}
+#app .kx-msg,#app .pf-msg{color:#ff8b82;font-weight:700}
+
+/* ---------- campeonatos ---------- */
+.kx-champ{display:flex;flex-direction:column;gap:12px;padding:14px;border:2px solid var(--red);border-radius:16px;background:var(--box)}
+.kx-champ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#app .kx-champ h3{font-size:30px;line-height:1.05;min-width:0;overflow-wrap:anywhere}
+.kx-champ header span{flex:none;color:var(--mut);font-size:14px}
+.kx-days{display:flex;gap:3px;height:7px;margin-top:-4px}.kx-days i{flex:1;transform:skewX(-20deg);border-radius:2px;background:#343b49}.kx-days i.d{background:#8b95a8}.kx-days i.n{background:var(--y)}
+.kx-next{display:grid;grid-template-columns:104px minmax(0,1fr);align-items:center;gap:12px;padding:8px;border-radius:12px;background:var(--card)}
+.kx-thumb{display:grid;place-items:center;height:66px;border-radius:8px;background:#0c0e12}
+#app .kx-thumb svg{width:100%;height:100%;padding:7px}
+.kx-unknown{font-size:34px;font-weight:700;color:var(--y)}
+.kx-nxt{display:flex;flex-direction:column;min-width:0}.kx-nxt small{color:var(--mut);font-size:13px}.kx-nxt b{font-size:18px;line-height:1.2}
+#app .kx-table li{display:grid;grid-template-columns:26px 32px minmax(0,1fr) auto;align-items:center;gap:10px;padding:7px 8px;border-bottom:1px solid var(--line)}
+#app .kx-table li.me{background:#2a2510;border-radius:8px;border-bottom-color:transparent}
+.kx-table i{font-style:normal;font-weight:700;text-align:center;color:var(--mut)}
+.kx-hel{display:block;width:32px;height:28px}#app .kx-hel svg{width:100%;height:100%}
+.kx-table li>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app .kx-table em{font-size:22px;font-style:normal;font-variant-numeric:tabular-nums}.kx-table em small{margin-left:3px;color:var(--mut);font-size:12px}
+#app .kx-more{color:var(--mut);font-size:13px;text-align:center;margin-top:4px}
+#app .kx-link{width:100%;min-height:46px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+#app .kx-scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.kx-scale li{display:flex;flex-direction:column;align-items:center;padding:6px 0;border-radius:9px;background:var(--card)}
+.kx-scale i{font-style:normal;font-size:12px;color:var(--mut)}#app .kx-scale b{font-size:24px;line-height:1.1}
+
+/* ---------- garaje ---------- */
+.kx-stage{position:relative;height:clamp(200px,52vw,300px);border:2px solid var(--line);border-radius:16px;overflow:hidden;background:radial-gradient(ellipse 62% 20% at 50% 76%,rgba(255,255,255,.16),transparent 70%),linear-gradient(#232936 0 62%,#14171d 62% 100%)}
+.kx-stage::before{content:"";position:absolute;left:0;right:0;bottom:0;height:9px;background:repeating-linear-gradient(115deg,#dc1f17 0 20px,#fff 20px 40px)}
+.kx-stage::after{content:"";position:absolute;left:8%;right:8%;bottom:13%;height:3px;background:var(--y);opacity:.55}
+.kx-stage img{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:contain;transition:opacity .25s,transform .55s var(--spring)}
+.kx-stage img.wait{opacity:0;transform:translateX(-26px)}
+#app .kx-num{position:absolute;top:10px;right:14px;font-size:54px;line-height:1;color:rgba(255,255,255,.22)}
+#app .kx-kartname{font-size:34px;line-height:1}
+.kx-karts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#app .kx-karts button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 8px 10px;border:2px solid var(--line);border-radius:14px;background:var(--box);transition:transform .35s var(--spring)}
+#app .kx-karts button.on{border-color:var(--y);background:var(--card)}
+#app .kx-karts button:active{transform:scale(.96)}
+.kx-karts img{width:100%;aspect-ratio:8/5;object-fit:contain}
+.kx-karts small{color:var(--mut);font-weight:500}.kx-karts .on small{color:var(--y);font-weight:700}
+.kx-stat{display:grid;grid-template-columns:112px minmax(0,1fr) 68px;align-items:center;gap:10px;font-size:14px}
+.kx-stat i{height:10px;border-radius:3px;background:#0e1014;overflow:hidden;transform:skewX(-20deg)}
+.kx-stat s{display:block;height:100%;background:var(--y);transition:width .5s var(--spring)}
+.kx-stat b{text-align:right;font-variant-numeric:tabular-nums}
+.kx-swatches{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;justify-items:center}
+#app .kx-swatches button,.kx-custom{width:44px;height:44px;padding:0;border-radius:50%;background:var(--c);border:3px solid var(--box);box-shadow:0 0 0 1px #4b5362}
+#app .kx-swatches button.on{box-shadow:0 0 0 3px var(--y)}
+.kx-custom{position:relative;display:grid;place-items:center;overflow:hidden;cursor:pointer}.kx-custom input{position:absolute;inset:0;opacity:0;cursor:pointer}.kx-custom span{font-size:22px;font-weight:700;color:#fff;text-shadow:0 0 4px #000}
+.kx-dorsal{display:grid;grid-template-columns:1fr 48px 72px 48px;align-items:center;gap:8px}
+#app .kx-dorsal button{height:48px;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--card);font-size:24px}
+#app .kx-dorsal input{text-align:center;font-size:20px;padding:8px 4px}
+
+/* ---------- perfil ---------- */
+.kx-pilot{display:grid;grid-template-columns:78px minmax(0,1fr) auto;align-items:center;gap:14px;padding:14px;border:2px solid var(--y);border-radius:16px;background:var(--box)}
+.kx-pilot-hel{display:block;width:78px;height:68px}#app .kx-pilot-hel svg{width:100%;height:100%}
+.kx-pilot>div{min-width:0;display:flex;flex-direction:column;gap:3px}
+#app .kx-pilot b{font-size:30px;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kx-pilot small{display:flex;align-items:center;gap:7px;color:var(--mut)}
+#app .flag{display:inline-block;width:22px;height:15px;border-radius:2px;overflow:hidden;flex:none;margin:0;font-size:0}#app .flag svg{display:block;width:100%;height:100%}
+#app .tabs{display:flex;gap:4px;margin:0;padding:4px;border-radius:12px;background:#0e1014;overflow:visible}
+#app .tabs button{flex:1;min-height:44px;padding:0 6px;border:0;border-radius:9px;background:transparent;color:var(--mut);box-shadow:none}
+#app .tabs button.on{background:var(--card);color:#fff;box-shadow:inset 0 -3px 0 var(--y)}
+#app .pf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+#app .pf-stats>div{display:flex;flex-direction:column;align-items:center;padding:10px 4px;border:1px solid var(--line);border-radius:12px;background:var(--box)}
+#app .pf-stats b{font-size:34px;line-height:1.05}#app .pf-stats small{color:var(--mut);font-size:13px}
+#app .pf-h{font-size:25px;margin:6px 0 0}
+#app .pf-shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin:0;overflow:visible;padding:0}
+#app .ach{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:auto;margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--box);text-align:left;box-shadow:none}
+#app .ach.gold{border-color:var(--y)}
+#app .ach i{font-style:normal;color:var(--y)}#app .ach .ic{width:26px;height:26px}#app .ach b{font-size:14px;line-height:1.2}#app .ach small{color:var(--mut);font-size:12px}
+.pf-list{display:flex;flex-direction:column;gap:8px}
+#app .pf-fr{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--box)}
+.pf-fr>b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.pf-act{display:flex;gap:6px;align-items:center}.pf-fi{display:flex;gap:4px;align-items:center}#app .pf-fi .hel{display:inline-block;width:30px}
+#app button.mini{min-height:40px;padding:0 14px;border:0;border-radius:9px;background:#fff;color:#15171b;font-size:14px;box-shadow:none}
+#app button.mini.ghost{border:1px solid var(--line);background:transparent;color:var(--txt)}
+#app .pf-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin:0}
+#app .pf-wa button{width:100%;min-height:48px;border:0;border-radius:10px;background:#1faa55;color:#fff;display:flex;gap:8px;align-items:center;justify-content:center}#app .pf-wa svg{width:20px;height:20px}
+.pf-score{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pf-score>div{display:flex;flex-direction:column;align-items:center;padding:10px;border-radius:12px;background:var(--box)}#app .pf-score b{font-size:40px}
+#app table.lbt{width:100%;border-collapse:collapse;color:var(--txt);font-size:14px}#app table.lbt td{padding:8px;border-bottom:1px solid var(--line);background:transparent}#app table.lbt tr.me td{background:#2a2510}
+#app #helGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:0}
+#app #helGrid button{padding:6px 2px;border:2px solid var(--line);border-radius:10px;background:var(--card);box-shadow:none}
+#app #helGrid button.on{border-color:var(--y);background:#2a2510}
+#app #helGrid .hel{display:block;width:100%;height:34px;margin:0}#app #helGrid svg{width:100%;height:100%}
+@media (max-width:380px){#app #helGrid{grid-template-columns:repeat(4,1fr)}}
+.kx-push:not(.hidden){display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--box)}
+.kx-push div{display:flex;flex-direction:column}.kx-push small{color:var(--mut)}.kx-push .ic{width:22px;height:22px}
+#app .kx-push button{padding:8px 12px;border:0;border-radius:9px;background:#fff;color:#15171b}#app .kx-push button.x{background:transparent;color:var(--mut);padding:6px}
+
+/* ---------- barra inferior: Correr en el centro; la ficha se desliza con muelle ---------- */
+html.ui2 #app #hmNav{flex:none;position:relative!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:0!important;width:100%;max-width:none;height:var(--kx-nav);margin:0!important;padding:6px max(4px,calc((100% - 640px)/2)) calc(6px + env(safe-area-inset-bottom))!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important;background:#171a20!important;box-shadow:none!important;backdrop-filter:none;--bar:min(100% - 8px,640px);z-index:2}
+#app #hmNav .kx-ind{position:absolute;top:6px;left:max(4px,calc((100% - 640px)/2));width:calc((100% - max(8px,100% - 640px))/5);height:52px;border-radius:10px;background:#2b313d;transform:translateX(calc(var(--i) * 100%));transition:transform .5s var(--spring),opacity .25s;pointer-events:none}
+#app[data-tab=race] #hmNav .kx-ind,#app[data-tab=track] #hmNav .kx-ind{opacity:0}
+html.ui2 #app #hmNav button{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:52px;min-height:0;padding:0;border:0;background:none;color:var(--mut)!important;font:700 11px var(--fb)!important;box-shadow:none}
+html.ui2 #app #hmNav button.on{color:#fff!important}
+html.ui2 #app #hmNav button::after{display:none!important}
+#app #hmNav button svg{width:23px;height:23px;transition:transform .45s var(--spring)}
+#app #hmNav button.on svg{color:var(--y)}
+#app #hmNav button:active svg{transform:scale(.8)}
+#app #hmNav button span{max-width:100%;overflow:hidden;white-space:nowrap}
+#app #hmNav .kx-main i{display:grid;place-items:center;width:66px;height:46px;margin-top:-24px;border:4px solid #171a20;border-radius:12px;background:var(--y);transition:transform .45s var(--spring)}
+#app #hmNav .kx-main i svg{width:25px;height:25px;color:#15171b!important}
+#app #hmNav .kx-main.on i{transform:translateY(-3px)}
+#app #hmNav .kx-main:active i{transform:scale(.9) rotate(-4deg)}
+html.ui2 #app #hmNav .kx-main{color:#fff!important;font-size:13px!important}
+
+/* aviso de carga al salir a pista */
+.kx-veil{position:absolute;inset:0;z-index:20;display:none;place-items:center;background:rgba(16,18,22,.92)}
+#app.loading .kx-veil{display:grid}
+#app .kx-veil span{font:400 28px var(--fd);padding-bottom:18px;background:repeating-linear-gradient(115deg,#dc1f17 0 18px,#fff 18px 36px) bottom/100% 8px no-repeat}
+
+/* móvil en horizontal: cabecera y barra más bajas */
+@media (max-height:500px){html.ui2{--kx-hdr:calc(48px + env(safe-area-inset-top));--kx-nav:calc(58px + env(safe-area-inset-bottom))}#app #hmNav button{height:46px}#app #hmNav .kx-ind{height:46px}#app #hmNav .kx-main i{height:34px;margin-top:-12px}}
+
+/* ---------- el detalle de un campeonato se abre entre la cabecera y la barra ---------- */
+body:has(#leagues:not(.hidden)) #app #hmNav .kx-main i{height:30px;margin-top:0;transform:none}
+#menu:not(.hidden)~#leagues{top:var(--kx-hdr);bottom:var(--kx-nav);padding-top:0}
+
+@media (prefers-reduced-motion:reduce){#app #dailyCard .kx-run,#app #dailyCard .dy-go::after{animation:none}#app #hmNav .kx-ind,#app #hmNav button svg,.kx-stage img{transition:none}}
+
+/* aviso de la canción: debajo de la cabecera y en una sola línea */
+html.ui2 #songToast{top:calc(var(--kx-hdr) + 8px);width:max-content;max-width:calc(100% - 28px);align-items:center;white-space:nowrap;overflow:hidden}
+html.ui2 #songToast b{overflow:hidden;text-overflow:ellipsis;min-width:0}
+@media (max-height:500px){#app #dailyCard .kx-art{height:92px}#app #dailyCard .kx-d h2{font-size:30px!important}.kx-map{height:160px}.kx-stage{height:190px}}

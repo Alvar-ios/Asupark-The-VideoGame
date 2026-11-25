@@ -116,10 +116,10 @@ export function createDaily(ctx) {
   }
 
   // ---------- tarjeta del menú ----------
-  const dateTxt = () => new Date(key + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase().replace('.', '');
+  const dateTxt = () => new Date(key + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '');
   const statusChips = () => {
-    const p = st.pr ? `<span class="on">Práctica ${ic('check')}</span>` : `<span>Práctica ${PRACTICE_LAPS} vueltas</span>`;
-    const o = st.best ? `<span class="gold">Tu tiempo ${fmt(st.best.ms / 1000)}</span>` : st.or ? `<span class="on">Clasificación en curso</span>` : `<span>Clasificación ${OFFICIAL_LAPS} vueltas</span>`;
+    const p = st.pr ? `<span class="on">Práctica ${ic('check')}</span>` : '';
+    const o = st.best ? `<span class="gold">Tu tiempo ${fmt(st.best.ms / 1000)}</span>` : st.or ? `<span class="on">Clasificación en curso</span>` : '';
     return p + o + (streak && streak.streak > 0 ? `<span class="fire">${ic('flame')} ${streak.streak}</span>` : '');
   };
   // Lo que el jugador ya ha descubierto hoy: 0 nada, 1 el circuito, 2 circuito y coche. Hasta entonces la tarjeta no lo enseña.
@@ -130,11 +130,11 @@ export function createDaily(ctx) {
     const started = st.pr || st.or, done = left('o') <= 0 && st.best;
     const cta = done ? 'Ver clasificación' : started ? 'Seguir corriendo' : rv ? 'Entrar al reto' : 'Descubrir el circuito';
     const name = rv ? esc(t.th.name.replace(/, .*$/, '')) : 'Reto diario';
-    const sub = rv ? `<span id="dyHeroSub">${cname}, ${Math.round(t.tr.len)} m</span>` : 'El mismo circuito para todos.';
+    const sub = rv ? `, <span id="dyHeroSub">${cname}, ${Math.round(t.tr.len)} m</span>` : '';
     const loop = 'M30 96C18 60 44 30 76 34s30 40 62 36 18-52 58-50 74 26 70 56-40 34-70 28-44-6-70 4-82 22-96-12z';
     const art = rv ? trackSvg(t.tr) : `<svg class="kx-q" viewBox="0 0 300 130" aria-hidden="true"><path d="${loop}"/><path class="kx-run" pathLength="1000" d="${loop}"/></svg>`;
     card.className = 'dy-hbtn hero' + (rv ? '' : ' secret');
-    card.innerHTML = `<span class="kx-d"><span><h2 id="dyHeroTrack">${name}</h2><p><span id="dyDate">${dateTxt()}</span>. ${sub}</p></span><span class="kx-clock">Cambia en<b class="cdv">${hms(msToReset())}</b></span></span><span class="kx-art">${art}</span><span id="dyHeroChips" class="hh-steps dy-chips kx-steps">${statusChips()}</span><em class="dy-go">${cta}</em>`;
+    card.innerHTML = `<span class="kx-d"><span><h2 id="dyHeroTrack">${name}</h2><p><span id="dyDate">${dateTxt()}</span>${sub}</p></span><span class="kx-clock">Cambia en<b class="cdv">${hms(msToReset())}</b></span></span><span class="kx-art">${art}</span>${started || st.best || (streak && streak.streak > 0) ? `<span id="dyHeroChips" class="hh-steps dy-chips kx-steps">${statusChips()}</span>` : ''}<em class="dy-go">${cta}</em>`;
     renderMini();
   }
   async function renderMini() {
@@ -145,6 +145,9 @@ export function createDaily(ctx) {
     box.innerHTML = `<div class="dy-mh"><b>Clasificación de hoy</b><span>${boardRows.rows.length} piloto${boardRows.rows.length === 1 ? '' : 's'}</span></div>` +
       (rows.length ? rows.map((r, i) => `<div class="dy-mr${r.you ? ' me' : ''}"><i>${i + 1}</i><span class="flag sm">${ctx.flagSvg(r.flag || 'es')}</span><b>${esc(r.name)}</b><em>${fmt(r.ms / 1000)}</em><small>${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'LÍDER'}</small></div>`).join('') + (me >= 3 ? `<div class="dy-mr me"><i>${me + 1}</i><span class="flag sm">${ctx.flagSvg(lb.flag)}</span><b>${esc(lb.name)}</b><em>${fmt(boardRows.rows[me].ms / 1000)}</em><small>TÚ</small></div>` : '') : '<p class="dy-empty">Aún nadie ha marcado tiempo hoy. ¡Sé el primero!</p>');
   }
+
+  // lo que la pantalla de campeonatos enseña de la carrera de hoy (sin destripar el circuito antes de descubrirlo)
+  const today = () => { const rv = !!revealed(), t = ctx.track; return { revealed: rv, name: rv ? t.th.name.replace(/, .*$/, '') : '', art: rv ? trackSvg(t.tr) : '' }; };
 
   // ---------- pantalla del reto ----------
   let stage = ''; const isOpen = () => !$('daily').classList.contains('hidden');
@@ -299,7 +302,7 @@ export function createDaily(ctx) {
   }, 1000);
   renderHero(); sync();
   return {
-    open, close, hub, submit, left, refresh: renderHero, key, getStreak: () => streak,
+    today, open, close, hub, submit, left, refresh: renderHero, key, getStreak: () => streak,
     runGhost(r) { rival = r; open(true); },
     sessionDone(l) { last = l; },
   };

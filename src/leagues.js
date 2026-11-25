@@ -28,26 +28,9 @@ export function initLeagues(ctx) {
   const err = (e) => acc.explain(e);
   const stopPoll = () => { clearInterval(S.poll); S.poll = null; };
 
-  const needLogin = () => { paint.innerHTML = `<p class="lg-note">Entra en tu perfil para crear un campeonato o unirte al de tus amigos. Solo hace falta un usuario y una contraseña.</p><button class="lg-btn" data-a="profile" type="button">Abrir perfil</button>`; };
-
-  // ---------- listado de mis ligas ----------
-  const listHtml = () => {
-    const card = (l) => `<button class="lg-card" data-open="${l.id}" type="button"><div class="lg-pos">${l.pos ? 'P' + l.pos : '–'}</div><div class="lg-info"><b>${esc(l.name)}</b><small>Temporada ${l.season}${l.days ? `, día ${Math.min(l.day || 1, l.days)} de ${l.days}` : ''}, ${l.members} piloto${l.members === 1 ? '' : 's'}</small>${l.days ? `<u class="lgb"><s style="width:${Math.max(4, Math.min(100, Math.round((l.day || 1) / l.days * 100)))}%"></s></u>` : ''}</div><div class="lg-pts"><b>${l.pts}</b><small>PTS</small></div></button>`;
-    const L = S.list.filter((l) => !S.hidden.has(l.id));
-    return `${L.length ? L.map(card).join('') : '<p class="lg-note">Todavía no estás en ningún campeonato. Crea uno e invita a tus amigos: cada día puntúa el reto diario como un Gran Premio de F1.</p>'}
-      <h3 class="lg-h">Crear un campeonato</h3><div class="lg-row"><input id="lgName" class="lg-in" maxlength="30" placeholder="Nombre (ej. Los del Grupo)"><button class="lg-btn sm" data-a="create" type="button">Crear</button></div>
-      <h3 class="lg-h">Unirme con un código</h3><div class="lg-row"><input id="lgCode" class="lg-in" maxlength="6" autocapitalize="characters" spellcheck="false" placeholder="Código de 6 letras"><button class="lg-btn sm ghost" data-a="join" type="button">Unirme</button></div>
-      <div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`;
-  };
-  async function listView() {
-    stopPoll(); S.view = 'list';
-    if (!acc.loggedIn) return needLogin();
-    const c = acc.cached('my_leagues'); if (!S.list && Array.isArray(c)) S.list = c;
-    if (S.list) { paint.innerHTML = listHtml(); S.msg = ''; } else paint.innerHTML = sk.cards(2);
-    try { await acc.swr('my_leagues', {}, (d, cached) => { if (cached) return; S.list = d || []; if (S.view === 'list' && open()) paint.innerHTML = listHtml(); }); if (!S.list) { S.list = []; paint.innerHTML = listHtml(); } }
-    catch (e) { S.list = S.list || []; S.msg = err(e); if (S.view === 'list') paint.innerHTML = listHtml(); }
-    S.msg = '';
-  }
+  // ---------- listado ----------
+  // la lista de campeonatos es una página de la app: aquí solo se cierra el detalle y se vuelve a ella
+  function listView() { stopPoll(); S.view = 'list'; const msg = S.msg; S.msg = ''; close(); if (ctx.onList) ctx.onList(msg); }
 
   // ---------- liga ----------
   async function load(season) {
@@ -246,7 +229,7 @@ export function initLeagues(ctx) {
     const live = L.season === L.current, N = L.season_days, cur = live ? Math.min(N, Math.round((Date.parse(L.today) - Date.parse(L.from)) / 864e5) + 1) : N;
     const segs = Array.from({ length: N }, (_, i) => `<i class="${i + 1 < cur || !live ? 'd' : i + 1 === cur ? 'n' : ''}"></i>`).join('');
     return `<div class="l2-top"><button class="l2-ic" data-a="back" type="button" aria-label="Volver">${ic('back')}</button><span class="l2-sp"></span><button class="l2-ic" data-a="invite" type="button" aria-label="Invitar">${ic('share')}</button></div>
-      <div class="l2-title"><b class="l2-name">${esc(L.name)}</b><div class="l2-ss"><b>TEMPORADA ${L.season}</b><span class="l2-lap">${live ? `DÍA <b>${cur}</b>/${N}` : 'FINAL'}</span></div>
+      <div class="l2-title"><b class="l2-name">${esc(L.name)}</b><div class="l2-ss"><b>Temporada ${L.season}</b><span class="l2-lap">${live ? `Día <b>${cur}</b>/${N}` : 'FINAL'}</span></div>
       <div class="l2-days" aria-label="Día ${cur} de ${N}">${segs}</div><small class="l2-left">${leftTxt(L)}, ${dd(L.from)} – ${dd(L.to)}</small></div>`;
   }
   const v2Seg = () => `<div class="l2-seg" role="tablist"><button type="button" role="tab" data-t="chat" class="${S.tab === 'chat' ? 'on' : ''}"><span>Chat</span></button><button type="button" role="tab" data-t="tabla" class="${S.tab === 'tabla' ? 'on' : ''}"><span>Puntuación</span></button><button type="button" role="tab" data-t="vit" class="${S.tab === 'vit' ? 'on' : ''}"><span>Vitrina</span></button></div>`;
@@ -312,17 +295,16 @@ export function initLeagues(ctx) {
     const tr = todayRows(), live = L.season === L.current;
     const cards = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }, mine = s.user_id === me(), ti = live ? tr.findIndex((r) => r.user_id === s.user_id) : -1, tp = ti >= 0 ? PTS[ti] || 0 : 0, pc = lead > 0 ? Math.max(3, Math.round(100 * Math.max(0, s.pts) / lead)) : 3;
       const chips = [`<span><b>${s.wins}</b> vict.</span>`, `<span><b>${s.days || 0}</b> días</span>`, s.best ? `<span>mejor <b>${fmt(s.best / 1000)}</b></span>` : '', ti >= 0 ? `<span>hoy <b>P${ti + 1}</b> ${fmt(tr[ti].ms / 1000)}</span>` : (live ? '<span class="no">hoy sin tiempo</span>' : '')].filter(Boolean).join('');
-      return `<div class="l2-card${mine ? ' me' : ''}${i < 3 ? ' p' + (i + 1) : ''}" style="--c:${col[s.user_id]}"><span class="l2-pos"><b>${i + 1}</b></span>${av(m, col[s.user_id], 'md')}<div class="l2-ci"><b>${esc(m.username)}${mine ? '<em class="l2-you">TÚ</em>' : ''}${s.user_id === yl ? `<span class="l2-snail" title="Lentorro">${ic('snail')}</span>` : ''}${pen(s.user_id) ? `<span class="l2-pen" data-sanc="${sancOf(s.user_id)}">${ic('alert')}−${pen(s.user_id)}</span>` : ''}${m.streak > 1 ? `<span class="l2-fire">${ic('flame')}${m.streak}</span>` : ''}</b><div class="l2-bar"><i style="width:${pc}%"></i></div><div class="l2-chips">${chips}</div></div><div class="l2-pt"><b>${s.pts}</b><small>${i ? '−' + (lead - s.pts) : 'PTS'}</small>${tp ? `<em class="l2-td">+${tp}</em>` : ''}</div></div>`; }).join('');
+      return `<div class="l2-card${mine ? ' me' : ''}${i < 3 ? ' p' + (i + 1) : ''}" style="--c:${col[s.user_id]}"><span class="l2-pos"><b>${i + 1}</b></span>${av(m, col[s.user_id], 'md')}<div class="l2-ci"><b>${esc(m.username)}${mine ? '<em class="l2-you">Tú</em>' : ''}${pen(s.user_id) ? `<span class="l2-pen" data-sanc="${sancOf(s.user_id)}">${ic('alert')}−${pen(s.user_id)}</span>` : ''}${m.streak > 1 ? `<span class="l2-fire">${ic('flame')}${m.streak}</span>` : ''}</b><div class="l2-bar"><i style="width:${pc}%"></i></div><div class="l2-chips">${chips}</div></div><div class="l2-pt"><b>${s.pts}</b><small>${i ? '−' + (lead - s.pts) : 'PTS'}</small>${tp ? `<em class="l2-td">+${tp}</em>` : ''}</div></div>`; }).join('');
     return `${L.current > 1 ? seasonNav(L) : ''}${v2Chart(L, col)}<div class="l2-cards">${cards}</div>
-      ${yl && mm[yl] && L.season === L.current ? `<p class="l2-len">${ic('snail')} Lentorro: ${esc(mm[yl].username)}, hoy puede elegir coche</p>` : ''}
       <div class="l2-inv"><div><small>Código del campeonato</small><b>${esc(L.code)}</b></div><button class="l2-pill" data-a="copy" type="button">Copiar enlace</button></div>
-      <details class="l2-info"><summary>${ic('info')} Reglas</summary><p>Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto. Acertar quién gana el día suma +1. El Lentorro es quien menos puntos lleva y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p><button class="l2-pill danger" data-a="leave" type="button">Salir del campeonato</button></details>`;
+      <details class="l2-info"><summary>${ic('info')} Reglas</summary><p>Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto. Acertar quién gana el día suma +1. La temporada dura ${L.season_days} días.</p><button class="l2-pill danger" data-a="leave" type="button">Salir del campeonato</button></details>`;
   }
   const VIT = createVit({ S, esc, fmt, flagSvg, ic, me, PTS, dailyFor, av, colorMap, v2Head, dayTxt, paint, calHtml, v2Seg, redraw: () => leagueView(), load, acc, toast });
   async function v2View() {
     const L = S.state.league, mm = Object.fromEntries(S.state.members.map((m) => [m.user_id, m])), col = colorMap(); S.memo = mm; S.cols = col;
     if (S.tab === 'vit') { stopPoll(); return VIT.render(); }
-    const pred = predHtml(L, mm), top = `${v2Head(L)}${v2Podium(L, mm, col)}${v2Seg()}`;
+    const pred = predHtml(L, mm), top = `${v2Head(L)}${v2Seg()}${v2Podium(L, mm, col)}`;
     if (S.tab !== 'chat') { stopPoll(); paint.innerHTML = `${top}${v2Points(L, mm, col)}<div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`; S.msg = ''; return; }
     S.chatSig = ''; S.rxOpen = null; S.msgs = S.msgs && S.msgsFor === S.id ? S.msgs : []; S.msgsFor = S.id; S.pend = S.pend || [];
     paint.innerHTML = `${top}${pred}<div class="l2-day"><b>Hoy</b><small>${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}, solo el reto del día</small></div><div id="lgFeed" class="l2-feed"></div><div class="l2-in"><input id="lgMsgIn" maxlength="300" autocomplete="off" enterkeyhint="send" placeholder="Tu chat" aria-label="Mensaje para la liga"><button data-a="send" type="button" aria-label="Enviar">${ic('send')}</button></div>`;
@@ -336,14 +318,14 @@ export function initLeagues(ctx) {
   async function join(code) {
     const l = await acc.rpc('league_join', { p_code: code }); S.list = null; return l;
   }
-  async function create() {
-    const v = $('lgName').value.trim(); if (v.length < 2) { S.msg = 'Ponle un nombre al campeonato'; return listView(); }
-    try { const r = await acc.rpc('league_create', { p_name: v }); S.list = null; await enter(r.id); } catch (e) { S.msg = err(e); listView(); }
+  async function createLeague(name) {
+    const v = String(name || '').trim(); if (v.length < 2) throw new Error('Ponle un nombre al campeonato');
+    const r = await acc.rpc('league_create', { p_name: v }); S.list = null; show(); S.fromList = false; await enter(r.id);
   }
-  async function doJoin(raw) {
+  async function joinCode(raw) {
     const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (code.length !== 6) { S.msg = 'El código tiene 6 caracteres'; return listView(); }
-    try { const l = await join(code); toast('Te has unido a ' + l.name); await enter(l.id); } catch (e) { S.msg = err(e); listView(); }
+    if (code.length !== 6) throw new Error('El código tiene 6 caracteres');
+    const l = await join(code); toast('Te has unido a ' + l.name); show(); S.fromList = false; await enter(l.id);
   }
   const copy = async (t) => { try { await navigator.clipboard.writeText(t); toast('Enlace copiado'); } catch (e) { prompt('Copia este enlace', t); } };
 
@@ -361,19 +343,16 @@ export function initLeagues(ctx) {
     if (b.dataset.s) { try { await load(+b.dataset.s); } catch (er) { toast(err(er)); } return leagueView(); }
     const a = b.dataset.a;
     if (a === 'back') { S.state = null; if (isUi2() && !S.fromList) return close(); return listView(); }
-    if (a === 'create') return create();
-    if (a === 'join') return doJoin($('lgCode').value);
     if (a === 'send') return send();
     if (a === 'daily') { close(); const dc = $('dailyCard'); if (dc) dc.click(); return; }
     if (a === 'recap') return shareRecap();
-    if (a === 'profile') { $('leagues').classList.add('hidden'); stopPoll(); const pb = $('profBtn'); if (pb) pb.click(); return; }
+    if (a === 'profile') { close(); return ctx.openProfile(); }
     if (a === 'copy') return copy(leagueUrl(S.state.league.code));
     if (a === 'invite') { const L = S.state.league; return waShare(`Te invito a mi campeonato «${L.name}» de KartlosApp: cada día se puntúa el reto diario como un GP de F1 y hay chat para picarnos. Entra con este enlace y te unes al instante (código ${L.code}):`, leagueUrl(L.code)); }
-    if (a === 'leave') { const id = S.id, nm = S.state.league.name; S.hidden.add(id); S.state = null; undoable('Has salido de «' + nm + '»', async () => { try { await acc.rpc('league_leave', { p_league: id }); S.hidden.delete(id); S.list = null; try { Object.keys(localStorage).filter((k) => k.startsWith('dr.c.')).forEach((k) => localStorage.removeItem(k)); } catch (_) { /* nada */ } } catch (er) { S.hidden.delete(id); toast(err(er)); S.list = null; } if (open() && S.view === 'list') listView(); }, { ms: 6000, onUndo: () => { S.hidden.delete(id); if (open()) listView(); } }); return listView(); }
+    if (a === 'leave') { const id = S.id, nm = S.state.league.name; S.hidden.add(id); S.state = null; undoable('Has salido de «' + nm + '»', async () => { try { await acc.rpc('league_leave', { p_league: id }); S.hidden.delete(id); S.list = null; try { Object.keys(localStorage).filter((k) => k.startsWith('dr.c.')).forEach((k) => localStorage.removeItem(k)); } catch (_) { /* nada */ } } catch (er) { S.hidden.delete(id); toast(err(er)); S.list = null; } if (ctx.onList) ctx.onList(); }, { ms: 6000, onUndo: () => { S.hidden.delete(id); if (ctx.onList) ctx.onList(); } }); return listView(); }
   });
-  $('lgBody').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key !== 'Enter') return; if (e.target.id === 'lgMsgIn') send(); if (e.target.id === 'lgName') create(); if (e.target.id === 'lgCode') doJoin(e.target.value); });
+  $('lgBody').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key !== 'Enter') return; if (e.target.id === 'lgMsgIn') send(); });
   $('lgBody').addEventListener('keyup', (e) => e.stopPropagation());
-  $('lgBody').addEventListener('input', (e) => { if (e.target.id === 'lgCode') e.target.value = e.target.value.toUpperCase(); });
   const show = () => { $('leagues').classList.remove('hidden'); };
   async function playReplay(day, uid, lid = S.id) {
     try {
@@ -387,7 +366,6 @@ export function initLeagues(ctx) {
   }
   const close = () => { stopPoll(); $('leagues').classList.add('hidden'); };
   $('lgClose').onclick = close;
-  const btn = $('leaguesBtn'); if (btn) btn.onclick = () => { show(); S.state = null; S.list = null; listView(); };
 
   // enlace de repetición ?rp=liga_dia_usuario|all: abre la repetición (hay que iniciar sesión y ser de la liga)
   { const rq = new URLSearchParams(location.search).get('rp'); let rpend = null;
@@ -399,7 +377,7 @@ export function initLeagues(ctx) {
   const q = new URLSearchParams(location.search).get('liga'); let pend = q ? q.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) : null;
   if (q) { try { const u = new URL(location.href); u.searchParams.delete('liga'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (_) { /* sin history */ } }
   async function tryJoin() {
-    if (!pend || !acc.loggedIn) return; const code = pend; pend = null; show(); $('profile').classList.add('hidden');
+    if (!pend || !acc.loggedIn) return; const code = pend; pend = null; show();
     try { const l = await join(code); toast('Te has unido a ' + l.name); await enter(l.id); } catch (e) { S.msg = err(e); S.list = null; await listView(); }
   }
   if (pend) {
@@ -410,5 +388,5 @@ export function initLeagues(ctx) {
     }, 1800);
     acc.onChange(tryJoin);
   }
-  return { open: () => { show(); S.state = null; S.list = null; listView(); }, openLeague: async (id, season) => { show(); S.fromList = false; await enter(id, season); } };
+  return { createLeague, joinCode, isHidden: (id) => S.hidden.has(id), openLeague: async (id, season) => { show(); S.fromList = false; await enter(id, season); } };
 }
