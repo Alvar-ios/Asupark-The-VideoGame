@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { THEMES } from '../src/themes.js';
 import { buildTrack, ROAD_HALF, setRoad } from '../src/track.js';
-import { CARS, makeCar, placeCar, stepCar } from '../src/car.js';
+import { CARS, ALL_CARS, makeCar, placeCar, stepCar } from '../src/car.js';
 import { mudAt, mudParams, patchBoundary, puddleAt, puddleParams } from '../src/surface.js';
 
 assert.ok(Math.abs(mudParams(0).halfLength - 4.8) < 1e-9, 'Mud patches should be 20% shorter');
@@ -27,7 +27,7 @@ const mudLoss = (car, enabled) => {
   for (let i = 0; i < 24; i++) stepCar(instance, input, 1 / 120, track, surface);
   return instance.speed;
 };
-const reducedMudBrake = (id) => mudLoss(CARS.find((car) => car.id === id), false) - mudLoss(CARS.find((car) => car.id === id), true);
+const reducedMudBrake = (id) => mudLoss(ALL_CARS.find((car) => car.id === id), false) - mudLoss(ALL_CARS.find((car) => car.id === id), true);
 assert.ok(reducedMudBrake('m3') < reducedMudBrake('slr'), 'Cars up to 200 CV should lose less speed in mud than competition cars');
 assert.ok(reducedMudBrake('slr') > 0, 'Competition cars should retain mud braking');
 assert.ok(reducedMudBrake('aston') > 0, 'F1 cars should retain mud braking');
@@ -37,13 +37,13 @@ assert.notEqual(kerbIndex, -1, 'Spa should have driveable kerbs');
 
 const kerbSide = track.kerb[kerbIndex];
 const kerbS = kerbIndex * track.ds;
-const kerbCar = makeCar(CARS.find((car) => car.id === 'porsche'), 'kerb-test', false);
+const kerbCar = makeCar(ALL_CARS.find((car) => car.id === 'porsche'), 'kerb-test', false);
 placeCar(kerbCar, track, kerbS, kerbSide * (ROAD_HALF + 0.8), 18);
 stepCar(kerbCar, input, 1 / 120, track, theme);
 assert.equal(kerbCar.offroadFactor, 0, 'A kerb should not apply gravel physics');
 assert.equal(kerbCar.offroad, false, 'A kerb should remain part of the road');
 
-const runoffCar = makeCar(CARS.find((car) => car.id === 'porsche'), 'runoff-test', false);
+const runoffCar = makeCar(ALL_CARS.find((car) => car.id === 'porsche'), 'runoff-test', false);
 placeCar(runoffCar, track, kerbS, kerbSide * (ROAD_HALF + 3.2), 18);
 stepCar(runoffCar, input, 1 / 120, track, theme);
 assert.ok(runoffCar.offroadFactor > 0.95, 'The gravel beyond the kerb should retain off-road physics');

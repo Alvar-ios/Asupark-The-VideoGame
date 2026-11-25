@@ -87,13 +87,10 @@ const tracks = [];
 function addTrack(key, name, sub, seed, style, th) { const tr = buildTrack(seed, style); tracks.push({ key, name, sub, tr, th }); }
 const pickFor = (k) => pickDaily(k, k === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => (k !== 'madring' || k >= '2026-11-10') && (k !== 'magarigawa' || k >= '2026-11-11') && (k !== 'muralla' || k >= '2026-11-12') && (k !== 'rally' || k >= '2026-11-13') && (k !== 'palomring' || k >= '2026-11-14') && k !== 'italia'), (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos' || th === 'muralla') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
 const dailyKey = dailyKeyNow(), dailyPick = pickFor(dailyKey);
-addTrack('pruebas', THEMES.pruebas.name, THEMES.pruebas.sub, THEMES.pruebas.seed, THEMES.pruebas.style, THEMES.pruebas);
-addTrack('monaco', THEMES.monaco.name, THEMES.monaco.sub, THEMES.monaco.seed, THEMES.monaco.style, THEMES.monaco);
-addTrack('spa', THEMES.spa.name, THEMES.spa.sub, THEMES.spa.seed, THEMES.spa.style, THEMES.spa);
 // el reto de ese día cambió de circuito a mitad de jornada: fuera el progreso local y el fantasma del circuito anterior
 if (dailyKey === DAILY_LOCK_DAY && !store.get('purge.daily-madring')) { try { localStorage.removeItem('dr.daily'); } catch (e) { /* sin almacenamiento */ } store.set('dr.dailyref', null); store.set('purge.daily-madring', true); }
 { const dth = THEMES[dailyPick.theme]; addTrack('daily', 'Reto del día', dth.sub, dth.seed, dth.style, dth); }
-for (const k of THEME_LIST) if (k !== 'pruebas' && k !== 'monaco' && k !== 'spa') addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
+for (const k of THEME_LIST) addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k].seed, THEMES[k].style, THEMES[k]);
 
 const BASE_CAR = Math.max(0, CARS.findIndex((c) => c.id === dailyPick.car)); let DAILY_CAR = BASE_CAR; // el mismo coche y circuito para todos cada día (cambia a las 4:00 de Madrid)
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
@@ -103,7 +100,10 @@ const kartNum = () => { const n = parseInt(sel.kartNum, 10); return n >= 0 && n 
 const halvesOn = () => MOBILE && sel.touchMode === 'halves'; // el control por mitades solo existe en pantallas táctiles
 const saved = store.get('sel'); if (saved && /^kart_/.test(saved.carId || '')) saved.carId = 'kart';
 if (saved) { if (saved.kartNum != null) sel.kartNum = saved.kartNum; const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.touchMode = saved.touchMode === 'buttons' && saved.ctlV === 2 ? 'buttons' : 'halves'; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
-if (tracks[sel.track] && tracks[sel.track].key === 'daily') sel.track = 0;
+// primer circuito real (tras el reto diario); una vez, la selección guardada vuelve al primero visible
+const firstReal = Math.max(0, tracks.findIndex((t) => t.key !== 'daily'));
+if (!store.get('purge.solo-karts')) { sel.track = firstReal; store.set('purge.solo-karts', true); }
+if (tracks[sel.track] && tracks[sel.track].key === 'daily') sel.track = firstReal;
 let D = null;
 // una sola vez: se borran los tiempos locales de Mario Circuit y de Spa en F1, hechos con el trazado anterior
 if (!store.get('purge.layout-2026-11-04')) {

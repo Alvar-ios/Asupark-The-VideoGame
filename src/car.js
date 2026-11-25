@@ -1,12 +1,13 @@
 // Física arcade del coche (sin dependencias de three)
 import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi, rainAt } from './track.js';
 import { puddleAt, mudAt, oilAt, smoothstep, surfaceAt, applyRunoff } from './surface.js';
+import { isVisibleCar } from './visible.js';
 const LOOSE = { dirt: 1, gravel: 1, snow: 1, sand: 0.9, grass: 0.8, ice: 0.6, wet: 0.5 };
 const SP = { key: 'asphalt', g: 1, b: 1, d: 0, s: 1, a: 1 };
 
 export const isKartKind = (k) => k === 'kart' || k === 'superkart'; // karts: misma física y mismo modelo base
 export const YAW_SCALE = 0.8, YAW_SPEED = 42; // sensibilidad de giro global
-export const GROUPS = [
+const ALL_GROUPS = [
   { id: 'cartoon', name: 'Cartoon', desc: 'Coches de dibujos: pura diversión' },
   { id: 'karts', name: 'Karts', desc: 'Pegados al suelo: ligeros, ágiles y sin carrocería' },
   { id: 'cv100', name: '100 CV', desc: 'Utilitarios y familiares' },
@@ -19,7 +20,7 @@ export const GROUPS = [
 export const G = 14; // gravedad "flotante" arcade
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
-export const CARS = [
+const ALL_CARS = [
   // —— Cartoon: coches de dibujos, ágiles y divertidos
   { id: 'minitoon', brand: 'Mini', group: 'cartoon', name: 'Mini Clásico Toon', desc: 'Minúsculo y juguetón: gira como un kart', color: 0xd32a22, vmax: 51, accel: 13.6, yaw: 3.1, grip: 14, driftGrip: 3.1, radius: 1.0, mass: 780, kind: 'minitoon', paints: [['Rojo', '#d32a22'], ['Amarillo', '#f3c026'], ['Azul', '#2d5fd0']], custom: true },
   { id: 'gtr', brand: 'Nissan', group: 'cartoon', drive: 'rwd', name: 'Nissan Skyline GT-R Toon', desc: 'Turbo con cabeza grande: derrapa con ganas', color: 0x1f4fd0, vmax: 54, accel: 14.2, yaw: 2.8, grip: 13.2, driftGrip: 3.0, radius: 1.2, mass: 1100, kind: 'gtr', paints: [['Azul', '#1f4fd0'], ['Plata', '#b9bec6'], ['Negro', '#16181d']], custom: true },
@@ -64,6 +65,10 @@ export const CARS = [
   { id: 'mp45', brand: 'McLaren', group: 'f1', drive: 'rwd', name: 'McLaren MP4/5 (1989)', desc: 'Honda V10 mítico de Ayrton Senna y Alain Prost', color: 0xe02020, vmax: 72, accel: 20.2, yaw: 3.05, grip: 16.0, driftGrip: 2.9, radius: 1.1, mass: 540, kind: 'mp45', nopaint: true, custom: true },
   { id: 'mp423', brand: 'McLaren', group: 'f1', drive: 'rwd', name: 'McLaren MP4-23 (2008)', desc: 'Aerodinámica extrema y V8 de Lewis Hamilton', color: 0xd0d5dd, vmax: 74, accel: 21.0, yaw: 3.15, grip: 17.0, driftGrip: 2.8, radius: 1.2, mass: 605, kind: 'mp423', nopaint: true, custom: true },
 ];
+// solo los coches y grupos visibles (ver src/visible.js); el resto sigue en ALL_CARS / ALL_GROUPS
+export { ALL_CARS };
+export const CARS = ALL_CARS.filter(isVisibleCar);
+export const GROUPS = ALL_GROUPS.filter((g) => CARS.some((c) => c.group === g.id));
 // efecto suelo / aerodinámica (apoyo que crece con el cuadrado de la velocidad), tracción y potencia de frenada
 const AERO = { aston: 1.0, mp423: 1.0, brawngp: 0.96, r24: 0.95, mp45: 0.85, mclaren: 0.55, lotus: 0.4, fordgt06: 0.14, stradale: 0.12, slr: 0.08, gtr: 0.06, f360: 0.05, rx7toon: 0.05, cobra: 0.03 };
 const DRIVE = { s4: 'awd', porsche: 'rwd', minis: 'fwd' };

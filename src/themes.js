@@ -4,6 +4,7 @@ import { NODES as MG_NODES, START as MG_START, HILLS as MG_HILLS, RUNOFF as MG_R
 import { NODES as PR_NODES, START as PR_START, CROSS as PR_CROSS, RAMP_U as PR_RAMP, TUNNEL as PR_TUNNEL, HILLS as PR_HILLS } from './palomring-data.js';
 import { NODES as RA_NODES, START as RA_START, HILLS as RA_HILLS, FORDS as RA_FORDS } from './rally-data.js';
 import { hashStr } from './rng.js';
+import { isVisibleTrack } from './visible.js';
 
 export const THEMES = {
   pruebas: {
@@ -234,7 +235,9 @@ export const THEMES = {
     hemiSky: 0xf0f4ff, hemiGround: 0x9a8058, hemiI: 1.0, sunI: 1.35, deco: 'cactus', treeCol: 0x5b7a3a, treeCount: 40, night: false, temp: 31, humidity: 0.15, wind: [2, 0.4], gripMul: 1, offroad: 0.6,
   },
 };
-export const THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
+const ALL_THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'kartlos', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
+// solo circuitos visibles (ver src/visible.js)
+export const THEME_LIST = ALL_THEME_LIST.filter(isVisibleTrack);
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];
 
 export function dailyInfo(d = new Date()) {

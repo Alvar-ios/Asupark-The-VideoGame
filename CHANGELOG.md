@@ -4,6 +4,11 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.114
+- Modo solo karts (fase 1 del documento maestro): se ocultan todos los coches que no son kart y los circuitos que no son de karting. Quedan Kart 125cc (y superkart), Fórmula 0, Asupark y la Gran Muralla. Se ocultan, no se borran: la lista está en `src/visible.js`.
+- La selección guardada vuelve una vez al primer circuito visible.
+- Los tests de superficies usan la lista completa de coches (`ALL_CARS`), para seguir probando la física de todos.
+
 ## 0.0.113
 - Documento maestro (`DOCUMENTO-MAESTRO.md`): el juego pasa a ser solo de karts reales, con campeonatos de liga por rotación de circuitos, reto diario ficticio para Instagram, piloto 3D personalizable y tienda con cajas. Sin cambios de juego todavía.
 
