@@ -272,14 +272,14 @@ export function initLeagues(ctx) {
     const mm = S.memo || {}, col = S.cols || {}, u = mm[m.user_id] || { username: m.username };
     if (m.kind === 'sys' && /sancionad/i.test(m.body || '')) {
       const pts = ((m.body.match(/(\d+)\s*puntos/) || [])[1]) || '', why = /side practice/i.test(m.body) ? 'side practice' : 'infracción';
-      return `<div class="l2-m sys"><div class="l2-tw sanc" role="button" tabindex="0" data-sanc="${sancOf(m.user_id)}" style="--c:#E10600"><i></i><span class="l2-twb">${ic('alert')}</span><b>${esc(u.username)}</b><small>sancionado · ${why}</small><em>−${pts}</em><time>${tm(m)}</time></div>${rxHtml(m)}</div>`;
+      return `<div class="l2-m sys"><div class="l2-tw sanc" role="button" tabindex="0" data-sanc="${sancOf(m.user_id)}" style="--c:#E10600"><i></i><div class="l2-wh"><b><span class="l2-twb">${ic('alert')}</span>${esc(u.username)}</b><small>sancionado · ${why}</small></div><div class="l2-rt"><em>−${pts}</em><time>${tm(m)}</time></div></div>${rxHtml(m)}</div>`;
     }
     if (isDayMsg(m)) return dayCard(m);
     if (m.kind === 'sys') {
       const body = String(m.body || '').replace(/^[^\p{L}@]+/u, ''), t = (body.match(/\d+:\d{2}\.\d{2,3}/) || [])[0], lead = /l[ií]der/i.test(body), pos = (body.match(/\(P(\d+)\)/) || [])[1];
       const rows = todayRows(), ri = rows.findIndex((r) => r.user_id === m.user_id), gap = ri > 0 ? '+' + ((rows[ri].ms - rows[0].ms) / 1000).toFixed(3) : '';
       const what = (ri >= 0 ? 'P' + (ri + 1) + ' hoy' : pos ? 'marca P' + pos : 'ha corrido') + (ri >= 0 && PTS[ri] ? ' · +' + PTS[ri] + ' pts' : '') + (gap ? ' · ' + gap : '');
-      return `<div class="l2-m sys${lead ? ' gold' : ''}"><div class="l2-tw" style="--c:${col[m.user_id] || '#111'}"><i></i>${lead ? `<span class="l2-twb">${ic('crown')}</span>` : ''}<b>${esc(u.username)}</b><small>${what}</small><em>${esc(t || '')}</em><time>${tm(m)}</time></div>${lapActs(m)}${rxHtml(m)}</div>`;
+      return `<div class="l2-m sys${lead ? ' gold' : ''}"><div class="l2-tw" style="--c:${col[m.user_id] || '#111'}"><i></i><div class="l2-wh"><b>${lead ? `<span class="l2-twb">${ic('crown')}</span>` : ''}${esc(u.username)}</b><small>${what}</small></div><div class="l2-rt"><em>${esc(t || '')}</em><time>${tm(m)}</time></div></div>${lapActs(m)}${rxHtml(m)}</div>`;
     }
     const mine = m.user_id === me();
     return `<div class="l2-m${mine ? ' me' : ''}${m.pending ? ' pend' : ''}">${mine ? '' : av(u, col[m.user_id], 'sm')}<div class="l2-b">${mine ? '' : `<b class="l2-who" style="color:${col[m.user_id]}">${esc(u.username)}</b>`}<span><span>${esc(m.body)}</span><small>${tm(m)}</small></span></div>${rxHtml(m)}</div>`;
@@ -369,12 +369,13 @@ export function initLeagues(ctx) {
   $('lgBody').addEventListener('keyup', (e) => e.stopPropagation());
   $('lgBody').addEventListener('input', (e) => { if (e.target.id === 'lgCode') e.target.value = e.target.value.toUpperCase(); });
   const show = () => { $('leagues').classList.remove('hidden'); };
-  async function playReplay(day, uid) {
+  async function playReplay(day, uid, lid = S.id) {
     try {
-      const rows = await acc.rpc('league_day_ghosts', { p_league: S.id, p_day: day, p_user: uid });
+      S.id = lid;
+      const rows = await acc.rpc('league_day_ghosts', { p_league: lid, p_day: day, p_user: uid });
       if (!rows || !rows.length) { toast('Esa repetición ya no está disponible (solo se guardan 24 h)'); return; }
       const id = S.id, season = S.season; close();
-      const ok = await replay({ day, drivers: rows, title: `${uid ? 'Vuelta' : 'Repetición'} · ${dayTxt(day)}`, onClose: () => { show(); S.fromList = false; enter(id, season).catch(() => {}); } });
+      const ok = await replay({ day, league: lid, drivers: rows, title: `${uid ? 'Vuelta' : 'Repetición'} · ${dayTxt(day)}`, onClose: () => { show(); S.fromList = false; enter(id, season).catch(() => {}); } });
       if (ok === false) { show(); S.fromList = false; enter(id, season).catch(() => {}); }
     } catch (er) { toast(err(er)); }
   }
@@ -382,6 +383,12 @@ export function initLeagues(ctx) {
   $('lgClose').onclick = close;
   const btn = $('leaguesBtn'); if (btn) btn.onclick = () => { show(); S.state = null; S.list = null; listView(); };
 
+  // enlace de repetición ?rp=liga_dia_usuario|all: abre la repetición (hay que iniciar sesión y ser de la liga)
+  { const rq = new URLSearchParams(location.search).get('rp'); let rpend = null;
+    if (rq) { const [lid, day, who] = rq.split('_'); if (/^[0-9a-f-]{36}$/i.test(lid) && /^\d{4}-\d\d-\d\d$/.test(day || '')) rpend = { lid, day, uid: who && /^[0-9a-f-]{36}$/i.test(who) ? who : null };
+      try { const u = new URL(location.href); u.searchParams.delete('rp'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (_) { /* sin history */ } }
+    const tryRp = () => { if (!rpend || !acc.loggedIn) return; const r = rpend; rpend = null; playReplay(r.day, r.uid, r.lid); };
+    if (rpend) { setTimeout(() => { if (rpend && !acc.loggedIn) toast('Inicia sesión para ver la repetición'); tryRp(); }, 1800); acc.onChange(tryRp); } }
   // enlace de invitación ?liga=CODE: abre la liga y te une (o te pide iniciar sesión)
   const q = new URLSearchParams(location.search).get('liga'); let pend = q ? q.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) : null;
   if (q) { try { const u = new URL(location.href); u.searchParams.delete('liga'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (_) { /* sin history */ } }

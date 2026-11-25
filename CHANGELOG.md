@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.105
+- Chat de liga: las tarjetas de tiempo se reorganizan (nombre y detalle a la izquierda, tiempo y hora a la derecha) y ya caben con nombres largos.
+- Botones de repetición sólidos (morado «Su vuelta», amarillo «Todos») con buen contraste sobre cualquier fondo.
+- «Compartir» en la repetición ya no graba ni descarga nada: comparte un enlace (WhatsApp u otra app) que abre la repetición directamente para los miembros de la liga.
+
 ## 0.0.104
 - Botón «Compartir vídeo» en las repeticiones: graba la repetición completa (cinemática) y la comparte por WhatsApp/otras apps, o la guarda como vídeo si el dispositivo no puede compartir archivos.
 

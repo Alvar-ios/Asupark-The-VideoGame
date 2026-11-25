@@ -69,13 +69,13 @@ export function createReplay(ctx) {
       <div class="rp-tower" id="rpTower"></div>
       <div class="rp-bot"><div class="rp-scrub"><button type="button" class="rp-pl" data-rp="play" id="rpPlay">❚❚</button><input id="rpSeek" type="range" min="0" max="1000" value="0" aria-label="Línea de tiempo"></div>
       <div class="rp-row"><div class="rp-seg" id="rpCams"><button type="button" data-cam="auto" class="on">Cinemática</button><button type="button" data-cam="chase">Perseguir</button><button type="button" data-cam="heli">Aérea</button><button type="button" data-cam="cock">A bordo</button><button type="button" data-cam="top">Cenital</button></div>
-      <div class="rp-seg" id="rpSpd"><button type="button" data-sp="0.5">½×</button><button type="button" data-sp="1" class="on">1×</button><button type="button" data-sp="2">2×</button></div><button type="button" class="rp-tr on" data-rp="trace" id="rpTrace">Trazadas</button><button type="button" class="rp-tr rp-sh" data-rp="share" id="rpShare">Compartir vídeo</button></div></div>`;
+      <div class="rp-seg" id="rpSpd"><button type="button" data-sp="0.5">½×</button><button type="button" data-sp="1" class="on">1×</button><button type="button" data-sp="2">2×</button></div><button type="button" class="rp-tr on" data-rp="trace" id="rpTrace">Trazadas</button><button type="button" class="rp-tr rp-sh" data-rp="share" id="rpShare">Compartir</button></div></div>`;
     document.body.appendChild(el);
     el.addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b || !R) return;
       if (b.dataset.rp === 'exit') return close();
       if (b.dataset.rp === 'play') { if (R.t >= R.maxT + 2) R.t = 0; R.playing = !R.playing; R.ended = false; return sync(); }
-      if (b.dataset.rp === 'share') return record();
+      if (b.dataset.rp === 'share') return share();
       if (b.dataset.rp === 'trace') { R.trace = !R.trace; b.classList.toggle('on', R.trace); return; }
       if (b.dataset.cam) { R.cam = b.dataset.cam; R.shot = null; [...$('rpCams').children].forEach((x) => x.classList.toggle('on', x === b)); return; }
       if (b.dataset.sp) { R.speed = +b.dataset.sp; [...$('rpSpd').children].forEach((x) => x.classList.toggle('on', x === b)); return; }
@@ -127,33 +127,16 @@ export function createReplay(ctx) {
   }
   const flash = () => { const f = el.firstElementChild; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); };
 
-  // ---------- compartir: graba la repetición completa en vídeo y la comparte (o la descarga) ----------
-  function stopRec(cancel) {
-    if (!R || !R.rec) return; const r = R.rec; r.cancel = !!cancel; R.rec = null; try { r.rec.stop(); } catch (_) { /* nada */ }
-    $('rpShare').textContent = 'Compartir vídeo'; $('rpShare').classList.remove('rec'); R.playing = false; sync();
-  }
-  function record() {
-    if (R.rec) return stopRec(true);
-    const text = `${R.title} · mira cómo fue la vuelta`;
-    if (!window.MediaRecorder || !renderer.domElement.captureStream) { waShare(text, baseUrl()); return; }
-    const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4;codecs=avc1', 'video/mp4'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
-    let rec; try { rec = new MediaRecorder(renderer.domElement.captureStream(30), mime ? { mimeType: mime, videoBitsPerSecond: 4e6 } : { videoBitsPerSecond: 4e6 }); } catch (e) { waShare(text, baseUrl()); return; }
-    const chunks = [], title = R.title; rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-    const info = { rec, cancel: false };
-    rec.onerror = () => { if (!mime.includes('webm')) { info.cancel = true; if (R && R.rec === info) R.rec = null; try { rec.stop(); } catch (_) { /* nada */ } if (R) { $('rpShare').classList.remove('rec');  } } };
-    rec.onstop = async () => {
-      if (info.cancel || !chunks.length) { if (info.cancel) toast('Grabación cancelada'); return; }
-      const type = (mime.split(';')[0] || 'video/webm'), file = new File([new Blob(chunks, { type })], `repeticion.${type.includes('mp4') ? 'mp4' : 'webm'}`, { type });
-      try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title, text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
-      const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 20000); toast('Vídeo guardado en tu dispositivo');
-    };
-    R.rec = info; R.t = 0; R.cam = 'auto'; R.shot = null; R.shotN = 0; R.camInit = false; R.speed = 1; R.playing = true; R.ended = false; sync();
-    [...$('rpCams').children].forEach((x) => x.classList.toggle('on', x.dataset.cam === 'auto')); [...$('rpSpd').children].forEach((x) => x.classList.toggle('on', x.dataset.sp === '1'));
-    $('rpShare').classList.add('rec'); requestAnimationFrame(() => requestAnimationFrame(() => { try { rec.start(500); } catch (_) { /* nada */ } })); toast('Grabando la repetición… (toca de nuevo para cancelar)');
+  // ---------- compartir: enlace para ver la repetición (WhatsApp o cualquier app) ----------
+  async function share() {
+    const uid = R.drivers.length === 1 ? R.drivers[0].user_id : null, url = baseUrl() + '?rp=' + R.league + '_' + R.day + '_' + (uid || 'all');
+    const text = `${R.title} · mira la repetición en Daily Lapp`;
+    try { if (navigator.share) { await navigator.share({ title: R.title, text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    waShare(text, url);
   }
 
   // ---------- abrir / cerrar ----------
-  async function open({ day, drivers, title, onClose }) {
+  async function open({ day, drivers, title, onClose, league }) {
     if (R) close(true);
     const list = (drivers || []).filter((d) => d && Array.isArray(d.ghost) && d.ghost.length > 40);
     if (!list.length) { toast('Esa repetición ya no está disponible'); return false; }
@@ -171,7 +154,7 @@ export function createReplay(ctx) {
       d.mesh = buildCar(d.solo ? 0xe8edf7 : d.color, ct.kind, 'lo', 2 + (i * 17) % 90); scene.add(d.mesh.root);
       if (ds.length > 1) { d.label = label(d, i); d.mesh.root.add(d.label); }
     });
-    R = { title: title || 'Repetición', day, drivers: ds, tk, world, scene, th: tk.th, t: 0, maxT: Math.max(...ds.map((d) => d.T)), playing: true, ended: false, speed: 1, cam: 'auto', shot: null, shotN: 0, focus: 0, trace: true, look: new THREE.Vector3(), camInit: false, lastType: '', onClose, acc: 0,
+    R = { league, title: title || 'Repetición', day, drivers: ds, tk, world, scene, th: tk.th, t: 0, maxT: Math.max(...ds.map((d) => d.T)), playing: true, ended: false, speed: 1, cam: 'auto', shot: null, shotN: 0, focus: 0, trace: true, look: new THREE.Vector3(), camInit: false, lastType: '', onClose, acc: 0,
       box: { cx: (minx + maxx) / 2, cz: (minz + maxz) / 2, size: Math.max(maxx - minx, maxz - minz, 80) }, st: ds.map(() => ({})) };
     $('rpTitle').textContent = title || 'Repetición'; $('rpSub').textContent = solo ? `@${ds[0].username} · ${fmtT(ds[0].ms / 1000)}` : `${ds.length} pilotos · vuelta rápida de cada uno`;
     el.classList.toggle('solo', solo); el.classList.remove('hidden'); document.body.classList.add('in-replay');
@@ -179,7 +162,7 @@ export function createReplay(ctx) {
     return true;
   }
   function close(silent) {
-    if (!R) return; if (R.rec) stopRec(true); const r = R; R = null;
+    if (!R) return; const r = R; R = null;
     try { disposeScene(r.scene); } catch (_) { /* nada */ }
     camera.fov = 65; camera.updateProjectionMatrix(); camera.up.set(0, 1, 0);
     if (el) { el.classList.add('hidden'); } document.body.classList.remove('in-replay');
@@ -189,7 +172,6 @@ export function createReplay(ctx) {
   // ---------- cada fotograma ----------
   function frame(dt) {
     if (!R) return;
-    if (R.rec) { $('rpShare').textContent = '● Grabando ' + Math.min(99, Math.round(R.t / (R.maxT + 1) * 100)) + '%'; if (R.t >= R.maxT + 1) { stopRec(false); } }
     if (R.playing) { R.t += dt * R.speed; if (R.t >= R.maxT + 2) { R.t = R.maxT + 2; R.playing = false; R.ended = true; sync(); } }
     const states = R.st, active = [];
     R.drivers.forEach((d, i) => {
