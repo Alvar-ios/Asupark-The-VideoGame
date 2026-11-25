@@ -291,7 +291,7 @@ export function createDaily(ctx) {
     if (a === 'practice' || a === 'official') return startKind(a);
     if (a === 'wa-result' || a === 'wa-challenge') {
       const t = ctx.track, c = ctx.car, circ = t.th.name.replace(/ · .*$/, ''), u = acc_user();
-      const txt = a === 'wa-result' && st.best ? `Reto del día de Daily Lapp: ${fmt(st.best.ms / 1000)} en ${circ} con el ${c.name}. ¿Me ganas? Mismo coche y circuito para todos, solo un intento oficial.` : `Hoy el reto de Daily Lapp es ${circ} con el ${c.name}. Mismo coche para todos: ¡a ver quién hace mejor tiempo!`;
+      const txt = a === 'wa-result' && st.best ? `Reto del día de KartlosApp: ${fmt(st.best.ms / 1000)} en ${circ} con el ${c.name}. ¿Me ganas? Mismo coche y circuito para todos, solo un intento oficial.` : `Hoy el reto de KartlosApp es ${circ} con el ${c.name}. Mismo coche para todos: ¡a ver quién hace mejor tiempo!`;
       waShare(txt, inviteUrl(u)); return;
     }
     if (a === 'profile') { close(); $('profBtn').click(); return; }

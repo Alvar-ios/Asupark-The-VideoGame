@@ -781,7 +781,7 @@ $('shareBtn').innerHTML = WA_ICON + 'COMPARTIR POR WHATSAPP';
 $('shareBtn').onclick = () => {
   const p = S.player, ti = S.trackInfo, circ = ti ? ti.th.name.replace(/ · .*$/, '') : '', car = p ? p.type.name : '', big = $('rBig').textContent, title = $('rTitle').textContent;
   const isTime = /^\d+:\d/.test(big), line = isTime ? `${big} en ${circ} con el ${car}` : `${title} (${big}) en ${circ} con el ${car}`;
-  waShare(`${line} en Daily Lapp. ¿Me ganas?`, inviteUrl(acc.username));
+  waShare(`${line} en KartlosApp. ¿Me ganas?`, inviteUrl(acc.username));
 };
 $('againBtn').onclick = () => { if (S.gp && S.gp.phase === 'quali' && S.state === 'finished') S.gp.phase = 'race'; startRace(true); };
 const toMenu = () => { HB.at = 0; if (S.daily && !S.daily.done) { endDaily(); return; } if (S.prevSel) { Object.assign(sel, S.prevSel); S.prevSel = null; } setView('home'); S.state = 'menu'; document.body.classList.remove('racing'); $('pause').classList.add('hidden'); $('results').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden'); $('pbtn').classList.add('hidden'); $('rbtn').classList.add('hidden'); clearRace(); buildMenu(); $('menu').classList.remove('hidden'); $('menu').querySelector('.menu-scroll').scrollTop = 0; };

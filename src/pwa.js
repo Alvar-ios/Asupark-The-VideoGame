@@ -11,8 +11,8 @@ export function initPwa({ $, store }) {
   const dismissed = () => { try { return Date.now() < +store.get('pwaHide', 0); } catch (_) { return false; } };
   function render() {
     if (!card || isStandalone() || dismissed()) return hide();
-    if (deferred) card.innerHTML = '<span class="hm-ic">' + ic('install') + '</span><div><b>Instala Daily Lapp</b><small>Icono en tu pantalla de inicio, a pantalla completa y con avisos del reto.</small></div><button type="button" data-i="go">Instalar</button><button type="button" class="x" data-i="x" aria-label="Ocultar">' + ic('x') + '</button>';
-    else if (isIOS()) card.innerHTML = '<span class="hm-ic">' + ic('install') + '</span><div><b>Instala Daily Lapp</b><small>Pulsa <b>Compartir</b> ' + ic('share') + ' y luego <b>Añadir a pantalla de inicio</b>.</small></div><button type="button" class="x" data-i="x" aria-label="Ocultar">' + ic('x') + '</button>';
+    if (deferred) card.innerHTML = '<span class="hm-ic">' + ic('install') + '</span><div><b>Instala KartlosApp</b><small>Icono en tu pantalla de inicio, a pantalla completa y con avisos del reto.</small></div><button type="button" data-i="go">Instalar</button><button type="button" class="x" data-i="x" aria-label="Ocultar">' + ic('x') + '</button>';
+    else if (isIOS()) card.innerHTML = '<span class="hm-ic">' + ic('install') + '</span><div><b>Instala KartlosApp</b><small>Pulsa <b>Compartir</b> ' + ic('share') + ' y luego <b>Añadir a pantalla de inicio</b>.</small></div><button type="button" class="x" data-i="x" aria-label="Ocultar">' + ic('x') + '</button>';
     else return hide();
     card.classList.remove('hidden');
   }

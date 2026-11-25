@@ -99,7 +99,7 @@ export function initLeagues(ctx) {
     const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#1a0a12'); g.addColorStop(0.5, '#0a0d16'); g.addColorStop(1, '#0a0d16'); c.fillStyle = g; c.fillRect(0, 0, W, H);
     c.fillStyle = '#e10600'; c.fillRect(0, 0, W, 18); const k = 54; for (let i = 0; i < W / k; i++) { c.fillStyle = i % 2 ? '#fff' : '#111'; c.fillRect(i * k, H - 36, k, 18); c.fillStyle = i % 2 ? '#111' : '#fff'; c.fillRect(i * k, H - 18, k, 18); }
     const T = (t, x, y, sz, col, w = 800, al = 'left') => { c.font = `italic ${w} ${sz}px "Jersey 10", Impact, sans-serif`; c.fillStyle = col; c.textAlign = al; c.fillText(t, x, y); };
-    T('DAILY LAPP · RESUMEN', 70, 120, 44, '#ffd34e'); T(L.name.toUpperCase(), 70, 210, 84, '#fff'); T(dayTxt(r.day).toUpperCase(), 70, 270, 40, '#9fb0cf');
+    T('KARTLOSAPP · RESUMEN', 70, 120, 44, '#ffd34e'); T(L.name.toUpperCase(), 70, 210, 84, '#fff'); T(dayTxt(r.day).toUpperCase(), 70, 270, 40, '#9fb0cf');
     c.fillStyle = 'rgba(255,255,255,.07)'; c.fillRect(70, 330, W - 140, 330); T('GANADOR DEL DÍA', 110, 400, 40, '#ffd34e'); T('@' + r.winner.username, 110, 500, 100, '#fff'); T(fms(r.winner.ms) + (r.second ? `   +${(r.second.gap / 1000).toFixed(3)} sobre @${r.second.username}` : ''), 110, 600, 46, '#c8d2e6', 700);
     const rows = []; if (r.climber) rows.push(['SUBE', `@${r.climber.username} sube de P${r.climber.from} a P${r.climber.to}`]); if (r.leader) rows.push(['LÍDER', `Líder: @${r.leader.username} · ${r.leader.pts} pts`]); if (r.lentorro && mm[r.lentorro]) rows.push(['LENTORRO', `Lentorro de hoy: @${mm[r.lentorro].username}`]); if (r.me) rows.push(['YO', `Yo: P${r.me.pos} · ${fms(r.me.ms)}`]);
     rows.forEach((x, i) => { T(x[0], 70, 790 + i * 120, 34, '#ffd34e'); T(x[1], 290, 790 + i * 120, 50, '#eef2ff', 700); });
@@ -239,7 +239,7 @@ export function initLeagues(ctx) {
   const av = (m, col, cls = '') => `<span class="av ${cls}" style="--c:${col || '#111'}">${helmetSvg ? helmetSvg((m && m.helmet) || 'e63946|ffffff|111827|1') : ''}</span>`;
   const dd = (d) => new Date(d + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '');
   const leftTxt = (L) => { if (L.season < L.current) return 'Terminada'; const n = Math.round((Date.parse(L.to) - Date.parse(L.today)) / 864e5); return n <= 0 ? 'Último día' : `Quedan ${n} día${n === 1 ? '' : 's'}`; };
-  // Identidad Daily Lapp: placas inclinadas como el logo, bordillos rojo y blanco, bandera a cuadros y torre de tiempos.
+  // Identidad KartlosApp: placas inclinadas como el logo, bordillos rojo y blanco, bandera a cuadros y torre de tiempos.
   const flagChk = `<svg class="chk" viewBox="0 0 30 22" aria-hidden="true"><path d="M3 2v19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>${[0, 1, 2].map((r) => [0, 1, 2, 3].map((c) => ((r + c) % 2 ? '' : `<rect x="${5 + c * 6}" y="${2 + r * 5}" width="6" height="5" fill="currentColor"/>`)).join('')).join('')}<rect x="5" y="2" width="24" height="15" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>`;
   const plate = (txt, cls = '') => `<span class="l2-plate ${cls}"><b>${txt}</b></span>`;
   function v2Head(L) {
@@ -368,7 +368,7 @@ export function initLeagues(ctx) {
     if (a === 'recap') return shareRecap();
     if (a === 'profile') { $('leagues').classList.add('hidden'); stopPoll(); const pb = $('profBtn'); if (pb) pb.click(); return; }
     if (a === 'copy') return copy(leagueUrl(S.state.league.code));
-    if (a === 'invite') { const L = S.state.league; return waShare(`Te invito a mi liga «${L.name}» de Daily Lapp: cada día se puntúa el reto diario como un GP de F1 y hay chat para picarnos. Entra con este enlace y te unes al instante (código ${L.code}):`, leagueUrl(L.code)); }
+    if (a === 'invite') { const L = S.state.league; return waShare(`Te invito a mi liga «${L.name}» de KartlosApp: cada día se puntúa el reto diario como un GP de F1 y hay chat para picarnos. Entra con este enlace y te unes al instante (código ${L.code}):`, leagueUrl(L.code)); }
     if (a === 'leave') { const id = S.id, nm = S.state.league.name; S.hidden.add(id); S.state = null; undoable('Has salido de «' + nm + '»', async () => { try { await acc.rpc('league_leave', { p_league: id }); S.hidden.delete(id); S.list = null; try { Object.keys(localStorage).filter((k) => k.startsWith('dr.c.')).forEach((k) => localStorage.removeItem(k)); } catch (_) { /* nada */ } } catch (er) { S.hidden.delete(id); toast(err(er)); S.list = null; } if (open() && S.view === 'list') listView(); }, { ms: 6000, onUndo: () => { S.hidden.delete(id); if (open()) listView(); } }); return listView(); }
   });
   $('lgBody').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key !== 'Enter') return; if (e.target.id === 'lgMsgIn') send(); if (e.target.id === 'lgName') create(); if (e.target.id === 'lgCode') doJoin(e.target.value); });

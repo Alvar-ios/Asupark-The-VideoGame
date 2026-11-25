@@ -113,7 +113,7 @@ export function initProfile(ctx) {
     if (b.dataset.t) { S.tab = b.dataset.t; S.rival = null; S.msg = ''; return render(); }
     if (b.id === 'pfOut') { acc.signOut(); S.tab = 'perfil'; S.rival = null; return render(); }
     if (b.id === 'pfBack') { S.rival = null; return render(); }
-    if (b.id === 'pfWa') { const u = acc.username; waShare(`Únete a Daily Lapp y compite conmigo.${u ? ` Soy @${u}: abre el enlace y me añades como amigo al instante.` : ''} Un juego de carreras gratis en el navegador, con reto diario y clasificación.`, inviteUrl(u)); return; }
+    if (b.id === 'pfWa') { const u = acc.username; waShare(`Únete a KartlosApp y compite conmigo.${u ? ` Soy @${u}: abre el enlace y me añades como amigo al instante.` : ''} Un juego de carreras gratis en el navegador, con reto diario y clasificación.`, inviteUrl(u)); return; }
     if (b.id === 'pfAdd') { const v = $('pfFriend').value; if (!v.trim()) return; try { S.msg = String(await acc.addFriend(v)); } catch (er) { S.msg = acc.explain(er); } return friendsView(); }
     if (b.dataset.riv) { S.rival = { id: b.dataset.riv, u: b.dataset.u }; return render(); }
     if (b.dataset.ok) { try { await acc.respond(b.dataset.ok, true); S.msg = ''; } catch (er) { S.msg = acc.explain(er); } return friendsView(); }

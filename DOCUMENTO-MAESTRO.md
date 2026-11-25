@@ -1,10 +1,10 @@
-# Documento maestro: Daily Lapp como juego de karts reales
+# Documento maestro: KartlosApp como juego de karts reales
 
 Estado: **borrador aprobado en entrevista** (decisiones tomadas). Pendiente de verificación de circuitos y de datos reales de los karts.
 
 ## 1. Visión
 
-Daily Lapp deja de ser un juego de coches y circuitos variados y pasa a ser **un juego solo de karting**:
+KartlosApp deja de ser un juego de coches y circuitos variados y pasa a ser **un juego solo de karting**:
 
 - **Karts reales** en circuitos reales de España, en primer lugar.
 - **Campeonatos de liga** con amigos o públicos, donde se corre cada día en un circuito distinto y se compite por la mejor vuelta.

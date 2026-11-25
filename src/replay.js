@@ -130,7 +130,7 @@ export function createReplay(ctx) {
   // ---------- compartir: enlace para ver la repetición (WhatsApp o cualquier app) ----------
   async function share() {
     const uid = R.drivers.length === 1 ? R.drivers[0].user_id : null, url = baseUrl() + '?rp=' + R.league + '_' + R.day + '_' + (uid || 'all');
-    const text = `${R.title} · mira la repetición en Daily Lapp`;
+    const text = `${R.title} · mira la repetición en KartlosApp`;
     try { if (navigator.share) { await navigator.share({ title: R.title, text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
     waShare(text, url);
   }
