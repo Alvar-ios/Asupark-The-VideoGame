@@ -2,6 +2,12 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.107
+- Vitrina de la liga (icono del trofeo en la liga), inspirada en Resultados de la app de la F1: pestañas Carreras, Pilotos y Premios.
+- Selectores en pastilla (temporada, circuito, piloto) que abren una hoja inferior con «Hecho».
+- Premios: campeones por temporada, récords de la liga (campeonatos, victorias, podios, mejor vuelta) y vitrina de cada piloto.
+- Nueva función `league_hall` en Supabase.
+
 ## 0.0.106
 - Inicio más limpio: se elimina la interfaz clásica y su selector, y el aviso de sanción de la FIA.
 - Reto del día compacto: bandera pequeña, circuito más estrecho y coche bajo el nombre; menos texto.

@@ -5,6 +5,7 @@ import { ic } from './icons.js';
 import { sk, vt, undoable } from './ux.js';
 import { isUi2, onUi } from './uimode.js';
 import { dailyKeyNow } from './daily.js';
+import { createVit } from './lgvit.js';
 
 const PTS = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 export const leagueUrl = (code) => baseUrl() + '?liga=' + encodeURIComponent(code);
@@ -242,7 +243,7 @@ export function initLeagues(ctx) {
   function v2Head(L) {
     const live = L.season === L.current, N = L.season_days, cur = live ? Math.min(N, Math.round((Date.parse(L.today) - Date.parse(L.from)) / 864e5) + 1) : N;
     const segs = Array.from({ length: N }, (_, i) => `<i class="${i + 1 < cur || !live ? 'd' : i + 1 === cur ? 'n' : ''}"></i>`).join('');
-    return `<div class="l2-top"><button class="l2-ic" data-a="back" type="button" aria-label="Volver">${ic('back')}</button><span class="l2-sp"></span><button class="l2-ic${S.tab === 'cal' ? ' on' : ''}" data-t="cal" type="button" aria-label="Calendario">${ic('calendar')}</button><button class="l2-ic${S.tab === 'dias' ? ' on' : ''}" data-t="dias" type="button" aria-label="Tiempos por día">${ic('history')}</button><button class="l2-ic" data-a="invite" type="button" aria-label="Invitar">${ic('share')}</button></div>
+    return `<div class="l2-top"><button class="l2-ic" data-a="back" type="button" aria-label="Volver">${ic('back')}</button><span class="l2-sp"></span><button class="l2-ic${S.tab === 'vit' ? ' on' : ''}" data-t="vit" type="button" aria-label="Vitrina">${ic('trophy')}</button><button class="l2-ic${S.tab === 'cal' ? ' on' : ''}" data-t="cal" type="button" aria-label="Calendario">${ic('calendar')}</button><button class="l2-ic${S.tab === 'dias' ? ' on' : ''}" data-t="dias" type="button" aria-label="Tiempos por día">${ic('history')}</button><button class="l2-ic" data-a="invite" type="button" aria-label="Invitar">${ic('share')}</button></div>
       <div class="l2-title"><b class="l2-name">${esc(L.name)}</b><div class="l2-ss"><b>TEMPORADA ${L.season}</b><span class="l2-lap">${live ? `DÍA <b>${cur}</b>/${N}` : 'FINAL'}</span></div>
       <div class="l2-days" aria-label="Día ${cur} de ${N}">${segs}</div><small class="l2-left">${leftTxt(L)} · ${dd(L.from)} – ${dd(L.to)}</small></div>`;
   }
@@ -315,8 +316,10 @@ export function initLeagues(ctx) {
       <div class="l2-inv"><div><small>Código de la liga</small><b>${esc(L.code)}</b></div><button class="l2-pill" data-a="copy" type="button">Copiar enlace</button></div>
       <details class="l2-info"><summary>${ic('info')} Reglas</summary><p>Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto. Acertar quién gana el día suma +1. El Lentorro es quien menos puntos lleva y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p><button class="l2-pill danger" data-a="leave" type="button">Salir de la liga</button></details>`;
   }
+  const VIT = createVit({ S, esc, fmt, flagSvg, ic, me, PTS, dailyFor, av, colorMap, v2Head, dayTxt, paint, redraw: () => leagueView(), load, acc, toast });
   async function v2View() {
     const L = S.state.league, mm = Object.fromEntries(S.state.members.map((m) => [m.user_id, m])), col = colorMap(); S.memo = mm; S.cols = col;
+    if (S.tab === 'vit') { stopPoll(); return VIT.render(); }
     const pred = predHtml(L, mm), top = `${v2Head(L)}${v2Podium(L, mm, col)}${v2Seg()}`;
     if (S.tab !== 'chat') { stopPoll(); paint.innerHTML = `${top}${v2Points(L, mm, col)}<div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`; S.msg = ''; return; }
     S.chatSig = ''; S.rxOpen = null; S.msgs = S.msgs && S.msgsFor === S.id ? S.msgs : []; S.msgsFor = S.id; S.pend = S.pend || [];
@@ -327,7 +330,7 @@ export function initLeagues(ctx) {
   onUi(() => { if (!open()) return; if (S.view === 'league' && S.state) leagueView(); else listView(); });
 
   // ---------- acciones ----------
-  async function enter(id, season) { S.id = id; S.state = null; S.tab = isUi2() ? 'chat' : 'tabla'; S.season = null; S.recap = undefined; if (season) { try { await load(season); } catch (_) { /* se carga la actual */ } } await leagueView(); }
+  async function enter(id, season) { S.id = id; S.state = null; S.tab = isUi2() ? 'chat' : 'tabla'; S.season = null; S.recap = undefined; S.hall = undefined; S.vday = null; S.vdrv = null; S.vpick = null; S.vt = 'car'; if (season) { try { await load(season); } catch (_) { /* se carga la actual */ } } await leagueView(); }
   async function join(code) {
     const l = await acc.rpc('league_join', { p_code: code }); S.list = null; return l;
   }
@@ -346,6 +349,7 @@ export function initLeagues(ctx) {
     const sn = e.target.closest('[data-sanc]'); if (sn && sn.dataset.sanc) { document.dispatchEvent(new CustomEvent('dr:sanction', { detail: { id: sn.dataset.sanc } })); return; }
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.open) { S.fromList = true; return enter(b.dataset.open); }
+    if (b.dataset.vt || b.dataset.vo || b.dataset.vp) return VIT.click(b);
     if (b.dataset.t) { S.tab = b.dataset.t; return leagueView(); }
     if (b.dataset.rx) return react(b.dataset.id, b.dataset.rx);
     if (b.dataset.more) { S.rxOpen = S.rxOpen === +b.dataset.more ? null : +b.dataset.more; return pull(true); }
