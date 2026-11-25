@@ -48,7 +48,7 @@ export function initSanctions({ $, acc, esc }) {
     catch (err) { toastEl.show((err && err.message) || 'No se ha podido publicar'); }
     b.disabled = false;
   });
-  $('hmSanc').addEventListener('click', (e) => { const b = e.target.closest('[data-sanc]'); if (b) open(b.dataset.sanc); });
+  const hs = $('hmSanc'); if (hs) hs.addEventListener('click', (e) => { const b = e.target.closest('[data-sanc]'); if (b) open(b.dataset.sanc); });
   document.addEventListener('dr:sanction', (e) => open(e.detail.id));
   return { render, open };
 }

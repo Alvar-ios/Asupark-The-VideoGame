@@ -4,9 +4,9 @@ import { sk, vt } from './ux.js';
 import { ic } from './icons.js';
 import { initSanctions } from './sanctions.js';
 export function initHome(ctx) {
-  const { $, acc, esc, LG, PF } = ctx;
+  const { $, acc, esc, LG, PF, helmetSvg } = ctx;
   const menu = $('menu');
-  const SN = initSanctions({ $, acc, esc });
+  initSanctions({ $, acc, esc });
   let screen = 'main';
   const setScreen = (s, kind) => { if (s === screen && !kind) return; vt(() => setScreenNow(s, kind)); };
   const setScreenNow = (s, kind) => {
@@ -43,7 +43,7 @@ export function initHome(ctx) {
     const box = $('hmLgBody'); if (!box) return;
     if (!acc.enabled) { box.innerHTML = '<p class="hm-lg-n">Las ligas necesitan conexión con el servidor.</p>'; return; }
     if (!acc.loggedIn) {
-      box.innerHTML = `<p class="hm-lg-n">Compite con tus amigos en el reto diario por temporadas, con puntos como en la F1 y chat.</p><div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" class="ghost" data-lg="join">Unirme con código</button></div>`;
+      box.innerHTML = `<p class="hm-lg-n">Compite con tus amigos cada día.</p><div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" class="ghost" data-lg="join">Unirme con código</button></div>`;
       return;
     }
     let list = null, ud = null, shown = false;
@@ -57,14 +57,15 @@ export function initHome(ctx) {
     const prev = (l) => (l.last ? `<small class="prev">Temporada ${l.last.season}: campeón @${esc(l.last.champion || '?')}${l.last.me ? ` · tú P${l.last.me}` : ''}</small>` : '');
     const row = (l) => {
       const pct = l.days ? Math.max(4, Math.min(100, Math.round((l.day || 1) / l.days * 100))) : 0;
-      return `<button type="button" class="hm-lg-r" data-lg-open="${l.id}"><i class="pos">${l.pos ? 'P' + l.pos : '–'}</i><span class="nm"><b>${esc(l.name)}</b><small>Temporada ${l.season}${l.days ? ` · día ${Math.min(l.day || 1, l.days)} de ${l.days}` : ''} · ${l.members} piloto${l.members === 1 ? '' : 's'}</small>${l.days ? `<u class="lgb"><s style="width:${pct}%"></s></u>` : ''}${prev(l)}</span><span class="pt"><b>${l.pts}</b><small>PTS</small>${l.ran === false ? '<em class="tg warn">Hoy sin correr</em>' : ''}</span></button>`;
+      const pod = (l.top || []).map((t) => `<span class="av xs${t.me ? ' me' : ''}" style="--c:#111" title="${esc(t.u)}">${helmetSvg ? helmetSvg(t.h || 'e63946|ffffff|111827|1') : ''}</span>`).join('');
+      return `<button type="button" class="hm-lg-r" data-lg-open="${l.id}"><span class="nm"><span class="lgh-top"><i class="pos${l.pos === 1 ? ' p1' : ''}">${l.pos ? 'P' + l.pos : '–'}</i>${pod ? `<span class="lgh-pod">${pod}</span>` : ''}</span><b>${esc(l.name)}</b><span class="lgh-meta"><span>Día ${Math.min(l.day || 1, l.days || 1)}/${l.days || '–'}</span>${l.days ? `<u class="lgb"><s style="width:${pct}%"></s></u>` : ''}</span></span><span class="pt"><b>${l.pts}</b><small>PTS</small>${l.ran === false ? '<em class="tg warn">Corre hoy</em>' : ''}</span></button>`;
     };
     const seen = (() => { try { return JSON.parse(localStorage.getItem('dr.seasonSeen') || '{}'); } catch (_) { return {}; } })();
     const fin = list.filter((l) => l.last && !seen[l.id + ':' + l.last.season])[0];
     const finHtml = fin ? `<button type="button" class="hm-fin" data-fin="${fin.id}" data-season="${fin.last.season}">${ic('trophy')} <span><b>Temporada ${fin.last.season} terminada</b> en ${esc(fin.name)}: campeón @${esc(fin.last.champion || '?')}${fin.last.me ? ` · tú P${fin.last.me}` : ''}</span></button>` : '';
-    box.innerHTML = finHtml + (ud && ud.length ? `<div class="hm-len">${ic('snail')} <b>Eres el Lentorro</b> en ${esc(ud.join(', '))}: hoy puedes elegir coche en el reto</div>` : '')
+    box.innerHTML = finHtml + (ud && ud.length ? `<div class="hm-len">${ic('snail')} <b>Lentorro</b> en ${esc(ud.join(', '))}: eliges coche hoy</div>` : '')
       + (list.length ? list.map(row).join('') + `<div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" data-lg="join">Unirme con código</button></div>`
-        : `<p class="hm-lg-n">Todavía no estás en ninguna liga. Crea una e invita a tus amigos: cada día puntúa el reto como un Gran Premio.</p><div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" data-lg="join">Unirme con código</button></div>`);
+        : `<p class="hm-lg-n">Crea una liga e invita a tus amigos.</p><div class="hm-lg-cta"><button type="button" data-lg="create">Crear liga</button><button type="button" data-lg="join">Unirme con código</button></div>`);
   }
   $('hmLeagues').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
@@ -73,7 +74,7 @@ export function initHome(ctx) {
     LG.open(); // "ver todas", crear y unirme llevan a la pantalla de ligas, donde están los formularios
   });
   const label = () => { const t = $('hmNavUser'); if (t) t.textContent = acc.loggedIn && acc.username ? '@' + acc.username : 'Perfil'; };
-  let tm = 0; const refresh = () => { clearTimeout(tm); tm = setTimeout(() => { label(); renderLeagues(); SN.render(); }, 250); };
+  let tm = 0; const refresh = () => { clearTimeout(tm); tm = setTimeout(() => { label(); renderLeagues(); }, 250); };
   // accesos directos de la app instalada (?go=daily / ?go=leagues)
   try { const go = new URLSearchParams(location.search).get('go'); if (go) { const u = new URL(location.href); u.searchParams.delete('go'); history.replaceState(null, '', u.pathname + u.search + u.hash); setTimeout(() => { if (go === 'leagues') LG.open(); else if (go === 'daily') { const c = $('dailyCard'); if (c) c.click(); } }, 900); } } catch (_) { /* sin history */ }
   acc.onChange(refresh); label(); setTimeout(refresh, 1200);

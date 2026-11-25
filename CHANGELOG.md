@@ -2,6 +2,11 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.106
+- Inicio más limpio: se elimina la interfaz clásica y su selector, y el aviso de sanción de la FIA.
+- Reto del día compacto: bandera pequeña, circuito más estrecho y coche bajo el nombre; menos texto.
+- Ligas con más presencia: posición, podio con cascos, día de temporada con barra y puntos grandes.
+
 ## 0.0.105
 - Chat de liga: las tarjetas de tiempo se reorganizan (nombre y detalle a la izquierda, tiempo y hora a la derecha) y ya caben con nombres largos.
 - Botones de repetición sólidos (morado «Su vuelta», amarillo «Todos») con buen contraste sobre cualquier fondo.

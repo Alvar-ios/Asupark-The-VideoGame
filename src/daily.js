@@ -129,17 +129,17 @@ export function createDaily(ctx) {
     const t = ctx.track, c = ctx.car, [cc, cname] = ctx.countryOf(t), rv = revealed(), card = $('dailyCard');
     const started = st.pr || st.or, done = left('o') <= 0 && st.best;
     const cta = done ? 'VER CLASIFICACIÓN ›' : started ? 'CONTINUAR ›' : rv ? 'ENTRAR AL RETO ›' : 'DESCUBRIR EL RETO ›';
-    const top = `<div class="hh-top"><span>Reto del día · <b id="dyDate">${dateTxt()}</b></span><span>Cambia en <b class="cdv">${hms(msToReset())}</b></span></div>`;
+    const top = `<div class="hh-top"><span>Reto del día · <b id="dyDate">${dateTxt()}</b></span><span><b class="cdv">${hms(msToReset())}</b></span></div>`;
     const steps = `<div id="dyHeroChips" class="hh-steps dy-chips">${statusChips()}</div>`;
     if (!rv) {
       card.className = 'dy-hbtn hero secret';
-      card.innerHTML = `${top}<div class="hh-body"><div class="hh-q">${lpQ(96)}</div><div class="hh-t"><b>Circuito y coche secretos</b><span>Es el mismo para todos. Descubre dónde corres y con qué coche al entrar.</span></div></div>${steps}<em class="dy-go">${cta}</em>`;
+      card.innerHTML = `${top}<div class="hh-body"><div class="hh-q">${lpQ(96)}</div><div class="hh-t"><b>Circuito y coche secretos</b><span>Descúbrelo al entrar</span></div></div>${steps}<em class="dy-go">${cta}</em>`;
       return renderMini();
     }
     card.className = 'dy-hbtn hero';
-    card.innerHTML = `${top}<div class="hh-body"><canvas id="dyHeroCv" width="280" height="152"></canvas><div class="hh-t"><b id="dyHeroTrack"><span class="flag">${ctx.flagSvg(cc)}</span>${esc(t.th.name.replace(/ · .*$/, ''))}</b><span id="dyHeroSub">${cname} · ${(t.tr.len / 1000).toFixed(1)} km</span></div></div>`
-      + (rv >= 2 ? `<div class="hh-car"><img id="dyHeroImg" alt="" src="./assets/thumbs/${c.id}.webp"><div><small>Coche de hoy</small><b id="dyHeroCar">${esc(c.name)}</b></div></div>` : '<div class="hh-car secret">Coche: se revela en el radar</div>')
-      + `${steps}<em class="dy-go">${cta}</em>`;
+    card.innerHTML = `${top}<div class="hh-body"><canvas id="dyHeroCv" width="280" height="152"></canvas><div class="hh-t"><b id="dyHeroTrack"><span class="flag">${ctx.flagSvg(cc)}</span>${esc(t.th.name.replace(/ · .*$/, ''))}</b><span id="dyHeroSub">${cname} · ${(t.tr.len / 1000).toFixed(1)} km</span>`
+      + (rv >= 2 ? `<div class="hh-car"><img id="dyHeroImg" alt="" src="./assets/thumbs/${c.id}.webp"><b id="dyHeroCar">${esc(c.name)}</b></div>` : '<div class="hh-car secret">Coche: sorpresa</div>')
+      + `</div></div>${steps}<em class="dy-go">${cta}</em>`;
     ctx.drawPreview($('dyHeroCv'), t.tr, t.th, 280, 152);
     renderMini();
   }

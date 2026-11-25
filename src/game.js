@@ -1596,7 +1596,7 @@ const _trk = new Map();
 const RP = createReplay({ $, esc, renderer, camera, buildWorld, disposeScene, buildCar: (c, k, l, n) => buildCarMesh(c, k, l, n), ensureModels: (t) => ensureModels(t, null), carList: CARS, followSun, ps2View, MOBILE, freeMenu: menuWorldFree, toast, flagSvg: null, shadowsOn: () => QUAL.shadows,
   trackFor: (day) => { if (!_trk.has(day)) { try { const th = THEMES[pickFor(day).theme]; _trk.set(day, { tr: buildTrack(th.seed, th.style), th, flag: FLAGS[countryOf({ th })[0]] }); } catch (e) { return null; } } return _trk.get(day); } });
 const LG = initLeagues({ replay: (o) => RP.open(o), $, acc, esc, fmt, flagSvg, helmetSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/ · .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
-initHome({ $, acc, esc, LG, PF });
+initHome({ $, acc, esc, LG, PF, helmetSvg });
 initPwa({ $, store });
 initPush({ $, acc, esc });
 initUx({ $, acc }); initUiToggle();
