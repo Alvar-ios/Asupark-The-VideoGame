@@ -4,6 +4,11 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.111
+- Escritorio: el inicio ocupa una columna centrada de 720 px en lugar de quedar pegado a la izquierda.
+- Escritorio: «Comandos Ctrl K» se ve en una sola línea y con forma de pastilla.
+- Móvil: el aviso «Instala Daily Lapp» se lee en dos líneas y la X ya no es un círculo negro.
+
 ## 0.0.110
 - Modo oscuro: botón luna/sol arriba a la derecha del inicio; se recuerda la elección.
 - Vitrina: Calendario y Carreras unidos. Se ve el calendario de la temporada y al tocar una carrera sale su detalle (con «‹ Calendario» para volver).
