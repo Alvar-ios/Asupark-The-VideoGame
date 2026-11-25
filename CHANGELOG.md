@@ -2,6 +2,9 @@
 
 Cada actualización sube la versión en `package.json`; el menú la muestra arriba a la derecha.
 
+## 0.0.104
+- Botón «Compartir vídeo» en las repeticiones: graba la repetición completa (cinemática) y la comparte por WhatsApp/otras apps, o la guarda como vídeo si el dispositivo no puede compartir archivos.
+
 ## 0.0.103
 - Repeticiones en el chat de la liga: cada aviso de tiempo lleva «Su vuelta» y «Todos» (repetición con todas las vueltas del día) para elegir cuál ver.
 - Al abrirse el día nuevo (04:00) aparece como primer mensaje del chat «Resultado de ayer»: podio, botón por piloto y «Ver la repetición con todas las vueltas».
