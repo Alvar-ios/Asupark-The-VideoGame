@@ -5,8 +5,8 @@ import { WALL } from './track.js';
 import { npcMesh, SHIRTS, WALK, CHEER, JUMP, IDLE, crowdType } from './npc.js';
 import { spriteField } from './filler.js';
 
-const DATE = '01/02/2027', FONT = '"Segoe UI","Helvetica Neue",Arial,sans-serif', GAME = '"Jersey 10",Impact,sans-serif';
-const gameFont = () => (document.fonts && document.fonts.load ? document.fonts.load('60px "Jersey 10"').catch(() => {}) : Promise.resolve());
+const DATE = '01/02/2027', FONT = '"Segoe UI","Helvetica Neue",Arial,sans-serif', GAME = '"KartDisplay",Impact,sans-serif';
+const gameFont = () => (document.fonts && document.fonts.load ? document.fonts.load('60px "KartDisplay"').catch(() => {}) : Promise.resolve());
 const texCache = {};
 function canvasTex(key, w, h, paint) {
   if (texCache[key]) return texCache[key];

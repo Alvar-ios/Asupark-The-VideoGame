@@ -3,6 +3,7 @@ import { lp, lpBlock } from './loader.js';
 import { ic } from './icons.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { THEMES, THEME_LIST } from './themes.js';
+import { trackSvg } from './trackart.js';
 import { waShare, inviteUrl, WA_ICON } from './share.js';
 import { initLeagues } from './leagues.js';
 import { createReplay } from './replay.js';
@@ -100,6 +101,7 @@ const kartNum = () => { const n = parseInt(sel.kartNum, 10); return n >= 0 && n 
 const halvesOn = () => MOBILE && sel.touchMode === 'halves'; // el control por mitades solo existe en pantallas táctiles
 const saved = store.get('sel'); if (saved && /^kart_/.test(saved.carId || '')) saved.carId = 'kart';
 if (saved) { if (saved.kartNum != null) sel.kartNum = saved.kartNum; const savedCar = saved.carId ? CARS.findIndex((car) => car.id === saved.carId) : -1; sel.car = savedCar >= 0 ? savedCar : (saved.car === 0 ? DEFAULT_CAR : clamp(saved.car | 0, 0, CARS.length - 1)); sel.diff = clamp(saved.diff | 0, 0, 2); if (saved.mode) sel.mode = saved.mode; if (saved.track < tracks.length) sel.track = saved.track | 0; sel.autoGas = !!saved.autoGas; sel.touchMode = saved.touchMode === 'buttons' && saved.ctlV === 2 ? 'buttons' : 'halves'; sel.mute = !!saved.mute; sel.colors = saved.colors || {}; }
+sel.mode = 'tt'; // sin rivales de IA: se corre contra el crono
 // primer circuito real (tras el reto diario); una vez, la selección guardada vuelve al primero visible
 const firstReal = Math.max(0, tracks.findIndex((t) => t.key !== 'daily'));
 if (!store.get('purge.solo-karts')) { sel.track = firstReal; store.set('purge.solo-karts', true); }
@@ -186,7 +188,6 @@ const FLAGS = {
   br: '<rect width="30" height="20" fill="#009c3b"/><polygon points="15,2.5 27,10 15,17.5 3,10" fill="#ffdf00"/><circle cx="15" cy="10" r="3.6" fill="#002776"/>',
   mx: '<rect width="10" height="20" fill="#006847"/><rect x="10" width="10" height="20" fill="#f4f4f4"/><rect x="20" width="10" height="20" fill="#ce1126"/><circle cx="15" cy="10" r="2.2" fill="#8c6a2a"/>',
   nl: '<rect width="30" height="7" fill="#ae1c28"/><rect y="6.67" width="30" height="6.67" fill="#f4f4f4"/><rect y="13.33" width="30" height="6.67" fill="#21468b"/>',
-  it: '<rect width="10" height="20" fill="#009246"/><rect x="10" width="10" height="20" fill="#f4f4f4"/><rect x="20" width="10" height="20" fill="#ce2b37"/>',
   gb: '<rect width="30" height="20" fill="#012169"/><path d="M0,0 L30,20 M30,0 L0,20" stroke="#f4f4f4" stroke-width="4"/><path d="M0,0 L30,20 M30,0 L0,20" stroke="#c8102e" stroke-width="1.5"/><rect x="12" width="6" height="20" fill="#f4f4f4"/><rect y="7" width="30" height="6" fill="#f4f4f4"/><rect x="13" width="4" height="20" fill="#c8102e"/><rect y="8" width="30" height="4" fill="#c8102e"/>',
   us: '<rect width="30" height="20" fill="#f4f4f4"/>' + [0, 2, 4, 6, 8, 10, 12].map((i) => `<rect y="${i * 20 / 13}" width="30" height="${20 / 13}" fill="#b22234"/>`).join('') + '<rect width="13" height="10.8" fill="#3c3b6e"/>',
   pr: ['#e40303', '#ff8c00', '#ffed00', '#008026', '#004dff', '#750787'].map((c, i) => `<rect y="${i * 20 / 6}" width="30" height="${20 / 6 + 0.1}" fill="${c}"/>`).join(''),
@@ -221,7 +222,7 @@ const playerDrv = () => ({ flag: lb.flag, helm: lb.helmet });
 const drvOf = (c) => (c && c.isPlayer ? playerDrv() : c && c.driver) || null;
 const drvIc = (d, sm) => d ? `<span class="flag${sm ? ' sm' : ''}">${flagSvg(d.flag)}</span><span class="hel${sm ? ' sm' : ''}">${helmetSvg(d.helm)}</span>` : '';
 const FLAG_NAMES = { es: 'España', pt: 'Portugal', fr: 'Francia', de: 'Alemania', it: 'Italia', gb: 'Reino Unido', ie: 'Irlanda', nl: 'Países Bajos', be: 'Bélgica', ch: 'Suiza', at: 'Austria', pl: 'Polonia', ro: 'Rumanía', ua: 'Ucrania', se: 'Suecia', mc: 'Mónaco', us: 'Estados Unidos', mx: 'México', co: 'Colombia', ar: 'Argentina', br: 'Brasil', pe: 'Perú', ma: 'Marruecos', jp: 'Japón', pr: 'Orgullo' };
-const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'Fórmula 0'], asupark: ['es', 'Asupark'], kartlos: ['ae', 'Kartlos'], madring: ['es', 'España'], magarigawa: ['jp', 'Japón'], muralla: ['cn', 'China'], rally: ['ke', 'Kenia'], palomring: ['sk', 'Palomar'], italia: ['it', 'Italia'] };
+const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'España'], asupark: ['es', 'España'], kartlos: ['ae', 'Kartlos'], madring: ['es', 'España'], magarigawa: ['jp', 'Japón'], muralla: ['cn', 'China'], rally: ['ke', 'Kenia'], palomring: ['sk', 'Palomar'], italia: ['it', 'Italia'] };
 const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
 function drawPreview(cv, tr, th, w = 300, h = 130, kw = 1) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
@@ -245,7 +246,7 @@ function setView(v) {
   $('menu').dataset.view = v; if (v !== 'garage') sound.stopPreview();
   $('flyout').hidden = v === 'home';
   $('viewTracks').hidden = v !== 'tracks'; $('viewGarage').hidden = v !== 'garage';
-  $('flyTitle').textContent = v === 'garage' ? 'Coche' : 'Circuito';
+  $('flyTitle').textContent = v === 'garage' ? 'Garaje' : 'Circuito';
   $('pickTrack').classList.toggle('on', v === 'tracks'); $('pickCar').classList.toggle('on', v === 'garage');
   $('flyout').scrollTop = 0; $('menu').querySelector('.menu-scroll').scrollTop = 0;
 }
@@ -264,8 +265,8 @@ function buildMap() {
   const pick = (i) => { sel.track = i; sel.carId = CARS[sel.car].id; wmCont = contOf(tracks[i]).id; store.set('sel', sel); buildMenu(); };
   const here = tracks.map((t, i) => [t, i]).filter(([t]) => t.key !== 'daily' && contOf(t) === activeC);
   globe.focus(activeC.ll[0], activeC.ll[1], activeC.z);
-  globe.setPins(tracks.map((t, i) => t.key === 'daily' ? null : t).map((t, i) => !t ? null : { t, i }).filter(Boolean).map(({ t, i }) => { const ll = MAP_LL[t.th.id] || MAP_LL.pruebas, daily = t.key === 'daily'; return { lat: ll[0] + (daily ? .7 : 0), lon: ll[1] + (daily ? .9 : 0), on: i === sel.track, title: t.name, label: t.name.replace(/ · .*$/, '').replace(/^Circuito de /, ''), html: flagSvg(countryOf(t)[0]), onClick: () => pick(i) }; }));
-  $('contPanel').innerHTML = `<div class="cp-tabs">${CONTS.map((c) => `<button type="button" data-c="${c.id}" class="${c === activeC ? 'on' : ''}">${c.name}</button>`).join('')}</div>` + here.map(([t, i]) => `<button type="button" class="cp-row${i === sel.track ? ' on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span><span>${t.key === 'daily' ? 'Pista del día' : t.name}<small>${countryOf(t)[1]} · ${(t.tr.len / 1000).toFixed(1)} km</small></span>${t.key === 'daily' ? '<b>' + ic('star') + '</b>' : ''}</button>`).join('');
+  globe.setPins(tracks.map((t, i) => t.key === 'daily' ? null : t).map((t, i) => !t ? null : { t, i }).filter(Boolean).map(({ t, i }) => { const ll = MAP_LL[t.th.id] || MAP_LL.pruebas, daily = t.key === 'daily'; return { lat: ll[0] + (daily ? .7 : 0), lon: ll[1] + (daily ? .9 : 0), on: i === sel.track, title: t.name, label: t.name.replace(/, .*$/, '').replace(/^Circuito de /, ''), html: flagSvg(countryOf(t)[0]), onClick: () => pick(i) }; }));
+  $('contPanel').innerHTML = `<div class="cp-tabs">${CONTS.map((c) => `<button type="button" data-c="${c.id}" class="${c === activeC ? 'on' : ''}">${c.name}</button>`).join('')}</div>` + here.map(([t, i]) => `<button type="button" class="cp-row${i === sel.track ? ' on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span><span>${t.key === 'daily' ? 'Pista del día' : t.name}<small>${countryOf(t)[1]}, ${(t.tr.len / 1000).toFixed(1)} km</small></span>${t.key === 'daily' ? '<b>' + ic('star') + '</b>' : ''}</button>`).join('');
   $('contPanel').querySelectorAll('.cp-tabs button').forEach((b) => { b.onclick = () => { wmCont = b.dataset.c; buildMap(); }; });
   $('contPanel').querySelectorAll('.cp-row').forEach((b) => { b.onclick = () => pick(+b.dataset.i); });
   const t = tracks[sel.track], [cc, cname] = countryOf(t), env = envLabel(t); let best = null; for (const cc2 of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc2.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = r; }
@@ -275,7 +276,7 @@ function buildMap() {
 }
 function buildMenu() {
   { const t0 = tracks[sel.track], c0 = CARS[sel.car]; if (!sel.group) sel.group = groupOf(c0).id;
-    $('pickTrackName').textContent = t0.name; $('pickTrackSub').textContent = `${countryOf(t0)[1]} · ${(t0.tr.len / 1000).toFixed(1)} km · ${envLabel(t0)}`; $('pickTrackFlag').innerHTML = flagSvg(countryOf(t0)[0]);
+    $('pickTrackName').textContent = t0.name; $('pickTrackSub').textContent = `${countryOf(t0)[1]}, ${(t0.tr.len / 1000).toFixed(1)} km, ${envLabel(t0)}`; $('pickTrackFlag').innerHTML = flagSvg(countryOf(t0)[0]);
     $('pickCarName').textContent = c0.name; $('pickCarSub').textContent = groupOf(c0).name; $('pickCarImg').src = `./assets/thumbs/${c0.id}.webp`; }
   if (D) D.refresh && D.refresh();
   buildMap(); updateNowPlaying(); renderHomeBoard();
@@ -289,7 +290,7 @@ function buildMenu() {
     const environment = t.th.weather === 'rain' ? ['rain', 'Lluvia'] : t.th.surface === 'snow' ? ['snow', 'Nieve'] : t.th.surface === 'dirt' ? ['dirt', 'Tierra'] : ['dry', 'Asfalto seco'];
     let best = null; for (const cc of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + cc.id); if (r && r.lap != null && (!best || r.lap < best.lap)) best = { ...r, car: cc }; }
     const [cc, cname] = countryOf(t), st = streakInfo();
-    d.innerHTML = `<div class="tc-head"><span class="flag">${flagSvg(cc)}</span><span class="cty">${cname}</span><span class="tc-len">${(t.tr.len / 1000).toFixed(1)} km</span></div><canvas></canvas><b>${t.name}</b><small class="track-sub">${t.sub}</small><div class="tc-foot"><span class="track-env ${environment[0]}">${environment[1]}</span>${[...new Set((t.tr.zones || []).map((z) => (z.type === 'dry' ? 'asphalt' : z.type)))].filter((k) => k !== (t.th.surface === 'snow' ? 'snow' : t.th.surface === 'dirt' ? 'dirt' : '')).map((k) => `<span class="track-env zone">${SURF[k].name[0] + SURF[k].name.slice(1).toLowerCase()}</span>`).join('')}${t.key === 'daily' ? `<span class="tag-daily">${st.done ? 'Hecho hoy' : st.n ? 'Racha ' + st.n + ' d' : 'Reto de hoy'}</span>` : ''}</div><div class="rec">${best ? medalTag(best.lap, (benchFor(t, best.car) || {}).lap) + 'Mejor ' + fmt(best.lap) + ' · ' + best.car.name.split(' ')[0] : '&nbsp;'}</div>`;
+    d.innerHTML = `<div class="tc-head"><span class="flag">${flagSvg(cc)}</span><span class="cty">${cname}</span><span class="tc-len">${(t.tr.len / 1000).toFixed(1)} km</span></div><canvas></canvas><b>${t.name}</b><small class="track-sub">${t.sub}</small><div class="tc-foot"><span class="track-env ${environment[0]}">${environment[1]}</span>${[...new Set((t.tr.zones || []).map((z) => (z.type === 'dry' ? 'asphalt' : z.type)))].filter((k) => k !== (t.th.surface === 'snow' ? 'snow' : t.th.surface === 'dirt' ? 'dirt' : '')).map((k) => `<span class="track-env zone">${SURF[k].name[0] + SURF[k].name.slice(1).toLowerCase()}</span>`).join('')}${t.key === 'daily' ? `<span class="tag-daily">${st.done ? 'Hecho hoy' : st.n ? 'Racha ' + st.n + ' d' : 'Reto de hoy'}</span>` : ''}</div><div class="rec">${best ? medalTag(best.lap, (benchFor(t, best.car) || {}).lap) + 'Mejor ' + fmt(best.lap) + ', ' + best.car.name.split(' ')[0] : '&nbsp;'}</div>`;
     drawPreview(d.querySelector('canvas'), t.tr, t.th);
     d.onclick = () => { sel.track = i; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); if (narrowMenu()) setView('home'); };
     tl.appendChild(d);
@@ -383,7 +384,7 @@ function buildCarMesh(color, kind, lod = 'lo', num = 7) {
 function ghostLabel(root, name, gold) { // nombre del piloto flotando translúcido sobre el fantasma
   if (!name) return;
   const cv = document.createElement('canvas'); cv.width = 320; cv.height = 64; const x = cv.getContext('2d');
-  x.font = '700 34px "Jersey 10",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.font = '700 34px "KartDisplay",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
   const txt = (gold ? '♛ ' : '') + String(name).slice(0, 20); x.fillStyle = gold ? '#ffd34e' : '#cfeaff'; x.fillText(txt, 160, 34);
   const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6, depthWrite: false, fog: false }));
@@ -541,7 +542,7 @@ async function startRace(restart = false) {
   if (S.mode === 'race') { if (gpMode) S.rivalTypes = S.gp.field.map((f) => f.rt); else if (!restart || !S.rivalTypes) S.rivalTypes = pickRivals(S.nRiv); }
   if (gpMode && S.gp.phase === 'quali') CARS.filter((c) => c.group === CARS[sel.car].group).forEach((r) => loadCarAsset(r, false).catch(() => {})); // los rivales se van cargando mientras clasificas
   const button = $('startBtn'), previousLabel = button.textContent, status = $('modelStatus');
-  button.disabled = true; button.classList.add('ld-btn'); button.innerHTML = lp(18) + 'CARGANDO COCHES…'; status.hidden = true;
+  button.disabled = true; button.classList.add('ld-btn'); button.innerHTML = lp(18) + 'Preparando el kart…'; status.hidden = true;
   const pt = CARS[sel.car], pool = CARS.filter((_, i) => i !== sel.car);
   const need = [pt, ...(S.mode === 'race' ? S.rivalTypes : [])]; // los mismos rivales que luego se crean (antes no coincidían y la carrera se quedaba en «cargando»)
   try { await ensureModels(need, pt); }
@@ -564,8 +565,8 @@ async function startRace(restart = false) {
   const sig = [sel.track, sel.car, sel.mode, S.gp && S.gp.phase, sel.diff].join('|');
   const reuse = !!(restart && S.raceScene && S.sig === sig && S.scene);
   S.trackInfo = ti; S.tr = tr; S.th = ti.th;
-  const weatherName = { rain: 'LLUVIA · PISTA MOJADA', snow: 'NIEVE · BAJA ADHERENCIA', dust: 'TIERRA · POLVO', dirt: 'TIERRA · POLVO', clear: 'ASFALTO · SECO' };
-  $('weatherLabel').textContent = weatherName[ti.th.weather || ti.th.surface] || 'ASFALTO · SECO';
+  const weatherName = { rain: 'LLUVIA, PISTA MOJADA', snow: 'NIEVE, BAJA ADHERENCIA', dust: 'TIERRA, POLVO', dirt: 'TIERRA, POLVO', clear: 'ASFALTO, SECO' };
+  $('weatherLabel').textContent = weatherName[ti.th.weather || ti.th.surface] || 'ASFALTO, SECO';
   $('weatherBadge').className = ti.th.weather || ti.th.surface || '';
   store.set('sel', sel);
   if (!reuse) {
@@ -647,7 +648,7 @@ async function startRace(restart = false) {
   } else {
     placeCar(player, tr, -260, 0, 18); S.auto = true; S.autoAi = { lane: 0, skill: AI_TOP * 0.5 }; flashCount(''); showMsg('PILOTO AUTOMÁTICO', 4200, 'cy'); // contrarreloj: salida lanzada, el crono arranca al cruzar la meta
     migrateGroupBest(ti.key + '.' + tr.seed, type.group);
-    const rec = S.ghostRecs && S.ghostRecs.g, trec = S.ghostRecs && S.ghostRecs.t; // gris: tu mejor vuelta · dorado: la mejor del circuito
+    const rec = S.ghostRecs && S.ghostRecs.g, trec = S.ghostRecs && S.ghostRecs.t; // gris: tu mejor vuelta, dorado: la mejor del circuito
     const sameG = !!(rec && trec && Math.abs(rec.time - trec.time) < 1e-6), showGray = sel.ghostMine !== false, showGold = sel.ghostBest !== false;
     S.goldTime = trec ? trec.time : null;
     S.ghostBest = (sameG ? showGray || showGold : showGray) && rec && rec.ghost ? Float32Array.from(rec.ghost) : null; // si la tuya es la mejor, solo sale un fantasma (dorado)
@@ -779,7 +780,7 @@ D = createDaily({ groupName, radarCars, $, lb, acc, esc, fmt, fmtS, flagSvg, cou
   get track() { return tracks.find((t) => t.key === 'daily'); }, get car() { return CARS[DAILY_CAR]; }, get baseCar() { return CARS[BASE_CAR]; }, setCar(id) { const i = CARS.findIndex((c) => c.id === id); DAILY_CAR = i >= 0 ? i : BASE_CAR; } });
 $('shareBtn').innerHTML = WA_ICON + 'COMPARTIR POR WHATSAPP';
 $('shareBtn').onclick = () => {
-  const p = S.player, ti = S.trackInfo, circ = ti ? ti.th.name.replace(/ · .*$/, '') : '', car = p ? p.type.name : '', big = $('rBig').textContent, title = $('rTitle').textContent;
+  const p = S.player, ti = S.trackInfo, circ = ti ? ti.th.name.replace(/, .*$/, '') : '', car = p ? p.type.name : '', big = $('rBig').textContent, title = $('rTitle').textContent;
   const isTime = /^\d+:\d/.test(big), line = isTime ? `${big} en ${circ} con el ${car}` : `${title} (${big}) en ${circ} con el ${car}`;
   waShare(`${line} en KartlosApp. ¿Me ganas?`, inviteUrl(acc.username));
 };
@@ -951,7 +952,7 @@ function refreshOnlineRecords(no) {
 }
 function updateRecPanel() {
   const g = groupName((S.player ? S.player.type : CARS[sel.car]).group).toUpperCase();
-  setText('recLabel', 'RÉCORD · ' + g); setText('recLap', S.lapRec < 1e8 ? fmt(S.lapRec) : '--'); setText('recWho', S.recReal ? S.recWho : 'REFERENCIA');
+  setText('recLabel', 'RÉCORD, ' + g); setText('recLap', S.lapRec < 1e8 ? fmt(S.lapRec) : '--'); setText('recWho', S.recReal ? S.recWho : 'REFERENCIA');
   for (let k = 0; k < 3; k++) setText('rs' + k, S.secRec && S.secRec[k] < 1e8 ? fmtS(S.secRec[k]) : '--');
 }
 function sectorDone(i, t) {
@@ -968,7 +969,7 @@ function sectorDone(i, t) {
   const el = $('s' + i); el.className = 'sec ' + cls + (S.secIdx === i ? ' cur' : '');
   const ref = cls === 'purple' ? recB : pbB != null ? pbB : recB, dtxt = ref != null && ref < 1e8 ? sg(t - ref).replace(' s', '') : '';
   el.classList.add('done'); el.lastElementChild.innerHTML = `${fmtS(t)}<small>${dtxt}</small>`;
-  showRaceBanner(`SECTOR ${i + 1} · ${head.toUpperCase()}`, fmtS(t), detail, cls);
+  showRaceBanner(`SECTOR ${i + 1}, ${head.toUpperCase()}`, fmtS(t), detail, cls);
 }
 
 // cambia el fantasma de una ranura por otro con la forma del coche indicado (azul = tu grupo, dorado = récord de la pista)
@@ -990,7 +991,7 @@ function dailyLap(c, lt, done) {
   }
   S.curProf.fill(-1); S.ghostRec = []; S.deltaS = null; S.lapRec = 1e9;
   const gap = prev != null && valid ? (newBest ? 'MEJOR VUELTA DE HOY' : `+${(lt - prev).toFixed(3)} s vs. tu mejor`) : (valid ? 'Primera referencia' : '');
-  sound.play(newBest ? 'purple' : 'lap'); showRaceBanner(`VUELTA ${Math.min(done, d.laps)}/${d.laps}${valid ? '' : ' · NO VÁLIDA'}`, fmtS(lt), gap, newBest ? 'green' : '');
+  sound.play(newBest ? 'purple' : 'lap'); showRaceBanner(`VUELTA ${Math.min(done, d.laps)}/${d.laps}${valid ? '' : ', NO VÁLIDA'}`, fmtS(lt), gap, newBest ? 'green' : '');
 }
 function onPlayerLap(c, lt, done) {
   S.deltaS = null;
@@ -1036,7 +1037,7 @@ function onPlayerLap(c, lt, done) {
     sound.play(cls === 'purple' ? 'purple' : 'lap');
     const md = newPB ? medalFor(lt, S.bench && S.bench.lap) : '';
     const gap = previousPB != null && previousPB < 1e8 ? `${newPB ? 'NUEVO RÉCORD' : `${lt - previousPB >= 0 ? '+' : '−'}${Math.abs(lt - previousPB).toFixed(3)} s vs. mejor`}` : 'Primera vuelta registrada';
-    showRaceBanner(newPB ? 'MEJOR VUELTA PERSONAL' : `VUELTA ${done}${valid ? '' : ' · NO VÁLIDA'}`, fmtS(lt), `${gap}${md ? ' · ' + md : ''}`, CLS_MSG[cls]);
+    showRaceBanner(newPB ? 'MEJOR VUELTA PERSONAL' : `VUELTA ${done}${valid ? '' : ', NO VÁLIDA'}`, fmtS(lt), `${gap}${md ? ', ' + md : ''}`, CLS_MSG[cls]);
   }
 }
 
@@ -1055,10 +1056,10 @@ async function fillResultsBoard() {
   if (S.state !== 'finished') return;
   const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === car.group), me = list.find((r) => r.you);
   const shown = topWithMe(list, 5), out = [];
-  shown.forEach((r, i) => { if (i && r.rank - shown[i - 1].rank > 1) out.push('<tr class="gap"><td colspan="4">···</td></tr>'); out.push(boardRow2(r, list[0].ms)); });
+  shown.forEach((r, i) => { if (i && r.rank - shown[i - 1].rank > 1) out.push('<tr class="gap"><td colspan="4">…</td></tr>'); out.push(boardRow2(r, list[0].ms)); });
   $('rTable').innerHTML = out.join('') || '<tr class="gap"><td colspan="4">Aún no hay tiempos</td></tr>';
   const md = medalFor(S.lapPB, S.bench && S.bench.lap);
-  $('rTitle').textContent = (md ? md + ' · ' : '') + (res.online && me ? `PUESTO ${me.rank} DE ${list.length} · ${groupName(car.group).toUpperCase()}` : `TU MEJOR VUELTA${res.online ? '' : ' · SOLO LOCAL'}`);
+  $('rTitle').textContent = (md ? md + ', ' : '') + (res.online && me ? `PUESTO ${me.rank} DE ${list.length}, ${groupName(car.group).toUpperCase()}` : `TU MEJOR VUELTA${res.online ? '' : ', SOLO LOCAL'}`);
 }
 // rellena los huecos (-1) del perfil de tiempos para poder interpolar sin saltos
 function fillProf(prof) {
@@ -1092,7 +1093,7 @@ function showResults() {
     const pos = list.findIndex((r) => r.me) + 1;
     list.forEach((r, i) => rows.push(`<tr class="${r.me ? 'me' : ''}"><td>${i + 1}º</td><td>${drvIc(r.d, 1)}${esc(r.n)}</td><td>${r.t < 1e8 ? fmt(r.t) : '—'}</td></tr>`));
     $('rBig').textContent = 'P' + pos; $('rTitle').textContent = 'CLASIFICACIÓN';
-    $('againBtn').textContent = 'EMPEZAR CARRERA · 5 VUELTAS';
+    $('againBtn').textContent = 'EMPEZAR CARRERA, 5 VUELTAS';
   } else if (S.mode === 'race') {
     const fin = S.cars.filter((c) => c.finished).sort((a, b) => a.finishTime - b.finishTime);
     const rest = S.cars.filter((c) => !c.finished).map((c) => ({ c, est: S.t + (S.laps * S.tr.len - c.D) / Math.max(14, c.speed) })).sort((a, b) => a.est - b.est);
@@ -1104,7 +1105,7 @@ function showResults() {
     extra = podiumHtml(all.slice(0, 3), p) + (prank <= 3 ? confettiHtml() : '');
   } else {
     const md = medalFor(S.lapPB, benchLap);
-    $('rBig').textContent = S.lapPB != null ? fmt(S.lapPB) : '—'; $('rTitle').textContent = S.lapPB != null ? (md ? md + ' · ' : '') + 'TU MEJOR VUELTA' : 'SESIÓN TERMINADA';
+    $('rBig').textContent = S.lapPB != null ? fmt(S.lapPB) : '—'; $('rTitle').textContent = S.lapPB != null ? (md ? md + ', ' : '') + 'TU MEJOR VUELTA' : 'SESIÓN TERMINADA';
     rows.push('<tr class="gap"><td colspan="4">' + lp(20) + '</td></tr>'); fillResultsBoard();
     const st = streakInfo();
     if (S.trackInfo.key === 'daily') extra = `<div class="streak">Racha: ${st.n} día${st.n === 1 ? '' : 's'}</div>`;
@@ -1285,14 +1286,14 @@ function updateTowerQuali(dt) {
   towerT += dt; if (towerT < 0.4) return; towerT = 0;
   const done = Math.max(0, Math.floor(S.player.D / S.tr.len)), rows = S.gp.field.filter((f) => S.t >= f.rev).map((f) => ({ code: f.driver.code, d: f.driver, t: f.t }));
   rows.push({ code: 'TÚ', d: playerDrv(), t: S.gp.qBest != null ? S.gp.qBest : 1e9, me: 1 }); rows.sort((a, b) => a.t - b.t);
-  let h = `<div class="th">CLASIF. · VUELTA ${Math.min(3, done + 1)}/3</div>`;
+  let h = `<div class="th">CLASIF., VUELTA ${Math.min(3, done + 1)}/3</div>`;
   rows.forEach((r, i) => { h += `<div class="tr${r.me ? ' me' : ''}"><b>${i + 1}</b>${drvIc(r.d)}<i>${r.code}</i><em>${r.t < 1e8 ? fmtS(r.t) : '--'}</em></div>`; });
   $('tower').innerHTML = h;
 }
 function updateHud(dt) {
   const p = S.player, tr = S.tr;
   setText('kmh', String(Math.round(p.speed * 3.6)));
-  if (S.t - (hudCache.wl || -1) > 0.3) { hudCache.wl = S.t; const w = S.th.wind ? Math.round(S.th.wind[0] * 3.6) : 0; setText('weatherLabel', `${SURF[p.surf || 'asphalt'].name} · ${S.th.temp != null ? Math.round(S.th.temp) : 20}°C · VIENTO ${w}`); }
+  if (S.t - (hudCache.wl || -1) > 0.3) { hudCache.wl = S.t; const w = S.th.wind ? Math.round(S.th.wind[0] * 3.6) : 0; setText('weatherLabel', `${SURF[p.surf || 'asphalt'].name}, ${S.th.temp != null ? Math.round(S.th.temp) : 20}°C, VIENTO ${w}`); }
   const gi = gearInfo(p.speed, p.type.vmax); p.gearNow = gi.gear; p.rpmNow = gi.rpm;
   setText('gear', p.speed < 1.5 ? 'N' : p.vf < -0.5 ? 'R' : String(gi.gear));
   const lit = Math.round(gi.rpm * rpmSegs.length);
@@ -1351,7 +1352,7 @@ const BD = { track: 0, group: 'all' };
 const boardRow2 = (r, best) => `<tr class="${r.you ? 'me ' : ''}${r.rank <= 3 ? 'p' + r.rank : ''}"><td class="rk"><i>${r.rank}</i></td><td class="nm"><b>${r.you ? drvIc(playerDrv(), 1) : ''}<span>${esc(r.name)}</span></b><small>${esc(carName(r.carId))}</small></td><td class="tm">${fmt(r.ms / 1000)}</td><td class="gp">${r.rank === 1 ? '' : '+' + ((r.ms - best) / 1000).toFixed(2)}</td></tr>`;
 async function renderBoard() {
   const ti = tracks[BD.track], st = $('boardStatus');
-  $('boardTracks').innerHTML = tracks.map((t, i) => t.key === 'daily' ? '' : `<button type="button" class="${i === BD.track ? 'on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span>${t.key === 'daily' ? 'Del día' : esc(t.name.replace(/ · .*$/, ''))}</button>`).join('');
+  $('boardTracks').innerHTML = tracks.map((t, i) => t.key === 'daily' ? '' : `<button type="button" class="${i === BD.track ? 'on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span>${t.key === 'daily' ? 'Del día' : esc(t.name.replace(/, .*$/, ''))}</button>`).join('');
   $('boardGroups').innerHTML = [['all', 'Todos']].concat(GROUPS.map((g) => [g.id, g.name])).map(([id, n]) => `<button type="button" class="${id === BD.group ? 'on' : ''}" data-g="${id}">${esc(n)}</button>`).join('');
   $('boardTable').innerHTML = '<tr class="skr"><td colspan="6"><i class="sk" style="width:70%;height:13px"></i></td></tr><tr class="skr"><td colspan="6"><i class="sk" style="width:55%;height:13px"></i></td></tr><tr class="skr"><td colspan="6"><i class="sk" style="width:62%;height:13px"></i></td></tr><tr class="skr"><td colspan="6"><i class="sk" style="width:48%;height:13px"></i></td></tr>'; st.textContent = '';
   const res = await getRows(ti);
@@ -1371,10 +1372,10 @@ async function renderBoard() {
 const HB = { key: '', at: 0, res: null, token: 0 };
 async function renderHomeBoard() {
   const ti = tracks[sel.track], car = CARS[sel.car], g = groupIdOfCar(car.id), token = ++HB.token, tb = $('hbTable');
-  $('hbCtx').textContent = ti.name.replace(/ · .*$/, '') + ' · ' + groupName(g);
+  $('hbCtx').textContent = ti.name.replace(/, .*$/, '') + ', ' + groupName(g);
   if (HB.key !== ti.key || Date.now() - HB.at > 30000 || !HB.res) { if (HB.key !== ti.key) tb.innerHTML = '<tr class="gap"><td colspan="4">' + lp(20) + '</td></tr>'; const res = await getRows(ti); if (token !== HB.token) return; HB.key = ti.key; HB.at = Date.now(); HB.res = res; }
   const list = rankRows(HB.res.rows, (r) => groupIdOfCar(r.carId) === g), shown = list.filter((r) => r.rank <= 5 || r.you), out = [];
-  shown.forEach((r, i) => { if (i && r.rank - shown[i - 1].rank > 1) out.push('<tr class="gap"><td colspan="4">···</td></tr>'); out.push(boardRow2(r, list[0].ms)); });
+  shown.forEach((r, i) => { if (i && r.rank - shown[i - 1].rank > 1) out.push('<tr class="gap"><td colspan="4">…</td></tr>'); out.push(boardRow2(r, list[0].ms)); });
   tb.innerHTML = out.join('') || `<tr class="gap"><td colspan="4">${HB.res.error ? 'Sin conexión con la clasificación' : 'Aún no hay tiempos aquí. ¡Pon el primero!'}</td></tr>`;
 }
 $('hbAll').onclick = () => openBoard();
@@ -1595,8 +1596,11 @@ acc.restore();
 const _trk = new Map();
 const RP = createReplay({ $, esc, renderer, camera, buildWorld, disposeScene, buildCar: (c, k, l, n) => buildCarMesh(c, k, l, n), ensureModels: (t) => ensureModels(t, null), carList: CARS, followSun, ps2View, MOBILE, freeMenu: menuWorldFree, toast, flagSvg: null, shadowsOn: () => QUAL.shadows,
   trackFor: (day) => { if (!_trk.has(day)) { try { const th = THEMES[pickFor(day).theme]; _trk.set(day, { tr: buildTrack(th.seed, th.style), th, flag: FLAGS[countryOf({ th })[0]] }); } catch (e) { return null; } } return _trk.get(day); } });
-const LG = initLeagues({ replay: (o) => RP.open(o), $, acc, esc, fmt, flagSvg, helmetSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/ · .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
-initHome({ $, acc, esc, LG, PF, helmetSvg });
+const LG = initLeagues({ replay: (o) => RP.open(o), $, acc, esc, fmt, flagSvg, helmetSvg, toast, daily: () => D, dailyFor: (k) => { try { const p = pickFor(k), th = THEMES[p.theme], car = CARS.find((c) => c.id === p.car); return { name: th.name.replace(/, .*$/, ''), flag: countryOf({ th })[0], car: car ? car.name : '' }; } catch (e) { return null; } } });
+// miniaturas de los circuitos para la pantalla de inicio
+const circuitCards = () => tracks.filter((t) => t.key !== 'daily').map((t) => { const [cc, cname] = countryOf(t); return { key: t.key, name: t.name, meta: `${cc === 'es' ? 'España' : cname}, ${Math.round(t.tr.len)} m`, art: trackSvg(t.tr) }; });
+const openCircuit = (key) => { const i = tracks.findIndex((t) => t.key === key); if (i < 0) return; sel.track = i; sel.mode = 'tt'; sel.carId = CARS[sel.car].id; store.set('sel', sel); buildMenu(); };
+initHome({ $, acc, esc, LG, PF, helmetSvg, circuits: circuitCards, openCircuit });
 initTheme();
 initPwa({ $, store });
 initPush({ $, acc, esc });

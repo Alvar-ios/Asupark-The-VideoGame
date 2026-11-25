@@ -15,7 +15,7 @@ export function createVit(E) {
   function sheet() {
     if (!S.vpick) return '';
     const L = S.state.league, mm = mmOf(), opts = [];
-    if (S.vpick === 'season') for (let s = L.current; s >= 1; s--) opts.push([`season|${s}`, `Temporada ${s}${s === L.current ? ' · en curso' : ''}`, L.season === s]);
+    if (S.vpick === 'season') for (let s = L.current; s >= 1; s--) opts.push([`season|${s}`, `Temporada ${s}${s === L.current ? ', en curso' : ''}`, L.season === s]);
     if (S.vpick === 'race') for (const d of days()) { const t = track(d.day); opts.push([`race|${d.day}`, `${fl(t.flag)}${esc(t.name)} <small>${dshort(d.day)}</small>`, (curDay() || {}).day === d.day]); }
     if (S.vpick === 'drv') for (const s of S.state.standings) { const m = mm[s.user_id] || { username: '?' }; opts.push([`drv|${s.user_id}`, `${av(m, '#111', 'xs')}${esc(m.username)}`, drvId() === s.user_id]); }
     const items = opts.map(([k, h, on]) => `<button type="button" class="vt-opt${on ? ' on' : ''}" data-vp="${k}">${h}</button>`).join('');
@@ -28,8 +28,8 @@ export function createVit(E) {
     const rows = d.rows.map((r, i) => { const m = mm[r.user_id] || { username: '?' };
       return `<div class="vt-r${r.user_id === me() ? ' me' : ''}"><i>${i + 1}</i>${av(m, '#111', 'sm')}<span class="vt-n"><b>${esc(m.username)}</b><small>${r.gh ? `<button type="button" class="vt-rp" data-rp="${d.day}|${r.user_id}">${ic('play')} Vuelta</button>` : ''}</small></span><span class="vt-t"><b>${fmt(r.ms / 1000)}</b><small>${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'Líder'}</small></span><em>${PTS[i] || 0}</em></div>`; }).join('');
     return `<button type="button" class="vt-back" data-vp="race|">‹ Calendario</button>
-      <div class="vt-h"><b>${esc(t.name)}</b><small>${esc(dayTxt(d.day))}${t.car ? ' · ' + esc(t.car) : ''}</small></div>
-      ${nGh > 1 ? `<button type="button" class="vt-cine" data-rpall="${d.day}">${ic('play')} Repetición · todos los pilotos</button>` : ''}
+      <div class="vt-h"><b>${esc(t.name)}</b><small>${esc(dayTxt(d.day))}${t.car ? ', ' + esc(t.car) : ''}</small></div>
+      ${nGh > 1 ? `<button type="button" class="vt-cine" data-rpall="${d.day}">${ic('play')} Repetición, todos los pilotos</button>` : ''}
       <div class="vt-cols"><span>Pos.</span><span>Piloto</span><span>Tiempo</span><span>Pts</span></div><div class="vt-tb">${rows}</div>`;
   }
 
@@ -42,7 +42,7 @@ export function createVit(E) {
     const pos = st.findIndex((s) => s.user_id === sel.user_id) + 1;
     const list = days().slice().reverse().map((d) => { const i = d.rows.findIndex((r) => r.user_id === sel.user_id), t = track(d.day), r = d.rows[i];
       return `<div class="vt-r"><i>${i >= 0 ? i + 1 : '–'}</i><span class="vt-gp">${fl(t.flag)}<b>${esc(t.name)}</b></span><span class="vt-t"><small>${dshort(d.day)}</small>${r ? `<b>${fmt(r.ms / 1000)}</b>` : ''}</span><em>${i >= 0 ? PTS[i] || 0 : 0}</em></div>`; }).join('');
-    return `${pl}<div class="vt-card" style="--c:${col[sel.user_id]}">${av(m, col[sel.user_id], 'lg')}<div><small>P${pos} · ${sel.pts} pts</small><b>${esc(m.username)}</b></div></div>
+    return `${pl}<div class="vt-card" style="--c:${col[sel.user_id]}">${av(m, col[sel.user_id], 'lg')}<div><small>P${pos}, ${sel.pts} pts</small><b>${esc(m.username)}</b></div></div>
       <div class="vt-stats"><span><b>${sel.wins}</b>victorias</span><span><b>${sel.podiums || 0}</b>podios</span><span><b>${sel.days || 0}</b>carreras</span><span><b>${sel.best ? fmt(sel.best / 1000) : '–'}</b>mejor</span></div>
       <div class="vt-cols"><span>Pos.</span><span>Gran premio</span><span>Fecha</span><span>Pts</span></div><div class="vt-tb">${list || '<p class="lg-note">Sin carreras todavía.</p>'}</div>`;
   }
@@ -64,17 +64,17 @@ export function createVit(E) {
     const best = (key) => { const top = Math.max(0, ...ppl.map((o) => o[key])); return top ? ppl.filter((o) => o[key] === top) : []; };
     const bl = hall.flatMap((s) => s.st.filter((p) => p.b).map((p) => ({ p, s: s.s }))).sort((a, b) => a.p.b - b.p.b)[0];
     const aw = [['Más campeonatos', best('cups'), 'cups', 'copas'], ['Más victorias', best('w'), 'w', 'victorias'], ['Más podios', best('pod'), 'pod', 'podios']].filter(([, w]) => w.length)
-      .map(([n, w, k, u]) => `<div class="vt-aw"><small>${n}</small>${hallAv(w[0].p, 'sm')}<b>${esc(w.map((o) => o.p.n).join(' · '))}</b><em>${w[0][k]} ${u}</em></div>`).join('')
-      + (bl ? `<div class="vt-aw"><small>Mejor vuelta</small>${hallAv(bl.p, 'sm')}<b>${esc(bl.p.n)}</b><em>${fmt(bl.p.b / 1000)} · T${bl.s}</em></div>` : '');
+      .map(([n, w, k, u]) => `<div class="vt-aw"><small>${n}</small>${hallAv(w[0].p, 'sm')}<b>${esc(w.map((o) => o.p.n).join(', '))}</b><em>${w[0][k]} ${u}</em></div>`).join('')
+      + (bl ? `<div class="vt-aw"><small>Mejor vuelta</small>${hallAv(bl.p, 'sm')}<b>${esc(bl.p.n)}</b><em>${fmt(bl.p.b / 1000)}, T${bl.s}</em></div>` : '');
     const cab = ppl.map((o) => `<div class="vt-cab"><span class="vt-who">${hallAv(o.p, 'sm')}<b>${esc(o.p.n)}</b></span><span class="vt-ic" title="Campeonatos">${ic('trophy')}<b>${o.cups}</b></span><span class="vt-ic" title="Subcampeonatos">${ic('medal')}<b>${o.runner}</b></span><span class="vt-ic" title="Victorias">${ic('flag')}<b>${o.w}</b></span><span class="vt-ic" title="Podios">${ic('star')}<b>${o.pod}</b></span></div>`).join('');
     return `<div class="vt-h"><b>Campeones</b><small>${cups.length} temporada${cups.length === 1 ? '' : 's'} terminada${cups.length === 1 ? '' : 's'}</small></div><div class="vt-shelf">${shelf}</div>
-      <div class="vt-h"><b>Récords de la liga</b></div><div class="vt-awg">${aw}</div>
-      <div class="vt-h"><b>Vitrina de pilotos</b><small>campeonatos · subcampeonatos · victorias · podios</small></div><div class="vt-cabs">${cab}</div>`;
+      <div class="vt-h"><b>Récords del campeonato</b></div><div class="vt-awg">${aw}</div>
+      <div class="vt-h"><b>Vitrina de pilotos</b><small>campeonatos, subcampeonatos, victorias, podios</small></div><div class="vt-cabs">${cab}</div>`;
   }
 
   function render() {
     const L = S.state.league; S.vt = S.vt || 'car';
-    const seasonPill = S.vt === 'pre' || (S.vt === 'car' && S.vday) ? '' : `<div class="vt-sel">${pill('season', `<b>Temporada ${L.season}${L.season === L.current ? ' · en curso' : ''}</b>`)}</div>`;
+    const seasonPill = S.vt === 'pre' || (S.vt === 'car' && S.vday) ? '' : `<div class="vt-sel">${pill('season', `<b>Temporada ${L.season}${L.season === L.current ? ', en curso' : ''}</b>`)}</div>`;
     const tabs = `<div class="vt-tabs" role="tablist">${TABS.map(([k, n]) => `<button type="button" role="tab" data-vt="${k}" class="${S.vt === k ? 'on' : ''}">${n}</button>`).join('')}</div>`;
     const body = S.vt === 'pil' ? drivers() : S.vt === 'pre' ? awards() : races();
     paint.innerHTML = `${v2Head(L)}${v2Seg()}${tabs}${seasonPill}<div class="vt-body">${body}</div>${sheet()}`;

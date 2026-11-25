@@ -4,6 +4,19 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.116
+- Imagen nueva de KartlosApp: dorsal amarillo con piano rojo y blanco, tipografía Barlow (inspirada en la señalización de carretera), asfalto y hormigón. Iconos nuevos de la app.
+- Inicio rehecho: reto diario, campeonatos y «Entrenar» con el dibujo de cada circuito. Barra inferior con Inicio, Campeonatos, Garaje, Tiempos y Perfil, con ficha deslizante.
+- Sin rivales de IA: se quitan los modos Carrera y Gran Premio de la interfaz.
+- Solo karts: el reto ya no sortea coche y desaparece el premio «Lentorro».
+- Se quita el menú de comandos, y los textos van sin puntos intermedios ni títulos en mayúsculas. «Liga» pasa a «campeonato» en las pantallas principales.
+- Asupark y Fórmula 0: exterior de polígono industrial (naves, calles, valla, camiones, aparcamientos, farolas y tendido), sin vegetación. Fuera la noria, la carpa y los globos.
+- Filtro de nombres ofensivos: se ocultan en la app y no se pueden registrar. Falta ejecutar `supabase/moderation.sql` en la base de datos.
+
+## 0.0.115
+- Nuevo nombre: **KartlosApp**.
+- Se quita el circuito Kartlos del juego (era un trazado falso de Arabia Saudí).
+
 ## 0.0.114
 - Modo solo karts (fase 1 del documento maestro): se ocultan todos los coches que no son kart y los circuitos que no son de karting. Quedan Kart 125cc (y superkart), Fórmula 0, Asupark y la Gran Muralla. Se ocultan, no se borran: la lista está en `src/visible.js`.
 - La selección guardada vuelve una vez al primer circuito visible.

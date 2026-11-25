@@ -126,6 +126,15 @@ Los karts reales son preferibles a los genéricos. Los modelos de marcas (Sodi, 
 7. **Instagram:** generación de vídeos y tablas, publicación manual.
 8. **Más adelante:** compra de paquetes de puntos (pagos y normativa).
 
+## Decisiones posteriores a la entrevista
+
+- **Nombre:** KartlosApp.
+- **Sin rivales de IA:** no será una función del juego.
+- **Asupark y Fórmula 0** se mantienen. Su exterior es de polígono industrial y carreteras, sin árboles ni verde. Se ajustará con fotos reales.
+- **Imagen:** estética de juego de karts (dorsal, piano, asfalto). Textos sin puntos intermedios ni etiquetas en mayúsculas.
+- **Hecho:** fases de limpieza, nombre, rediseño de la interfaz, primera versión de la imagen y del exterior.
+- **Siguiente:** circuitos reales de Madrid con fotos y planos del equipo; después, campeonatos con rotación de circuitos.
+
 ## 9. Preguntas abiertas
 
 - Confirmar la lista de circuitos reales (sección 6) y añadir Burgos y Andalucía.

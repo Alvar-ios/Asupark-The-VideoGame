@@ -130,7 +130,7 @@ export function createReplay(ctx) {
   // ---------- compartir: enlace para ver la repetición (WhatsApp o cualquier app) ----------
   async function share() {
     const uid = R.drivers.length === 1 ? R.drivers[0].user_id : null, url = baseUrl() + '?rp=' + R.league + '_' + R.day + '_' + (uid || 'all');
-    const text = `${R.title} · mira la repetición en KartlosApp`;
+    const text = `${R.title}, mira la repetición en KartlosApp`;
     try { if (navigator.share) { await navigator.share({ title: R.title, text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
     waShare(text, url);
   }
@@ -156,7 +156,7 @@ export function createReplay(ctx) {
     });
     R = { league, title: title || 'Repetición', day, drivers: ds, tk, world, scene, th: tk.th, t: 0, maxT: Math.max(...ds.map((d) => d.T)), playing: true, ended: false, speed: 1, cam: 'auto', shot: null, shotN: 0, focus: 0, trace: true, look: new THREE.Vector3(), camInit: false, lastType: '', onClose, acc: 0,
       box: { cx: (minx + maxx) / 2, cz: (minz + maxz) / 2, size: Math.max(maxx - minx, maxz - minz, 80) }, st: ds.map(() => ({})) };
-    $('rpTitle').textContent = title || 'Repetición'; $('rpSub').textContent = solo ? `@${ds[0].username} · ${fmtT(ds[0].ms / 1000)}` : `${ds.length} pilotos · vuelta rápida de cada uno`;
+    $('rpTitle').textContent = title || 'Repetición'; $('rpSub').textContent = solo ? `@${ds[0].username}, ${fmtT(ds[0].ms / 1000)}` : `${ds.length} pilotos, vuelta rápida de cada uno`;
     el.classList.toggle('solo', solo); el.classList.remove('hidden'); document.body.classList.add('in-replay');
     $('rpCams').querySelector('[data-cam="auto"]').textContent = solo ? 'Cinemática' : 'Cinemática'; $('rpTrace').classList.add('on'); sync(); R.tick = 1e9;
     return true;

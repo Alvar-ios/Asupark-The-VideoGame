@@ -13,7 +13,7 @@ export function setDark(on) {
   try { localStorage.setItem(TK, on ? 'dark' : 'light'); } catch (_) { /* sin almacenamiento */ }
   const b = document.getElementById('hmTheme');
   if (b) { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Modo claro' : 'Modo oscuro'); }
-  const m = document.querySelector('meta[name=theme-color]'); if (m) m.setAttribute('content', on ? '#111111' : '#f3eee3');
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.setAttribute('content', on ? '#111111' : '#e8e9e5');
 }
 export function initTheme() {
   setDark(isDark());

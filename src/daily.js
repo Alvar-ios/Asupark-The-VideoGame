@@ -1,3 +1,4 @@
+import { trackSvg } from './trackart.js';
 // Reto del día: día de 4:00 a 4:00 (Madrid), circuito y coche aleatorios, práctica 5 vueltas + clasificación 3 vueltas.
 // Los intentos se controlan en el servidor (supabase/daily.sql) y se cachean en local. Sin servidor, solo local.
 import { hashStr } from './rng.js';
@@ -37,7 +38,7 @@ export function createDaily(ctx) {
 
   // ---- Lentorro: el último de ayer en su liga elige coche (el del día o 1 de 3 de una categoría superior)
   const CHAIN = ['cv100', 'cv150', 'cv200', 'rally', 'competicion', 'f1'];
-  const canPick = () => !!(st.ud && !st.pick && !st.pr && !st.or);
+  const canPick = () => false; // solo karts: no hay coche de categoría superior que elegir
   const upgrades = () => { // 3 coches de la categoría siguiente; si ésta no tiene 3, se completa con las superiores
     const b = ctx.baseCar, i = CHAIN.indexOf(b.group), out = [];
     for (let k = i < 0 ? 0 : Math.min(i + 1, CHAIN.length - 1); k < CHAIN.length && out.length < 3; k++) out.push(...ctx.cars.filter((c) => c.group === CHAIN[k] && c.id !== b.id).sort((x, y) => hashStr(key + pid() + x.id) - hashStr(key + pid() + y.id)));
@@ -61,7 +62,6 @@ export function createDaily(ctx) {
       save(st); renderHero(); if (isOpen() && stage === 'hub') hub();
     } catch (e) { /* sin red: manda la caché local */ }
     if (acc.loggedIn) { try { streak = await acc.swr('my_streak', {}, (d) => { streak = d; renderHero(); }); renderHero(); } catch (e) { /* sin red */ } }
-    if (acc.loggedIn && !st.pick && !st.ud) { try { const u = await acc.rpc('daily_underdog'); if (u && u.length) { st.ud = u; save(st); renderHero(); if (isOpen() && stage === 'hub') hub(); } } catch (e) { /* sin liga o sin red */ } }
   }
   async function begin(kind) {
     const k = kind === 'practice' ? 'p' : 'o';
@@ -128,19 +128,13 @@ export function createDaily(ctx) {
   function renderHero() {
     const t = ctx.track, c = ctx.car, [cc, cname] = ctx.countryOf(t), rv = revealed(), card = $('dailyCard');
     const started = st.pr || st.or, done = left('o') <= 0 && st.best;
-    const cta = done ? 'VER CLASIFICACIÓN ›' : started ? 'CONTINUAR ›' : rv ? 'ENTRAR AL RETO ›' : 'DESCUBRIR EL RETO ›';
-    const top = `<div class="hh-top"><span>Reto del día · <b id="dyDate">${dateTxt()}</b></span><span><b class="cdv">${hms(msToReset())}</b></span></div>`;
-    const steps = `<div id="dyHeroChips" class="hh-steps dy-chips">${statusChips()}</div>`;
-    if (!rv) {
-      card.className = 'dy-hbtn hero secret';
-      card.innerHTML = `${top}<div class="hh-body"><div class="hh-q">${lpQ(96)}</div><div class="hh-t"><b>Circuito y coche secretos</b><span>Descúbrelo al entrar</span></div></div>${steps}<em class="dy-go">${cta}</em>`;
-      return renderMini();
-    }
-    card.className = 'dy-hbtn hero';
-    card.innerHTML = `${top}<div class="hh-body"><canvas id="dyHeroCv" width="280" height="152"></canvas><div class="hh-t"><b id="dyHeroTrack"><span class="flag">${ctx.flagSvg(cc)}</span>${esc(t.th.name.replace(/ · .*$/, ''))}</b><span id="dyHeroSub">${cname} · ${(t.tr.len / 1000).toFixed(1)} km</span>`
-      + (rv >= 2 ? `<div class="hh-car"><img id="dyHeroImg" alt="" src="./assets/thumbs/${c.id}.webp"><b id="dyHeroCar">${esc(c.name)}</b></div>` : '<div class="hh-car secret">Coche: sorpresa</div>')
-      + `</div></div>${steps}<em class="dy-go">${cta}</em>`;
-    ctx.drawPreview($('dyHeroCv'), t.tr, t.th, 280, 152);
+    const cta = done ? 'Ver clasificación' : started ? 'Seguir corriendo' : rv ? 'Entrar al reto' : 'Descubrir el circuito';
+    const name = rv ? esc(t.th.name.replace(/, .*$/, '')) : 'Reto diario';
+    const sub = rv ? `<span id="dyHeroSub">${cname}, ${Math.round(t.tr.len)} m</span>` : 'El mismo circuito para todos.';
+    const loop = 'M30 96C18 60 44 30 76 34s30 40 62 36 18-52 58-50 74 26 70 56-40 34-70 28-44-6-70 4-82 22-96-12z';
+    const art = rv ? trackSvg(t.tr) : `<svg class="kx-q" viewBox="0 0 300 130" aria-hidden="true"><path d="${loop}"/><path class="kx-run" pathLength="1000" d="${loop}"/></svg>`;
+    card.className = 'dy-hbtn hero' + (rv ? '' : ' secret');
+    card.innerHTML = `<span class="kx-d"><span><h2 id="dyHeroTrack">${name}</h2><p><span id="dyDate">${dateTxt()}</span>. ${sub}</p></span><span class="kx-clock">Cambia en<b class="cdv">${hms(msToReset())}</b></span></span><span class="kx-art">${art}</span><span id="dyHeroChips" class="hh-steps dy-chips kx-steps">${statusChips()}</span><em class="dy-go">${cta}</em>`;
     renderMini();
   }
   async function renderMini() {
@@ -148,7 +142,7 @@ export function createDaily(ctx) {
     if (!boardRows) { box.innerHTML = sk.rows(3); boardRows = await board('global'); }
     const rows = boardRows.rows.slice(0, 3), lead = rows[0] && rows[0].ms;
     const me = boardRows.rows.findIndex((r) => r.you);
-    box.innerHTML = `<div class="dy-mh"><b>CLASIFICACIÓN DE HOY</b><span>${boardRows.rows.length} piloto${boardRows.rows.length === 1 ? '' : 's'}</span></div>` +
+    box.innerHTML = `<div class="dy-mh"><b>Clasificación de hoy</b><span>${boardRows.rows.length} piloto${boardRows.rows.length === 1 ? '' : 's'}</span></div>` +
       (rows.length ? rows.map((r, i) => `<div class="dy-mr${r.you ? ' me' : ''}"><i>${i + 1}</i><span class="flag sm">${ctx.flagSvg(r.flag || 'es')}</span><b>${esc(r.name)}</b><em>${fmt(r.ms / 1000)}</em><small>${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'LÍDER'}</small></div>`).join('') + (me >= 3 ? `<div class="dy-mr me"><i>${me + 1}</i><span class="flag sm">${ctx.flagSvg(lb.flag)}</span><b>${esc(lb.name)}</b><em>${fmt(boardRows.rows[me].ms / 1000)}</em><small>TÚ</small></div>` : '') : '<p class="dy-empty">Aún nadie ha marcado tiempo hoy. ¡Sé el primero!</p>');
   }
 
@@ -175,7 +169,7 @@ export function createDaily(ctx) {
     if (locked()) lockScreen(skipIntro || (st.rev || 0) >= 2); else if (skipIntro || (st.rev || 0) >= 2) hub(); else intro(); // la animación de sorteo solo la primera vez del día
   }
   function close() { clearTimeout(introTimer); cancelAnimationFrame(spinRaf); stopRadar(); $('daily').classList.add('hidden'); document.body.classList.remove('in-daily'); stage = ''; renderHero(); }
-  const head = (sub) => `<div class="dy-head"><small>RETO DEL DÍA · ${dateTxt()}</small><h2>${sub}</h2><span class="dy-cd">Cambia en <b class="cdv">${hms(msToReset())}</b></span></div>`;
+  const head = (sub) => `<div class="dy-head"><small>Reto diario, ${dateTxt()}</small><h2>${sub}</h2><span class="dy-cd">Cambia en <b class="cdv">${hms(msToReset())}</b></span></div>`;
 
   // 1) globo girando hasta el circuito
   let dg = null, spinRaf = 0;
@@ -199,8 +193,8 @@ export function createDaily(ctx) {
   function circuit() {
     cancelAnimationFrame(spinRaf); clearTimeout(introTimer); reveal(1);
     const t = ctx.track, [cc, cname] = ctx.countryOf(t), env = ctx.envLabel(t);
-    setStage('circuit', `${head('Circuito de hoy')}<div class="dy-card dy-reveal"><div class="dy-ct"><span class="flag">${ctx.flagSvg(cc)}</span><div><em>${esc(cname)}</em><b>${esc(t.th.name)}</b></div>${t.th.logo ? `<img class="dy-logo" src="./assets/logos/${t.th.logo}.webp" alt="">` : ''}</div><canvas id="dyCv" class="dy-cv"></canvas><div class="dy-chips"><span>${(t.tr.len / 1000).toFixed(2)} km</span><span>${esc(env)}</span><span>${esc(t.sub || '')}</span></div></div><button id="dyNext" class="dy-btn">PILLAR COCHE ›</button>`);
-    ctx.drawPreview($('dyCv'), t.tr, t.th, 560, 300, 1.5); $('dyNext').onclick = () => (canPick() ? lentorro() : radar());
+    setStage('circuit', `${head('Circuito de hoy')}<div class="dy-card dy-reveal"><div class="dy-ct"><span class="flag">${ctx.flagSvg(cc)}</span><div><em>${esc(cname)}</em><b>${esc(t.th.name)}</b></div>${t.th.logo ? `<img class="dy-logo" src="./assets/logos/${t.th.logo}.webp" alt="">` : ''}</div><canvas id="dyCv" class="dy-cv"></canvas><div class="dy-chips"><span>${(t.tr.len / 1000).toFixed(2)} km</span><span>${esc(env)}</span><span>${esc(t.sub || '')}</span></div></div><button id="dyNext" class="dy-btn">Entrar al reto</button>`);
+    ctx.drawPreview($('dyCv'), t.tr, t.th, 560, 300, 1.5); $('dyNext').onclick = () => { reveal(2); hub(); };
   }
   // 3) radar: escena en perspectiva sobre una carretera de verdad; tráfico normal y, de pronto, el coche del reto a toda velocidad
   let rad = null;
@@ -228,25 +222,25 @@ export function createDaily(ctx) {
     const h = hashStr('tk' + key + c.id) >>> 0, plate = `${1000 + h % 9000} ${'BCDFGHJKLMNPRSTVWXYZ'[(h >>> 4) % 20]}${'BCDFGHJKLMNPRSTVWXYZ'[(h >>> 9) % 20]}${'BCDFGHJKLMNPRSTVWXYZ'[(h >>> 14) % 20]}`;
     const hh = 6 + h % 15, mm = pad((h >>> 5) % 60), ss = pad((h >>> 11) % 60), exp = `RD-${key.slice(2).replace(/-/g, '')}-${String(h % 10000).padStart(4, '0')}`;
     const kmh = Math.round(c.vmax * 3.6);
-    $('dyTk').innerHTML = `<div class="dy-printer"><i></i></div><div class="dy-tkwrap"><div class="dy-ticket print"><div class="tk-claim">TU COCHE PARA EL RETO</div><div class="tk-car"><img src="./assets/thumbs/${c.id}.webp" alt=""><div><em>${esc(c.brand || '')}</em><b>${esc(c.name)}</b></div></div><div class="tk-inf"><span>Medido <b class="big">${kmh} km/h</b></span><span>Límite <b>50</b></span></div>${bar('VEL', c.vmax / 70, kmh)}${bar('ACEL', c.accel / 18, c.accel.toFixed(1))}${bar('GIRO', c.yaw / 4.2, c.yaw.toFixed(1))}${bar('AGARRE', c.grip / 20, c.grip.toFixed(1))}<div class="tk-sum"><span>MULTA <b>600 €</b></span><span class="tk-pl">${plate}</span></div></div></div><button id="dyGo" class="dy-btn">EMPEZAR PRÁCTICA · ${PRACTICE_LAPS} VUELTAS</button><button id="dyHubB" class="dy-btn ghost">Ver clasificación y opciones</button>`;
+    $('dyTk').innerHTML = `<div class="dy-printer"><i></i></div><div class="dy-tkwrap"><div class="dy-ticket print"><div class="tk-claim">TU COCHE PARA EL RETO</div><div class="tk-car"><img src="./assets/thumbs/${c.id}.webp" alt=""><div><em>${esc(c.brand || '')}</em><b>${esc(c.name)}</b></div></div><div class="tk-inf"><span>Medido <b class="big">${kmh} km/h</b></span><span>Límite <b>50</b></span></div>${bar('VEL', c.vmax / 70, kmh)}${bar('ACEL', c.accel / 18, c.accel.toFixed(1))}${bar('GIRO', c.yaw / 4.2, c.yaw.toFixed(1))}${bar('AGARRE', c.grip / 20, c.grip.toFixed(1))}<div class="tk-sum"><span>MULTA <b>600 €</b></span><span class="tk-pl">${plate}</span></div></div></div><button id="dyGo" class="dy-btn">EMPEZAR PRÁCTICA, ${PRACTICE_LAPS} VUELTAS</button><button id="dyHubB" class="dy-btn ghost">Ver clasificación y opciones</button>`;
     rad && rad.printSound(); setTimeout(() => { const st = $('dyStage'); st && (stage === 'radar') && $('dyTk').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 250);
     $('dyGo').onclick = () => startKind('practice'); $('dyHubB').onclick = hub;
   }
 
   // 4) panel principal: pasos, anuncios y clasificación F1
-  const btnP = () => left('p') > 0 ? `<button class="dy-btn" data-act="practice">${st.pr ? 'PRÁCTICA EXTRA' : 'EMPEZAR PRÁCTICA'} · ${PRACTICE_LAPS} VUELTAS</button>` : adAvail('p') ? `<button class="dy-btn ad" data-act="ad-practice">▶ VER ANUNCIO · OTRAS ${PRACTICE_LAPS} DE PRÁCTICA</button>` : `<p class="dy-done">Práctica agotada hasta las 4:00</p>`;
-  const btnO = () => left('o') > 0 ? `<button class="dy-btn gold" data-act="official">${st.or ? 'OTRA OPORTUNIDAD' : 'CLASIFICACIÓN'} · ${OFFICIAL_LAPS} VUELTAS</button>` : adAvail('o') ? `<button class="dy-btn ad" data-act="ad-official">▶ VER 2 ANUNCIOS · OTRA OPORTUNIDAD</button>` : `<p class="dy-done">Clasificación cerrada: no se puede repetir más hoy</p>`;
+  const btnP = () => left('p') > 0 ? `<button class="dy-btn" data-act="practice">${st.pr ? 'Práctica extra' : 'Empezar práctica'}, ${PRACTICE_LAPS} vueltas</button>` : adAvail('p') ? `<button class="dy-btn ad" data-act="ad-practice">Ver anuncio y ganar ${PRACTICE_LAPS} vueltas de práctica</button>` : `<p class="dy-done">Práctica agotada hasta las 4:00</p>`;
+  const btnO = () => left('o') > 0 ? `<button class="dy-btn gold" data-act="official">${st.or ? 'Otra oportunidad' : 'Clasificar'}, ${OFFICIAL_LAPS} vueltas</button>` : adAvail('o') ? `<button class="dy-btn ad" data-act="ad-official">Ver 2 anuncios y repetir clasificación</button>` : `<p class="dy-done">Clasificación cerrada: no se puede repetir más hoy</p>`;
   const acc_user = () => (ctx.acc && ctx.acc.username) || '';
   function lastHtml() {
     if (!last || !last.laps.length) return '';
     const best = Math.min(...last.laps.map((l) => l.t));
-    return `<div class="dy-card dy-last"><h3>${last.kind === 'official' ? 'CLASIFICACIÓN' : 'PRÁCTICA'} · TUS VUELTAS</h3><table class="dy-t"><tr><th>V</th><th>S1</th><th>S2</th><th>S3</th><th>TIEMPO</th></tr>${last.laps.map((l, i) => `<tr class="${l.t === best ? 'best' : ''}"><td>${i + 1}</td><td>${l.s[0] != null ? fmtS(l.s[0]) : '–'}</td><td>${l.s[1] != null ? fmtS(l.s[1]) : '–'}</td><td>${l.s[2] != null ? fmtS(l.s[2]) : '–'}</td><td>${fmt(l.t)}</td></tr>`).join('')}</table></div>`;
+    return `<div class="dy-card dy-last"><h3>${last.kind === 'official' ? 'CLASIFICACIÓN' : 'PRÁCTICA'}, TUS VUELTAS</h3><table class="dy-t"><tr><th>V</th><th>S1</th><th>S2</th><th>S3</th><th>TIEMPO</th></tr>${last.laps.map((l, i) => `<tr class="${l.t === best ? 'best' : ''}"><td>${i + 1}</td><td>${l.s[0] != null ? fmtS(l.s[0]) : '–'}</td><td>${l.s[1] != null ? fmtS(l.s[1]) : '–'}</td><td>${l.s[2] != null ? fmtS(l.s[2]) : '–'}</td><td>${fmt(l.t)}</td></tr>`).join('')}</table></div>`;
   }
   function hub() {
     reveal(2);
     clearTimeout(introTimer); cancelAnimationFrame(spinRaf); stopRadar();
     const t = ctx.track, c = ctx.car;
-    setStage('hub', `${head(esc(t.th.name.replace(/ · .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas><div class="dy-sc"><img src="./assets/thumbs/${c.id}.webp" alt=""><b>${esc(c.name)}</b><small>${st.pick && st.pick !== 'base' ? ic('snail') + ' Elegido con el premio Lentorro' : 'Mismo coche y circuito para todos'}</small></div></div>${canPick() ? lentorroHtml() : ''}${rival ? rivalHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>1 · PRÁCTICA</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>2 · CLASIFICACIÓN</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard">${sk.rows(5)}</div></div>`);
+    setStage('hub', `${head(esc(t.th.name.replace(/, .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas></div>${canPick() ? lentorroHtml() : ''}${rival ? rivalHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>Práctica</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>Clasificación</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard">${sk.rows(5)}</div></div>`);
     ctx.drawPreview($('dyCv2'), t.tr, t.th, 240, 130);
     renderBoard();
   }
@@ -256,7 +250,7 @@ export function createDaily(ctx) {
     const rows = res.rows; if (!rows.length) { el.innerHTML = '<p class="dy-empty">Todavía no hay tiempos hoy.</p>'; return; }
     const lead = rows[0].ms, bestS = [0, 1, 2].map((k) => Math.min(...rows.map((r) => (r.s[k] != null ? r.s[k] : 1e12))));
     const sc = (r, k) => r.s[k] == null ? '–' : `<span class="${r.s[k] === bestS[k] ? 'pu' : ''}">${fmtS(r.s[k] / 1000)}</span>`;
-    el.innerHTML = `<table class="dy-f1"><tr><th>P</th><th>PILOTO</th><th>S1</th><th>S2</th><th>S3</th><th>VUELTA</th><th>DIF</th></tr>${rows.slice(0, 30).map((r, i) => `<tr class="${r.you ? 'me' : ''}"><td>${i + 1}</td><td class="nm"><span class="flag sm">${ctx.flagSvg(r.flag || 'es')}</span>${esc(r.name)}<small class="dy-secs">${[0, 1, 2].map((k) => sc(r, k)).join(' · ')}</small></td><td>${sc(r, 0)}</td><td>${sc(r, 1)}</td><td>${sc(r, 2)}</td><td class="lp">${fmt(r.ms / 1000)}</td><td>${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : '—'}</td></tr>`).join('')}</table>${res.online ? '' : '<p class="dy-empty">Sin conexión: solo se ve tu tiempo en este dispositivo.</p>'}`;
+    el.innerHTML = `<table class="dy-f1"><tr><th>P</th><th>PILOTO</th><th>S1</th><th>S2</th><th>S3</th><th>VUELTA</th><th>DIF</th></tr>${rows.slice(0, 30).map((r, i) => `<tr class="${r.you ? 'me' : ''}"><td>${i + 1}</td><td class="nm"><span class="flag sm">${ctx.flagSvg(r.flag || 'es')}</span>${esc(r.name)}<small class="dy-secs">${[0, 1, 2].map((k) => sc(r, k)).join(', ')}</small></td><td>${sc(r, 0)}</td><td>${sc(r, 1)}</td><td>${sc(r, 2)}</td><td class="lp">${fmt(r.ms / 1000)}</td><td>${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : '—'}</td></tr>`).join('')}</table>${res.online ? '' : '<p class="dy-empty">Sin conexión: solo se ve tu tiempo en este dispositivo.</p>'}`;
   }
   let rival = null, streak = null;
   const rivalHtml = () => `<div class="dy-card dy-rival"><h3>${ic('ghost')} FANTASMA DE @${esc(rival.name).toUpperCase()}</h3><p>Su mejor vuelta de hoy (${fmt(rival.ms / 1000)}) saldrá como fantasma dorado en tu próxima sesión.</p><button type="button" data-act="norival" class="dy-lnk">Quitar fantasma</button></div>`;
@@ -265,8 +259,8 @@ export function createDaily(ctx) {
     $('daily').classList.add('hidden'); document.body.classList.remove('in-daily'); const rv = rival; rival = null; ctx.startSession(kind, rv);
   }
   const ADS = [
-    { id: 'traced', logo: 'traced', name: 'Traced', url: 'https://ro-di-tracker.vercel.app/', kick: 'ÚLTIMA HORA · GOLF', h: '¡TU BOLA DESAPARECE EN PLENO VUELO Y NADIE SABE POR QUÉ!', p: 'Traced dibuja la trayectoria de tu golpe sobre tu propio vídeo. Por fin sabrás dónde acabó esa bola que «iba recta».', cta: 'PROBAR TRACED ›', foot: '*Traced no garantiza que tu bola llegue al green. Solo que verás con todo detalle cómo no llegó.' },
-    { id: 'palomapp', logo: 'palomapp', name: 'PalomApp', url: 'https://urlife-zeta.vercel.app/', kick: 'ALERTA FINANCIERA', h: '¡TU SUELDO SE ESCAPA VOLANDO Y PALOMA LO SABE!', p: 'PalomApp: la única Paloma que vigila tus euros. Gastos, tareas y cuentas claras, sin que nadie te pique.', cta: 'ABRIR PALOMAPP ›', foot: '*El 100 % de los usuarios deja de preguntarse a dónde fue el dinero. Estudio realizado por Paloma.' },
+    { id: 'traced', logo: 'traced', name: 'Traced', url: 'https://ro-di-tracker.vercel.app/', kick: 'ÚLTIMA HORA, GOLF', h: '¡TU BOLA DESAPARECE EN PLENO VUELO Y NADIE SABE POR QUÉ!', p: 'Traced dibuja la trayectoria de tu golpe sobre tu propio vídeo. Por fin sabrás dónde acabó esa bola que «iba recta».', cta: 'PROBAR TRACED', foot: '*Traced no garantiza que tu bola llegue al green. Solo que verás con todo detalle cómo no llegó.' },
+    { id: 'palomapp', logo: 'palomapp', name: 'PalomApp', url: 'https://urlife-zeta.vercel.app/', kick: 'ALERTA FINANCIERA', h: '¡TU SUELDO SE ESCAPA VOLANDO Y PALOMA LO SABE!', p: 'PalomApp: la única Paloma que vigila tus euros. Gastos, tareas y cuentas claras, sin que nadie te pique.', cta: 'ABRIR PALOMAPP', foot: '*El 100 % de los usuarios deja de preguntarse a dónde fue el dinero. Estudio realizado por Paloma.' },
   ];
   async function adFlow(n) {
     const o = $('dyAd'); o.classList.remove('hidden'); let prev = -1;
@@ -290,7 +284,7 @@ export function createDaily(ctx) {
     const a = b.dataset.act; if (!a) return;
     if (a === 'practice' || a === 'official') return startKind(a);
     if (a === 'wa-result' || a === 'wa-challenge') {
-      const t = ctx.track, c = ctx.car, circ = t.th.name.replace(/ · .*$/, ''), u = acc_user();
+      const t = ctx.track, c = ctx.car, circ = t.th.name.replace(/, .*$/, ''), u = acc_user();
       const txt = a === 'wa-result' && st.best ? `Reto del día de KartlosApp: ${fmt(st.best.ms / 1000)} en ${circ} con el ${c.name}. ¿Me ganas? Mismo coche y circuito para todos, solo un intento oficial.` : `Hoy el reto de KartlosApp es ${circ} con el ${c.name}. Mismo coche para todos: ¡a ver quién hace mejor tiempo!`;
       waShare(txt, inviteUrl(u)); return;
     }

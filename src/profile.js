@@ -5,13 +5,13 @@ import { sk } from './ux.js';
 export function initProfile(ctx) {
   const { $, acc, esc, tracks, groupName, drvIc, playerDrv, fmt } = ctx;
   const S = { tab: 'perfil', mode: 'in', msg: '', rival: null, busy: false };
-  const trackName = (id) => { const t = tracks.find((x) => x.key === id); return t ? t.name.replace(/ · .*$/, '') : id; };
+  const trackName = (id) => { const t = tracks.find((x) => x.key === id); return t ? t.name.replace(/, .*$/, '') : id; };
   const body = () => $('profBody');
 
   // —— logros calculados a partir de las estadísticas
   function achievements(st, hall) {
     const out = [], kings = st.kings || [];
-    for (const k of kings.slice(0, 8)) out.push({ ic: 'crown', t: 'Rey de ' + trackName(k.track), s: groupName(k.grp) + ' · ' + fmt(k.ms / 1000), gold: true });
+    for (const k of kings.slice(0, 8)) out.push({ ic: 'crown', t: 'Rey de ' + trackName(k.track), s: groupName(k.grp) + ', ' + fmt(k.ms / 1000), gold: true });
     if (kings.length > 8) out.push({ ic: 'crown', t: '+' + (kings.length - 8) + ' récords más', s: 'Mejor tiempo de la categoría', gold: true });
     if (hall && hall.records && hall.records[0] && hall.records[0].name === st.username && kings.length) out.push({ ic: 'bolt', t: 'El más rápido en contrarreloj', s: kings.length + ' récords: nadie tiene más', gold: true });
     if (st.wins_rank === 1) out.push({ ic: 'trophy', t: 'Jugador con más victorias', s: st.wins + ' victorias', gold: true });
@@ -49,7 +49,7 @@ export function initProfile(ctx) {
     const A = achievements(st, hall);
     let tro = []; try { tro = (await acc.rpc('my_trophies')) || []; } catch (e) { /* sin trofeos */ }
     let stk = null; try { stk = await acc.rpc('my_streak'); } catch (e) { /* sin racha */ }
-    for (const x of tro) A.unshift(x.kind === 'champion' ? { gold: true, ic: 'trophy', t: 'Campeón · Temporada ' + x.season, s: x.league + ' · ' + x.pts + ' pts' } : { ic: 'snail', t: 'Lentorro de la temporada ' + x.season, s: x.league });
+    for (const x of tro) A.unshift(x.kind === 'champion' ? { gold: true, ic: 'trophy', t: 'Campeón, Temporada ' + x.season, s: x.league + ', ' + x.pts + ' pts' } : { ic: 'snail', t: 'Lentorro de la temporada ' + x.season, s: x.league });
     if (stk && stk.best >= 2) A.unshift({ gold: stk.streak >= 7, ic: 'flame', t: 'Racha de ' + stk.streak + (stk.streak === 1 ? ' día' : ' días'), s: 'Mejor racha: ' + stk.best + ' días' });
     body().innerHTML = `${head(st)}${tabs()}<div class="pf-stats">${[['Vueltas', st.laps], ['Circuitos', st.tracks], ['Carreras', st.races], ['Victorias', st.wins], ['Podios', st.podiums], ['Récords', (st.kings || []).length]].map(([n, v]) => `<div><b>${v}</b><small>${n}</small></div>`).join('')}</div>
       <h3 class="pf-h">Vitrina</h3><div class="pf-shelf">${A.length ? A.map(ach).join('') : '<p class="keys" style="display:block">Aún no hay logros: gana carreras y bate récords para llenar la vitrina.</p>'}</div>`;

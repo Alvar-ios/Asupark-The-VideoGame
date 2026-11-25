@@ -10,7 +10,7 @@ export function initSanctions({ $, acc, esc }) {
   const stamp = (iso) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace('.', '');
   const card = (s) => {
     const fresh = !seen().includes(s.id);
-    return `<button type="button" class="hm-sanc${fresh ? ' new' : ''}" data-sanc="${s.id}"><span class="sn-ic">${ic('alert')}</span><span class="sn-t"><small>Comunicado de la FIA${fresh ? '<em>NUEVO</em>' : ''}</small><b>${esc(s.driver)} sancionado: −${s.points} puntos</b><small>${esc(s.league)} · ${esc(s.title)} · ${day(s.created_at)}${s.appeals ? ` · ${s.appeals} apelación${s.appeals === 1 ? '' : 'es'}` : ''}</small></span><i>›</i></button>`;
+    return `<button type="button" class="hm-sanc${fresh ? ' new' : ''}" data-sanc="${s.id}"><span class="sn-ic">${ic('alert')}</span><span class="sn-t"><small>Comunicado de la FIA${fresh ? '<em>NUEVO</em>' : ''}</small><b>${esc(s.driver)} sancionado: −${s.points} puntos</b><small>${esc(s.league)}, ${esc(s.title)}, ${day(s.created_at)}${s.appeals ? `, ${s.appeals} apelación${s.appeals === 1 ? '' : 'es'}` : ''}</small></span><i>›</i></button>`;
   };
   async function render() {
     const box = $('hmSanc'); if (!box) return;
@@ -31,7 +31,7 @@ export function initSanctions({ $, acc, esc }) {
       ? `<div class="snc-form"><textarea id="sancTx" maxlength="600" rows="3" placeholder="Presenta tu apelación. La verán todos los pilotos." aria-label="Apelación"></textarea><button id="sancSend" class="big" type="button">APELAR</button></div>`
       : `<p class="snc-n">Solo el piloto sancionado puede presentar apelación.</p>`;
     $('sancBody').innerHTML = `<a class="snc-doc" href="./${esc(s.image)}" target="_blank" rel="noopener"><img src="./${esc(s.image)}" alt="Comunicado de los comisarios: sanción a ${esc(s.driver)}"></a>
-      <div class="snc-sum"><div><b>−${s.points}</b><small>PUNTOS</small></div><div><b>${esc(s.driver)}</b><small>${esc(s.league)} · ${esc(s.title)}</small></div></div>
+      <div class="snc-sum"><div><b>−${s.points}</b><small>PUNTOS</small></div><div><b>${esc(s.driver)}</b><small>${esc(s.league)}, ${esc(s.title)}</small></div></div>
       <p class="snc-n">${esc(s.reason)}. En caso de reincidencia se planteará la expulsión de la competición.</p>
       <h3>Apelaciones públicas</h3><div id="sancAp" class="snc-ap"><p class="snc-n">Cargando…</p></div>${form}`;
     $('sanction').classList.remove('hidden'); const sc = $('sanction'); if (sc) sc.scrollTop = 0;

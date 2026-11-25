@@ -72,7 +72,7 @@ export function rallyDecor(tr, th, scene, q, extraAnim) {
     const panel = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })); panel.position.set(x, y + 1.2 + h / 2, z); panel.rotation.y = yaw; G.add(panel);
   };
   if (ramp) {
-    const iA = Math.floor((ramp.s0 - 70) / tr.ds), iB = Math.floor((ramp.s0 - 38) / tr.ds), tx1 = signTex('SALTO', 'Y VADO · 200 m', '#ffd23a', '#1a1a1a'), tx2 = signTex('¡SALTO!', 'AGUA TRAS LA RAMPA', '#e8332a', '#ffffff');
+    const iA = Math.floor((ramp.s0 - 70) / tr.ds), iB = Math.floor((ramp.s0 - 38) / tr.ds), tx1 = signTex('SALTO', 'Y VADO, 200 m', '#ffd23a', '#1a1a1a'), tx2 = signTex('¡SALTO!', 'AGUA TRAS LA RAMPA', '#e8332a', '#ffffff');
     for (const side of [-1, 1]) {
       const yaw = Math.atan2(tr.TX[iA], tr.TZ[iA]) + Math.PI / 2 * 0 + (side > 0 ? 0 : 0);
       sign(iA, side, tx1, 3.6, 1.8, Math.atan2(tr.TX[iA], tr.TZ[iA]) + Math.PI);

@@ -33,7 +33,7 @@ function funnyTex(i) {
     x.fillStyle = acc; x.fillRect(0, 0, 1024, 12); x.fillRect(0, 244, 1024, 12);
     if (img) x.drawImage(img, 22, 40, 176, 176);
     x.fillStyle = '#fff'; x.textBaseline = 'middle'; x.textAlign = 'left';
-    x.font = '900 66px "Jersey 10",Impact,sans-serif'; x.fillText(a, 224, 92);
+    x.font = '900 66px "KartDisplay",Impact,sans-serif'; x.fillText(a, 224, 92);
     x.fillStyle = acc; x.fillText(b, 224, 164);
     x.fillStyle = 'rgba(255,255,255,.75)'; x.font = '700 28px system-ui,sans-serif'; x.textAlign = 'right'; x.fillText('PALOMAPP', 1004, 226);
   };

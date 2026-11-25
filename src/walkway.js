@@ -13,8 +13,8 @@ const STYLE = {
   nieve: { w: 4, a: 0xe3ebf3, b: 0xd5dfe9, step: 3 }, // nieve pisada
   amazonas: { w: 3.5, a: 0x8d6c47, b: 0x7c5d3b, step: 0.9 }, // pasarela de tablones
   prisma: { w: 4, a: 0xf3e3b0, b: 0xe8d398, step: 2.4, curb: 0xff9d2e }, // baldosa de juguete
-  karting: { w: 3.5, a: 0xaa9c82, b: 0x9d8f76, step: 2.6 },
-  asupark: { w: 3.5, a: 0xb39f80, b: 0xa59174, step: 2.6 },
+  karting: { w: 3.5, a: 0xaaa8a2, b: 0x9d9b95, step: 2.6 },
+  asupark: { w: 3.5, a: 0xaeaca6, b: 0xa19f99, step: 2.6 },
   kartlos: { w: 4, a: 0xdac9a9, b: 0xcdbc9c, step: 3 },
 };
 

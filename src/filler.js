@@ -43,6 +43,12 @@ const spikes = (x, W, base, y0, y1, cols, step, snow) => { for (const c of cols)
 const blocks = (x, W, H, walls, win, lit) => { for (let px = -10; px < W;) { const w = R0(30, 78), h = R0(60, H * 0.92); x.fillStyle = walls[Math.floor(Math.random() * walls.length)]; x.fillRect(px, H - h, w, h); for (let wy = H - h + 6; wy < H - 4; wy += 11) for (let wx = px + 4; wx < px + w - 6; wx += 9) { if (lit && Math.random() < 0.35) continue; x.fillStyle = win[Math.floor(Math.random() * win.length)]; x.fillRect(wx, wy, 5, 6); } px += w + R0(-6, 10); } };
 const RINGS = {
   trees: (x, W) => bump(x, W, 150, 8, 44, ['#6f9a68', '#55844f', '#3f6e3c'], 22),
+  poligono: (x, W) => { // cerros secos, perfil de naves, chimeneas y grúas: sin nada verde
+    bump(x, W, 168, 8, 34, ['#b9b4ab', '#a9a298'], 60);
+    for (const [c, base, h0, h1] of [['#a3a9b0', 205, 14, 44], ['#858c95', 226, 10, 34]]) { x.fillStyle = c; for (let px = -20; px < W + 20;) { const w = R0(40, 120), h = R0(h0, h1); x.fillRect(px, base - h, w, h + 60); if (Math.random() < 0.35) for (let u = 0; u < w - 10; u += 18) { x.beginPath(); x.moveTo(px + u, base - h); x.lineTo(px + u, base - h - 9); x.lineTo(px + u + 18, base - h); x.fill(); } px += w + R0(0, 14); } }
+    x.fillStyle = '#7d838c'; for (let px = 60; px < W; px += R0(190, 420)) { const h = R0(60, 105); x.fillRect(px, 215 - h, 6, h); }
+    x.strokeStyle = '#8f867a'; x.lineWidth = 3; for (let px = 250; px < W; px += R0(480, 800)) { x.beginPath(); x.moveTo(px, 215); x.lineTo(px, 118); x.lineTo(px + 70, 118); x.moveTo(px, 104); x.lineTo(px + 70, 118); x.moveTo(px, 104); x.lineTo(px, 118); x.lineTo(px - 24, 118); x.stroke(); }
+  },
   pines: (x, W) => spikes(x, W, 160, 50, 130, ['#4a6a58', '#33523f', '#233f30'], 15),
   jungle: (x, W) => bump(x, W, 120, 10, 70, ['#4f8f56', '#2f7538', '#1e5a2a'], 26),
   snow: (x, W) => spikes(x, W, 165, 50, 140, ['#a4bcc8', '#6f8e92', '#47686a'], 16, true),

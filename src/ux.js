@@ -98,65 +98,6 @@ export function initUx({ $, acc }) {
   document.querySelectorAll('img').forEach(prep);
   new MutationObserver((ms) => { for (const m of ms) m.addedNodes.forEach((n) => { if (n.nodeType !== 1) return; if (n.tagName === 'IMG') prep(n); else if (n.querySelectorAll) n.querySelectorAll('img').forEach(prep); }); }).observe(document.body, { childList: true, subtree: true });
 
-  // ----- menú de comandos y atajos -----
-  const menuOn = () => $('menu') && !$('menu').classList.contains('hidden') && !stack.length;
-  const click = (id) => { const e = $(id); if (e) e.click(); };
-  const nav = (g) => { const b = document.querySelector(`#hmNav [data-go="${g}"]`); if (b) b.click(); };
-  const CMDS = () => {
-    const out = [
-      { k: 'd', n: 'Reto del día', s: 'Mismo coche y circuito para todos', i: 'flag', run: () => click('dailyCard') },
-      { k: 'l', n: 'Mis ligas', s: 'Tabla, días, calendario y chat', i: 'trophy', run: () => nav('leagues') },
-      { k: 't', n: 'Contrarreloj', s: 'Tú contra el crono', i: 'stopwatch', run: () => click('hmTT') },
-      { k: 'r', n: 'Racing', s: 'Carreras y Gran Premio', i: 'bolt', run: () => click('hmRacing') },
-      { k: 'c', n: 'Clasificación', s: 'Ranking global y amigos', i: 'chart', run: () => nav('board') },
-      { k: 'a', n: 'Amigos', s: 'Solicitudes y rivalidades', i: 'users', run: () => nav('friends') },
-      { k: 'p', n: 'Perfil', s: 'Vitrina, trofeos y racha', i: 'user', run: () => nav('profile') },
-      { k: 's', n: 'Ajustes', s: 'Controles, gráficos, avisos', i: 'gear', run: () => click('hmSet') },
-      { k: 'm', n: 'Música', s: 'Elegir la banda sonora', i: 'note', run: () => click('hmMusic') },
-    ];
-    const c = acc.cached && acc.loggedIn ? acc.cached('my_leagues') : null;
-    if (Array.isArray(c)) for (const l of c.slice(0, 6)) out.push({ n: l.name, s: `Liga · P${l.pos || '–'} · temporada ${l.season}`, i: 'flag', run: () => { const LGb = document.querySelector(`[data-lg-open="${l.id}"]`); if (LGb) LGb.click(); else nav('leagues'); } });
-    return out;
-  };
-  const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  let cm = null, items = [], sel = 0;
-  const draw = () => {
-    cm.list.innerHTML = items.length ? items.map((c, i) => `<button type="button" role="option" class="cm-i${i === sel ? ' on' : ''}" data-i="${i}"><i>${ic(c.i)}</i><span><b>${c.n}</b><small>${c.s}</small></span>${c.k ? `<kbd>${c.k.toUpperCase()}</kbd>` : ''}</button>`).join('') : '<p class="cm-n">Nada coincide</p>';
-    const o = cm.list.querySelector('.on'); if (o) o.scrollIntoView({ block: 'nearest' });
-  };
-  const filt = () => { const q = norm(cm.input.value.trim()); items = CMDS().filter((c) => !q || norm(c.n + ' ' + c.s).includes(q)); sel = 0; draw(); };
-  const closeCm = () => { if (cm) { cm.root.classList.add('hidden'); cm.input.blur(); } };
-  const openCm = () => {
-    if (!menuOn()) return;
-    if (!cm) {
-      const root = document.createElement('div'); root.id = 'cmdk'; root.className = 'hidden'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', 'Menú de comandos');
-      root.innerHTML = '<div class="cm-box"><input class="cm-in" placeholder="¿Qué quieres hacer?" autocomplete="off" spellcheck="false" aria-label="Buscar comando"><div class="cm-l" role="listbox"></div><div class="cm-f"><span><kbd>↑</kbd><kbd>↓</kbd> moverse</span><span><kbd>↵</kbd> abrir</span><span><kbd>Esc</kbd> cerrar</span></div></div>';
-      document.body.appendChild(root); cm = { root, input: root.querySelector('input'), list: root.querySelector('.cm-l') };
-      root.addEventListener('pointerdown', (e) => { if (e.target === root) closeCm(); });
-      cm.list.addEventListener('click', (e) => { const b = e.target.closest('.cm-i'); if (!b) return; const c = items[+b.dataset.i]; closeCm(); if (c) c.run(); });
-      cm.input.addEventListener('input', filt);
-      cm.input.addEventListener('keydown', (e) => {
-        e.stopPropagation();
-        if (e.key === 'Escape') { closeCm(); e.preventDefault(); } else if (e.key === 'ArrowDown') { sel = (sel + 1) % Math.max(1, items.length); draw(); e.preventDefault(); } else if (e.key === 'ArrowUp') { sel = (sel - 1 + items.length) % Math.max(1, items.length); draw(); e.preventDefault(); } else if (e.key === 'Enter') { const c = items[sel]; closeCm(); if (c) c.run(); e.preventDefault(); }
-      });
-      cm.input.addEventListener('keyup', (e) => e.stopPropagation());
-    }
-    cm.input.value = ''; filt(); cm.root.classList.remove('hidden'); setTimeout(() => cm.input.focus(), 30);
-  };
-  addEventListener('keydown', (e) => {
-    const typing = e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName);
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); e.stopPropagation(); if (cm && !cm.root.classList.contains('hidden')) closeCm(); else openCm(); return; }
-    if (typing || e.ctrlKey || e.metaKey || e.altKey || e.repeat || !menuOn() || (cm && !cm.root.classList.contains('hidden'))) return;
-    if (e.key === '/' || e.key === '?') { e.preventDefault(); e.stopPropagation(); openCm(); return; }
-    const c = CMDS().find((x) => x.k === e.key.toLowerCase()); if (c) { e.preventDefault(); e.stopPropagation(); c.run(); }
-  }, true);
-  // pista de atajos solo con ratón/teclado
-  if (matchMedia('(hover:hover) and (pointer:fine)').matches) {
-    for (const [id, k] of [['dailyCard', 'D'], ['hmTT', 'T'], ['hmRacing', 'R']]) { const b = $(id); if (b && !b.querySelector('kbd.hint')) { const h = document.createElement('kbd'); h.className = 'hint'; h.textContent = k; b.appendChild(h); } }
-    const set = $('hmSet'); if (set && set.parentNode) { const h = document.createElement('button'); h.type = 'button'; h.className = 'hm-cmd'; h.innerHTML = 'Comandos <kbd>Ctrl</kbd><kbd>K</kbd>'; h.onclick = openCm; set.parentNode.insertBefore(h, set); }
-    if (/Mac|iPhone|iPad/.test(navigator.platform)) document.querySelectorAll('.hm-cmd kbd:first-of-type').forEach((k) => { k.textContent = '⌘'; });
-  }
-
   // ----- precarga en segundo plano: lo siguiente que el jugador va a abrir ya está listo -----
   let warmed = 0;
   const warm = () => {

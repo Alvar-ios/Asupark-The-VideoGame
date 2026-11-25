@@ -28,14 +28,14 @@ export function initLeagues(ctx) {
   const err = (e) => acc.explain(e);
   const stopPoll = () => { clearInterval(S.poll); S.poll = null; };
 
-  const needLogin = () => { paint.innerHTML = `<p class="lg-note">Entra en tu perfil para crear una liga o unirte a la de tus amigos. Solo hace falta un usuario y una contraseña.</p><button class="lg-btn" data-a="profile" type="button">Abrir perfil</button>`; };
+  const needLogin = () => { paint.innerHTML = `<p class="lg-note">Entra en tu perfil para crear un campeonato o unirte al de tus amigos. Solo hace falta un usuario y una contraseña.</p><button class="lg-btn" data-a="profile" type="button">Abrir perfil</button>`; };
 
   // ---------- listado de mis ligas ----------
   const listHtml = () => {
-    const card = (l) => `<button class="lg-card" data-open="${l.id}" type="button"><div class="lg-pos">${l.pos ? 'P' + l.pos : '–'}</div><div class="lg-info"><b>${esc(l.name)}</b><small>Temporada ${l.season}${l.days ? ` · día ${Math.min(l.day || 1, l.days)} de ${l.days}` : ''} · ${l.members} piloto${l.members === 1 ? '' : 's'}</small>${l.days ? `<u class="lgb"><s style="width:${Math.max(4, Math.min(100, Math.round((l.day || 1) / l.days * 100)))}%"></s></u>` : ''}</div><div class="lg-pts"><b>${l.pts}</b><small>PTS</small></div></button>`;
+    const card = (l) => `<button class="lg-card" data-open="${l.id}" type="button"><div class="lg-pos">${l.pos ? 'P' + l.pos : '–'}</div><div class="lg-info"><b>${esc(l.name)}</b><small>Temporada ${l.season}${l.days ? `, día ${Math.min(l.day || 1, l.days)} de ${l.days}` : ''}, ${l.members} piloto${l.members === 1 ? '' : 's'}</small>${l.days ? `<u class="lgb"><s style="width:${Math.max(4, Math.min(100, Math.round((l.day || 1) / l.days * 100)))}%"></s></u>` : ''}</div><div class="lg-pts"><b>${l.pts}</b><small>PTS</small></div></button>`;
     const L = S.list.filter((l) => !S.hidden.has(l.id));
-    return `${L.length ? L.map(card).join('') : '<p class="lg-note">Todavía no estás en ninguna liga. Crea una e invita a tus amigos: cada día puntúa el reto diario como un Gran Premio de F1.</p>'}
-      <h3 class="lg-h">Crear una liga</h3><div class="lg-row"><input id="lgName" class="lg-in" maxlength="30" placeholder="Nombre (ej. Los del Grupo)"><button class="lg-btn sm" data-a="create" type="button">Crear</button></div>
+    return `${L.length ? L.map(card).join('') : '<p class="lg-note">Todavía no estás en ningún campeonato. Crea uno e invita a tus amigos: cada día puntúa el reto diario como un Gran Premio de F1.</p>'}
+      <h3 class="lg-h">Crear un campeonato</h3><div class="lg-row"><input id="lgName" class="lg-in" maxlength="30" placeholder="Nombre (ej. Los del Grupo)"><button class="lg-btn sm" data-a="create" type="button">Crear</button></div>
       <h3 class="lg-h">Unirme con un código</h3><div class="lg-row"><input id="lgCode" class="lg-in" maxlength="6" autocapitalize="characters" spellcheck="false" placeholder="Código de 6 letras"><button class="lg-btn sm ghost" data-a="join" type="button">Unirme</button></div>
       <div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`;
   };
@@ -54,7 +54,7 @@ export function initLeagues(ctx) {
     const st = await acc.swr('league_state', { p_league: S.id, p_season: season || null }, () => {});
     S.state = st; S.season = st.league.season; return st;
   }
-  const head = (L) => `<div class="lg-head"><button class="lg-back" data-a="back" type="button">‹</button><div><b>${esc(L.name)}</b><small>Temporada ${L.season} · ${dayTxt(L.from)} – ${dayTxt(L.to)}</small></div></div>
+  const head = (L) => `<div class="lg-head"><button class="lg-back" data-a="back" type="button">‹</button><div><b>${esc(L.name)}</b><small>Temporada ${L.season}, ${dayTxt(L.from)} – ${dayTxt(L.to)}</small></div></div>
     <div class="lg-inv"><div><small>CÓDIGO DE INVITACIÓN</small><b>${esc(L.code)}</b></div>${waBtn('Invitar', 'data-a="invite"', 'lg-btn sm wa')}<button class="lg-btn sm ghost" data-a="copy" type="button">Copiar enlace</button></div>
     <div class="lg-tabs">${[['tabla', 'Tabla'], ['dias', 'Días'], ['cal', 'Calendario'], ['chat', 'Chat']].map(([k, n]) => `<button type="button" data-t="${k}" class="${S.tab === k ? 'on' : ''}">${n}</button>`).join('')}</div>`;
   async function leagueView() {
@@ -72,7 +72,7 @@ export function initLeagues(ctx) {
     }
     return first;
   }
-  const seasonNav = (L) => `<div class="lg-sn"><button type="button" data-s="${L.season - 1}" ${L.season <= 1 ? 'disabled' : ''}>‹</button><span>Temporada ${L.season}${L.season === L.current ? ' · en curso' : ''}</span><button type="button" data-s="${L.season + 1}" ${L.season >= L.current ? 'disabled' : ''}>›</button></div>`;
+  const seasonNav = (L) => `<div class="lg-sn"><button type="button" data-s="${L.season - 1}" ${L.season <= 1 ? 'disabled' : ''}>‹</button><span>Temporada ${L.season}${L.season === L.current ? ', en curso' : ''}</span><button type="button" data-s="${L.season + 1}" ${L.season >= L.current ? 'disabled' : ''}>›</button></div>`;
   const fms = (ms) => fmt(ms / 1000);
 
   // ---------- resumen de ayer ----------
@@ -85,9 +85,9 @@ export function initLeagues(ctx) {
     }
     const r = S.recap; if (!r) return '';
     const line = (k, t) => `<li><i>${ic(k)}</i><span>${t}</span></li>`;
-    return `<div class="lg-recap"><div class="lg-rh"><b>${ic('sun')} RESUMEN DE AYER</b><small>${esc(dayTxt(r.day))} · ${r.players} piloto${r.players === 1 ? '' : 's'}</small></div><ul>
-      ${line('trophy', `<b>@${esc(r.winner.username)}</b> ganó con ${fms(r.winner.ms)}${r.second ? ` · <em>+${(r.second.gap / 1000).toFixed(3)}</em> sobre @${esc(r.second.username)}` : ''}`)}
-      ${r.me ? line('target', `Tú: <b>P${r.me.pos}</b> (${fms(r.me.ms)}) · +${r.me.pts} pts`) : line('none', 'Ayer no corriste el reto')}
+    return `<div class="lg-recap"><div class="lg-rh"><b>${ic('sun')} RESUMEN DE AYER</b><small>${esc(dayTxt(r.day))}, ${r.players} piloto${r.players === 1 ? '' : 's'}</small></div><ul>
+      ${line('trophy', `<b>@${esc(r.winner.username)}</b> ganó con ${fms(r.winner.ms)}${r.second ? `, <em>+${(r.second.gap / 1000).toFixed(3)}</em> sobre @${esc(r.second.username)}` : ''}`)}
+      ${r.me ? line('target', `Tú: <b>P${r.me.pos}</b> (${fms(r.me.ms)}), +${r.me.pts} pts`) : line('none', 'Ayer no corriste el reto')}
       ${r.climber ? line('trend', `<b>@${esc(r.climber.username)}</b> sube de P${r.climber.from} a P${r.climber.to}`) : ''}
       ${r.leader ? line('crown', `Líder: <b>@${esc(r.leader.username)}</b> (${r.leader.pts} pts)`) : ''}
     </ul><button class="lg-btn sm ghost" data-a="recap" type="button">Compartir resumen</button></div>`;
@@ -98,13 +98,13 @@ export function initLeagues(ctx) {
     const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
     const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#1a0a12'); g.addColorStop(0.5, '#0a0d16'); g.addColorStop(1, '#0a0d16'); c.fillStyle = g; c.fillRect(0, 0, W, H);
     c.fillStyle = '#e10600'; c.fillRect(0, 0, W, 18); const k = 54; for (let i = 0; i < W / k; i++) { c.fillStyle = i % 2 ? '#fff' : '#111'; c.fillRect(i * k, H - 36, k, 18); c.fillStyle = i % 2 ? '#111' : '#fff'; c.fillRect(i * k, H - 18, k, 18); }
-    const T = (t, x, y, sz, col, w = 800, al = 'left') => { c.font = `italic ${w} ${sz}px "Jersey 10", Impact, sans-serif`; c.fillStyle = col; c.textAlign = al; c.fillText(t, x, y); };
-    T('KARTLOSAPP · RESUMEN', 70, 120, 44, '#ffd34e'); T(L.name.toUpperCase(), 70, 210, 84, '#fff'); T(dayTxt(r.day).toUpperCase(), 70, 270, 40, '#9fb0cf');
+    const T = (t, x, y, sz, col, w = 800, al = 'left') => { c.font = `italic ${w} ${sz}px "KartDisplay", Impact, sans-serif`; c.fillStyle = col; c.textAlign = al; c.fillText(t, x, y); };
+    T('KARTLOSAPP, RESUMEN', 70, 120, 44, '#ffd34e'); T(L.name.toUpperCase(), 70, 210, 84, '#fff'); T(dayTxt(r.day).toUpperCase(), 70, 270, 40, '#9fb0cf');
     c.fillStyle = 'rgba(255,255,255,.07)'; c.fillRect(70, 330, W - 140, 330); T('GANADOR DEL DÍA', 110, 400, 40, '#ffd34e'); T('@' + r.winner.username, 110, 500, 100, '#fff'); T(fms(r.winner.ms) + (r.second ? `   +${(r.second.gap / 1000).toFixed(3)} sobre @${r.second.username}` : ''), 110, 600, 46, '#c8d2e6', 700);
-    const rows = []; if (r.climber) rows.push(['SUBE', `@${r.climber.username} sube de P${r.climber.from} a P${r.climber.to}`]); if (r.leader) rows.push(['LÍDER', `Líder: @${r.leader.username} · ${r.leader.pts} pts`]); if (r.lentorro && mm[r.lentorro]) rows.push(['LENTORRO', `Lentorro de hoy: @${mm[r.lentorro].username}`]); if (r.me) rows.push(['YO', `Yo: P${r.me.pos} · ${fms(r.me.ms)}`]);
+    const rows = []; if (r.climber) rows.push(['SUBE', `@${r.climber.username} sube de P${r.climber.from} a P${r.climber.to}`]); if (r.leader) rows.push(['LÍDER', `Líder: @${r.leader.username}, ${r.leader.pts} pts`]); if (r.lentorro && mm[r.lentorro]) rows.push(['LENTORRO', `Lentorro de hoy: @${mm[r.lentorro].username}`]); if (r.me) rows.push(['YO', `Yo: P${r.me.pos}, ${fms(r.me.ms)}`]);
     rows.forEach((x, i) => { T(x[0], 70, 790 + i * 120, 34, '#ffd34e'); T(x[1], 290, 790 + i * 120, 50, '#eef2ff', 700); });
     T('¿Te atreves con el reto de hoy?', 70, H - 120, 46, '#ffd34e'); T(location.host + location.pathname.replace(/\/$/, ''), 70, H - 70, 36, '#9fb0cf', 700);
-    const text = `Resumen de «${L.name}» (${dayTxt(r.day)}): ganó @${r.winner.username} con ${fms(r.winner.ms)}${r.leader ? ` · líder @${r.leader.username} (${r.leader.pts} pts)` : ''}. ¿Te atreves con el reto de hoy?`;
+    const text = `Resumen de «${L.name}» (${dayTxt(r.day)}): ganó @${r.winner.username} con ${fms(r.winner.ms)}${r.leader ? `, líder @${r.leader.username} (${r.leader.pts} pts)` : ''}. ¿Te atreves con el reto de hoy?`;
     try {
       const blob = await new Promise((res) => cv.toBlob(res, 'image/png')), f = new File([blob], 'resumen-drift-rush.png', { type: 'image/png' });
       if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], text }); return; }
@@ -116,7 +116,7 @@ export function initLeagues(ctx) {
   function predHtml(L, mm) {
     if (L.season !== L.current) return '';
     const P = S.state.pred || {}, pk = P.pick;
-    if (pk) return `<div class="lg-pred">${ic('target')} <b>Tu apuesta de hoy:</b> @${esc((mm[pk] || {}).username || '?')} · +1 punto si gana el reto</div>`;
+    if (pk) return `<div class="lg-pred">${ic('target')} <b>Tu apuesta de hoy:</b> @${esc((mm[pk] || {}).username || '?')}, +1 punto si gana el reto</div>`;
     if (!P.can) return '';
     return `<div class="lg-pred"><b>${ic('target')} ¿Quién gana hoy?</b><small>Apuesta antes de correr: +1 punto si aciertas</small><div class="lg-chips">${S.state.members.map((m) => `<button type="button" data-pick="${m.user_id}">${flag(m.flag)} ${esc(m.username)}${m.user_id === me() ? ' (yo)' : ''}</button>`).join('')}</div></div>`;
   }
@@ -134,11 +134,11 @@ export function initLeagues(ctx) {
     const { league: L, members, standings } = S.state, mm = Object.fromEntries(members.map((m) => [m.user_id, m]));
     const rows = standings.map((s, i) => { const m = mm[s.user_id] || { username: '?' }; return `<tr class="${s.user_id === me() ? 'me' : ''}${i < 3 ? ' p' + (i + 1) : ''}"><td class="po">${i + 1}</td><td class="nm">${flag(m.flag)}<span>${esc(m.username)}${s.user_id === S.state.lentorro ? ' ' + ic('snail') : ''}</span>${pen(s.user_id) ? `<small class="lg-pen" data-sanc="${sancOf(s.user_id)}">${ic('alert')}−${pen(s.user_id)}</small>` : ''}${m.streak > 1 ? `<small class="fire">${ic('flame')}${m.streak}</small>` : ''}</td><td>${s.wins}</td><td>${s.podiums}</td><td>${s.best ? fmt(s.best / 1000) : '–'}</td><td class="pt">${s.pts}${s.bonus ? `<small class="bn">${ic('target')}${s.bonus}</small>` : ''}</td></tr>`; }).join('');
     const yl = S.state.lentorro;
-    const ban = yl && mm[yl] && L.season === L.current ? `<div class="lg-len">${ic('snail')} <b>Lentorro de hoy:</b> @${esc(mm[yl].username)}${yl === me() ? ' (¡eres tú! Hoy puedes elegir coche en el reto)' : ' · hoy puede elegir coche en el reto'}</div>` : '';
+    const ban = yl && mm[yl] && L.season === L.current ? `<div class="lg-len">${ic('snail')} <b>Lentorro de hoy:</b> @${esc(mm[yl].username)}${yl === me() ? ' (¡eres tú! Hoy puedes elegir coche en el reto)' : ', hoy puede elegir coche en el reto'}</div>` : '';
     const rec = await recapHtml(L); if (S.tab !== 'tabla' || S.view !== 'league') return;
     paint.innerHTML = `${head(L)}${rec}${seasonNav(L)}${podiumHtml(L, mm, standings)}${ban}${predHtml(L, mm)}<table class="lg-t"><thead><tr><th>POS</th><th>PILOTO</th><th>VIC</th><th>POD</th><th>MEJOR</th><th>PTS</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="lg-note sm">Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto entre los miembros. Acertar quién gana el día suma +1 punto. El Lentorro es quien menos puntos lleva (si ayer corrió) y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p>
-      <button class="lg-btn ghost danger" data-a="leave" type="button">Salir de la liga</button><div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`;
+      <button class="lg-btn ghost danger" data-a="leave" type="button">Salir del campeonato</button><div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`;
     S.msg = '';
   }
 
@@ -149,7 +149,7 @@ export function initLeagues(ctx) {
     for (let i = 0; i < L.season_days; i++) {
       const day = new Date(Date.parse(L.from + 'T12:00:00Z') + i * 864e5).toISOString().slice(0, 10), fut = day > L.today, isToday = day === L.today, info = !fut && dailyFor ? dailyFor(day) : null, d = byDay[day], w = d && d.rows[0];
       const tag = go && !fut && d ? 'button type="button" data-vp="race|' + day + '"' : 'div';
-      out.push(`<${tag} class="lg-gp${isToday ? ' now' : ''}${fut ? ' fut' : ''}"><div class="gpn"><small>GP</small><b>${i + 1}</b></div><div class="gpi">${fut ? '<b>? ? ?</b><small>Se revela ese día</small>' : `<b>${info ? `<span class="flag sm">${flagSvg(info.flag)}</span> ${esc(info.name)}` : 'Reto del día'}</b><small>${esc(dayTxt(day))}${info ? ' · ' + esc(info.car) : ''}</small>`}</div><div class="gpw">${isToday ? '<span class="live">HOY</span>' : ''}${w ? `<small>${ic('trophy')}</small><b>${esc((mm[w.user_id] || {}).username || '?')}</b>` : fut ? '' : '<small>sin tiempos</small>'}</div></${tag.split(' ')[0]}>`);
+      out.push(`<${tag} class="lg-gp${isToday ? ' now' : ''}${fut ? ' fut' : ''}"><div class="gpn"><small>GP</small><b>${i + 1}</b></div><div class="gpi">${fut ? '<b>? ? ?</b><small>Se revela ese día</small>' : `<b>${info ? `<span class="flag sm">${flagSvg(info.flag)}</span> ${esc(info.name)}` : 'Reto del día'}</b><small>${esc(dayTxt(day))}${info ? ', ' + esc(info.car) : ''}</small>`}</div><div class="gpw">${isToday ? '<span class="live">HOY</span>' : ''}${w ? `<small>${ic('trophy')}</small><b>${esc((mm[w.user_id] || {}).username || '?')}</b>` : fut ? '' : '<small>sin tiempos</small>'}</div></${tag.split(' ')[0]}>`);
     }
     return `<div class="lg-cal">${out.join('')}</div>`;
   }
@@ -160,11 +160,11 @@ export function initLeagues(ctx) {
       const lead = d.rows[0].ms, live = d.day === L.today, played = new Set(d.rows.map((r) => r.user_id));
       const rows = d.rows.map((r, i) => { const m = mm[r.user_id] || { username: '?' }, pts = PTS[i] || 0;
         const at = (r.attempts && r.attempts.length) ? r.attempts.map((a, k) => `<i${a === r.ms ? ' class="b"' : ''}>${k + 1}º ${fmt(a / 1000)}</i>`).join('') : '';
-        const sec = r.s1 ? `<small class="sec">${[r.s1, r.s2, r.s3].map((x) => fmt(x / 1000)).join(' · ')}</small>` : '';
+        const sec = r.s1 ? `<small class="sec">${[r.s1, r.s2, r.s3].map((x) => fmt(x / 1000)).join(', ')}</small>` : '';
         return `<div class="lg-dr${r.user_id === me() ? ' me' : ''}"><div class="lg-d1"><i class="po">${i + 1}</i>${flag(m.flag)}<b>${esc(m.username)}</b><em>${fmt(r.ms / 1000)}</em><small class="gp">${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : 'LÍDER'}</small><span class="pp">+${pts}</span></div>${d.day === L.today && r.user_id !== me() && m.ghost ? `<div class="lg-d2"><button type="button" class="lg-gh" data-ghost="${r.user_id}">${ic('ghost')} Correr contra su fantasma</button></div>` : ''}${r.gh ? `<div class="lg-d2"><button type="button" class="lg-gh rp" data-rp="${d.day}|${r.user_id}">${ic('play')} Ver su vuelta</button></div>` : ''}${at || sec ? `<div class="lg-d2">${at}${at ? '' : sec}</div>` : ''}</div>`; }).join('');
       const nGh = d.rows.filter((r) => r.gh).length;
       const miss = members.filter((m) => !played.has(m.user_id)).map((m) => esc(m.username));
-      return `<div class="lg-day"><div class="lg-dh"><b>${esc(dayTxt(d.day))}</b>${live ? '<span class="live">HOY · PROVISIONAL</span>' : ''}</div>${nGh > 1 ? `<button type="button" class="lg-cine" data-rpall="${d.day}">${ic('play')} Repetición del día · todos los pilotos</button>` : ''}${rows}${miss.length ? `<p class="lg-miss">Sin tiempo: ${miss.join(', ')}</p>` : ''}</div>`;
+      return `<div class="lg-day"><div class="lg-dh"><b>${esc(dayTxt(d.day))}</b>${live ? '<span class="live">HOY, PROVISIONAL</span>' : ''}</div>${nGh > 1 ? `<button type="button" class="lg-cine" data-rpall="${d.day}">${ic('play')} Repetición del día, todos los pilotos</button>` : ''}${rows}${miss.length ? `<p class="lg-miss">Sin tiempo: ${miss.join(', ')}</p>` : ''}</div>`;
     };
     paint.innerHTML = `${isUi2() ? v2Head(L) + v2Seg() : head(L)}${seasonNav(L)}${days.length ? days.map(dayHtml).join('') : '<p class="lg-note">Aún no hay tiempos en esta temporada. Corre el reto diario y aparecerás aquí.</p>'}`;
   }
@@ -182,12 +182,12 @@ export function initLeagues(ctx) {
   const lapActs = (m) => {
     if (!S.state || m.kind !== 'sys' || isDayMsg(m)) return ''; const L = S.state.league, rows = todayRows(), r = rows.find((x) => x.user_id === m.user_id); if (!r || !r.gh) return '';
     const n = rows.filter((x) => x.gh).length;
-    return `<div class="l2-act"><button type="button" data-rp="${L.today}|${m.user_id}">${ic('play')} Su vuelta</button>${n > 1 ? `<button type="button" data-rpall="${L.today}">${ic('play')} Todos · ${n}</button>` : ''}</div>`;
+    return `<div class="l2-act"><button type="button" data-rp="${L.today}|${m.user_id}">${ic('play')} Su vuelta</button>${n > 1 ? `<button type="button" data-rpall="${L.today}">${ic('play')} Todos, ${n}</button>` : ''}</div>`;
   };
   const dayCard = (m) => {
     const mm = S.memo || {}, day = prevDay(dailyKeyNow(Date.parse(m.at))), d = S.state && S.state.days.find((x) => x.day === day), rows = d ? d.rows : [];
     const pod = rows.slice(0, 3).map((r, i) => `<li><i>${i + 1}</i><b>${esc((mm[r.user_id] || { username: '?' }).username)}</b><em>${fmt(r.ms / 1000)}</em>${r.gh ? `<button type="button" data-rp="${day}|${r.user_id}" aria-label="Ver su vuelta">${ic('play')}</button>` : ''}</li>`).join('');
-    return `<div class="l2-m sys"><div class="l2-yd"><div class="l2-yh"><b>${ic('sun')} Resultado de ayer</b><small>${esc(dayTxt(day))}${rows.length ? ' · ' + rows.length + ' piloto' + (rows.length === 1 ? '' : 's') : ''}</small></div>${rows.length ? `<ol>${pod}</ol>` : `<p>${esc(m.body.replace(/^[^\p{L}@]+/u, '').replace(/^Resultado de ayer:\s*/, ''))}</p>`}<button type="button" class="lg-cine" data-rpall="${day}">${ic('play')} Ver la repetición con todas las vueltas</button></div>${rxHtml(m)}</div>`;
+    return `<div class="l2-m sys"><div class="l2-yd"><div class="l2-yh"><b>${ic('sun')} Resultado de ayer</b><small>${esc(dayTxt(day))}${rows.length ? ', ' + rows.length + ' piloto' + (rows.length === 1 ? '' : 's') : ''}</small></div>${rows.length ? `<ol>${pod}</ol>` : `<p>${esc(m.body.replace(/^[^\p{L}@]+/u, '').replace(/^Resultado de ayer:\s*/, ''))}</p>`}<button type="button" class="lg-cine" data-rpall="${day}">${ic('play')} Ver la repetición con todas las vueltas</button></div>${rxHtml(m)}</div>`;
   };
   const msgHtml = (m) => isDayMsg(m) ? dayCard(m) : m.kind === 'sys'
     ? `<div class="lg-m sys${/sancionad/i.test(m.body) ? ' sanc' : ''}"${/sancionad/i.test(m.body) ? ` data-sanc="${sancOf(m.user_id)}"` : ''}><span>${esc(m.body.replace(/^[^\p{L}@]+/u, '')).replace(/@(\S+)/g, '<b>@$1</b>')}</span><small>${tm(m)}</small>${lapActs(m)}${rxHtml(m)}</div>`
@@ -195,7 +195,7 @@ export function initLeagues(ctx) {
   const feedHtml = (r) => (r.length ? r.map(msgHtml).join('') : '<p class="lg-note">Rompe el hielo: escribe el primer mensaje.</p>');
   function paintFeed(first) {
     const box = $('lgFeed'); if (!box) return; const all = (S.msgs || []).concat(S.pend || []);
-    if (isUi2()) { const sc = $('leagues'), near = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 90; box.innerHTML = all.length ? all.map(msg2).join('') : '<p class="l2-empty">Hoy todavía no hay nada. Marca tu tiempo o escribe a la liga.</p>'; if (near && !first) sc.scrollTop = sc.scrollHeight; return; }
+    if (isUi2()) { const sc = $('leagues'), near = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 90; box.innerHTML = all.length ? all.map(msg2).join('') : '<p class="l2-empty">Hoy todavía no hay nada. Marca tu tiempo o escribe al grupo.</p>'; if (near && !first) sc.scrollTop = sc.scrollHeight; return; }
     const stick = first || box.scrollHeight - box.scrollTop - box.clientHeight < 70, top = box.scrollTop;
     box.innerHTML = feedHtml(all); box.scrollTop = stick ? box.scrollHeight : top;
   }
@@ -210,7 +210,7 @@ export function initLeagues(ctx) {
   }
   async function chatView() {
     S.chatSig = ''; S.rxOpen = null; S.msgs = S.msgs && S.msgsFor === S.id ? S.msgs : []; S.msgsFor = S.id; S.pend = S.pend || [];
-    paint.innerHTML = `${head(S.state.league)}<div id="lgFeed" class="lg-feed"></div><div class="lg-row"><input id="lgMsgIn" class="lg-in" maxlength="300" autocomplete="off" enterkeyhint="send" placeholder="Escribe a la liga…"><button class="lg-btn sm" data-a="send" type="button">Enviar</button></div>`;
+    paint.innerHTML = `${head(S.state.league)}<div id="lgFeed" class="lg-feed"></div><div class="lg-row"><input id="lgMsgIn" class="lg-in" maxlength="300" autocomplete="off" enterkeyhint="send" placeholder="Escribe al grupo…"><button class="lg-btn sm" data-a="send" type="button">Enviar</button></div>`;
     await S.p; if (S.msgs.length) paintFeed(true); else $('lgFeed').innerHTML = sk.rows(5);
     await pull(true); stopPoll(); S.poll = setInterval(() => pull(false), 4000);
   }
@@ -247,7 +247,7 @@ export function initLeagues(ctx) {
     const segs = Array.from({ length: N }, (_, i) => `<i class="${i + 1 < cur || !live ? 'd' : i + 1 === cur ? 'n' : ''}"></i>`).join('');
     return `<div class="l2-top"><button class="l2-ic" data-a="back" type="button" aria-label="Volver">${ic('back')}</button><span class="l2-sp"></span><button class="l2-ic" data-a="invite" type="button" aria-label="Invitar">${ic('share')}</button></div>
       <div class="l2-title"><b class="l2-name">${esc(L.name)}</b><div class="l2-ss"><b>TEMPORADA ${L.season}</b><span class="l2-lap">${live ? `DÍA <b>${cur}</b>/${N}` : 'FINAL'}</span></div>
-      <div class="l2-days" aria-label="Día ${cur} de ${N}">${segs}</div><small class="l2-left">${leftTxt(L)} · ${dd(L.from)} – ${dd(L.to)}</small></div>`;
+      <div class="l2-days" aria-label="Día ${cur} de ${N}">${segs}</div><small class="l2-left">${leftTxt(L)}, ${dd(L.from)} – ${dd(L.to)}</small></div>`;
   }
   const v2Seg = () => `<div class="l2-seg" role="tablist"><button type="button" role="tab" data-t="chat" class="${S.tab === 'chat' ? 'on' : ''}"><span>Chat</span></button><button type="button" role="tab" data-t="tabla" class="${S.tab === 'tabla' ? 'on' : ''}"><span>Puntuación</span></button><button type="button" role="tab" data-t="vit" class="${S.tab === 'vit' ? 'on' : ''}"><span>Vitrina</span></button></div>`;
   // podio de verdad (cajones 2-1-3) con los tiempos de hoy o, si la temporada acabó, los puntos finales
@@ -275,13 +275,13 @@ export function initLeagues(ctx) {
     const mm = S.memo || {}, col = S.cols || {}, u = mm[m.user_id] || { username: m.username };
     if (m.kind === 'sys' && /sancionad/i.test(m.body || '')) {
       const pts = ((m.body.match(/(\d+)\s*puntos/) || [])[1]) || '', why = /side practice/i.test(m.body) ? 'side practice' : 'infracción';
-      return `<div class="l2-m sys"><div class="l2-tw sanc" role="button" tabindex="0" data-sanc="${sancOf(m.user_id)}" style="--c:#E10600"><i></i><div class="l2-wh"><b><span class="l2-twb">${ic('alert')}</span>${esc(u.username)}</b><small>sancionado · ${why}</small></div><div class="l2-rt"><em>−${pts}</em><time>${tm(m)}</time></div></div>${rxHtml(m)}</div>`;
+      return `<div class="l2-m sys"><div class="l2-tw sanc" role="button" tabindex="0" data-sanc="${sancOf(m.user_id)}" style="--c:#E10600"><i></i><div class="l2-wh"><b><span class="l2-twb">${ic('alert')}</span>${esc(u.username)}</b><small>sancionado, ${why}</small></div><div class="l2-rt"><em>−${pts}</em><time>${tm(m)}</time></div></div>${rxHtml(m)}</div>`;
     }
     if (isDayMsg(m)) return dayCard(m);
     if (m.kind === 'sys') {
       const body = String(m.body || '').replace(/^[^\p{L}@]+/u, ''), t = (body.match(/\d+:\d{2}\.\d{2,3}/) || [])[0], lead = /l[ií]der/i.test(body), pos = (body.match(/\(P(\d+)\)/) || [])[1];
       const rows = todayRows(), ri = rows.findIndex((r) => r.user_id === m.user_id), gap = ri > 0 ? '+' + ((rows[ri].ms - rows[0].ms) / 1000).toFixed(3) : '';
-      const what = (ri >= 0 ? 'P' + (ri + 1) + ' hoy' : pos ? 'marca P' + pos : 'ha corrido') + (ri >= 0 && PTS[ri] ? ' · +' + PTS[ri] + ' pts' : '') + (gap ? ' · ' + gap : '');
+      const what = (ri >= 0 ? 'P' + (ri + 1) + ' hoy' : pos ? 'marca P' + pos : 'ha corrido') + (ri >= 0 && PTS[ri] ? ', +' + PTS[ri] + ' pts' : '') + (gap ? ', ' + gap : '');
       return `<div class="l2-m sys${lead ? ' gold' : ''}"><div class="l2-tw" style="--c:${col[m.user_id] || '#111'}"><i></i><div class="l2-wh"><b>${lead ? `<span class="l2-twb">${ic('crown')}</span>` : ''}${esc(u.username)}</b><small>${what}</small></div><div class="l2-rt"><em>${esc(t || '')}</em><time>${tm(m)}</time></div></div>${lapActs(m)}${rxHtml(m)}</div>`;
     }
     const mine = m.user_id === me();
@@ -304,7 +304,7 @@ export function initLeagues(ctx) {
     const lines = ids.map((id) => { const a = per[id], pts = a.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`), ex = X(upto), ey = Y(a[upto]); return `<g style="--c:${col[id]}"${id === me() ? ' class="me"' : ''}><polyline points="${pts.join(' ')}"/><rect class="tag" x="${ex - 9}" y="${ey - 8}" width="18" height="16" rx="3" transform="skewX(-12) translate(${(ey * Math.tan(12 * Math.PI / 180)).toFixed(1)} 0)"/><text class="tg" x="${ex}" y="${ey + 4}">${order.indexOf(id) + 1}</text></g>`; }).join('');
     const marks = sanc.map((x) => { const a = per[x.user_id]; if (!a) return ''; const px = X(x.i), yb = Y(a[x.i] + x.points), ya = Y(a[x.i]); return `<g class="sm" data-sanc="${x.id}"><line x1="${px}" x2="${px}" y1="${yb}" y2="${ya}"/><circle class="hit" cx="${px}" cy="${yb}" r="18"/><circle cx="${px}" cy="${yb}" r="9"/><text class="ex" x="${px}" y="${yb + 4}">!</text><text class="sl" x="${px - 14}" y="${(yb + ya) / 2 + 4}">−${x.points}</text></g>`; }).join('');
     const legend = sanc.map((x) => `<button type="button" class="l2-sl" data-sanc="${x.id}">${ic('alert')}<span>Sancionado: <b>${esc(x.driver || ((S.memo || {})[x.user_id] || {}).username || '')}</b> −${x.points} pts</span><i>›</i></button>`).join('');
-    return `<div class="l2-chart"><div class="l2-ch"><b>Puntos por día</b><small>${L.season < L.current ? 'Temporada completa' : 'Hasta hoy · día ' + upto}</small></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Puntos acumulados por día">${grid}${fin}${lines}${marks}</svg>${legend}</div>`;
+    return `<div class="l2-chart"><div class="l2-ch"><b>Puntos por día</b><small>${L.season < L.current ? 'Temporada completa' : 'Hasta hoy, día ' + upto}</small></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Puntos acumulados por día">${grid}${fin}${lines}${marks}</svg>${legend}</div>`;
   }
   const pen = (uid) => (S.state.sanctions || []).filter((x) => x.user_id === uid).reduce((n, x) => n + x.points, 0);
   function v2Points(L, mm, col) {
@@ -314,9 +314,9 @@ export function initLeagues(ctx) {
       const chips = [`<span><b>${s.wins}</b> vict.</span>`, `<span><b>${s.days || 0}</b> días</span>`, s.best ? `<span>mejor <b>${fmt(s.best / 1000)}</b></span>` : '', ti >= 0 ? `<span>hoy <b>P${ti + 1}</b> ${fmt(tr[ti].ms / 1000)}</span>` : (live ? '<span class="no">hoy sin tiempo</span>' : '')].filter(Boolean).join('');
       return `<div class="l2-card${mine ? ' me' : ''}${i < 3 ? ' p' + (i + 1) : ''}" style="--c:${col[s.user_id]}"><span class="l2-pos"><b>${i + 1}</b></span>${av(m, col[s.user_id], 'md')}<div class="l2-ci"><b>${esc(m.username)}${mine ? '<em class="l2-you">TÚ</em>' : ''}${s.user_id === yl ? `<span class="l2-snail" title="Lentorro">${ic('snail')}</span>` : ''}${pen(s.user_id) ? `<span class="l2-pen" data-sanc="${sancOf(s.user_id)}">${ic('alert')}−${pen(s.user_id)}</span>` : ''}${m.streak > 1 ? `<span class="l2-fire">${ic('flame')}${m.streak}</span>` : ''}</b><div class="l2-bar"><i style="width:${pc}%"></i></div><div class="l2-chips">${chips}</div></div><div class="l2-pt"><b>${s.pts}</b><small>${i ? '−' + (lead - s.pts) : 'PTS'}</small>${tp ? `<em class="l2-td">+${tp}</em>` : ''}</div></div>`; }).join('');
     return `${L.current > 1 ? seasonNav(L) : ''}${v2Chart(L, col)}<div class="l2-cards">${cards}</div>
-      ${yl && mm[yl] && L.season === L.current ? `<p class="l2-len">${ic('snail')} Lentorro: ${esc(mm[yl].username)} · hoy puede elegir coche</p>` : ''}
-      <div class="l2-inv"><div><small>Código de la liga</small><b>${esc(L.code)}</b></div><button class="l2-pill" data-a="copy" type="button">Copiar enlace</button></div>
-      <details class="l2-info"><summary>${ic('info')} Reglas</summary><p>Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto. Acertar quién gana el día suma +1. El Lentorro es quien menos puntos lleva y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p><button class="l2-pill danger" data-a="leave" type="button">Salir de la liga</button></details>`;
+      ${yl && mm[yl] && L.season === L.current ? `<p class="l2-len">${ic('snail')} Lentorro: ${esc(mm[yl].username)}, hoy puede elegir coche</p>` : ''}
+      <div class="l2-inv"><div><small>Código del campeonato</small><b>${esc(L.code)}</b></div><button class="l2-pill" data-a="copy" type="button">Copiar enlace</button></div>
+      <details class="l2-info"><summary>${ic('info')} Reglas</summary><p>Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto. Acertar quién gana el día suma +1. El Lentorro es quien menos puntos lleva y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p><button class="l2-pill danger" data-a="leave" type="button">Salir del campeonato</button></details>`;
   }
   const VIT = createVit({ S, esc, fmt, flagSvg, ic, me, PTS, dailyFor, av, colorMap, v2Head, dayTxt, paint, calHtml, v2Seg, redraw: () => leagueView(), load, acc, toast });
   async function v2View() {
@@ -325,7 +325,7 @@ export function initLeagues(ctx) {
     const pred = predHtml(L, mm), top = `${v2Head(L)}${v2Podium(L, mm, col)}${v2Seg()}`;
     if (S.tab !== 'chat') { stopPoll(); paint.innerHTML = `${top}${v2Points(L, mm, col)}<div class="lg-msg" id="lgMsg">${esc(S.msg)}</div>`; S.msg = ''; return; }
     S.chatSig = ''; S.rxOpen = null; S.msgs = S.msgs && S.msgsFor === S.id ? S.msgs : []; S.msgsFor = S.id; S.pend = S.pend || [];
-    paint.innerHTML = `${top}${pred}<div class="l2-day"><b>Hoy</b><small>${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} · solo el reto del día</small></div><div id="lgFeed" class="l2-feed"></div><div class="l2-in"><input id="lgMsgIn" maxlength="300" autocomplete="off" enterkeyhint="send" placeholder="Tu chat" aria-label="Mensaje para la liga"><button data-a="send" type="button" aria-label="Enviar">${ic('send')}</button></div>`;
+    paint.innerHTML = `${top}${pred}<div class="l2-day"><b>Hoy</b><small>${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}, solo el reto del día</small></div><div id="lgFeed" class="l2-feed"></div><div class="l2-in"><input id="lgMsgIn" maxlength="300" autocomplete="off" enterkeyhint="send" placeholder="Tu chat" aria-label="Mensaje para la liga"><button data-a="send" type="button" aria-label="Enviar">${ic('send')}</button></div>`;
     await S.p; if (S.msgs.length) paintFeed(true); else $('lgFeed').innerHTML = sk.rows(4);
     await pull(true); stopPoll(); S.poll = setInterval(() => pull(false), 4000);
   }
@@ -337,7 +337,7 @@ export function initLeagues(ctx) {
     const l = await acc.rpc('league_join', { p_code: code }); S.list = null; return l;
   }
   async function create() {
-    const v = $('lgName').value.trim(); if (v.length < 2) { S.msg = 'Ponle un nombre a la liga'; return listView(); }
+    const v = $('lgName').value.trim(); if (v.length < 2) { S.msg = 'Ponle un nombre al campeonato'; return listView(); }
     try { const r = await acc.rpc('league_create', { p_name: v }); S.list = null; await enter(r.id); } catch (e) { S.msg = err(e); listView(); }
   }
   async function doJoin(raw) {
@@ -368,7 +368,7 @@ export function initLeagues(ctx) {
     if (a === 'recap') return shareRecap();
     if (a === 'profile') { $('leagues').classList.add('hidden'); stopPoll(); const pb = $('profBtn'); if (pb) pb.click(); return; }
     if (a === 'copy') return copy(leagueUrl(S.state.league.code));
-    if (a === 'invite') { const L = S.state.league; return waShare(`Te invito a mi liga «${L.name}» de KartlosApp: cada día se puntúa el reto diario como un GP de F1 y hay chat para picarnos. Entra con este enlace y te unes al instante (código ${L.code}):`, leagueUrl(L.code)); }
+    if (a === 'invite') { const L = S.state.league; return waShare(`Te invito a mi campeonato «${L.name}» de KartlosApp: cada día se puntúa el reto diario como un GP de F1 y hay chat para picarnos. Entra con este enlace y te unes al instante (código ${L.code}):`, leagueUrl(L.code)); }
     if (a === 'leave') { const id = S.id, nm = S.state.league.name; S.hidden.add(id); S.state = null; undoable('Has salido de «' + nm + '»', async () => { try { await acc.rpc('league_leave', { p_league: id }); S.hidden.delete(id); S.list = null; try { Object.keys(localStorage).filter((k) => k.startsWith('dr.c.')).forEach((k) => localStorage.removeItem(k)); } catch (_) { /* nada */ } } catch (er) { S.hidden.delete(id); toast(err(er)); S.list = null; } if (open() && S.view === 'list') listView(); }, { ms: 6000, onUndo: () => { S.hidden.delete(id); if (open()) listView(); } }); return listView(); }
   });
   $('lgBody').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key !== 'Enter') return; if (e.target.id === 'lgMsgIn') send(); if (e.target.id === 'lgName') create(); if (e.target.id === 'lgCode') doJoin(e.target.value); });
@@ -381,7 +381,7 @@ export function initLeagues(ctx) {
       const rows = await acc.rpc('league_day_ghosts', { p_league: lid, p_day: day, p_user: uid });
       if (!rows || !rows.length) { toast('Esa repetición ya no está disponible (solo se guardan 24 h)'); return; }
       const id = S.id, season = S.season; close();
-      const ok = await replay({ day, league: lid, drivers: rows, title: `${uid ? 'Vuelta' : 'Repetición'} · ${dayTxt(day)}`, onClose: () => { show(); S.fromList = false; enter(id, season).catch(() => {}); } });
+      const ok = await replay({ day, league: lid, drivers: rows, title: `${uid ? 'Vuelta' : 'Repetición'}, ${dayTxt(day)}`, onClose: () => { show(); S.fromList = false; enter(id, season).catch(() => {}); } });
       if (ok === false) { show(); S.fromList = false; enter(id, season).catch(() => {}); }
     } catch (er) { toast(err(er)); }
   }
@@ -406,7 +406,7 @@ export function initLeagues(ctx) {
     setTimeout(async () => {
       if (acc.loggedIn) return tryJoin(); // sesión ya restaurada
       show(); let name = ''; try { const p = await acc.rpc('league_preview', { p_code: pend }, false); if (p) name = p.name; } catch (_) { /* sin red */ }
-      paint.innerHTML = `<p class="lg-note">${name ? `Te han invitado a la liga <b>${esc(name)}</b>.` : 'Te han invitado a una liga.'} Entra o crea tu cuenta (solo usuario y contraseña) y te unirás automáticamente.</p><button class="lg-btn" data-a="profile" type="button">Entrar / crear cuenta</button>`;
+      paint.innerHTML = `<p class="lg-note">${name ? `Te han invitado al campeonato <b>${esc(name)}</b>.` : 'Te han invitado a un campeonato.'} Entra o crea tu cuenta (solo usuario y contraseña) y te unirás automáticamente.</p><button class="lg-btn" data-a="profile" type="button">Entrar / crear cuenta</button>`;
     }, 1800);
     acc.onChange(tryJoin);
   }

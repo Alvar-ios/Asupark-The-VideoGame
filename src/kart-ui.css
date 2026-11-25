@@ -1,0 +1,127 @@
+/* KartlosApp: identidad de karting. Dorsal amarillo, piano rojo y blanco, asfalto y hormigón.
+   Se inyecta al final de la hoja de estilos (build.mjs), así que manda sobre las capas anteriores. */
+@font-face{font-family:"KartDisplay";src:url("./assets/barlowc-800i.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"KartBody";src:url("./assets/barlow-500.woff2") format("woff2");font-weight:100 600;font-display:swap}
+@font-face{font-family:"KartBody";src:url("./assets/barlow-700.woff2") format("woff2");font-weight:700 900;font-display:swap}
+
+html.ui2{--fd:"KartDisplay","Arial Narrow",sans-serif;--fb:"KartBody",system-ui,sans-serif;--y:#ffc400;--yd:#b98c00;
+  --spring:cubic-bezier(.3,1.45,.5,1)}
+@supports (transition-timing-function:linear(0,1)){html.ui2{--spring:linear(0,.14 6%,.72 15%,1.02 22%,1.12 28%,1.1 33%,1.02 42%,.985 52%,.99 62%,1.005 78%,1)}}
+
+html.ui2 #menu,html.ui2 #menu .panel,html.ui2 #menuLeft,html.ui2 #leagues{background:var(--cr)!important}
+
+/* ---------- cabecera y logo ---------- */
+#menu .hm-top{margin-bottom:14px}
+#menu .hm-top .wmrow{display:flex;align-items:center;gap:8px;min-width:0}
+#menu .hm-top .wm{display:flex;align-items:center;gap:9px;margin:0;font-size:0}
+#menu .kx-mark{width:40px;height:34px;flex:0 0 auto}
+html.ui2 #menu .wm .wm-txt{font:400 31px/1 var(--fd)!important;letter-spacing:0;text-transform:none;color:var(--k)!important;-webkit-text-fill-color:var(--k);padding-right:3px}
+html.dark #menu .wm .wm-txt{color:var(--k)!important;-webkit-text-fill-color:var(--k)}
+html.ui2 #menu .hm-tools>button:not(.ui-tg){width:40px;height:40px;border-radius:8px;border:2px solid var(--k)!important;box-shadow:none!important;background:#fff!important}
+@media (max-width:420px){#menu .kx-mark{width:33px;height:28px}html.ui2 #menu .wm .wm-txt{font-size:26px!important}#menu .ver{display:none}html.ui2 #menu .hm-tools>button:not(.ui-tg){width:38px;height:38px}}
+
+/* ---------- títulos de sección ---------- */
+html.ui2 #menu .hm-sec{font:400 28px/1 var(--fd)!important;text-transform:none;letter-spacing:0;margin:24px 0 12px}
+html.ui2 #menu .hm-sec.row button{font:700 14px var(--fb)!important;color:var(--k);text-decoration:underline;text-decoration-color:var(--y);text-decoration-thickness:3px;text-underline-offset:5px}
+
+/* ---------- reto diario: panel de asfalto con piano ---------- */
+html.ui2 #menu #dailyCard.hero{position:relative;display:block;width:100%;text-align:left;border-radius:12px!important;background:#1a1c21!important;box-shadow:none!important;padding:0!important;overflow:hidden}
+#dailyCard.hero::before{content:"";display:block!important;height:10px;background:repeating-linear-gradient(115deg,#dc1f17 0 22px,#fff 22px 44px)}
+#dailyCard .kx-d{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:start;padding:16px 16px 0}
+#dailyCard .kx-d h2{margin:0;font:400 38px/.95 var(--fd)!important;color:#fff}
+#dailyCard .kx-d p{margin:6px 0 0;font:500 14px/1.35 var(--fb);color:#c3c8cf}
+#dailyCard .kx-clock{display:grid;justify-items:end;gap:2px;font:500 12px var(--fb);color:#c3c8cf}
+#dailyCard .kx-clock b{font:400 26px/1 var(--fd);font-variant-numeric:tabular-nums;color:var(--y);letter-spacing:.02em}
+#dailyCard .kx-art{position:relative;height:150px;margin:10px 16px 0;display:grid;place-items:center;border-radius:8px;background:#23262d;overflow:hidden}
+#dailyCard .kx-art .kx-line{width:100%;height:100%;padding:12px;box-sizing:border-box}
+#dailyCard .kx-art .kx-q{width:78%;height:80%;fill:none;stroke:#4b515c;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+#dailyCard .kx-art .kx-run{stroke:var(--y);stroke-dasharray:60 940;animation:kx-lap 3.4s linear infinite}
+@keyframes kx-lap{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}
+#dailyCard .kx-steps{padding:10px 16px 0}
+html.ui2 #menu #dailyCard .dy-chips>*{border-radius:6px!important;background:#2b2f36!important}
+html.ui2 #menu #dailyCard .dy-go{display:block;position:relative;overflow:hidden;margin:12px 16px 16px;padding:13px!important;border-radius:8px!important;background:var(--y)!important;color:#15171b!important;box-shadow:0 4px 0 var(--yd)!important;font:400 24px/1 var(--fd)!important;letter-spacing:.01em;text-align:center;text-transform:none}
+#dailyCard .dy-go::after{content:"";position:absolute;top:0;bottom:0;width:46px;left:-70px;background:rgba(255,255,255,.65);transform:skewX(-20deg);animation:kx-sweep 4.6s ease-in-out infinite}
+@keyframes kx-sweep{0%,62%{left:-70px}88%,100%{left:115%}}
+
+/* ---------- entrenar: circuitos ---------- */
+.kx-tracks{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);gap:10px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;scrollbar-width:none;touch-action:pan-x pan-y}
+.kx-tracks::-webkit-scrollbar{display:none}
+html.ui2 #menu .kx-track{scroll-snap-align:start;display:grid;gap:2px;text-align:left;padding:0 0 10px;border:2px solid var(--k);border-radius:10px;background:#fff;color:var(--k);overflow:hidden;cursor:pointer;transition:transform .35s var(--spring)}
+html.ui2 #menu .kx-track:active{transform:scale(.96)}
+.kx-line{fill:none;stroke:#fff;stroke-linejoin:round;stroke-linecap:round}.kx-line circle{fill:var(--y);stroke:none}
+.kx-track svg{width:100%;height:104px;padding:10px;box-sizing:border-box;background:#1a1c21}
+html.ui2 #menu .kx-track b{padding:7px 10px 0;font:400 22px/1.05 var(--fd)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kx-track span{padding:0 10px;font:500 13px var(--fb);color:#5a5f66}
+
+/* ---------- campeonatos ---------- */
+html.ui2 #menu .hm-lg-r{border-radius:10px;border-width:2px;box-shadow:none;transition:transform .35s var(--spring)}
+html.ui2 #menu .hm-lg-r:active{transform:scale(.97)}
+html.ui2 #menu .hm-lg-r .pos{border-radius:6px;background:var(--y);color:#15171b}
+html.ui2 #menu .hm-lg-cta button{border-radius:8px!important;box-shadow:none!important;min-height:48px;font:400 20px var(--fd)!important}
+html.ui2 #menu .hm-lg-cta button+button{border:2px solid var(--k)}
+html.ui2 #menu :is(.hm-fin,.hm-install){border-radius:10px;border-width:2px;box-shadow:none}
+
+/* ---------- barra inferior: ficha que se desliza con muelle y botón de garaje como dorsal ---------- */
+html.ui2 #hmNav{border-radius:0!important;box-shadow:none!important;background:#1a1c21!important;gap:0!important;padding-left:4px!important;padding-right:4px!important;--i:0}
+html.ui2 #hmNav .kx-ind{position:absolute;top:6px;left:4px;width:calc((100% - 8px) / 5);height:50px;border-radius:8px;background:#2f333c;transform:translateX(calc(var(--i) * 100%));transition:transform .5s var(--spring);pointer-events:none}
+html.ui2 #hmNav button{position:relative;z-index:1;min-height:50px;justify-content:center;color:#a9afb8!important;font:700 11px var(--fb)!important;letter-spacing:0}
+html.ui2 #hmNav button.on{color:#fff!important}
+html.ui2 #hmNav button.on svg{color:var(--y)}
+html.ui2 #hmNav button.on::after{display:none!important}
+html.ui2 #hmNav button svg{transition:transform .45s var(--spring)}
+html.ui2 #hmNav button:active svg{transform:scale(.8)}
+html.ui2 #hmNav button.kx-garage{color:#fff!important}
+html.ui2 #hmNav button.kx-garage i{display:grid;place-items:center;width:58px;height:38px;margin-top:-22px;border-radius:8px;border:3px solid #1a1c21;background:var(--y);color:#15171b;transition:transform .45s var(--spring)}
+html.ui2 #hmNav button.kx-garage:active i{transform:scale(.9) rotate(-4deg)}
+html.ui2 #hmNav button.kx-garage i svg{color:#15171b!important}
+@media (min-width:761px){html.ui2 #hmNav{border-radius:10px 10px 0 0!important}}
+
+/* ---------- botones principales del resto de pantallas ---------- */
+html.ui2 :is(#daily,#profile,#board,#settings,#musicPick,#results,#pause,#leagues,#menu) button.big:not(.ghost):not(.wa),html.ui2 #startBtn,html.ui2 #daily .dy-btn:not(.ghost):not(.ad){background:var(--y)!important;color:#15171b!important;border-radius:8px!important;box-shadow:0 4px 0 var(--yd)!important;text-transform:none}
+html.ui2 :is(button.big,#startBtn,.l2-cta,.dy-btn):active{transform:translateY(3px);box-shadow:0 1px 0 var(--yd)!important}
+html.ui2 :is(#profile,#board,#settings,#musicPick,#results,#pause)>.panel>h1,html.ui2 :is(#profile,#board,#settings,#musicPick,#results,#pause) h3{text-transform:none!important}
+
+/* sin etiquetas en mayúsculas en los menús */
+html.ui2 :is(#menu,#daily,#leagues,#profile,#board,#settings,#musicPick,#results,#pause) :is(small,h3,.hm-sec,.hm-ph b,.pick small){text-transform:none!important;letter-spacing:0!important}
+
+/* ---------- fuera degradados y adornos heredados ---------- */
+html.ui2 #menu #menuLeft.panel::before,html.ui2 #menu .panel::before{display:none!important}
+#menu .hm-top .wmrow,#menu .hm-top{background:none!important;box-shadow:none!important;text-shadow:none!important}
+
+/* ---------- entrenar ---------- */
+html.ui2 #menu #startBtn{background:var(--y)!important;color:#15171b!important;border:0!important;border-radius:8px!important;box-shadow:0 4px 0 var(--yd)!important;font:400 28px/1 var(--fd)!important;letter-spacing:0!important;text-transform:none!important;min-height:58px}
+html.ui2 #menu #hmBack{width:40px;height:40px;border-radius:8px;background:#fff!important;border:2px solid var(--k)!important;color:var(--k)!important}
+html.ui2 #menu .pick{border-width:2px!important;box-shadow:none!important}
+html.ui2 #menu #homeBoard{border-radius:10px;box-shadow:none}
+html.ui2 #menu #homeBoard .hb-h b{font:400 22px/1 var(--fd)!important;letter-spacing:0;text-transform:none;color:var(--y)}
+
+/* ---------- garaje ---------- */
+html.ui2 #menu #flyout .vhead h2{font:400 34px/1 var(--fd)!important;text-transform:none;color:var(--y)}
+html.ui2 #menu #groupTabs,html.ui2 #boardGroups{display:none!important}
+html.ui2 #menu #flyout #carList .card :is(small,.brand){display:none}
+html.ui2 #menu #flyout :is(.card,.stat,.card b,.stat span,#kartCfg label){text-transform:none!important;letter-spacing:0!important}
+html.ui2 #menu #flyout .card{border-radius:10px}
+
+/* ---------- reto: tarjeta de trazado a todo el ancho ---------- */
+html.ui2 #daily .dy-sum{display:block}html.ui2 #daily .dy-sum canvas{width:100%!important;height:auto!important;max-height:200px;object-fit:contain}
+html.ui2 #daily .dy-step h3{font:400 24px/1 var(--fd)!important;text-transform:none!important}
+html.ui2 #daily .dy-x,html.ui2 #leagues .dy-x{border-radius:8px!important;box-shadow:none!important}
+html.ui2 #daily{background:rgba(12,13,16,.94)!important}
+html.ui2 #leagues .lg-panel h1,html.ui2 #leagues .lg-panel h2{text-transform:none!important}
+html.ui2 #leagues button:is(.lg-btn,.dy-btn):not(.ghost){background:var(--y)!important;color:#15171b!important;box-shadow:0 4px 0 var(--yd)!important;border-radius:8px!important}
+html.ui2 :is(#profile,#board,#settings,#musicPick,#results,#pause)>.panel>h1{text-transform:none!important}
+html.ui2 :is(#board,#profile) :is(.tabs,.pf-tabs) button{border-radius:6px!important}
+
+/* ---------- modo oscuro: lo que ya es de color propio se vuelve a invertir para no perderlo ---------- */
+html.dark :is(#hmNav,.kx-mark,.kx-track svg){filter:invert(1) hue-rotate(180deg)}
+
+html.ui2 body #menu #menuLeft #startBtn#startBtn{background:var(--y)!important;color:#15171b!important;letter-spacing:0!important;box-shadow:0 4px 0 var(--yd)!important;font:400 28px/1 var(--fd)!important}
+html.ui2 body #board #boardGroups#boardGroups{display:none!important}
+html.ui2 #board .lbt :is(th,tr.gh td,td){text-transform:none!important;letter-spacing:0!important}
+html.ui2 body #menu #flyout#flyout{background:#15171b!important}
+html.ui2 body #settings#settings .tog.on,html.ui2 body #settings#settings .set-tg button.on{background:var(--y)!important;color:#15171b!important;box-shadow:0 3px 0 var(--yd)!important}
+html.ui2 body #leagues#leagues .lg-panel :is(button.lg-btn:not(.ghost),button.big:not(.ghost),.dy-btn:not(.ghost)){background:var(--y)!important;color:#15171b!important;box-shadow:0 4px 0 var(--yd)!important}
+/* solo karts y sin rivales: no hay selector de modo */
+#menu .modes{display:none!important}
+
+@media (prefers-reduced-motion:reduce){#dailyCard .kx-run,#dailyCard .dy-go::after{animation:none}html.ui2 #hmNav .kx-ind,html.ui2 #hmNav button svg{transition:none}}

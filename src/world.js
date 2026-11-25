@@ -13,6 +13,7 @@ import { magarigawaDecor } from './magarigawa.js';
 import { murallaDecor } from './muralla.js';
 import { italiaDecor } from './italia.js';
 import { rallyDecor } from './rally.js';
+import { industrialDecor } from './industrial.js';
 
 const col = (hex) => new THREE.Color(hex);
 
@@ -476,7 +477,7 @@ function getSponsorTex(idx) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = b.bg; ctx.fillRect(0, 0, 512, 128);
   ctx.fillStyle = b.accent; ctx.fillRect(0, 0, 512, 10); ctx.fillRect(0, 118, 512, 10);
-  ctx.font = '900 58px "Jersey 10",Impact,sans-serif';
+  ctx.font = '900 58px "KartDisplay",Impact,sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = b.fg;
   ctx.fillText(b.text, 256, 64);
@@ -494,7 +495,7 @@ function distanceBoardTex(num) {
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 256, 256);
   ctx.lineWidth = 14; ctx.strokeStyle = '#c92a2a'; ctx.strokeRect(10, 10, 236, 236);
   ctx.fillStyle = '#111317';
-  ctx.font = '900 120px "Jersey 10",Impact,sans-serif';
+  ctx.font = '900 120px "KartDisplay",Impact,sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(String(num), 128, 128);
   const tex = new THREE.CanvasTexture(canvas);
@@ -573,7 +574,7 @@ function makeEnv(renderer, th) {
 function signTex(label, color) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 96; const x = c.getContext('2d');
   x.fillStyle = '#0c1220'; x.fillRect(0, 0, 256, 96); x.strokeStyle = color; x.lineWidth = 8; x.strokeRect(4, 4, 248, 88);
-  x.fillStyle = color; x.font = '64px "Jersey 10",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(label, 128, 52);
+  x.fillStyle = color; x.font = '64px "KartDisplay",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(label, 128, 52);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 function gantry(tr, s, label, color) {
@@ -596,7 +597,7 @@ function stripeTex(c1, c2, n) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; return t;
 }
 function kartSurroundings(tr, th, scene, anim) {
-  const N = tr.N, L = WALL, f0 = th.surround === 'f0', kl = th.surround === 'kl', blue = 0x1a3778, red = 0xd91e18;
+  const N = tr.N, L = WALL, f0 = th.surround === 'f0', blue = 0x1a3778, red = 0xd91e18;
   const grid = new Map(), cs = 8; for (let i = 0; i < N; i++) { const k = Math.floor(tr.X[i] / cs) + ',' + Math.floor(tr.Z[i] / cs); (grid.get(k) || grid.set(k, []).get(k)).push(i); }
   const nearest = (x, z) => { let b = 1e9; const cx = Math.floor(x / cs), cz = Math.floor(z / cs); for (let a = -4; a <= 4; a++) for (let c = -4; c <= 4; c++) { const l = grid.get((cx + a) + ',' + (cz + c)); if (l) for (const i of l) { const d = Math.hypot(tr.X[i] - x, tr.Z[i] - z); if (d < b) b = d; } } return b; };
   const at = (i, side, d) => { i = ((i % N) + N) % N; const l = d * side; return [tr.X[i] - tr.TZ[i] * l, tr.Z[i] + tr.TX[i] * l, tr.Y[i], Math.atan2(tr.TX[i], tr.TZ[i])]; };
@@ -628,7 +629,7 @@ function kartSurroundings(tr, th, scene, anim) {
   // edificio de boxes junto a la salida (fachada de 30 m a lo largo de la pista, 9 m de fondo)
   { let found = null; for (const sd of [1, -1]) { const m = spotRect(6, sd, -15.5, 15.5, L + 8, 11); if (m != null) { found = { sd, m }; break; } }
     if (found) { const { sd, m } = found, p = at(6, sd, m + 5.5), g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
-    const wall = f0 || kl ? 0xf2f2f0 : 0xeaf0fa, roof = f0 || kl ? red : blue;
+    const wall = f0 ? 0xf2f2f0 : 0xeaf0fa, roof = f0 ? red : blue;
     g.add(box(30, 4.6, 9, wall, 0, 2.3, 0), box(31.5, 0.5, 11, roof, 0, 4.85, 0), box(30.2, 1.1, 0.3, roof, 0, 3.7, -sd * 4.6));
     for (let k = -5; k <= 5; k++) g.add(box(1.9, 2.4, 0.2, 0x20242c, k * 2.6, 1.5, -sd * 4.55));
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(11, 11 / logoAr), new THREE.MeshBasicMaterial({ map: logo })); sign.position.set(0, 7.4, -sd * 4.2); sign.rotation.y = sd > 0 ? Math.PI : 0; g.add(sign); g.add(box(11.4, 11 / logoAr + 0.4, 0.2, 0x1c1f26, 0, 7.4, -sd * 4.0 + (sd > 0 ? 0.15 : -0.15)));
@@ -636,49 +637,13 @@ function kartSurroundings(tr, th, scene, anim) {
   // gradas escalonadas (filas que se alejan de la pista)
   { let found = null; for (const sd of [-1, 1]) { const m = spotRect(N - 30, sd, -11.5, 11.5, L + 5, 8); if (m != null) { found = { sd, m }; break; } }
     if (found) { const { sd, m } = found, p = at(N - 30, sd, m), g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
-    for (let k = 0; k < 5; k++) g.add(box(22, 0.9, 1.6, k % 2 ? (f0 || kl ? red : blue) : 0xdadde4, 0, 0.5 + k * 0.9, sd * (k * 1.5)), box(22, 0.3, 0.2, 0x2a2d33, 0, 1 + k * 0.9, sd * (k * 1.5 - 0.7)));
+    for (let k = 0; k < 5; k++) g.add(box(22, 0.9, 1.6, k % 2 ? (f0 ? red : blue) : 0xdadde4, 0, 0.5 + k * 0.9, sd * (k * 1.5)), box(22, 0.3, 0.2, 0x2a2d33, 0, 1 + k * 0.9, sd * (k * 1.5 - 0.7)));
     g.add(box(23, 0.3, 9, 0xcfd3da, 0, 6.2, sd * 3.2)); for (const dx of [-11, 11]) g.add(box(0.3, 6, 0.3, 0x555b66, dx, 3, sd * 7)); G.add(g); } }
   if (f0) { // contenedores apilados (rojo, blanco y negro) en las curvas más cerradas, tumbados a lo largo de la pista
     const peaks = []; for (let i = 0; i < N; i++) { const a = Math.abs(tr.kap[i]); if (a > 0.1 && !peaks.some((q) => Math.min(Math.abs(q - i), N - Math.abs(q - i)) < 90)) peaks.push(i); }
     peaks.slice(0, 4).forEach((i, n) => { const side = tr.kap[i] > 0 ? 1 : -1, m = spotRect(i, side, -10, 10, L + 6, 2.5); if (m == null) return; const p = at(i, side, m + 1.25); const g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
       const cc = [0xc8201a, 0xf0f0ee, 0x1b1d22]; for (let k = 0; k < 3; k++) { g.add(box(6, 2.5, 2.4, cc[(n + k) % 3], k * 6.2 - 6, 1.25, 0)); if (k !== 1) g.add(box(6, 2.5, 2.4, cc[(n + k + 1) % 3], k * 6.2 - 6, 3.75, 0)); } G.add(g); });
-  } else if (th.surround === 'kl') { // Kartlos: pabellón blanco de formas curvas y palmeras, como en el original
-    kartlosDecor(tr, G, spotRect, at, along, box, nearest);
-  } else { // Asupark: noria, carpa de circo y globos aerostáticos
-    const cx = tr.X.reduce((a, b) => a + b, 0) / N, cz = tr.Z.reduce((a, b) => a + b, 0) / N; let best = null, bd = 1e18;
-    for (let dx = -200; dx <= 200; dx += 8) for (let dz = -200; dz <= 200; dz += 8) { const x = cx + dx, z = cz + dz, n = nearest(x, z); if (n > 30) { const d = dx * dx + dz * dz; if (d < bd) { bd = d; best = [x, z]; } } }
-    if (best) { const g = new THREE.Group(); g.position.set(best[0], tr.Y[0], best[1]); g.rotation.y = 0.5; const R = 14, wheel = new THREE.Group(); wheel.position.y = R + 2.2; g.add(wheel);
-      const rim = new THREE.MeshLambertMaterial({ color: 0xf2f4f8 }); for (const z of [-0.9, 0.9]) wheel.add(new THREE.Mesh(new THREE.TorusGeometry(R, 0.22, 6, 40), rim)).position.z = z;
-      const cabCols = [0xd91e18, 0xf3c026, 0x1a3778, 0x2fa84a, 0xe8559a, 0xf08a1c]; for (let k = 0; k < 16; k++) { const a = (k / 16) * 6.283; const sp = box(0.12, R, 0.12, 0xc9ced8, 0, 0, 0); sp.position.set(Math.cos(a) * R / 2, Math.sin(a) * R / 2, 0); sp.rotation.z = a - Math.PI / 2; wheel.add(sp); const cab = box(1.9, 1.5, 1.7, cabCols[k % 6], Math.cos(a) * R, Math.sin(a) * R - 0.9, 0); cab.userData.cab = true; wheel.add(cab); }
-      for (const sd of [-1, 1]) { const leg = box(0.4, R + 4, 0.4, 0x8a909c, 0, (R + 2.2) / 2, sd * 1.6); leg.rotation.z = 0.25; g.add(leg); const leg2 = leg.clone(); leg2.rotation.z = -0.25; g.add(leg2); }
-      anim.push((dt) => { wheel.rotation.z -= dt * 0.12; wheel.children.forEach((c) => { if (c.userData.cab) c.rotation.z = -wheel.rotation.z; }); }); G.add(g); }
-    const tp = (() => { for (const i of [Math.floor(N * 0.3), Math.floor(N * 0.8), Math.floor(N * 0.55)]) for (const sd of [1, -1]) { const p = spot(i, sd, L + 14, 20); if (p) return p; } return null; })();
-    if (tp) { const g = new THREE.Group(); g.position.set(tp[0], tp[2], tp[1]); const st = stripeTex('#1a3778', '#f4f4f4', 16);
-      const m = new THREE.MeshLambertMaterial({ map: st }); const body = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 4, 24, 1, true), m), top = new THREE.Mesh(new THREE.ConeGeometry(9.4, 6, 24, 1, true), m); body.position.y = 2; top.position.y = 7; m.side = THREE.DoubleSide; g.add(body, top);
-      g.add(box(0.2, 5, 0.2, 0x555b66, 0, 11.5, 0), box(2.2, 1.2, 0.1, 0xf3c026, 1.1, 13.6, 0)); G.add(g); }
-    for (let n = 0; n < 3; n++) { const i = Math.floor((n + 0.3) * N / 3), p = at(i, n % 2 ? 1 : -1, 70 + n * 25); const g = new THREE.Group(); g.position.set(p[0], 70 + n * 12, p[1]);
-      const bt = stripeTex('#' + [0xd91e18, 0xf3c026, 0x1a3778][n].toString(16).padStart(6, '0'), '#f4f4f4', 12); const env = new THREE.Mesh(new THREE.SphereGeometry(8, 18, 14), new THREE.MeshLambertMaterial({ map: bt })); env.scale.y = 1.2; g.add(env, box(1.6, 1.1, 1.6, 0x7a5a34, 0, -11.5, 0)); for (const [dx, dz] of [[-.7, -.7], [.7, .7], [-.7, .7], [.7, -.7]]) g.add(box(0.05, 4.2, 0.05, 0x2a2d33, dx * 1.8, -8.3, dz * 1.8)); G.add(g); }
   }
-}
-
-// Kartlos: pabellón blanco de formas redondeadas junto a la recta y palmeras repartidas fuera de los muros
-function kartlosDecor(tr, G, spotRect, at, along, box, nearest) {
-  const N = tr.N, L = WALL, white = new THREE.MeshLambertMaterial({ color: 0xf4f4f2 }), glass = new THREE.MeshLambertMaterial({ color: 0x2a3644 });
-  let best = null; for (let k = 0; k < N && !best; k += 6) { const i = Math.floor(N * 0.12 + k) % N; if (Math.abs(tr.kap[i]) > 0.02) continue; for (const sd of [1, -1]) { const m = spotRect(i, sd, -22, 22, L + 10, 14, 30); if (m != null) { best = { i, sd, m }; break; } } }
-  if (best) { const { i, sd, m } = best, p = at(i, sd, m + 7), g = new THREE.Group(); g.position.set(p[0], p[2], p[1]); g.rotation.y = along(p);
-    for (const [y, h, w, d] of [[0, 4.2, 40, 12], [4.2, 3.6, 34, 10], [7.8, 0.5, 35, 11]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), white); b.position.y = y + h / 2; g.add(b);
-      for (const ex of [-w / 2, w / 2]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(d / 2, d / 2, h, 20), white); c.position.set(ex, y + h / 2, 0); g.add(c); } }
-    for (const [y, w] of [[2.3, 38], [6, 32]]) { const band = new THREE.Mesh(new THREE.BoxGeometry(w, 1.5, 0.2), glass); band.position.set(0, y, -sd * (y < 4 ? 6.02 : 5.02)); g.add(band); }
-    G.add(g); }
-  // palmeras: tronco ligeramente inclinado y copa de hojas largas
-  const trunkM = new THREE.MeshLambertMaterial({ color: 0x8a6a45 }), leafM = new THREE.MeshLambertMaterial({ color: 0x3f7a35, side: THREE.DoubleSide });
-  const leafG = new THREE.PlaneGeometry(0.9, 4.2).translate(0, 2.1, 0);
-  let n = 0;
-  for (let k = 0; k < N && n < 26; k += 23) { const sd = (k / 23) % 2 ? 1 : -1, p = at(k, sd, L + 4 + (k % 3) * 2); if (nearest(p[0], p[1]) < L + 2.5) continue;
-    const g = new THREE.Group(), h = 7 + (k % 4); g.position.set(p[0], p[2], p[1]); g.rotation.y = k;
-    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, h, 7).translate(0, h / 2, 0), trunkM); t.rotation.z = 0.08; g.add(t);
-    for (let j = 0; j < 8; j++) { const l = new THREE.Mesh(leafG, leafM); l.position.set(-h * 0.08, h, 0); l.rotation.set(0, j * Math.PI / 4, 1.15 + (j % 2) * 0.25, 'YXZ'); g.add(l); }
-    G.add(g); n++; }
 }
 
 // una sola bandera grande del país del circuito, a la izquierda de la salida: mástil alto y tela ondulada
@@ -1426,7 +1391,7 @@ function marioQuestionTex() {
   ctx.strokeStyle = '#421a08'; ctx.lineWidth = 4; ctx.strokeRect(2, 2, 60, 60);
   ctx.fillStyle = '#421a08';
   ctx.fillRect(6, 6, 4, 4); ctx.fillRect(54, 6, 4, 4); ctx.fillRect(6, 54, 4, 4); ctx.fillRect(54, 54, 4, 4);
-  ctx.font = '900 44px "Jersey 10",Impact,sans-serif';
+  ctx.font = '900 44px "KartDisplay",Impact,sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = '#2a1205'; ctx.fillText('?', 34, 34);
   ctx.fillStyle = '#ffffff'; ctx.fillText('?', 32, 32);
@@ -1619,7 +1584,7 @@ function createFoamWedgeGeometry() {
 const LOCAL_BRANDS = {
   pruebas: ['ESTRELLA GALICIA', '#c8102e', '#ffffff'], monaco: ['HÔTEL DE PARIS', '#0b1f3a', '#e8c872'], spa: ['SPA MONOPOLE', '#0a4d8c', '#ffffff'],
   valle: ['GUARANÁ ANTARCTICA', '#0a7a3c', '#ffe14d'], desierto: ['TEQUILA SAUZA', '#7a2a0a', '#ffd166'], neon: ['ASAHI SUPER DRY', '#101820', '#f2f2f2'],
-  nieve: ['RICOLA', '#00873c', '#ffffff'], amazonas: ['INCA KOLA', '#f6c600', '#c8102e'], karting: ['KARTING CLUB', '#d91e18', '#ffffff'], asupark: ['ASUPARK', '#1a3778', '#ffffff'], kartlos: ['KARTLOS', '#d21f26', '#ffffff'],
+  nieve: ['RICOLA', '#00873c', '#ffffff'], amazonas: ['INCA KOLA', '#f6c600', '#c8102e'], karting: ['KARTING CLUB', '#d91e18', '#ffffff'], asupark: ['ASUPARK', '#1a3778', '#ffffff'],
 };
 const localBrandCache = {};
 const logoImgs = {};
@@ -1642,7 +1607,7 @@ function localBrandTex(th) {
   if (localBrandCache[th.id]) return localBrandCache[th.id];
   const c = document.createElement('canvas'); c.width = 1536; c.height = 128; const x = c.getContext('2d');
   x.fillStyle = b[1]; x.fillRect(0, 0, 1536, 128); x.fillStyle = b[2]; x.fillRect(0, 0, 1536, 8); x.fillRect(0, 120, 1536, 8);
-  x.font = '900 84px "Jersey 10",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.font = '900 84px "KartDisplay",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
   for (const cx of [384, 1152]) x.fillText(b[0], cx, 66);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; localBrandCache[th.id] = t; return t;
 }
@@ -2166,7 +2131,7 @@ function marioBannerTex() {
     x.fillStyle = colors[j % 4]; x.fillRect(0, 28 + j * bh, bw * 2, bh - 1);
     x.fillStyle = colors[(j + 2) % 4]; x.fillRect(512 - bw * 2, 28 + j * bh, bw * 2, bh - 1);
   }
-  x.font = '900 62px "Jersey 10",Impact,"Arial Black",sans-serif';
+  x.font = '900 62px "KartDisplay",Impact,"Arial Black",sans-serif';
   x.textAlign = 'center'; x.textBaseline = 'middle';
   x.fillStyle = '#b3171d';
   for (let dx = -4; dx <= 4; dx++) for (let dy = -4; dy <= 4; dy++) {
@@ -2233,7 +2198,7 @@ function turnSigns(tr, th, scene, mobile) {
     const x = c.getContext('2d');
     x.fillStyle = '#101725'; x.fillRect(0, 0, 384, 192);
     x.strokeStyle = '#' + new THREE.Color(th.kerb1).getHexString(); x.lineWidth = 14; x.strokeRect(8, 8, 368, 176);
-    x.fillStyle = '#f4f7ff'; x.font = '94px "Jersey 10",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillStyle = '#f4f7ff'; x.font = '94px "KartDisplay",Impact,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
     x.fillText(dir > 0 ? '›  ›  ›' : '‹  ‹  ‹', 192, 100);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   };
@@ -2348,7 +2313,7 @@ function scenery(tr, th, scene, rng, q) {
   };
   const cxm = (minX + maxX) / 2, czm = (minZ + maxZ) / 2, R = Math.hypot(maxX - minX, maxZ - minZ) / 2;
   const spots = [];
-  const want = Math.round((th.deco === 'city' ? 260 : th.treeCount || 520) * q.density);
+  const want = th.industrial ? 0 : Math.round((th.deco === 'city' ? 260 : th.treeCount || 520) * q.density);
   let guard = 0;
   while (spots.length < want && guard++ < want * 25) {
     const i = Math.floor(rng() * tr.N), side = rng() < 0.5 ? -1 : 1;
@@ -2524,7 +2489,7 @@ function scenery(tr, th, scene, rng, q) {
   }
   // montañas lejanas
   const mts = [];
-  const mcount = q.mountains;
+  const mcount = th.industrial ? 0 : q.mountains;
   for (let k = 0; k < mcount; k++) {
     const a = (k / mcount) * Math.PI * 2 + rng() * 0.1, d = R + 560 + rng() * 420, h = 60 + rng() * 105;
     mts.push([cxm + Math.cos(a) * d, czm + Math.sin(a) * d, h, rng() * 6.28]);
@@ -2584,6 +2549,7 @@ function scenery(tr, th, scene, rng, q) {
 // Elementos fuera de las vallas, según el paisaje de cada circuito: relieves, rocas, mesetas, cactus, bosques y pequeños poblados.
 // Se añade después de la decoración existente, así que no altera la colocación de árboles ni montañas.
 function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
+  if (th.industrial) { windLeaves.length = 0; industrialDecor(tr, th, scene, rng, q, clearance, cxm, czm, R); return; }
   if (th.id === 'italia') { windLeaves.length = 0; makeBirds(tr, scene, q.density < 1 ? 4 : 8); return; } // todo su entorno lo construye italia.js
   if (th.id === 'muralla') { windLeaves.length = 0; backdrop(scene, 'karst', cxm, czm, R, 1250); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
   if (th.id === 'magarigawa') { windLeaves.length = 0; backdrop(scene, 'jungle', cxm, czm, R, 1500); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }

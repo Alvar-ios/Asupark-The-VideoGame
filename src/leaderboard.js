@@ -1,3 +1,4 @@
+import { scrubNames, isBadName } from './names.js';
 // Clasificaciones por circuito. Con Supabase configurado (config.js) los tiempos se comparten entre jugadores;
 // sin configurar, el juego sigue funcionando con los tiempos locales. Cada fila guarda con qué coche se hizo el tiempo.
 const KEY_PLAYER = 'dr.player', KEY_QUEUE = 'dr.lbq';
@@ -23,14 +24,14 @@ export class Leaderboard {
   get helmet() { return /^([0-9a-f]{6}\|){3}[0-9]$/i.test(this.player.helmet || '') ? this.player.helmet : 'e63946|ffffff|111827|1'; }
   setFlag(f) { if (/^[a-z]{2}$/.test(f)) { this.player.flag = f; this.persist(); if (this.onChange) this.onChange(); } return this.flag; }
   setHelmet(h) { if (/^([0-9a-f]{6}\|){3}[0-9]$/i.test(h)) { this.player.helmet = h; this.persist(); if (this.onChange) this.onChange(); } return this.helmet; }
-  setName(n) { if (this.account) return this.player.name; /* el nombre de una cuenta es su usuario */ const c = cleanName(n); if (c.length >= 2) { this.player.name = c; this.persist(); } return this.player.name; }
+  setName(n) { if (this.account) return this.player.name; /* el nombre de una cuenta es su usuario */ const c = cleanName(n); if (c.length >= 2 && !isBadName(c)) { this.player.name = c; this.persist(); } return this.player.name; }
   async call(path, init = {}) {
     const c = this.cfg, ac = new AbortController(), to = setTimeout(() => ac.abort(), 7000);
     let tk = null; if (this.account && this.tokenFn) { try { tk = await this.tokenFn(); } catch (_) { /* sin sesión: clave anónima */ } }
     try {
       const r = await fetch(c.supabaseUrl.replace(/\/$/, '') + '/rest/v1/' + path, { ...init, signal: ac.signal, headers: { apikey: c.supabaseKey, Authorization: 'Bearer ' + (tk || c.supabaseKey), 'Content-Type': 'application/json', ...(init.headers || {}) } });
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      const t = await r.text(); return t ? JSON.parse(t) : null;
+      const t = await r.text(); return t ? scrubNames(JSON.parse(t)) : null;
     } finally { clearTimeout(to); }
   }
   // Envía un tiempo (ms). Con fantasma (ghost) lo guarda junto al tiempo si la base de datos ya tiene la función submit_lap_ghost

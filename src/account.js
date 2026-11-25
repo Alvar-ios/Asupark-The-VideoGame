@@ -1,5 +1,6 @@
 // Cuentas con Supabase Auth: usuario + contraseña (el usuario se convierte en usuario@driftrush.game; requiere "Confirm email" desactivado).
 // Toda la lógica de perfil, amigos y estadísticas está en funciones RPC de la base de datos (supabase/accounts.sql) que identifican al jugador con auth.uid().
+import { scrubNames, isBadName } from './names.js';
 const KEY = 'dr.session', DOMAIN = '@driftrush.game';
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
 const save = (v) => { try { if (v) localStorage.setItem(KEY, JSON.stringify(v)); else localStorage.removeItem(KEY); } catch (e) { /* sin almacenamiento */ } };
@@ -19,7 +20,7 @@ export class Account {
       const r = await fetch(c.supabaseUrl.replace(/\/$/, '') + path, { ...init, signal: ac.signal, headers: { apikey: c.supabaseKey, Authorization: 'Bearer ' + (token || c.supabaseKey), 'Content-Type': 'application/json', ...(init.headers || {}) } });
       const t = await r.text(); let j = null; try { j = t ? JSON.parse(t) : null; } catch (e) { /* no JSON */ }
       if (!r.ok) { const m = j && (j.msg || j.message || j.error_description || j.error) || 'HTTP ' + r.status; const err = new Error(String(m)); err.status = r.status; throw err; }
-      return j;
+      return path.startsWith('/rest/') ? scrubNames(j) : j;
     } finally { clearTimeout(to); }
   }
   explain(e) {
@@ -68,6 +69,7 @@ export class Account {
   async signUp(username, password) {
     const u = cleanUser(username);
     if (u.length < 3) throw new Error('El usuario necesita 3-20 letras minúsculas, números o _');
+    if (isBadName(u)) throw new Error('Ese nombre no está permitido');
     if (!(await this.usernameFree(u))) throw new Error('Ese usuario ya existe');
     const j = await this.http('/auth/v1/signup', { method: 'POST', body: JSON.stringify({ email: u + DOMAIN, password }) });
     if (!j || !j.access_token) throw new Error('Registro sin sesión: hay que desactivar "Confirm email" en Supabase');
