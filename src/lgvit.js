@@ -1,8 +1,8 @@
 // Vitrina de la liga (inspirada en la sección Resultados de la app de la F1): Carreras, Pilotos y Premios por temporada,
 // con selectores en forma de pastilla que abren una hoja inferior con «Hecho».
 export function createVit(E) {
-  const { S, esc, fmt, flagSvg, ic, me, PTS, dailyFor, av, colorMap, v2Head, dayTxt, paint, redraw, load, acc, toast } = E;
-  const TABS = [['car', 'Carreras'], ['pil', 'Pilotos'], ['pre', 'Premios']];
+  const { S, esc, fmt, flagSvg, ic, me, PTS, dailyFor, av, colorMap, v2Head, v2Seg, calHtml, dayTxt, paint, redraw, load, acc, toast } = E;
+  const TABS = [['cal', 'Calendario'], ['car', 'Carreras'], ['pil', 'Pilotos'], ['pre', 'Premios']];
   const mmOf = () => Object.fromEntries(S.state.members.map((m) => [m.user_id, m]));
   const fl = (f) => `<span class="flag sm">${flagSvg(f || 'es')}</span>`;
   const dshort = (d) => new Date(d + 'T12:00:00Z').toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }).replace('.', '');
@@ -17,10 +17,7 @@ export function createVit(E) {
     const L = S.state.league, mm = mmOf(), opts = [];
     if (S.vpick === 'season') for (let s = L.current; s >= 1; s--) opts.push([`season|${s}`, `Temporada ${s}${s === L.current ? ' · en curso' : ''}`, L.season === s]);
     if (S.vpick === 'race') for (const d of days()) { const t = track(d.day); opts.push([`race|${d.day}`, `${fl(t.flag)}${esc(t.name)} <small>${dshort(d.day)}</small>`, (curDay() || {}).day === d.day]); }
-    if (S.vpick === 'drv') {
-      opts.push(['drv|', 'Todos los pilotos', !S.vdrv]);
-      for (const s of S.state.standings) { const m = mm[s.user_id] || { username: '?' }; opts.push([`drv|${s.user_id}`, `${av(m, '#111', 'xs')}${esc(m.username)}`, S.vdrv === s.user_id]); }
-    }
+    if (S.vpick === 'drv') for (const s of S.state.standings) { const m = mm[s.user_id] || { username: '?' }; opts.push([`drv|${s.user_id}`, `${av(m, '#111', 'xs')}${esc(m.username)}`, drvId() === s.user_id]); }
     const items = opts.map(([k, h, on]) => `<button type="button" class="vt-opt${on ? ' on' : ''}" data-vp="${k}">${h}</button>`).join('');
     return `<div class="vt-scrim" data-vo="close"></div><div class="vt-sheet" role="dialog"><div class="vt-list">${items}</div><button type="button" class="vt-done" data-vo="close">Hecho</button></div>`;
   }
@@ -36,14 +33,12 @@ export function createVit(E) {
       <div class="vt-cols"><span>Pos.</span><span>Piloto</span><span>Tiempo</span><span>Pts</span></div><div class="vt-tb">${rows}</div>`;
   }
 
+  const drvId = () => { const st = S.state.standings; return (st.find((x) => x.user_id === S.vdrv) || st.find((x) => x.user_id === me()) || st[0] || {}).user_id; };
   function drivers() {
     const mm = mmOf(), st = S.state.standings, col = colorMap();
-    const sel = S.vdrv && st.find((s) => s.user_id === S.vdrv), m = sel && (mm[sel.user_id] || { username: '?' });
-    const pl = `<div class="vt-sel">${pill('drv', sel ? `${av(m, '#111', 'xs')}<b>${esc(m.username)}</b>` : '<b>Todos los pilotos</b>')}</div>`;
-    if (!sel) {
-      return pl + `<div class="vt-h"><b>Clasificación</b><small>Temporada ${S.state.league.season}</small></div><div class="vt-cols two"><span>Pos.</span><span>Piloto</span><span>Pts</span></div><div class="vt-tb">`
-        + st.map((s, i) => { const mo = mm[s.user_id] || { username: '?' }; return `<button type="button" class="vt-r btn${s.user_id === me() ? ' me' : ''}" data-vp="drv|${s.user_id}"><i>${i + 1}</i>${av(mo, col[s.user_id], 'sm')}<span class="vt-n"><b>${esc(mo.username)}</b><small>${s.wins} vict. · ${s.podiums || 0} podios</small></span><em>${s.pts}</em></button>`; }).join('') + '</div>';
-    }
+    const sel = st.find((x) => x.user_id === drvId()); if (!sel) return '<p class="lg-note">Aún no hay pilotos.</p>';
+    const m = mm[sel.user_id] || { username: '?' };
+    const pl = `<div class="vt-sel">${pill('drv', `${av(m, '#111', 'xs')}<b>${esc(m.username)}</b>`)}</div>`;
     const pos = st.findIndex((s) => s.user_id === sel.user_id) + 1;
     const list = days().slice().reverse().map((d) => { const i = d.rows.findIndex((r) => r.user_id === sel.user_id), t = track(d.day), r = d.rows[i];
       return `<div class="vt-r"><i>${i >= 0 ? i + 1 : '–'}</i><span class="vt-gp">${fl(t.flag)}<b>${esc(t.name)}</b></span><span class="vt-t"><small>${dshort(d.day)}</small>${r ? `<b>${fmt(r.ms / 1000)}</b>` : ''}</span><em>${i >= 0 ? PTS[i] || 0 : 0}</em></div>`; }).join('');
@@ -78,11 +73,11 @@ export function createVit(E) {
   }
 
   function render() {
-    const L = S.state.league; S.vt = S.vt || 'car';
-    const seasonPill = pill('season', `<b>Temporada ${L.season}</b>`);
+    const L = S.state.league; S.vt = S.vt || 'cal';
+    const seasonPill = S.vt === 'pre' ? '' : `<div class="vt-sel">${pill('season', `<b>Temporada ${L.season}${L.season === L.current ? ' · en curso' : ''}</b>`)}</div>`;
     const tabs = `<div class="vt-tabs" role="tablist">${TABS.map(([k, n]) => `<button type="button" role="tab" data-vt="${k}" class="${S.vt === k ? 'on' : ''}">${n}</button>`).join('')}</div>`;
-    const body = S.vt === 'pil' ? drivers() : S.vt === 'pre' ? awards() : races();
-    paint.innerHTML = `${v2Head(L)}<div class="vt-top"><button type="button" class="vt-back" data-t="tabla">‹ Liga</button><b class="vt-title">VITRINA</b>${seasonPill}</div>${tabs}<div class="vt-body">${body}</div>${sheet()}`;
+    const body = S.vt === 'pil' ? drivers() : S.vt === 'pre' ? awards() : S.vt === 'car' ? races() : calHtml(true);
+    paint.innerHTML = `${v2Head(L)}${v2Seg()}${tabs}${seasonPill}<div class="vt-body">${body}</div>${sheet()}`;
   }
 
   async function click(b) {
@@ -92,8 +87,8 @@ export function createVit(E) {
     if (d.vp) {
       const [k, v] = d.vp.split('|'); S.vpick = null;
       if (k === 'season') { try { await load(+v); S.vday = null; S.vdrv = null; } catch (e) { toast(acc.explain(e)); } return redraw(); }
-      if (k === 'race') { S.vday = v; return render(); }
-      if (k === 'drv') { S.vdrv = v || null; S.vt = 'pil'; return render(); }
+      if (k === 'race') { S.vday = v; S.vt = 'car'; return render(); }
+      if (k === 'drv') { S.vdrv = v; S.vt = 'pil'; return render(); }
     }
   }
   return { render, click };

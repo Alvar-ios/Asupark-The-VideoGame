@@ -143,15 +143,17 @@ export function initLeagues(ctx) {
   }
 
   // ---------- calendario de la temporada (cada día es un GP) ----------
-  function calView() {
+  function calHtml(go) {
     const { league: L, days, members } = S.state, mm = Object.fromEntries(members.map((m) => [m.user_id, m])), byDay = Object.fromEntries(days.map((d) => [d.day, d]));
     const out = [];
     for (let i = 0; i < L.season_days; i++) {
       const day = new Date(Date.parse(L.from + 'T12:00:00Z') + i * 864e5).toISOString().slice(0, 10), fut = day > L.today, isToday = day === L.today, info = !fut && dailyFor ? dailyFor(day) : null, d = byDay[day], w = d && d.rows[0];
-      out.push(`<div class="lg-gp${isToday ? ' now' : ''}${fut ? ' fut' : ''}"><div class="gpn"><small>GP</small><b>${i + 1}</b></div><div class="gpi">${fut ? '<b>? ? ?</b><small>Se revela ese día</small>' : `<b>${info ? `<span class="flag sm">${flagSvg(info.flag)}</span> ${esc(info.name)}` : 'Reto del día'}</b><small>${esc(dayTxt(day))}${info ? ' · ' + esc(info.car) : ''}</small>`}</div><div class="gpw">${isToday ? '<span class="live">HOY</span>' : ''}${w ? `<small>${ic('trophy')}</small><b>${esc((mm[w.user_id] || {}).username || '?')}</b>` : fut ? '' : '<small>sin tiempos</small>'}</div></div>`);
+      const tag = go && !fut && d ? 'button type="button" data-vp="race|' + day + '"' : 'div';
+      out.push(`<${tag} class="lg-gp${isToday ? ' now' : ''}${fut ? ' fut' : ''}"><div class="gpn"><small>GP</small><b>${i + 1}</b></div><div class="gpi">${fut ? '<b>? ? ?</b><small>Se revela ese día</small>' : `<b>${info ? `<span class="flag sm">${flagSvg(info.flag)}</span> ${esc(info.name)}` : 'Reto del día'}</b><small>${esc(dayTxt(day))}${info ? ' · ' + esc(info.car) : ''}</small>`}</div><div class="gpw">${isToday ? '<span class="live">HOY</span>' : ''}${w ? `<small>${ic('trophy')}</small><b>${esc((mm[w.user_id] || {}).username || '?')}</b>` : fut ? '' : '<small>sin tiempos</small>'}</div></${tag.split(' ')[0]}>`);
     }
-    paint.innerHTML = `${isUi2() ? v2Head(L) + v2Seg() : head(L)}${seasonNav(L)}<div class="lg-cal">${out.join('')}</div>`;
+    return `<div class="lg-cal">${out.join('')}</div>`;
   }
+  function calView() { const L = S.state.league; paint.innerHTML = `${isUi2() ? v2Head(L) + v2Seg() : head(L)}${seasonNav(L)}${calHtml()}`; }
   function daysView() {
     const { league: L, members, days } = S.state, mm = Object.fromEntries(members.map((m) => [m.user_id, m]));
     const dayHtml = (d) => {
@@ -243,11 +245,11 @@ export function initLeagues(ctx) {
   function v2Head(L) {
     const live = L.season === L.current, N = L.season_days, cur = live ? Math.min(N, Math.round((Date.parse(L.today) - Date.parse(L.from)) / 864e5) + 1) : N;
     const segs = Array.from({ length: N }, (_, i) => `<i class="${i + 1 < cur || !live ? 'd' : i + 1 === cur ? 'n' : ''}"></i>`).join('');
-    return `<div class="l2-top"><button class="l2-ic" data-a="back" type="button" aria-label="Volver">${ic('back')}</button><span class="l2-sp"></span><button class="l2-ic${S.tab === 'vit' ? ' on' : ''}" data-t="vit" type="button" aria-label="Vitrina">${ic('trophy')}</button><button class="l2-ic${S.tab === 'cal' ? ' on' : ''}" data-t="cal" type="button" aria-label="Calendario">${ic('calendar')}</button><button class="l2-ic${S.tab === 'dias' ? ' on' : ''}" data-t="dias" type="button" aria-label="Tiempos por día">${ic('history')}</button><button class="l2-ic" data-a="invite" type="button" aria-label="Invitar">${ic('share')}</button></div>
+    return `<div class="l2-top"><button class="l2-ic" data-a="back" type="button" aria-label="Volver">${ic('back')}</button><span class="l2-sp"></span><button class="l2-ic" data-a="invite" type="button" aria-label="Invitar">${ic('share')}</button></div>
       <div class="l2-title"><b class="l2-name">${esc(L.name)}</b><div class="l2-ss"><b>TEMPORADA ${L.season}</b><span class="l2-lap">${live ? `DÍA <b>${cur}</b>/${N}` : 'FINAL'}</span></div>
       <div class="l2-days" aria-label="Día ${cur} de ${N}">${segs}</div><small class="l2-left">${leftTxt(L)} · ${dd(L.from)} – ${dd(L.to)}</small></div>`;
   }
-  const v2Seg = () => `<div class="l2-seg" role="tablist"><button type="button" role="tab" data-t="chat" class="${S.tab === 'chat' ? 'on' : ''}"><span>Chat</span></button><button type="button" role="tab" data-t="tabla" class="${S.tab === 'tabla' ? 'on' : ''}"><span>Puntuación</span></button></div>`;
+  const v2Seg = () => `<div class="l2-seg" role="tablist"><button type="button" role="tab" data-t="chat" class="${S.tab === 'chat' ? 'on' : ''}"><span>Chat</span></button><button type="button" role="tab" data-t="tabla" class="${S.tab === 'tabla' ? 'on' : ''}"><span>Puntuación</span></button><button type="button" role="tab" data-t="vit" class="${S.tab === 'vit' ? 'on' : ''}"><span>Vitrina</span></button></div>`;
   // podio de verdad (cajones 2-1-3) con los tiempos de hoy o, si la temporada acabó, los puntos finales
   function v2Podium(L, mm, col) {
     const live = L.season === L.current, mine = S.state.standings.find((s) => s.user_id === me()), myPos = S.state.standings.indexOf(mine) + 1;
@@ -316,7 +318,7 @@ export function initLeagues(ctx) {
       <div class="l2-inv"><div><small>Código de la liga</small><b>${esc(L.code)}</b></div><button class="l2-pill" data-a="copy" type="button">Copiar enlace</button></div>
       <details class="l2-info"><summary>${ic('info')} Reglas</summary><p>Cada día se reparten 25-18-15-12-10-8-6-4-2-1 puntos según el mejor tiempo del reto. Acertar quién gana el día suma +1. El Lentorro es quien menos puntos lleva y hoy puede elegir coche. La temporada dura ${L.season_days} días.</p><button class="l2-pill danger" data-a="leave" type="button">Salir de la liga</button></details>`;
   }
-  const VIT = createVit({ S, esc, fmt, flagSvg, ic, me, PTS, dailyFor, av, colorMap, v2Head, dayTxt, paint, redraw: () => leagueView(), load, acc, toast });
+  const VIT = createVit({ S, esc, fmt, flagSvg, ic, me, PTS, dailyFor, av, colorMap, v2Head, dayTxt, paint, calHtml, v2Seg, redraw: () => leagueView(), load, acc, toast });
   async function v2View() {
     const L = S.state.league, mm = Object.fromEntries(S.state.members.map((m) => [m.user_id, m])), col = colorMap(); S.memo = mm; S.cols = col;
     if (S.tab === 'vit') { stopPoll(); return VIT.render(); }
@@ -330,7 +332,7 @@ export function initLeagues(ctx) {
   onUi(() => { if (!open()) return; if (S.view === 'league' && S.state) leagueView(); else listView(); });
 
   // ---------- acciones ----------
-  async function enter(id, season) { S.id = id; S.state = null; S.tab = isUi2() ? 'chat' : 'tabla'; S.season = null; S.recap = undefined; S.hall = undefined; S.vday = null; S.vdrv = null; S.vpick = null; S.vt = 'car'; if (season) { try { await load(season); } catch (_) { /* se carga la actual */ } } await leagueView(); }
+  async function enter(id, season) { S.id = id; S.state = null; S.tab = isUi2() ? 'chat' : 'tabla'; S.season = null; S.recap = undefined; S.hall = undefined; S.vday = null; S.vdrv = null; S.vpick = null; S.vt = 'cal'; if (season) { try { await load(season); } catch (_) { /* se carga la actual */ } } await leagueView(); }
   async function join(code) {
     const l = await acc.rpc('league_join', { p_code: code }); S.list = null; return l;
   }
