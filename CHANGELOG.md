@@ -4,6 +4,16 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.118
+- Android: arreglado el desplazamiento con el dedo en Correr, ficha de circuito, Garaje y Perfil (una regla antigua desactivaba los gestos).
+- Arreglado: desde la pausa, «Ver clasificación» y «Ajustes» quedaban tapados (error de la 0.0.117).
+- Clasificaciones con un único diseño: reto diario (con sectores), tus vueltas, resultados, clasificación en carrera, Tiempos y ficha de circuito. La pantalla del reto usa el mismo estilo que la app.
+- Tienda: caja diaria, caja de boxes, caja podio, tres ofertas al día y colección. Se entra desde el saldo, arriba a la derecha. La música pasa a Ajustes.
+- Apertura de cajas en 3D: la caja bota en mitad de la pista, entre neumáticos, herramientas, piezas y karts, y una ruleta horizontal frena en el premio.
+- Premios (pestaña lateral en Correr): racha de siete días y tres misiones diarias.
+- 20 cosméticos provisionales: pinturas con acabados (mate, metalizado, neón, cromo y oro) y cascos nuevos.
+- El saldo es de prueba y se guarda en el dispositivo. Propuesta de cifras en `docs/ECONOMIA.md`.
+
 ## 0.0.117
 - La app tiene cabecera y barra inferior fijas: Campeonatos, Garaje, Correr (en el centro), Tiempos y Perfil se abren como pestañas, sin taparlas.
 - Un solo tema, oscuro. Se quita el modo claro y el sistema que invertía los colores.

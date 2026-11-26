@@ -1,8 +1,8 @@
 // Página de «Tiempos»: se elige circuito, se ve el récord en grande y debajo el resto de la clasificación.
 
-export function timeRows(list, { esc, fmt, carName }) {
-  const best = list[0] ? list[0].ms : 0;
-  return `<ol class="kx-times">${list.map((r) => `<li class="${r.you ? 'me' : ''}${r.rank <= 3 ? ' p' + r.rank : ''}"><i>${r.rank}</i><span><b>${esc(r.name)}</b><small>${esc(carName(r.carId))}</small></span><span class="t"><b>${fmt(r.ms / 1000)}</b><small>${r.rank === 1 ? 'Récord' : '+' + ((r.ms - best) / 1000).toFixed(3)}</small></span></li>`).join('')}</ol>`;
+// La misma lista en Tiempos, la ficha de circuito, el reto diario, los resultados y la clasificación en carrera.
+export function timeRows(list, { esc, fmt, carName, best = list[0] ? list[0].ms : 0, name = (r) => `<span class="nom">${esc(r.name)}</span>`, sub = (r) => `<small>${esc(carName(r.carId))}</small>` }) {
+  return `<ol class="kx-times">${list.map((r) => `<li class="${r.you ? 'me' : ''}${r.rank <= 3 ? ' p' + r.rank : ''}"><i>${r.rank}</i><span><b>${name(r)}</b>${sub(r)}</span><span class="t"><b>${fmt(r.ms / 1000)}</b><small>${r.rank === 1 ? 'Récord' : '+' + ((r.ms - best) / 1000).toFixed(3)}</small></span></li>`).join('')}</ol>`;
 }
 
 export function initTimes({ $, esc, fmt, carName, circuits, circuit, rows, openTrack }) {

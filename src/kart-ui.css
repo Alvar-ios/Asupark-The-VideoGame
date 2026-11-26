@@ -14,6 +14,7 @@ html.ui2{--fd:"KartDisplay","Arial Narrow",sans-serif;--fb:"KartBody",system-ui,
 /* ---------- ventanas del juego ---------- */
 .overlay:not(#menu){z-index:9}
 #leagues.overlay{z-index:8}
+#pause.overlay,#results.overlay{z-index:7}   /* por debajo de ajustes, música y clasificación, que se abren desde ellas */
 #sanction.overlay{z-index:14}
 html.ui2 :is(#board,#settings,#musicPick,#results,#pause,#sanction){background:rgba(8,9,12,.86)!important}
 html.ui2 #daily{background:rgba(10,11,14,.96)!important}

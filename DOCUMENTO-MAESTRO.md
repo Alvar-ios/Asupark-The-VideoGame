@@ -133,7 +133,8 @@ Los karts reales son preferibles a los genéricos. Los modelos de marcas (Sodi, 
 - **Asupark y Fórmula 0** se mantienen. Su exterior es de polígono industrial y carreteras, sin árboles ni verde. Se ajustará con fotos reales.
 - **Imagen:** estética de juego de karts (dorsal, piano, asfalto). Textos sin puntos intermedios ni etiquetas en mayúsculas.
 - **Solo tema oscuro.** Barra inferior: Campeonatos, Garaje, Correr (centro), Tiempos y Perfil, siempre visible.
-- **Pendiente de contenido:** piloto, tienda y cajas; reglas definitivas del reto diario; rotación de circuitos por campeonato.
+- **Tienda y cajas:** primera versión hecha, con saldo en el dispositivo (ver `docs/ECONOMIA.md`). Falta pasarlo al servidor.
+- **Pendiente de contenido:** piloto; reglas definitivas del reto diario; rotación de circuitos por campeonato.
 - **Hecho:** fases de limpieza, nombre, rediseño de la interfaz, primera versión de la imagen y del exterior.
 - **Siguiente:** circuitos reales de Madrid con fotos y planos del equipo; después, campeonatos con rotación de circuitos.
 

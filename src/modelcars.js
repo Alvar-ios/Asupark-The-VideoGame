@@ -55,7 +55,19 @@ export function loadModelCar(id, lods = ['hi', 'lo']) {
   return pending[key];
 }
 
-export function buildModelCar(id, color, lod = 'hi', num = 7) {
+// acabados especiales de la tienda sobre el material de la carrocería
+function applyFinish(m, color, finish) {
+  const set = (metalness, roughness, env) => { m.metalness = metalness; m.roughness = roughness; m.envMapIntensity = env; };
+  m.color = new THREE.Color(color); if (m.emissive) { m.emissive = new THREE.Color(0x000000); m.emissiveIntensity = 1; }
+  if (finish === 'matte') set(0, 0.92, 0.45);
+  else if (finish === 'metal') set(0.72, 0.3, 1.25);
+  else if (finish === 'neon') { set(0, 0.45, 0.7); if (m.emissive) { m.emissive = new THREE.Color(color); m.emissiveIntensity = 0.62; } }
+  else if (finish === 'chrome') set(1, 0.07, 1.8);
+  else if (finish === 'gold') { set(1, 0.17, 1.6); if (m.emissive) { m.emissive = new THREE.Color(0x5a3800); m.emissiveIntensity = 0.35; } }
+  m.map = null; m.roughnessMap = null; m.metalnessMap = null; // si no, los mapas del modelo anulan el acabado
+}
+
+export function buildModelCar(id, color, lod = 'hi', num = 7, finish = null) {
   const src = cache[id][lod] || cache[id].lo || cache[id].hi, cfg = MODEL[id];
   const model = src.clone(true);
   const root = new THREE.Group(), tilt = new THREE.Group(), orientation = new THREE.Group();
@@ -97,7 +109,8 @@ export function buildModelCar(id, color, lod = 'hi', num = 7) {
     // brillos contenidos: los cromados y plásticos no deben deslumbrar; la pintura lleva laca suave
     m.envMapIntensity = isPaint ? 1.0 : 0.62;
     if (!isPaint && m.isMeshStandardMaterial) { m.metalness = Math.min(m.metalness, 0.8); m.roughness = Math.max(m.roughness, m.metalness > 0.5 ? 0.28 : 0.4); }
-    if (isPaint && cfg.gold) { m.color = new THREE.Color(color); m.metalness = 0.5; m.roughness = 0.3; m.envMapIntensity = 1.2; if (m.emissive) { m.emissive = new THREE.Color(0x6a4300); m.emissiveIntensity = 0.5; } paints.add(m); }
+    if (isPaint && finish) { applyFinish(m, color, finish); paints.add(m); }
+    else if (isPaint && cfg.gold) { m.color = new THREE.Color(color); m.metalness = 0.5; m.roughness = 0.3; m.envMapIntensity = 1.2; if (m.emissive) { m.emissive = new THREE.Color(0x6a4300); m.emissiveIntensity = 0.5; } paints.add(m); }
     else if (isPaint && cfg.kart) { m.color = new THREE.Color(color); m.metalness = 0; m.roughness = 0.55; paints.add(m); }
     else if (isPaint) { m.color = new THREE.Color(color); if (m.map) m.map = null; m.metalness = 0.32; m.roughness = 0.34; if ('clearcoat' in m) { m.clearcoat = 0.7; m.clearcoatRoughness = 0.12; } if (cfg.paintMat) Object.assign(m, cfg.paintMat); paints.add(m); }
   });

@@ -1,4 +1,5 @@
 import { trackSvg } from './trackart.js';
+import { timeRows } from './times.js';
 // Reto del día: día de 4:00 a 4:00 (Madrid), circuito y coche aleatorios, práctica 5 vueltas + clasificación 3 vueltas.
 // Los intentos se controlan en el servidor (supabase/daily.sql) y se cachean en local. Sin servidor, solo local.
 import { hashStr } from './rng.js';
@@ -234,26 +235,29 @@ export function createDaily(ctx) {
   const btnP = () => left('p') > 0 ? `<button class="dy-btn" data-act="practice">${st.pr ? 'Práctica extra' : 'Empezar práctica'}, ${PRACTICE_LAPS} vueltas</button>` : adAvail('p') ? `<button class="dy-btn ad" data-act="ad-practice">Ver anuncio y ganar ${PRACTICE_LAPS} vueltas de práctica</button>` : `<p class="dy-done">Práctica agotada hasta las 4:00</p>`;
   const btnO = () => left('o') > 0 ? `<button class="dy-btn gold" data-act="official">${st.or ? 'Otra oportunidad' : 'Clasificar'}, ${OFFICIAL_LAPS} vueltas</button>` : adAvail('o') ? `<button class="dy-btn ad" data-act="ad-official">Ver 2 anuncios y repetir clasificación</button>` : `<p class="dy-done">Clasificación cerrada: no se puede repetir más hoy</p>`;
   const acc_user = () => (ctx.acc && ctx.acc.username) || '';
+  // los tres sectores de una vuelta; en morado el mejor de la lista
+  const sectors = (list, best) => `<span class="kx-secs">${[0, 1, 2].map((k) => `<i class="${list[k] != null && best && list[k] === best[k] ? 'pu' : ''}"><u>S${k + 1}</u>${list[k] != null ? fmtS(list[k]) : '–'}</i>`).join('')}</span>`;
+  const bestOf = (all) => [0, 1, 2].map((k) => Math.min(...all.map((s) => (s[k] != null ? s[k] : 1e12))));
   function lastHtml() {
     if (!last || !last.laps.length) return '';
-    const best = Math.min(...last.laps.map((l) => l.t));
-    return `<div class="dy-card dy-last"><h3>${last.kind === 'official' ? 'CLASIFICACIÓN' : 'PRÁCTICA'}, TUS VUELTAS</h3><table class="dy-t"><tr><th>V</th><th>S1</th><th>S2</th><th>S3</th><th>TIEMPO</th></tr>${last.laps.map((l, i) => `<tr class="${l.t === best ? 'best' : ''}"><td>${i + 1}</td><td>${l.s[0] != null ? fmtS(l.s[0]) : '–'}</td><td>${l.s[1] != null ? fmtS(l.s[1]) : '–'}</td><td>${l.s[2] != null ? fmtS(l.s[2]) : '–'}</td><td>${fmt(l.t)}</td></tr>`).join('')}</table></div>`;
+    const best = Math.min(...last.laps.map((l) => l.t)), bs = bestOf(last.laps.map((l) => l.s));
+    return `<div class="dy-card dy-last"><h3>Tus vueltas de ${last.kind === 'official' ? 'clasificación' : 'práctica'}</h3><ol class="kx-times">${last.laps.map((l, i) => `<li class="${l.t === best ? 'me' : ''}"><i>${i + 1}</i><span><b>Vuelta ${i + 1}</b>${sectors(l.s, bs)}</span><span class="t"><b>${fmt(l.t)}</b><small>${l.t === best ? 'Tu mejor' : '+' + (l.t - best).toFixed(3)}</small></span></li>`).join('')}</ol></div>`;
   }
   function hub() {
     reveal(2);
     clearTimeout(introTimer); cancelAnimationFrame(spinRaf); stopRadar();
     const t = ctx.track, c = ctx.car;
-    setStage('hub', `${head(esc(t.th.name.replace(/, .*$/, '')))}<div class="dy-card dy-sum"><canvas id="dyCv2" class="dy-cv sm"></canvas></div>${canPick() ? lentorroHtml() : ''}${rival ? rivalHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>Práctica</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>Clasificación</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card"><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard">${sk.rows(5)}</div></div>`);
-    ctx.drawPreview($('dyCv2'), t.tr, t.th, 240, 130);
+    setStage('hub', `${head(esc(t.th.name.replace(/, .*$/, '')))}<div class="kx-map dy-map">${trackSvg(t.tr)}</div>${canPick() ? lentorroHtml() : ''}${rival ? rivalHtml() : ''}${lastHtml()}<div class="dy-wa">${st.best ? waBtn('Compartir mi tiempo', 'data-act="wa-result"', 'dy-btn wa') : ''}${waBtn('Retar a un amigo', 'data-act="wa-challenge"', 'dy-btn wa ghost')}</div><div class="dy-steps"><div class="dy-step"><h3>Práctica</h3><p>${PRACTICE_LAPS} vueltas. La 1ª sin referencia; después ves tu mejor vuelta (fantasma y diferencial).</p><div id="dyBP">${btnP()}</div></div><div class="dy-step"><h3>Clasificación</h3><p>${OFFICIAL_LAPS} vueltas que cuentan. Cuenta tu mejor vuelta; corres contra tu mejor marca de libres + clasificación.</p><div id="dyBO">${btnO()}</div></div></div><div class="dy-card dy-board"><h3>Clasificación de hoy</h3><div class="dy-tabs"><button data-tab="friends" class="${tab === 'friends' ? 'on' : ''}">Amigos</button><button data-tab="global" class="${tab === 'global' ? 'on' : ''}">Global</button></div><div id="dyBoard">${sk.rows(5)}</div></div>`);
     renderBoard();
   }
   async function renderBoard() {
     const res = await board(tab), el = $('dyBoard'); if (!el || stage !== 'hub') return;
     if (tab === 'friends' && res.needLogin) { el.innerHTML = '<p class="dy-empty">Inicia sesión en tu Perfil para ver a tus amigos.</p><button class="dy-btn ghost" data-act="profile">Abrir perfil</button>'; return; }
     const rows = res.rows; if (!rows.length) { el.innerHTML = '<p class="dy-empty">Todavía no hay tiempos hoy.</p>'; return; }
-    const lead = rows[0].ms, bestS = [0, 1, 2].map((k) => Math.min(...rows.map((r) => (r.s[k] != null ? r.s[k] : 1e12))));
-    const sc = (r, k) => r.s[k] == null ? '–' : `<span class="${r.s[k] === bestS[k] ? 'pu' : ''}">${fmtS(r.s[k] / 1000)}</span>`;
-    el.innerHTML = `<table class="dy-f1"><tr><th>P</th><th>PILOTO</th><th>S1</th><th>S2</th><th>S3</th><th>VUELTA</th><th>DIF</th></tr>${rows.slice(0, 30).map((r, i) => `<tr class="${r.you ? 'me' : ''}"><td>${i + 1}</td><td class="nm"><span class="flag sm">${ctx.flagSvg(r.flag || 'es')}</span>${esc(r.name)}<small class="dy-secs">${[0, 1, 2].map((k) => sc(r, k)).join(', ')}</small></td><td>${sc(r, 0)}</td><td>${sc(r, 1)}</td><td>${sc(r, 2)}</td><td class="lp">${fmt(r.ms / 1000)}</td><td>${i ? '+' + ((r.ms - lead) / 1000).toFixed(3) : '—'}</td></tr>`).join('')}</table>${res.online ? '' : '<p class="dy-empty">Sin conexión: solo se ve tu tiempo en este dispositivo.</p>'}`;
+    const bs = bestOf(rows.map((r) => r.s.map((v) => (v == null ? null : v / 1000))));
+    const list = rows.slice(0, 30).map((r, i) => ({ ...r, rank: i + 1 }));
+    el.innerHTML = timeRows(list, { esc, fmt, best: rows[0].ms, name: (r) => `<span class="flag sm">${ctx.flagSvg(r.flag || 'es')}</span><span class="nom">${esc(r.name)}</span>`, sub: (r) => sectors(r.s.map((v) => (v == null ? null : v / 1000)), bs) })
+      + (res.online ? '' : '<p class="dy-empty">Sin conexión: solo se ve tu tiempo en este dispositivo.</p>');
   }
   let rival = null, streak = null;
   const rivalHtml = () => `<div class="dy-card dy-rival"><h3>${ic('ghost')} FANTASMA DE @${esc(rival.name).toUpperCase()}</h3><p>Su mejor vuelta de hoy (${fmt(rival.ms / 1000)}) saldrá como fantasma dorado en tu próxima sesión.</p><button type="button" data-act="norival" class="dy-lnk">Quitar fantasma</button></div>`;

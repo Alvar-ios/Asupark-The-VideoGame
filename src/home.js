@@ -5,28 +5,44 @@ import { ic } from './icons.js';
 import { initSanctions } from './sanctions.js';
 import { initGarage } from './garage.js';
 import { initTimes, timeRows } from './times.js';
+import { initShop } from './shop.js';
+import { initMissions } from './missions.js';
+import { boxSvg } from './shop.js';
 
 const TABS = ['champs', 'garage', 'race', 'times', 'profile'];
 
 export function initHome(ctx) {
-  const { $, acc, esc, LG, PF, helmetSvg, circuits, circuit, rows, race, daily, fmt, carName, garage, buildHelmets } = ctx;
+  const { $, acc, esc, LG, PF, helmetSvg, circuits, circuit, rows, race, daily, fmt, carName, garage, buildHelmets, eco, walletHtml, box, equip, isEquipped, testMode } = ctx;
   const app = $('app'), main = $('kxMain');
   initSanctions({ $, acc, esc });
   let tab = 'race', trackKey = null;
 
-  const GR = initGarage({ $, esc, garage });
+  const GR = initGarage({ $, esc, garage, openShop: () => go('shop') });
+  const SH = initShop({ $, esc, eco, helmetSvg, equip, isEquipped, testMode, toast: ctx.toast, openBox: (id) => box.open(id) });
+  const MI = initMissions({ $, esc, eco });
+  // saldo arriba a la derecha y aviso de la caja gratis en la portada
+  function paintMoney() {
+    $('hmWallet').innerHTML = walletHtml(eco);
+    const bar = $('kxGiftBar'), ready = eco.dailyReady();
+    bar.classList.toggle('hidden', !ready);
+    if (ready && !bar.innerHTML) bar.innerHTML = boxSvg('daily') + '<span><b>Tu caja diaria está lista</b><small>Gratis, una al día</small></span><em>Abrir</em>';
+  }
+  eco.onChange(paintMoney); paintMoney();
+  $('hmWallet').onclick = () => go('shop');
+  $('kxGiftBar').onclick = () => box.open('daily');
   const TM = initTimes({ $, esc, fmt, carName, circuits, circuit, rows, openTrack: (k) => openTrack(k) });
 
   // ---------- pestañas ----------
   const navBtns = [...$('hmNav').querySelectorAll('button')];
   function go(next, opts = {}) {
     if (!$('leagues').classList.contains('hidden')) $('lgClose').click();
+    MI.close();
     tab = next;
     app.dataset.tab = next;
     for (const p of main.querySelectorAll('.kx-page')) p.hidden = p.dataset.page !== next;
     const i = TABS.indexOf(next === 'track' ? 'race' : next);
     navBtns.forEach((b, k) => { b.classList.toggle('on', k === i); if (k === i) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
-    $('hmNav').style.setProperty('--i', i);
+    $('hmNav').style.setProperty('--i', Math.max(0, i));
     main.scrollTop = 0;
     render(opts);
   }
@@ -37,10 +53,11 @@ export function initHome(ctx) {
     else if (tab === 'times') TM.render(opts.track);
     else if (tab === 'profile') { PF.enter(); buildHelmets(); }
     else if (tab === 'track') renderTrack();
+    else if (tab === 'shop') SH.render();
   }
   const NAV = { leagues: 'champs', garage: 'garage', home: 'race', board: 'times', profile: 'profile' };
   $('hmNav').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) go(NAV[b.dataset.go]); });
-  $('hmMusic').onclick = () => $('musicBtn').click();
+  $('hmMusic').onclick = () => { $('settings').classList.add('hidden'); $('musicBtn').click(); };
   $('hmSet').onclick = () => $('setBtn').click();
   app.addEventListener('keydown', (e) => { if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) e.stopPropagation(); });
 
@@ -185,5 +202,5 @@ export function initHome(ctx) {
   document.addEventListener('visibilitychange', () => { if (!document.hidden && !$('menu').classList.contains('hidden')) refresh(); });
 
   go('race');
-  return { go, refresh: () => { champSig = ''; render(); } };
+  return { go, refresh: () => { champSig = ''; paintMoney(); MI.paintTab(); render(); } };
 }

@@ -109,17 +109,6 @@ html.ui2 #app #dailyCard .dy-go{display:block;position:relative;overflow:hidden;
 .kx-kartline em{font-style:normal;font-size:14px;color:var(--y)}
 #app .kx-sub{font-size:25px;margin-top:6px}
 
-/* ---------- listas de tiempos ---------- */
-#app .kx-times{display:flex;flex-direction:column;gap:6px}
-.kx-times li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 12px 9px 8px;border:1px solid var(--line);border-radius:12px;background:var(--box)}
-.kx-times li.me{border-color:var(--y);background:#2a2510}
-#app .kx-times i{font-size:22px;font-style:normal;text-align:center;color:var(--mut)}
-#app .kx-times li.p1 i{color:var(--y)}#app .kx-times li.p2 i{color:#dfe5ee}#app .kx-times li.p3 i{color:#e29a62}
-.kx-times li>span{display:flex;flex-direction:column;min-width:0;line-height:1.2}
-.kx-times li>span>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.kx-times small{color:var(--mut);font-size:12px}
-.kx-times .t{align-items:flex-end;font-variant-numeric:tabular-nums}.kx-times .t b{font-size:17px}
-
 /* ---------- tiempos ---------- */
 .kx-pick{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(104px,1fr);gap:8px;overflow-x:auto;scrollbar-width:none;touch-action:pan-x pan-y}
 .kx-pick::-webkit-scrollbar{display:none}
@@ -266,3 +255,7 @@ body:has(#leagues:not(.hidden)) #app #hmNav .kx-main i{height:30px;margin-top:0;
 html.ui2 #songToast{top:calc(var(--kx-hdr) + 8px);width:max-content;max-width:calc(100% - 28px);align-items:center;white-space:nowrap;overflow:hidden}
 html.ui2 #songToast b{overflow:hidden;text-overflow:ellipsis;min-width:0}
 @media (max-height:500px){#app #dailyCard .kx-art{height:92px}#app #dailyCard .kx-d h2{font-size:30px!important}.kx-map{height:160px}.kx-stage{height:190px}}
+
+/* Android: una regla antigua (*{touch-action:none}) bloquea los gestos en toda la página; aquí se devuelven.
+   Sin esto no se podía bajar con el dedo en ninguna pestaña (iPhone no aplica la regla igual). */
+#app,#app *{touch-action:pan-x pan-y}

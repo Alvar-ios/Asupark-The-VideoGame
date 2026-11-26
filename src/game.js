@@ -12,6 +12,10 @@ import { initPwa } from './pwa.js';
 import { initPush } from './push.js';
 import { initUx, toastEl } from './ux.js';
 import { initUiToggle } from './uimode.js';
+import { createEconomy, itemById } from './economy.js';
+import { createBoxShow } from './box3d.js';
+import { walletHtml } from './shop.js';
+import { timeRows } from './times.js';
 import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS, DAILY_LOCK_DAY } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
 import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo, isKartKind } from './car.js';
@@ -96,7 +100,13 @@ for (const k of THEME_LIST) addTrack(k, THEMES[k].name, THEMES[k].sub, THEMES[k]
 const BASE_CAR = Math.max(0, CARS.findIndex((c) => c.id === dailyPick.car)); let DAILY_CAR = BASE_CAR; // el mismo coche y circuito para todos cada día (cambia a las 4:00 de Madrid)
 const DEFAULT_CAR = Math.max(0, CARS.findIndex((car) => car.id === 'porsche'));
 const sel = { track: 0, mode: 'tt', diff: 1, car: DEFAULT_CAR, autoGas: false, touchMode: 'halves', ctlV: 2, colors: {}, vol: { master: 1, music: 0.5, engine: 0.2 }, gfx: 'auto' };
-const paintOf = (c) => { const v = sel.colors[c.id]; if (v && c.freeColor && /^#[0-9a-f]{6}$/i.test(v)) return v; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
+const eco = createEconomy({ storage: localStorage, dayKey: () => dailyKeyNow() });
+const TEST_MODE = (() => { try { const q = new URLSearchParams(location.search).get('pruebas'); if (q === '1') localStorage.setItem('dr.test', '1'); else if (q === '0') localStorage.removeItem('dr.test'); return localStorage.getItem('dr.test') === '1'; } catch (_) { return false; } })();
+// acabado especial puesto (de la tienda o de una caja): manda sobre el color elegido en el garaje
+const finishOf = () => { const p = eco.paint(); return p ? p.finish : null; };
+const missionEvent = (ev, data) => { for (const text of eco.track(ev, data)) toast('Misión completada: ' + text); };
+const paintOf = (c) => { const sp = eco.paint(); if (sp) return sp.color; return baseColorOf(c); };
+const baseColorOf = (c) => { const v = sel.colors[c.id]; if (v && c.freeColor && /^#[0-9a-f]{6}$/i.test(v)) return v; if (v && c.paints && c.paints.some((p) => p[1].toLowerCase() === String(v).toLowerCase())) return v; return '#' + new THREE.Color(c.color).getHexString(); };
 const kartNum = () => { const n = parseInt(sel.kartNum, 10); return n >= 0 && n <= 99 ? n : 7; };
 const halvesOn = () => MOBILE && sel.touchMode === 'halves'; // el control por mitades solo existe en pantallas táctiles
 const saved = store.get('sel'); if (saved && /^kart_/.test(saved.carId || '')) saved.carId = 'kart';
@@ -216,6 +226,11 @@ const helmetSvg = (h) => {
   if (pat === 1) deco = '<rect x="14" y="2" width="5" height="24" fill="#' + st + '"/>';
   else if (pat === 2) deco = '<rect x="2" y="19.6" width="28" height="2.6" fill="#' + st + '"/><rect x="2" y="5.4" width="28" height="1.6" fill="#' + st + '"/>';
   else if (pat === 3) deco = '<polygon points="13,2 18.5,2 23,26 17.5,26" fill="#' + st + '"/>';
+  else if (pat === 4) deco = Array.from({ length: 18 }, (_, i) => ((i + Math.floor(i / 9)) % 2 ? '' : '<rect x="' + (2 + (i % 9) * 3.2) + '" y="' + (5 + Math.floor(i / 9) * 3.2) + '" width="3.2" height="3.2" fill="#' + st + '"/>')).join('');
+  else if (pat === 5) deco = '<path d="M32 21C25 22 23 17 17 19C20 15 17 14 13 15C18 12 17 9 21 10C21 13 25 10 24 7C28 9 27 12 31 12Z" fill="#' + st + '"/>';
+  else if (pat === 6) deco = '<polygon points="22,2 11,14 17,14 12,26 28,10 21,10 27,2" fill="#' + st + '"/>';
+  else if (pat === 7) deco = '<rect x="16.5" y="2" width="16" height="26" fill="#' + st + '"/>';
+  else if (pat === 8) deco = '<polygon points="20,4.500 21.800,9 26.500,9.300 22.900,12.300 24.100,17 20,14.400 15.900,17 17.100,12.300 13.500,9.300 18.200,9" fill="#' + st + '"/><rect x="2" y="20.500" width="28" height="1.800" fill="#' + st + '"/>';
   return `<svg viewBox="0 0 32 28" aria-hidden="true"><defs><clipPath id="${id}"><path d="${shell}"/></clipPath></defs><path d="${shell}" fill="#${b}"/><g clip-path="url(#${id})">${deco}<ellipse cx="19" cy="7.6" rx="7" ry="2.2" fill="#fff" opacity=".22"/><rect x="2" y="23.2" width="28" height="3" fill="#000" opacity=".28"/></g><path d="${shell}" fill="none" stroke="rgba(0,0,0,.5)" stroke-width=".9"/><path d="M3.4 13.4C8 11.6 15 11.7 20 13.4L19.4 19.6C14 20.4 8 20.1 4.2 19Z" fill="#${v}" stroke="rgba(0,0,0,.5)" stroke-width=".7"/><path d="M5.6 14.6C9 13.6 13.6 13.6 17 14.4" stroke="#fff" stroke-opacity=".5" stroke-width=".9" fill="none" stroke-linecap="round"/></svg>`;
 };
 const playerDrv = () => ({ flag: lb.flag, helm: lb.helmet });
@@ -363,11 +378,11 @@ $('diffSel').onclick = (e) => { if (e.target.dataset.v) { sel.diff = +e.target.d
 
 // ---------- modelos de coche ----------
 const CARTOON = new Set(CARS.filter((c) => c.group === 'cartoon').map((c) => c.kind));
-function buildCarMesh(color, kind, lod = 'lo', num = 7) {
+function buildCarMesh(color, kind, lod = 'lo', num = 7, finish = null) {
   let b;
   if (MODEL[kind]) {
     if (!modelCarReady(kind, lod)) throw new Error(`El modelo ${kind} (${lod}) no est? cargado`);
-    b = buildModelCar(kind, color, lod, num);
+    b = buildModelCar(kind, color, lod, num, finish);
   } else if (kind === 'porsche') {
     if (!porscheReady(lod)) throw new Error(`El modelo Porsche (${lod}) no est? cargado`);
     b = buildPorsche(color, lod);
@@ -560,6 +575,7 @@ async function startRace(restart = false) {
     for (const r of [S.ghostRecs.g, S.ghostRecs.t]) { const ct = r && r.car && CARS.find((c) => c.id === r.car); if (ct && !carAssetReady(ct, 'lo')) await loadCarAsset(ct, false).catch(() => {}); }
   }
   button.disabled = false; button.textContent = previousLabel;
+  if (!restart) missionEvent('session');
   menuWorldFree();
   const ti = tracks[sel.track], tr = ti.tr, type = CARS[sel.car];
   const sig = [sel.track, sel.car, sel.mode, S.gp && S.gp.phase, sel.diff].join('|');
@@ -594,7 +610,7 @@ async function startRace(restart = false) {
     const blobTex = new THREE.CanvasTexture(bc), blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
     const mkCar = (ct, color, name, isPlayer) => {
       const c = makeCar(ct, name, isPlayer);
-      c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer ? (MOBILE ? 'lo' : 'hi') : 'lo', isPlayer ? kartNum() : 2 + (hashStr(name + color) % 97)); scene.add(c.mesh.root);
+      c.color = color; c.mesh = buildCarMesh(color, ct.kind, isPlayer ? (MOBILE ? 'lo' : 'hi') : 'lo', isPlayer ? kartNum() : 2 + (hashStr(name + color) % 97), isPlayer ? finishOf() : null); scene.add(c.mesh.root);
       addHeadlights(c.mesh, ct.id, S.th.night ? 1 : S.th.weather === 'rain' ? 0.8 : S.th.dusk ? 0.35 : 0, isPlayer && !MOBILE && !S.th.dusk); // faros encendidos si está oscuro
       if (S.th.dusk && c.mesh.hl) c.mesh.hl.ground.visible = false; // al atardecer solo el resplandor del faro, sin charcos rectangulares en el asfalto
       c.blob = new THREE.Mesh(blobGeo, new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
@@ -765,6 +781,7 @@ function startDailySession(kind, rival) {
 function endDaily() {
   const d = S.daily; if (!d || d.done) return; d.done = true;
   const laps = d.times.map((l) => ({ t: l.t, s: l.s }));
+  if (d.kind === 'practice' && laps.length >= 3) missionEvent('practice'); else if (d.kind === 'official' && laps.length) missionEvent('quali');
   if (d.kind === 'official' && laps.length) { const b = d.times.reduce((a, c) => (c.t < a.t ? c : a)); markDaily(); D.submit({ ms: Math.round(b.t * 1000), s: b.s.map((v) => (v == null ? null : Math.round(v * 1000))), car: CARS[DAILY_CAR].id, track: 'daily:' + dailyKey, g: b.g }); }
   S.daily = null; D.sessionDone({ kind: d.kind, laps });
   toMenu(); D.open(true);
@@ -778,7 +795,7 @@ async function radarCars(fastType, pool) {
 }
 D = createDaily({ groupName, radarCars, $, lb, acc, esc, fmt, fmtS, flagSvg, countryOf, drawPreview, createGlobe, warmGlobe, MAP_LL, envLabel, tracks, cars: CARS, key: dailyKey, toast, startSession: startDailySession, muted: () => !!sel.mute, volume: () => clamp(+sel.vol.master, 0, 1),
   get track() { return tracks.find((t) => t.key === 'daily'); }, get car() { return CARS[DAILY_CAR]; }, get baseCar() { return CARS[BASE_CAR]; }, setCar(id) { const i = CARS.findIndex((c) => c.id === id); DAILY_CAR = i >= 0 ? i : BASE_CAR; } });
-$('shareBtn').innerHTML = WA_ICON + 'COMPARTIR POR WHATSAPP';
+$('shareBtn').innerHTML = WA_ICON + 'Compartir por WhatsApp';
 $('shareBtn').onclick = () => {
   const p = S.player, ti = S.trackInfo, circ = ti ? ti.th.name.replace(/, .*$/, '') : '', car = p ? p.type.name : '', big = $('rBig').textContent, title = $('rTitle').textContent;
   const isTime = /^\d+:\d/.test(big), line = isTime ? `${big} en ${circ} con el ${car}` : `${title} (${big}) en ${circ} con el ${car}`;
@@ -983,6 +1000,7 @@ function dailyLap(c, lt, done) {
   const s1 = d.cur[0], s2 = d.cur[1], s3 = s1 != null && s2 != null ? lt - s1 - s2 : null; d.cur = [null, null, null];
   const prev = d.ref ? d.ref.time : null; let newBest = false;
   if (valid) {
+    missionEvent('lap', { track: 'reto' });
     d.times.push({ t: lt, s: [s1, s2, s3], g: d.kind === 'official' ? Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) : null }); S.lastLap = lt;
     if (prev == null || lt < prev - 1e-6) { // nueva mejor vuelta personal del día: pasa a ser el fantasma y la referencia del diferencial
       newBest = true; d.ref = { day: dailyKey, time: lt, prof: Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000)), ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) };
@@ -1004,6 +1022,7 @@ function onPlayerLap(c, lt, done) {
   const cls = valid ? classify(lt, S.lapPB, S.lapRec) : '';
   let newPB = false; const previousPB = S.lapPB;
   if (valid) {
+    missionEvent('lap', { track: S.trackInfo.key }); if (previousPB != null && previousPB < 1e8 && lt < previousPB) missionEvent('pb');
     { const ck = 'pb.' + S.trackInfo.key + '.' + S.tr.seed + '.' + c.type.id, cr = store.get(ck); // tu mejor con este coche (clasificación online y local por coche)
       if (!cr || cr.lap == null || lt < cr.lap) { store.set(ck, { ...(cr || { sec: [null, null, null], prof: null }), lap: lt }); lb.submit(trackIdOf(S.trackInfo), c.type.id, Math.round(lt * 1000), S.mode === 'tt' ? Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) : null).catch(() => {}); } }
     if (S.lapPB == null || lt < S.lapPB) {
@@ -1055,11 +1074,10 @@ async function fillResultsBoard() {
   const ti = S.trackInfo, car = CARS[sel.car], res = await getRows(ti);
   if (S.state !== 'finished') return;
   const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === car.group), me = list.find((r) => r.you);
-  const shown = topWithMe(list, 5), out = [];
-  shown.forEach((r, i) => { if (i && r.rank - shown[i - 1].rank > 1) out.push('<tr class="gap"><td colspan="4">…</td></tr>'); out.push(boardRow2(r, list[0].ms)); });
-  $('rTable').innerHTML = out.join('') || '<tr class="gap"><td colspan="4">Aún no hay tiempos</td></tr>';
+  const shown = topWithMe(list, 5);
+  $('rTable').innerHTML = shown.length ? timeRows(shown, { esc, fmt, carName, best: list[0].ms }) : '<p class="kx-empty">Aún no hay tiempos</p>';
   const md = medalFor(S.lapPB, S.bench && S.bench.lap);
-  $('rTitle').textContent = (md ? md + ', ' : '') + (res.online && me ? `PUESTO ${me.rank} DE ${list.length}, ${groupName(car.group).toUpperCase()}` : `TU MEJOR VUELTA${res.online ? '' : ', SOLO LOCAL'}`);
+  $('rTitle').textContent = (md ? md + ', ' : '') + (res.online && me ? `Puesto ${me.rank} de ${list.length}` : `Tu mejor vuelta${res.online ? '' : ', solo en este móvil'}`);
 }
 // rellena los huecos (-1) del perfil de tiempos para poder interpolar sin saltos
 function fillProf(prof) {
@@ -1086,7 +1104,7 @@ function showResults() {
   const rank = order.indexOf(p) + 1;
   const benchLap = S.bench ? S.bench.lap : null;
   let extra = '';
-  $('againBtn').textContent = 'OTRA VEZ';
+  $('againBtn').textContent = 'Otra vez';
   if (S.gp && S.gp.phase === 'quali') {
     const ti = S.trackInfo; if (!S.gp.field) S.gp.field = makeField(ti);
     const list = S.gp.field.map((f) => ({ n: f.driver.name, d: f.driver, t: f.t })).concat([{ n: 'TÚ', d: playerDrv(), t: S.gp.qBest != null ? S.gp.qBest : 1e9, me: 1 }]).sort((a, b) => a.t - b.t);
@@ -1105,12 +1123,12 @@ function showResults() {
     extra = podiumHtml(all.slice(0, 3), p) + (prank <= 3 ? confettiHtml() : '');
   } else {
     const md = medalFor(S.lapPB, benchLap);
-    $('rBig').textContent = S.lapPB != null ? fmt(S.lapPB) : '—'; $('rTitle').textContent = S.lapPB != null ? (md ? md + ', ' : '') + 'TU MEJOR VUELTA' : 'SESIÓN TERMINADA';
-    rows.push('<tr class="gap"><td colspan="4">' + lp(20) + '</td></tr>'); fillResultsBoard();
+    $('rBig').textContent = S.lapPB != null ? fmt(S.lapPB) : 'Sin tiempo'; $('rTitle').textContent = S.lapPB != null ? (md ? md + ', ' : '') + 'Tu mejor vuelta' : 'Sesión terminada';
+    rows.push('<p class="kx-empty">' + lp(20) + '</p>'); fillResultsBoard();
     const st = streakInfo();
     if (S.trackInfo.key === 'daily') extra = `<div class="streak">Racha: ${st.n} día${st.n === 1 ? '' : 's'}</div>`;
   }
-  $('rTable').innerHTML = rows.join('');
+  $('rTable').innerHTML = rows.length && rows[0].startsWith('<tr') ? '<table>' + rows.join('') + '</table>' : rows.join('');
   const isRec = S.lapPB != null && S.bench && S.lapPB < S.bench.lap - 1e-6;
   $('rNew').innerHTML = (S.mode === 'race' ? '' : '') + (isRec ? '<span class="newrec">¡Récord de pista!</span>' : '') + extra;
   $('results').classList.remove('hidden'); $('touch').classList.add('hidden');
@@ -1349,25 +1367,19 @@ window.addEventListener('pointerdown', firstGesture); window.addEventListener('k
 
 // ---------- clasificación ----------
 const BD = { track: 0, group: 'all' };
-let APP = null;
+let APP = null, BOX = null;
 const boardRow2 = (r, best) => `<tr class="${r.you ? 'me ' : ''}${r.rank <= 3 ? 'p' + r.rank : ''}"><td class="rk"><i>${r.rank}</i></td><td class="nm"><b>${r.you ? drvIc(playerDrv(), 1) : ''}<span>${esc(r.name)}</span></b><small>${esc(carName(r.carId))}</small></td><td class="tm">${fmt(r.ms / 1000)}</td><td class="gp">${r.rank === 1 ? '' : '+' + ((r.ms - best) / 1000).toFixed(2)}</td></tr>`;
 async function renderBoard() {
   const ti = tracks[BD.track], st = $('boardStatus');
   $('boardTracks').innerHTML = tracks.map((t, i) => t.key === 'daily' ? '' : `<button type="button" class="${i === BD.track ? 'on' : ''}" data-i="${i}"><span class="flag">${flagSvg(countryOf(t)[0])}</span>${t.key === 'daily' ? 'Del día' : esc(t.name.replace(/, .*$/, ''))}</button>`).join('');
   $('boardGroups').innerHTML = [['all', 'Todos']].concat(GROUPS.map((g) => [g.id, g.name])).map(([id, n]) => `<button type="button" class="${id === BD.group ? 'on' : ''}" data-g="${id}">${esc(n)}</button>`).join('');
-  $('boardTable').innerHTML = '<tr class="skr"><td colspan="6"><i class="sk" style="width:70%;height:13px"></i></td></tr><tr class="skr"><td colspan="6"><i class="sk" style="width:55%;height:13px"></i></td></tr><tr class="skr"><td colspan="6"><i class="sk" style="width:62%;height:13px"></i></td></tr><tr class="skr"><td colspan="6"><i class="sk" style="width:48%;height:13px"></i></td></tr>'; st.textContent = '';
+  $('boardTable').innerHTML = '<p class="kx-empty">' + lp(22) + '</p>'; st.textContent = '';
   const res = await getRows(ti);
   if (BD.track !== tracks.indexOf(ti)) return;
   if (!res.online) st.textContent = res.error ? 'Sin conexión con la clasificación: se muestran solo tus tiempos de este dispositivo.' : 'Clasificación online desactivada: solo ves tus tiempos de este dispositivo.';
-  let html = '';
-  for (const g of GROUPS) {
-    if (BD.group !== 'all' && BD.group !== g.id) continue;
-    const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === g.id); if (!list.length) continue;
-    const best = list[0].ms;
-    html += `<tr class="gh"><td colspan="4">${esc(g.name)} <small>${list.length} piloto${list.length === 1 ? '' : 's'}</small></td></tr>` + list.filter((r) => r.rank <= 10 || r.you).map((r) => boardRow2(r, best)).join('');
-  }
-  if (!html) st.textContent = res.online ? 'Aún no hay tiempos aquí. ¡Pon el primero!' : st.textContent;
-  $('boardTable').innerHTML = html;
+  const list = rankRows(res.rows, (r) => groupIdOfCar(r.carId) === 'karts'), shown = list.filter((r) => r.rank <= 20 || r.you);
+  if (!list.length && res.online) st.textContent = 'Aún no hay tiempos aquí. ¡Pon el primero!';
+  $('boardTable').innerHTML = shown.length ? timeRows(shown, { esc, fmt, carName, best: list[0].ms }) : '';
 }
 // clasificación del menú principal: circuito y categoría elegidos, sin abrir nada
 const HB = { key: '', at: 0, res: null, token: 0 };
@@ -1398,7 +1410,7 @@ $('pflag').onchange = (e) => { lb.setFlag(e.target.value); };
 function buildHelmetEditor() {
   $('pflag').value = lb.flag;
   const cur = lb.helmet.toLowerCase();
-  $('helGrid').innerHTML = HEL_PRESETS.map((h) => `<button type="button" data-h="${h}" class="${h === cur ? 'on' : ''}" aria-label="casco"><span class="hel">${helmetSvg(h)}</span></button>`).join('');
+  $('helGrid').innerHTML = HEL_PRESETS.concat(eco.owned().filter((i) => i.type === 'helmet').map((i) => i.helmet)).map((h) => `<button type="button" data-h="${h}" class="${h === cur ? 'on' : ''}" aria-label="casco"><span class="hel">${helmetSvg(h)}</span></button>`).join('');
   $('helGrid').onclick = (e) => { const b = e.target.closest('button'); if (b) { lb.setHelmet(b.dataset.h); buildHelmetEditor(); } };
 }
 lb.flush();
@@ -1509,6 +1521,7 @@ function frame(now) {
   }
   { const driving = S.state === 'racing' || S.state === 'countdown' || S.state === 'finished'; sound.setEngineActive(driving); const wantMusic = !sel.mute && sel.vol.music > 0.001 && (S.state === 'menu' || (!!sel.raceMusic && !!S.scene)); sound.setMusicDuck(S.state !== 'menu'); if (wantMusic !== S.musicOn) { S.musicOn = wantMusic; sound.setMusic(wantMusic); } }
   if (RP.active) { RP.frame(dt); return; } // repetición de liga en pantalla
+  if (BOX && BOX.active) { BOX.frame(dt); return; } // apertura de una caja
   if (S.state === 'menu') return; // la app tapa el lienzo: no hace falta dibujar nada
   ps2View(S.th); // resolución interna según el circuito (los de estilo PS2 van más bajos)
   if (camera.view && camera.view.enabled) camera.clearViewOffset();
@@ -1575,7 +1588,7 @@ applyGfx(); applyVol(); sound.setMuted(!!sel.mute);
 let thumbEnv = null;
 async function renderThumb(id, w = 420, h = 250, cp = [6.4, 2.4, 7.6], ly = 0.62, fov = 24, pose = null, lod = 'hi') {
   const type = CARS.find((c) => c.id === id); await loadCarAsset(type, true);
-  const b = buildCarMesh(paintOf(type), type.kind, lod, kartNum()), sc = new THREE.Scene();
+  const b = buildCarMesh(paintOf(type), type.kind, lod, kartNum(), finishOf()), sc = new THREE.Scene();
   sc.add(new THREE.HemisphereLight(0xffffff, 0x303844, 0.9));
   const k = new THREE.DirectionalLight(0xfff2dd, 2.2); k.position.set(4, 6, 5); sc.add(k);
   const f = new THREE.DirectionalLight(0x9db8ff, 0.9); f.position.set(-6, 3, -3); sc.add(f);
@@ -1619,20 +1632,28 @@ const shots = new Map();
 const garageApi = {
   list: () => CARS,
   current: () => CARS[sel.car],
-  color: (id) => paintOf(CARS.find((c) => c.id === id)),
+  color: (id) => baseColorOf(CARS.find((c) => c.id === id)),
+  specials: () => eco.owned().filter((i) => i.type === 'paint'),
+  special: () => eco.paint(),
+  setSpecial(id) { eco.equipPaint(id); MP.key = ''; },
   num: () => kartNum(),
   pick(id) { const i = CARS.findIndex((c) => c.id === id); if (i < 0) return; sel.car = i; sel.carId = id; store.set('sel', sel); MP.key = ''; buildMenu(); this.rev(); },
   rev() { sound.init(); sound.enginePreview(CARS[sel.car].id); },
-  setColor(hex) { sel.colors[CARS[sel.car].id] = hex; store.set('sel', sel); MP.key = ''; buildMenu(); },
+  setColor(hex) { eco.equipPaint(null); sel.colors[CARS[sel.car].id] = hex; store.set('sel', sel); MP.key = ''; buildMenu(); },
   setNum(n) { sel.kartNum = n; store.set('sel', sel); MP.key = ''; },
   // foto del kart con el mismo modelo que se conduce
   shot(id, w, h) {
-    const type = CARS.find((c) => c.id === id), k = [id, paintOf(type), kartNum(), w, h].join('|');
+    const type = CARS.find((c) => c.id === id), k = [id, paintOf(type), finishOf(), kartNum(), w, h].join('|');
     if (!shots.has(k)) { if (shots.size > 40) shots.clear(); shots.set(k, renderThumb(id, w, h, [4.5, 2.5, 5.4], 0.3, 13.5, null, MOBILE ? 'lo' : 'hi').catch((e) => { console.warn('Foto del kart no disponible', String(e && e.stack || e)); shots.delete(k); return ''; })); }
     return shots.get(k);
   },
 };
-APP = initHome({ $, acc, esc, LG, PF, helmetSvg, fmt, toast, carName, circuits: circuitCards, circuit: circuitInfo, rows: circuitRows, race: raceCircuit, daily: () => D, garage: garageApi, buildHelmets: () => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; buildHelmetEditor(); } });
+const equipItem = (id) => { const it = itemById(id); if (!it || !eco.has(id)) return; if (it.type === 'paint') { eco.equipPaint(id); MP.key = ''; toast(it.name + ' puesta en tu kart'); } else { lb.setHelmet(it.helmet); toast(it.name + ' puesto'); } };
+const isEquipped = (it) => (it.type === 'paint' ? !!eco.paint() && eco.paint().id === it.id : lb.helmet.toLowerCase() === it.helmet.toLowerCase());
+BOX = createBoxShow({ renderer, eco, helmetSvg, equip: equipItem, MOBILE, muted: () => !!sel.mute, sfx: (n, v) => { sound.init(); sound.play(n, v); },
+  loadKarts: async () => { const lod = MOBILE ? 'lo' : 'hi', list = [CARS.find((c) => c.id === 'kart'), CARS.find((c) => c.id === 'superkart')]; await Promise.all(list.map((c) => loadCarAsset(c, true))); return [buildCarMesh(0x1f6fe0, 'kart', lod, 23).root, buildCarMesh(0xf5c542, 'superkart', lod, 1).root].map((m) => { m.scale.setScalar(0.92); return m; }); },
+  onClose: () => { resize(); if (APP) APP.refresh(); } });
+APP = initHome({ $, acc, esc, LG, PF, helmetSvg, eco, walletHtml, box: BOX, equip: equipItem, isEquipped, testMode: TEST_MODE, fmt, toast, carName, circuits: circuitCards, circuit: circuitInfo, rows: circuitRows, race: raceCircuit, daily: () => D, garage: garageApi, buildHelmets: () => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; buildHelmetEditor(); } });
 initPwa();
 initPush({ $, acc, esc });
 initUx({ $, acc }); initUiToggle();
