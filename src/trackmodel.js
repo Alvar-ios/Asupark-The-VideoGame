@@ -2,11 +2,16 @@
 // línea central que usa la física. Aquí solo se añaden cielo, luces, mar o suelo de fondo y las marcas de carrera.
 import * as THREE from 'three';
 import { parseGlb } from './glbload.js';
+import { TRACK_DATA } from './tracks-data.js';
+import { reloadForUpdate } from './update.js';
 
 const cache = {}, pending = {};
 export function loadTrackModel(id) {
   if (cache[id]) return Promise.resolve(cache[id]);
-  return pending[id] || (pending[id] = parseGlb(`./assets/track_${id}.glb.gz`).then((g) => {
+  const rev = TRACK_DATA[id].rev;
+  return pending[id] || (pending[id] = parseGlb(`./assets/track_${id}.glb.gz?v=${rev}`).then((g) => {
+    // modelo y código tienen que ser de la misma versión: si no, la pista saldría sin suelo o con muros invisibles
+    if (g.scene.userData.rev !== rev) { reloadForUpdate(); throw new Error('hay una versión nueva del juego'); }
     g.scene.traverse((o) => { if (!o.isMesh) return; o.receiveShadow = true; o.castShadow = false; const m = o.material; m.envMapIntensity = 0.25; if (m.map) m.map.anisotropy = 4; if (m.transparent) m.depthWrite = false; });
     return (cache[id] = g.scene);
   }).catch((e) => { delete pending[id]; throw e; }));

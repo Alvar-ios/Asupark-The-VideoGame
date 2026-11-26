@@ -1,6 +1,6 @@
 {
   "name": "drift-rush",
-  "version": "0.0.124",
+  "version": "0.0.125",
   "type": "module",
   "private": true,
   "dependencies": {
@@ -13,6 +13,7 @@
     "sim": "node test/sim.mjs",
     "test:surface": "node test/surface-test.mjs",
     "test:solids": "node test/solids-test.mjs",
+    "test:tracks": "node test/imported-tracks-test.mjs",
     "optimize-glb": "node tools/optimize-glb.mjs",
     "prep:extra-cars": "node tools/prep-extra-cars.mjs",
     "test:engine": "node test/engine-test.mjs",

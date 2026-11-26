@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { NodeIO, Document } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { weld, simplify, prune } from '@gltf-transform/functions';
@@ -50,6 +51,7 @@ const TRACKS = {
     scale: 0.0342, half: 5.5, flat: true,
     dedupe: true, // el archivo trae todo el modelo dos veces, una copia encima de la otra
     road: { materials: ['material_18'] },
+    paved: ['material_18', 'material_19'], // asfalto y pianos del modelo: todo lo demás frena
     barriers: ['material_0', 'material_8'],
     tile: ['material_0', 'material_1', 'material_8'],
     // las colinas, el llano del fondo y sus árboles (4, 12, 13, 14, 15, 20) van sin aligerar: simplificados se rompían
@@ -180,8 +182,23 @@ function barrierEdges(cfg, line, tris) {
   }));
 }
 
-async function writeModel(id, cfg, tris, place) {
-  const out = new Document(), buf = out.createBuffer(), scene = out.createScene('track');
+// mapa del suelo en celdas de 30 cm: un bit a 1 donde hay asfalto o piano
+function pavedGrid(cfg, tris, place, nodes) {
+  const cell = 0.3, xs = nodes.map((n) => n[0]), zs = nodes.map((n) => n[1]), x0 = Math.floor(Math.min(...xs) - 16), z0 = Math.floor(Math.min(...zs) - 16);
+  const w = Math.ceil((Math.max(...xs) + 16 - x0) / cell), h = Math.ceil((Math.max(...zs) + 16 - z0) / cell), bits = new Uint8Array(Math.ceil(w * h / 8));
+  for (const t of tris) {
+    if (!cfg.paved.includes(t.mat.getName())) continue;
+    const [A, B, C] = t.v.map((v) => place(v.p)), den = (B[2] - C[2]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[2] - C[2]); if (Math.abs(den) < 1e-9) continue;
+    for (let j = Math.max(0, Math.floor((Math.min(A[2], B[2], C[2]) - z0) / cell)); j <= Math.min(h - 1, Math.floor((Math.max(A[2], B[2], C[2]) - z0) / cell)); j++) for (let i = Math.max(0, Math.floor((Math.min(A[0], B[0], C[0]) - x0) / cell)); i <= Math.min(w - 1, Math.floor((Math.max(A[0], B[0], C[0]) - x0) / cell)); i++) {
+      const x = x0 + (i + 0.5) * cell, z = z0 + (j + 0.5) * cell, a = ((B[2] - C[2]) * (x - C[0]) + (C[0] - B[0]) * (z - C[2])) / den, b = ((C[2] - A[2]) * (x - C[0]) + (A[0] - C[0]) * (z - C[2])) / den;
+      if (a >= -0.02 && b >= -0.02 && a + b <= 1.02) bits[(j * w + i) >> 3] |= 1 << ((j * w + i) & 7);
+    }
+  }
+  return { x: x0, z: z0, w, h, cell, data: Buffer.from(bits).toString('base64') };
+}
+
+async function writeModel(id, cfg, tris, place, rev) {
+  const out = new Document(), buf = out.createBuffer(), scene = out.createScene('track').setExtras({ rev });
   const perMat = new Map(); for (const t of tris) perMat.set(t.mat, (perMat.get(t.mat) || 0) + 1);
   // los materiales pesados repartidos por la pista se parten en parcelas de 55 m: la cámara descarta las que no ve
   const groups = new Map(); for (const t of tris) { const c = [0, 1, 2].map((q) => place(t.v[q].p)); const cell = (cfg.tile || []).includes(t.mat.getName()) ? Math.floor((c[0][0] + c[1][0] + c[2][0]) / 3 / 55) + ',' + Math.floor((c[0][2] + c[1][2] + c[2][2]) / 3 / 55) : ''; const key = t.mat.getName() + '|' + cell; (groups.get(key) || groups.set(key, []).get(key)).push(t); }
@@ -282,6 +299,13 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   if (cfg.barriers) data[id].edges = barrierEdges(cfg, line, tris).map((e) => average(e, 2).filter((_, i) => i % step === 0).map((v) => +v.toFixed(2)));
   console.log(id, 'vuelta', Math.round(len), 'm, desnivel', (Math.max(...nodes.map((n) => n[2])) - 2).toFixed(1), 'm, puntos fuera de la calzada', off, 'de', line.P.length);
   if (cfg.rebuild) data[id].edges = [0, 1].map(() => every.map(() => data[id].wall));
-  await writeModel(id, cfg, tris, place);
+  if (cfg.paved) {
+    data[id].paved = pavedGrid(cfg, tris, place, nodes);
+    const g = data[id].paved, bits = Buffer.from(g.data, 'base64'), on = (x, z) => { const n = Math.floor((z - g.z) / g.cell) * g.w + Math.floor((x - g.x) / g.cell); return (bits[n >> 3] >> (n & 7)) & 1; };
+    console.log(id, 'mapa del suelo', g.w + 'x' + g.h, '| puntos del eje fuera del asfalto:', nodes.filter((n) => !on(n[0], n[1])).length, 'de', nodes.length);
+  }
+  // sello: el juego no usa un modelo que no sea el de estos datos
+  data[id].rev = crypto.createHash('sha1').update(JSON.stringify(data[id])).update(fs.readFileSync(new URL('./track-rebuild.mjs', import.meta.url))).update(fs.readFileSync(new URL(import.meta.url))).digest('hex').slice(0, 10);
+  await writeModel(id, cfg, tris, place, data[id].rev);
 }
 fs.writeFileSync('src/tracks-data.js', '// Generado por tools/prep-tracks.mjs: línea central de los circuitos importados (metros)\nexport const TRACK_DATA = ' + JSON.stringify(data) + ';\n');

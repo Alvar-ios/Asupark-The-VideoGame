@@ -1,6 +1,7 @@
 // Visor de repeticiones de liga: todos los fantasmas de un día a la vez (cámara cinemática) o la vuelta de un solo piloto.
 // Dibuja la trazada de cada piloto como una cinta sobre el asfalto. Usa su propia escena: no toca la carrera ni el menú.
 import * as THREE from 'three';
+import { splitGhost } from './ghostlook.js';
 import { waShare, baseUrl } from './share.js';
 
 const PALETTE = [0xff3b4e, 0x2e9bff, 0xffd34e, 0x3be08a, 0xb36bff, 0xff8a2a, 0x2de2e6, 0xff5fc8, 0xa8e63c, 0xffffff, 0x8a93ff, 0xd98c5f];
@@ -15,7 +16,7 @@ export function createReplay(ctx) {
 
   // ---------- datos de un piloto ----------
   function prep(d, i, solo) {
-    const g = Float32Array.from(d.ghost), n = Math.floor(g.length / 4), cum = new Float32Array(n), spd = new Float32Array(n);
+    const g = Float32Array.from(splitGhost(d.ghost).frames), n = Math.floor(g.length / 4), cum = new Float32Array(n), spd = new Float32Array(n);
     for (let k = 1; k < n; k++) cum[k] = cum[k - 1] + Math.hypot(g[k * 4] - g[k * 4 - 4], g[k * 4 + 1] - g[k * 4 - 3], g[k * 4 + 2] - g[k * 4 - 2]);
     let top = 1;
     for (let k = 0; k < n; k++) { const a = Math.max(0, k - 3), b = Math.min(n - 1, k + 3); spd[k] = (cum[b] - cum[a]) / ((b - a) / HZ); if (spd[k] > top) top = spd[k]; }

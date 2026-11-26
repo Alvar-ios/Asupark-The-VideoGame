@@ -97,6 +97,12 @@ export function makeCar(type, name, isPlayer) {
 }
 
 const tmp = { x: 0, y: 0, z: 0, tx: 0, tz: 1 };
+// 1 si el punto queda fuera del asfalto y los pianos
+function offPaved(tr, x, z) {
+  const g = tr.paved, i = Math.floor((x - g.x) / g.cell), j = Math.floor((z - g.z) / g.cell);
+  if (i < 0 || j < 0 || i >= g.w || j >= g.h) return 1;
+  const n = j * g.w + i; return (g.bits[n >> 3] >> (n & 7)) & 1 ? 0 : 1;
+}
 // Coloca el coche en la pista. s puede ser negativo (parrilla detrás de la meta).
 export function placeCar(c, tr, s, lat, speed = 0) {
   pointAt(tr, s, lat, tmp);
@@ -119,6 +125,26 @@ export function resetToTrack(c, tr) {
   placeCar(c, tr, s + lapBase * tr.len, 0, 14);
 }
 
+// Salida lanzada: el kart va por el centro como sobre raíles hasta que te da el control, así no puede chocar con nada.
+const railAt = { x: 0, y: 0, z: 0, tx: 0, tz: 1 }, railLook = { x: 0, y: 0, z: 0, tx: 0, tz: 1 };
+export function railStep(c, tr, dt) {
+  c.px = c.x; c.py = c.y; c.pz = c.z; c.ppsi = c.psi;
+  // velocidad según la curva más cerrada que venga en los próximos 30 m
+  let bend = 0;
+  for (let a = 0; a <= 30; a += 3) bend = Math.max(bend, tr.absK[Math.floor((((c.D + a) % tr.len + tr.len) % tr.len) / tr.ds) % tr.N]);
+  const goal = Math.min(30, Math.max(12, Math.sqrt(13 / Math.max(bend, 1e-4))));
+  const v = c.speed + Math.max(-14 * dt, Math.min(9 * dt, goal - c.speed)), D = c.D + v * dt;
+  pointAt(tr, D, 0, railAt); pointAt(tr, D + 4, 0, railLook);
+  const psi = Math.atan2(railLook.x - railAt.x, railLook.z - railAt.z), turn = wrapPi(psi - c.psi) / dt;
+  const grad = (railLook.y - railAt.y) / 4;
+  c.x = railAt.x; c.z = railAt.z; c.y = railAt.y; c.psi = c.ppsi + wrapPi(psi - c.ppsi);
+  c.vx = Math.sin(psi) * v; c.vz = Math.cos(psi) * v; c.vy = 0; c.speed = v; c.vf = v; c.vl = 0;
+  c.steer += (Math.max(-1, Math.min(1, -turn / 1.6)) - c.steer) * Math.min(1, 8 * dt); c.yawRate = turn;
+  c.grad = grad; c.air = false; c.drifting = false; c.offroad = false; c.offroadFactor = 0; c.onKerb = false;
+  c.throttle = goal >= v ? 0.6 : 0; c.brake = goal < v - 1 ? 0.3 : 0;
+  locate(tr, c.x, c.z, c.hint, c.loc); c.hint = c.loc.i; c.lastS = c.loc.s; c.D = D; c.safeD = D; c.stuckT = 0;
+}
+
 export function stepCar(c, inp, dt, tr, env) {
   setRoad(tr);
   const T = c.type, loc = c.loc, mf = clamp(c.mass / 1480, 0.92, 1.22); // peso: más inercia
@@ -135,10 +161,11 @@ export function stepCar(c, inp, dt, tr, env) {
   const absLat = Math.abs(loc.lat);
   const onPavedKerb = ground && tr.kerb && tr.kerb[loc.i] === curbSide
     && absLat > HW - 0.15 && absLat < HW + curbWidth + 0.15;
-  const offroadBlend = onPavedKerb ? 0 : smoothstep(HW - 0.7, HW + 2.4, absLat);
+  // con mapa del suelo (circuitos importados) manda lo que pisan las ruedas de cada lado: asfalto y piano, o fuera
+  const offroadBlend = tr.paved ? (ground ? offPaved(tr, c.x + rx * 0.5, c.z + rz * 0.5) * 0.5 + offPaved(tr, c.x - rx * 0.5, c.z - rz * 0.5) * 0.5 : 0) : onPavedKerb ? 0 : smoothstep(HW - 0.7, HW + 2.4, absLat);
   surfaceAt(tr, env, loc.s, SP); applyRunoff(tr, env, loc.i, loc.lat, HW, offroadBlend, SP); c.surf = SP.key;
   if (T.loose) { const lo = (LOOSE[SP.key] || 0) * T.loose; if (lo) { SP.g *= 1 + 0.5 * lo; SP.b *= 1 + 0.3 * lo; SP.a *= 1 + 0.25 * lo; SP.s *= 1 + 0.06 * lo; SP.d *= 1 - 0.3 * lo; } } // coches de rally: más agarre, tracción y frenada en superficies sueltas // superficie bajo el coche (zonas mixtas + temperatura y humedad)
-  const off = offroadBlend > 0.5;
+  const off = tr.paved ? offroadBlend > 0.4 : offroadBlend > 0.5;
   c.offroadFactor = ground ? offroadBlend : 0;
   c.offroad = off && ground;
 
@@ -184,7 +211,7 @@ export function stepCar(c, inp, dt, tr, env) {
       const d = Math.min(Math.abs(vf), (2.2 + 0.0007 * vf * vf) * dt);
       vf -= Math.sign(vf) * d;
     }
-    if (vf > vmaxE) vf -= (vf - vmaxE) * (offroadBlend > 0.5 ? 3 : 1.1) * dt;
+    if (vf > vmaxE) vf -= (vf - vmaxE) * (tr.paved && offroadBlend > 0 ? 3.5 : offroadBlend > 0.5 ? 3 : 1.1) * dt;
     if (offroadBlend > 0) vf *= Math.exp(-offroadBlend * (env.rollingDrag || 0.5) * dt);
     vf -= 9.8 * c.grad * (env.slope || 0.7) * dt;
     if (SP.d > 0.01) vf *= Math.exp(-SP.d * 0.25 * dt);

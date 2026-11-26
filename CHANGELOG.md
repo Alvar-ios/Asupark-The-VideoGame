@@ -4,6 +4,12 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.125
+- La app ya no puede mezclar versiones: se recarga cuando hay una nueva (nunca en mitad de una vuelta) y no usa un modelo de circuito que no sea el de su código. Con una app vieja abierta, Misty salía sin suelo y con muros invisibles.
+- Antes de la vuelta lanzada el kart va sobre raíles por el centro: no puede chocar.
+- Mario Circuit 3: el suelo sale del propio modelo. Fuera del asfalto y los pianos se frena mucho (unos 38 km/h con las dos ruedas fuera).
+- El fantasma sale con el kart, color y calcomanía con los que se marcó el tiempo. Los fantasmas anteriores salen con el kart de serie.
+
 ## 0.0.124
 - Misty Cliffs: arcén de roca en los tramos altos, que tapa la rendija por la que se veía el mar al pie de las paredes.
 

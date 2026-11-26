@@ -10,7 +10,7 @@ import { isVisibleTrack } from './visible.js';
 // trazado de un circuito importado (src/tracks-data.js)
 function modelStyle(id) {
   const d = TRACK_DATA[id];
-  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, deck: d.deck, imported: true, startNear: d.start, scale: 1, half: d.half, wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: true, noKerb: true };
+  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, deck: d.deck, paved: d.paved, imported: true, startNear: d.start, scale: 1, half: d.paved ? 4.3 : d.half, wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: true, noKerb: true };
 }
 
 export const THEMES = {
@@ -177,7 +177,7 @@ export const THEMES = {
     },
     style: modelStyle('mario3'), floor: { color: 0x58a83a, y: 0.6 },
     skyTop: 0x2f7fe0, skyHor: 0xbfe6ff, fog: 0xbfe0f6, fogNear: 420, fogFar: 2600, ground: 0xc9a561, grass: 0xc9a561, dirt: 0xc9a561, road: 0x55565a, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
-    wall1: 0x2f9d3f, wall2: 0xd43a30, mount: 0x6a8f4a, sun: 0xfff6e0, sunDir: [-0.35, 0.8, 0.4], hemiSky: 0xffffff, hemiGround: 0xb59a68, hemiI: 1.25, sunI: 1.75, night: false, temp: 25, humidity: 0.35, wind: [1, 0.5], gripMul: 1, offroad: 0.55, offroadGrip: 0.7,
+    wall1: 0x2f9d3f, wall2: 0xd43a30, mount: 0x6a8f4a, sun: 0xfff6e0, sunDir: [-0.35, 0.8, 0.4], hemiSky: 0xffffff, hemiGround: 0xb59a68, hemiI: 1.25, sunI: 1.75, night: false, temp: 25, humidity: 0.35, wind: [1, 0.5], gripMul: 1, offroad: 0.34, offroadGrip: 0.62, rollingDrag: 0.3, steerOffroad: 0.72,
   },
   muralla: {
     id: 'muralla', fiction: true, name: 'Gran Muralla, China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,

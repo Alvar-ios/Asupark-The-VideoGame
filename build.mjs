@@ -1,11 +1,12 @@
 import { build } from 'esbuild';
 import fs from 'node:fs';
-const r = await build({ entryPoints: ['src/main.js'], bundle: true, minify: true, format: 'iife', write: false, target: 'es2020', legalComments: 'none' });
 const VERSION = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+const r = await build({ entryPoints: ['src/main.js'], bundle: true, minify: true, format: 'iife', write: false, target: 'es2020', legalComments: 'none', define: { __VERSION__: JSON.stringify(VERSION) } });
 const tpl = fs.readFileSync('index.template.html', 'utf8').replaceAll('{{VERSION}}', VERSION)
   .replace('</style>', () => fs.readFileSync('src/kart-ui.css', 'utf8') + fs.readFileSync('src/app.css', 'utf8') + fs.readFileSync('src/shop.css', 'utf8') + '</style>');
 fs.mkdirSync('dist', { recursive: true });
 fs.writeFileSync('dist/game.js', r.outputFiles[0].text);
+fs.writeFileSync('dist/version.json', JSON.stringify({ version: VERSION }));
 fs.writeFileSync('dist/index.html', tpl.replace('<script>/*BUNDLE*/</script>', '<script src="./game.js" defer></script>'));
 fs.mkdirSync('dist/assets', { recursive: true });
 for (const name of fs.readdirSync('src/assets')) if (name.endsWith('.glb.gz')) fs.copyFileSync(`src/assets/${name}`, `dist/assets/${name}`);

@@ -15,12 +15,14 @@ import { initUiToggle } from './uimode.js';
 import { createEconomy, itemById, ITEMS } from './economy.js';
 import { buildPilot, pilotFit, STEER_TURN, SUIT_DEFAULT } from './pilot.js';
 import { loadTrackModel } from './trackmodel.js';
+import { packGhost, splitGhost } from './ghostlook.js';
+import { watchUpdates } from './update.js';
 import { createBoxShow } from './box3d.js';
 import { walletHtml } from './shop.js';
 import { timeRows } from './times.js';
 import { dailyKeyNow, pickDaily, createDaily, PRACTICE_LAPS, OFFICIAL_LAPS, DAILY_LOCK_DAY } from './daily.js';
 import { buildTrack, ROAD_HALF, WALL, wrapPi, pointAt, rainAt } from './track.js';
-import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, resetToTrack, gearInfo, isKartKind } from './car.js';
+import { CARS, GROUPS, AI_COLORS, makeCar, placeCar, stepCar, railStep, resetToTrack, gearInfo, isKartKind } from './car.js';
 import { hashStr } from './rng.js';
 import { buildSpeedProfile, aiInput, benchmark, aiType, AI_TOP } from './ai.js';
 import { buildWorld, disposeScene, updateWind } from './world.js';
@@ -435,7 +437,15 @@ function makeGhost(root, gold, name) {
   for (const o of meshes) {
     o.castShadow = false; o.receiveShadow = false;
     const d = new THREE.Mesh(o.geometry, pre); d.renderOrder = 1; d.castShadow = false; d.position.copy(o.position); d.quaternion.copy(o.quaternion); d.scale.copy(o.scale); o.parent.add(d);
-    o.material = color; o.renderOrder = 2;
+    // translúcido pero con sus propios colores y dibujos, con un velo azul (tú) o dorado (el mejor)
+    const tint = (m) => {
+      if (!m || !m.color) return color;
+      const n = m.clone(); if (Object.prototype.hasOwnProperty.call(m, 'onBeforeCompile')) { n.onBeforeCompile = m.onBeforeCompile; n.customProgramCacheKey = m.customProgramCacheKey; }
+      n.transparent = true; n.opacity = gold ? 0.55 : 0.46; n.depthWrite = false; n.alphaTest = 0;
+      if (n.emissive) { n.emissive.setHex(gold ? 0x7a5a10 : 0x28506e); n.emissiveMap = null; n.emissiveIntensity = 1; }
+      return n;
+    };
+    o.material = Array.isArray(o.material) ? o.material.map(tint) : tint(o.material); o.renderOrder = 2;
   }
 }
 
@@ -590,12 +600,13 @@ async function startRace(restart = false) {
     status.hidden = false; button.disabled = false; button.textContent = previousLabel; return;
   }
   S.ghostRecs = null;
+  if (S.daily) await Promise.all([loadGhostSkin(S.daily.ref), loadGhostSkin(S.daily.rival)]);
   if (S.mode === 'tt' && !S.daily) { // fantasmas por categoría: tu mejor vuelta de la categoría (gris) y la mejor de la categoría entre todos los jugadores (dorado)
     const tiG = tracks[sel.track], gk = tiG.key + '.' + tiG.tr.seed; migrateGroupBest(gk, pt.group);
     const own = store.get('best.' + gk + '.g:' + pt.group) || null, carIds = CARS.filter((c) => c.group === pt.group).map((c) => c.id);
     const remote = sel.ghostBest !== false ? await lb.bestGhost(trackIdOf(tiG), carIds, layoutSince(tiG.key, pt.group)) : null;
     S.ghostRecs = { g: own, t: remote && (!own || remote.time < own.time - 1e-6) ? remote : own };
-    for (const r of [S.ghostRecs.g, S.ghostRecs.t]) { const ct = r && r.car && CARS.find((c) => c.id === r.car); if (ct && !carAssetReady(ct, 'lo')) await loadCarAsset(ct, false).catch(() => {}); }
+    for (const r of [S.ghostRecs.g, S.ghostRecs.t]) { const ct = r && r.car && CARS.find((c) => c.id === r.car); if (ct && !carAssetReady(ct, 'lo')) await loadCarAsset(ct, false).catch(() => {}); await loadGhostSkin(r); }
   }
   button.disabled = false; button.textContent = previousLabel;
   if (!restart) missionEvent('session');
@@ -651,11 +662,12 @@ async function startRace(restart = false) {
     } else {
       const mkGhost = (rec, gold) => {
         const ct = (rec && rec.car && CARS.find((c) => c.id === rec.car && carAssetReady(c, 'lo'))) || type;
-        const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold, (rec && rec.name) || lb.name); m.root.visible = false; scene.add(m.root); return m;
+        const m = ghostCar(ct, rec); makeGhost(m.root, gold, (rec && rec.name) || lb.name); m.root.visible = false; scene.add(m.root); return m;
       };
       const gr = S.ghostRecs && S.ghostRecs.g, tr2 = S.ghostRecs && S.ghostRecs.t, same = gr && tr2 && Math.abs(gr.time - tr2.time) < 1e-6;
       S.ghostMesh = mkGhost(same ? tr2 : gr, !!same); S.ghostGold = tr2 && !same ? mkGhost(tr2, true) : null;
-      if (S.daily && S.daily.rival) S.ghostGold = mkGhost({ car: S.daily.rival.car, name: S.daily.rival.name }, true); // fantasma de un amigo de la liga // si el mejor de tu grupo también es el de la pista, es uno solo (dorado)
+      if (S.daily && S.daily.ref) { const old = S.ghostMesh; if (old) old.root.removeFromParent(); S.ghostMesh = mkGhost({ car: type.id, name: lb.name, ghost: S.daily.ref.ghost }, false); }
+      if (S.daily && S.daily.rival) S.ghostGold = mkGhost(S.daily.rival, true); // fantasma de un amigo de la liga // si el mejor de tu grupo también es el de la pista, es uno solo (dorado)
     }
     // minimapa
     const mc = document.createElement('canvas'); mc.width = mc.height = 900; const mx = mc.getContext('2d'); mx.scale(3, 3); // mapa a triple resolución: se amplía al seguir al coche sin pixelarse
@@ -690,14 +702,17 @@ async function startRace(restart = false) {
     const rec = S.ghostRecs && S.ghostRecs.g, trec = S.ghostRecs && S.ghostRecs.t; // gris: tu mejor vuelta, dorado: la mejor del circuito
     const sameG = !!(rec && trec && Math.abs(rec.time - trec.time) < 1e-6), showGray = sel.ghostMine !== false, showGold = sel.ghostBest !== false;
     S.goldTime = trec ? trec.time : null;
-    S.ghostBest = (sameG ? showGray || showGold : showGray) && rec && rec.ghost ? Float32Array.from(rec.ghost) : null; // si la tuya es la mejor, solo sale un fantasma (dorado)
-    S.ghostBestGold = showGold && !sameG && trec && trec.ghost ? Float32Array.from(trec.ghost) : null;
+    S.ghostBest = (sameG ? showGray || showGold : showGray) && rec && rec.ghost ? ghostFrames(rec.ghost) : null; // si la tuya es la mejor, solo sale un fantasma (dorado)
+    S.ghostBestGold = showGold && !sameG && trec && trec.ghost ? ghostFrames(trec.ghost) : null;
     if (reuse) { // al reiniciar se reutiliza la escena: se ajustan los fantasmas a los récords actuales
       const ctOf = (r) => (r && r.car && CARS.find((c) => c.id === r.car)) || type, same = rec && trec && Math.abs(rec.time - trec.time) < 1e-6;
-      setGhost('ghostMesh', ctOf(same ? trec : rec), !!same, ((same ? trec : rec) || {}).name); setGhost('ghostGold', S.ghostBestGold ? ctOf(trec) : null, true, (trec || {}).name);
+      setGhost('ghostMesh', ctOf(same ? trec : rec), !!same, ((same ? trec : rec) || {}).name, same ? trec : rec); setGhost('ghostGold', S.ghostBestGold ? ctOf(trec) : null, true, (trec || {}).name, trec);
     }
     if (S.ghostMesh) S.ghostMesh.root.visible = false; if (S.ghostGold) S.ghostGold.root.visible = false;
-    if (S.daily) { S.ghostBest = S.daily.ref ? Float32Array.from(S.daily.ref.ghost) : null; S.ghostBestGold = S.daily.rival ? Float32Array.from(S.daily.rival.ghost) : null; }
+    if (S.daily) {
+      S.ghostBest = S.daily.ref ? ghostFrames(S.daily.ref.ghost) : null; S.ghostBestGold = S.daily.rival ? ghostFrames(S.daily.rival.ghost) : null;
+      if (reuse) { setGhost('ghostMesh', S.daily.ref ? type : null, false, lb.name, S.daily.ref); setGhost('ghostGold', S.daily.rival ? type : null, true, (S.daily.rival || {}).name, S.daily.rival); if (S.ghostMesh) S.ghostMesh.root.visible = false; if (S.ghostGold) S.ghostGold.root.visible = false; }
+    }
   }
   S.ghostRec = [];
   migrateGroupBest(ti.key + '.' + tr.seed, type.group);
@@ -874,10 +889,10 @@ function stepAll() {
   const aiIn = S.aiIn || (S.aiIn = { steer: 0, throttle: 0, brake: 0, drift: false });
   for (const c of S.cars) {
     if (c === p) {
-      p.noSolids = !!(p.finished || S.auto); // el piloto automático atraviesa las rocas como un fantasma
-      if (p.finished || S.auto) {
+      p.noSolids = !!p.finished; // al terminar, el kart sigue solo y atraviesa las rocas
+      if (S.auto && S.mode === 'tt' && !p.finished) railStep(p, tr, H); // antes de la vuelta va sobre raíles: no puede chocar
+      else if (p.finished || S.auto) {
         aiInput(p, tr, S.prof[p.type.id], p.finished ? { lane: 0, skill: 0.7 } : S.autoAi, aiIn);
-        if (S.auto && p.speed > 34) { aiIn.throttle = 0; aiIn.brake = Math.max(aiIn.brake, 0.15); } // crucero: respeta la línea y las curvas, sin pasarse de 34 m/s
         stepCar(p, aiIn, H, tr, env);
       }
       else stepCar(p, inp, H, tr, env);
@@ -1020,11 +1035,21 @@ function sectorDone(i, t) {
   showRaceBanner(`SECTOR ${i + 1}, ${head.toUpperCase()}`, fmtS(t), detail, cls);
 }
 
-// cambia el fantasma de una ranura por otro con la forma del coche indicado (azul = tu grupo, dorado = récord de la pista)
-function setGhost(slot, ct, gold, name) {
+// maqueta de un fantasma: el kart, color y calcomanía con los que se marcó ese tiempo
+function ghostCar(ct, rec) {
+  const look = splitGhost(rec && rec.ghost);
+  if (look.skin && modelCarReady('skin_' + look.skin, 'lo')) return buildCarMesh(0xffffff, 'skin_' + look.skin, 'lo', kartNum());
+  const paint = look.paint ? look.paint.color : ct.color, finish = look.paint && look.paint.finish !== 'gloss' ? look.paint.finish : null;
+  return buildCarMesh(paint, ct.kind, 'lo', kartNum(), finish, look.decal);
+}
+const loadGhostSkin = (rec) => { const skin = splitGhost(rec && rec.ghost).skin; return skin ? loadSkin(skin).catch(() => {}) : null; };
+const ghostFrames = (g) => (g ? Float32Array.from(splitGhost(g).frames) : null);
+
+// cambia el fantasma de una ranura (azul = tu grupo, dorado = récord de la pista)
+function setGhost(slot, ct, gold, name, rec) {
   const old = S[slot]; if (old && old.root.parent) old.root.parent.remove(old.root);
   S[slot] = null; if (!ct || !S.scene || !carAssetReady(ct, 'lo')) return;
-  const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold, name || lb.name); S.scene.add(m.root);
+  const m = ghostCar(ct, rec); makeGhost(m.root, gold, name || lb.name); S.scene.add(m.root);
   try { renderer.compile(m.root, camera, S.scene); } catch (e) { /* se prepara al dibujarse */ }
   m.root.visible = false; S[slot] = m;
 }
@@ -1034,9 +1059,9 @@ function dailyLap(c, lt, done) {
   const prev = d.ref ? d.ref.time : null; let newBest = false;
   if (valid) {
     missionEvent('lap', { track: 'reto' });
-    d.times.push({ t: lt, s: [s1, s2, s3], g: d.kind === 'official' ? Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) : null }); S.lastLap = lt;
+    d.times.push({ t: lt, s: [s1, s2, s3], g: d.kind === 'official' ? packGhost(S.ghostRec, eco.look()) : null }); S.lastLap = lt;
     if (prev == null || lt < prev - 1e-6) { // nueva mejor vuelta personal del día: pasa a ser el fantasma y la referencia del diferencial
-      newBest = true; d.ref = { day: dailyKey, time: lt, prof: Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000)), ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) };
+      newBest = true; d.ref = { day: dailyKey, time: lt, prof: Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000)), ghost: packGhost(S.ghostRec, eco.look()) };
       store.set('dr.dailyref', d.ref); S.refProf = d.ref.prof; S.refFill = fillProf(S.refProf); S.ghostBest = Float32Array.from(S.ghostRec); S.lapPB = lt; S.bestLap = lt;
     }
   }
@@ -1057,26 +1082,26 @@ function onPlayerLap(c, lt, done) {
   if (valid) {
     missionEvent('lap', { track: S.trackInfo.key }); if (previousPB != null && previousPB < 1e8 && lt < previousPB) missionEvent('pb');
     { const ck = 'pb.' + S.trackInfo.key + '.' + S.tr.seed + '.' + c.type.id, cr = store.get(ck); // tu mejor con este coche (clasificación online y local por coche)
-      if (!cr || cr.lap == null || lt < cr.lap) { store.set(ck, { ...(cr || { sec: [null, null, null], prof: null }), lap: lt }); lb.submit(trackIdOf(S.trackInfo), c.type.id, Math.round(lt * 1000), S.mode === 'tt' ? Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100) : null).catch(() => {}); } }
+      if (!cr || cr.lap == null || lt < cr.lap) { store.set(ck, { ...(cr || { sec: [null, null, null], prof: null }), lap: lt }); lb.submit(trackIdOf(S.trackInfo), c.type.id, Math.round(lt * 1000), S.mode === 'tt' ? packGhost(S.ghostRec, eco.look()) : null).catch(() => {}); } }
     if (S.lapPB == null || lt < S.lapPB) {
       newPB = true; S.lapPB = lt; S.bestLap = lt;
       S.pbRec.lap = lt; S.pbRec.profLap = lt; S.pbRec.prof = Array.from(S.curProf, (v) => (v < 0 ? -1 : Math.round(v * 1000) / 1000));
       store.set('pb.' + S.skey, S.pbRec);
       S.refProf = S.pbRec.prof; S.refName = 'PB'; S.refFill = fillProf(S.refProf);
       if (S.mode === 'tt') {
-        store.set(key, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id, name: lb.name }); // antes leía S.ghostBest, que puede ser null y cortaba el resto de la función (la mejor vuelta no se actualizaba en directo)
+        store.set(key, { time: lt, ghost: packGhost(S.ghostRec, eco.look()), car: c.type.id, name: lb.name }); // antes leía S.ghostBest, que puede ser null y cortaba el resto de la función (la mejor vuelta no se actualizaba en directo)
       }
       markDaily();
     }
     if (lt < S.lapRec) { S.lapRec = lt; S.recReal = true; S.recWho = 'Tú'; updateRecPanel(); }
-    if (S.mode === 'tt') { const tk = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.track', tb = store.get(tk); if (!tb || lt < tb.time) store.set(tk, { time: lt, ghost: Array.from(S.ghostRec, (v) => Math.round(v * 100) / 100), car: c.type.id, name: lb.name }); } // y el mejor de la pista, para el fantasma dorado
+    if (S.mode === 'tt') { const tk = 'best.' + S.trackInfo.key + '.' + S.tr.seed + '.track', tb = store.get(tk); if (!tb || lt < tb.time) store.set(tk, { time: lt, ghost: packGhost(S.ghostRec, eco.look()), car: c.type.id, name: lb.name }); } // y el mejor de la pista, para el fantasma dorado
     if (S.mode === 'tt' && newPB) { // el fantasma gris pasa a ser esta vuelta (mejor de la categoría); si además es la mejor de todos, pasa a dorado
       const showGray = sel.ghostMine !== false, showGold = sel.ghostBest !== false, isGold = S.goldTime == null || lt < S.goldTime - 1e-6;
       if (isGold) { // tu vuelta es la mejor de la categoría entre todos: un solo fantasma dorado
-        S.goldTime = lt; setGhost('ghostMesh', c.type, true, lb.name); setGhost('ghostGold', null); S.ghostBestGold = null;
+        S.goldTime = lt; setGhost('ghostMesh', c.type, true, lb.name, { ghost: packGhost(S.ghostRec, eco.look()) }); setGhost('ghostGold', null); S.ghostBestGold = null;
         S.ghostBest = (showGray || showGold) ? Float32Array.from(S.ghostRec) : null;
       } else { // sigue existiendo un dorado de otro jugador: el gris es tu vuelta
-        setGhost('ghostMesh', c.type, false, lb.name); S.ghostBest = showGray ? Float32Array.from(S.ghostRec) : null;
+        setGhost('ghostMesh', c.type, false, lb.name, { ghost: packGhost(S.ghostRec, eco.look()) }); S.ghostBest = showGray ? Float32Array.from(S.ghostRec) : null;
       }
     }
     setTimeout(() => refreshOnlineRecords(S.raceNo), 2500); // por si otros jugadores han marcado mejores tiempos
@@ -1699,6 +1724,7 @@ BOX = createBoxShow({ renderer, eco, helmetSvg, equip: equipItem, MOBILE, muted:
   onClose: () => { resize(); if (APP) APP.refresh(); } });
 APP = initHome({ $, acc, esc, LG, PF, helmetSvg, eco, walletHtml, box: BOX, equip: equipItem, isEquipped, code: codeApi, testMode: TEST_MODE, fmt, toast, carName, circuits: circuitCards, circuit: circuitInfo, rows: circuitRows, race: raceCircuit, daily: () => D, garage: garageApi, buildHelmets: () => { $('pname').value = lb.name; $('pname').disabled = !!lb.account; buildHelmetEditor(); } });
 initPwa();
+watchUpdates(() => S.state === 'racing' || S.state === 'countdown' || S.state === 'paused');
 initPush({ $, acc, esc });
 initUx({ $, acc }); initUiToggle();
 { const bt = $('boot'); if (bt) { bt.className = 'out'; setTimeout(() => bt.remove(), 450); } warmGlobe(); }
