@@ -1,9 +1,11 @@
 // Circuitos importados: en lugar de generar el escenario, se carga su modelo (tools/prep-tracks.mjs) alrededor de la
 // línea central que usa la física. Aquí solo se añaden cielo, luces, mar o suelo de fondo y las marcas de carrera.
 import * as THREE from 'three';
+import { SOLID_CELL } from './track.js';
 import { parseGlb } from './glbload.js';
 import { TRACK_DATA } from './tracks-data.js';
 import { reloadForUpdate } from './update.js';
+import { seaSky, seaWater, mistBanks } from './seascape.js';
 
 const cache = {}, pending = {};
 export function loadTrackModel(id) {
@@ -31,17 +33,21 @@ function finishLine(tr, th) {
   m.position.set(tr.X[0], tr.Y[0] + 0.07, tr.Z[0]); m.rotation.y = Math.atan2(tr.TX[0], tr.TZ[0]); return m;
 }
 // donde el borde es un precipicio, unos postes con cuerda dejan claro hasta dónde se puede llegar
-function edgePosts(tr) {
+function edgePosts(tr, deck, walls) {
   const every = 5, n = Math.floor(tr.N / every) * 2;
   const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.1, 0.13, 0.75, 6).translate(0, 0.37, 0), new THREE.MeshLambertMaterial({ color: 0x8a6439 }), n);
   const ropeAt = [], d = new THREE.Object3D(); let k = 0;
+  const walled = (i, side, x, z) => (deck && deck.apron && deck.apron[side < 0 ? 0 : 1][Math.round((i / tr.N) * deck.index.length) % deck.index.length] > 0)
+    || [...(tr.solids ? tr.solids.get(Math.floor(x / SOLID_CELL) * 4096 + Math.floor(z / SOLID_CELL)) || [] : [])].some((q) => Math.abs(q[4] - tr.Y[i]) < 2.2 && Math.hypot((q[0] + q[2]) / 2 - x, (q[1] + q[3]) / 2 - z) < 2.8)
+    || (walls && walls.some((w) => Math.abs(w[2] - tr.Y[i]) < 2.2 && Math.hypot(w[0] - x, w[1] - z) < 2.8));
   for (const side of [-1, 1]) {
     const line = [];
     for (let i = 0; i + every <= tr.N; i += every) {
       const l = side * ((tr.wallEdge ? tr.wallEdge[side < 0 ? 0 : 1][i] : tr.wall) + 0.2), x = tr.X[i] - tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l;
+      if (walled(i, side, x, z)) { line.push(null); continue; }
       d.position.set(x, tr.Y[i], z); d.updateMatrix(); posts.setMatrixAt(k++, d.matrix); line.push(new THREE.Vector3(x, tr.Y[i] + 0.62, z));
     }
-    for (let i = 0; i < line.length; i++) ropeAt.push(line[i], line[(i + 1) % line.length]);
+    for (let i = 0; i < line.length; i++) if (line[i] && line[(i + 1) % line.length]) ropeAt.push(line[i], line[(i + 1) % line.length]);
   }
   posts.count = k; posts.computeBoundingSphere();
   const g = new THREE.Group(); g.add(posts, new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(ropeAt), new THREE.LineBasicMaterial({ color: 0xe8dcc0 })));
@@ -66,25 +72,52 @@ function deckMesh(tr, deck, model) {
   };
   const [r0, r1] = deck.ramp.map((v) => v * N), onRamp = (i) => (r0 <= r1 ? i >= r0 && i <= r1 : i >= r0 || i <= r1);
   const soft = (i) => { let n = 0; for (let d = -6; d <= 6; d++) n += onRamp((i + d + N) % N) ? 1 : 0; return n / 13; };
-  const drop = Float32Array.from({ length: N }, (_, i) => 1.3 + soft(i) * Math.max(0, tr.Y[i] - 2.4)); // en la rampa baja hasta el suelo
+  // en la rampa el faldón baja hasta el suelo; en lo alto es un buen canto de roca, salvo si debajo pasa otro tramo
+  const under = (i) => { for (let j = 0; j < N; j += 3) if (tr.Y[j] < tr.Y[i] - 2.5 && Math.hypot(tr.X[j] - tr.X[i], tr.Z[j] - tr.Z[i]) < 10) return true; return false; };
+  const ledge = Float32Array.from({ length: N }, (_, i) => (tr.Y[i] > 6 && !under(i) ? 3.4 : 1.2));
+  const drop = Float32Array.from({ length: N }, (_, i) => { let l = 0; for (let d = -4; d <= 4; d++) l += ledge[(i + d + N) % N]; return l / 9 + soft(i) * Math.max(0, tr.Y[i] - 2.4); });
+  // el faldón no se dibuja donde caería sobre otra parte de la calzada a una altura parecida (curvas cerradas y pasos juntos)
+  const folds = (i, side) => {
+    for (const out of [0.4, 1.5]) {
+      const l = side * (edge(i, side) + out), px = tr.X[i] - tr.TZ[i] * l, pz = tr.Z[i] + tr.TX[i] * l;
+      for (let j = 0; j < N; j++) { const apart = Math.min((j - i + N) % N, (i - j + N) % N); if (apart > 2 && Math.abs(tr.Y[j] - tr.Y[i]) < 2.2 && Math.hypot(tr.X[j] - px, tr.Z[j] - pz) < edge(j, side) - 0.3) return true; }
+    }
+    return false;
+  };
   for (let i = 0; i < N; i++) {
     const name = deck.materials[deck.index[Math.round((i / N) * K) % K]];
     strip(name, i, (k) => [-1, -0.5, 0, 0.5, 1].map((f) => [f * edge(k, f || 1), tr.Y[k % N], (f + 1) / 2]), false);
     for (const side of [-1, 1]) {
+      if (folds(i, side)) continue;
       // faldón de roca; en lo alto empieza con un arcén casi plano que llega hasta el pie de las paredes
       strip(deck.skirt, i, (k) => {
-        const y = tr.Y[k % N], e = edge(k, side), high = Math.max(0, Math.min(1, (y - 6) / 4)), out = 0.2 + high * 2.6, low = y - drop[k % N];
-        return [[e, y - 0.01, 0], [e + out, y - 0.05 - high * 0.3, out / 6], [e + out + 1.3, low, (out + drop[k % N]) / 6]].map((c) => [side * c[0], c[1], (k * tr.ds) / 6, c[2]]);
+        const y = tr.Y[k % N], e = edge(k, side), out = 0.45, low = y - drop[k % N];
+        return [[e, y - 0.01, 0], [e + out, y - 0.12, out / 13], [e + out + 1.2, low, (out + drop[k % N]) / 13]].map((c) => [side * c[0], c[1], (k * tr.ds) / 13, c[2]]);
       }, side > 0);
+    }
+  }
+  // ¿ese punto cae sobre otro tramo de la calzada a una altura parecida?
+  const over = (i, side, lat) => { const px = tr.X[i] - tr.TZ[i] * side * lat, pz = tr.Z[i] + tr.TX[i] * side * lat; for (let j = 0; j < N; j++) { const apart = Math.min((j - i + N) % N, (i - j + N) % N); if (apart > 8 && Math.abs(tr.Y[j] - tr.Y[i]) < 3 && Math.hypot(tr.X[j] - px, tr.Z[j] - pz) < edge(j, 1) + 0.8) return true; } return false; };
+  // arcén de tierra hasta el pie de las paredes donde el suelo viejo ya no llega (usa el borde de la textura del camino)
+  const dirt = deck.materials.find((m) => /Ground./.test(m)) || deck.materials[0];
+  if (deck.apron) for (const side of [-1, 1]) {
+    const w = deck.apron[side < 0 ? 0 : 1], width = (k) => { const f = ((k % N) / N) * K, a = Math.floor(f) % K, b = (a + 1) % K; return w[a] && w[b] ? w[a] + (w[b] - w[a]) * (f - Math.floor(f)) : Math.max(w[a], w[b]); };
+    for (let i = 0; i < N; i++) {
+      if (!width(i) || !width(i + 1)) continue;
+      strip(dirt, i, (k) => { const e = edge(k, side), far = Math.max(e, width(k)), y = tr.Y[k % N]; const u = (m) => 0.14 + Math.min(0.72, m / (2 * e)); // la textura sigue a su escala: estirada parecería tarima
+        return [[side * (e - 0.2), y - 0.03, 0.14], [side * (e + far) / 2, y - 0.1, u((far - e) / 2)], [side * far, y - 0.16, u(far - e)]]; }, side < 0);
+      // en lo alto, un zócalo de roca al fondo del arcén: si bajo la pared queda rendija, detrás hay roca y no mar
+      if (tr.Y[i] > 7 && !over(i, side, width(i))) strip(deck.skirt, i, (k) => { const far = width(k) || width(i), y = tr.Y[k % N], top = 1.7 + 0.45 * Math.sin((k % N) * 0.9) * Math.sin((k % N) * 0.37); return [[side * far, y - 0.5, (k * tr.ds) / 9, 0], [side * (far + 0.2), y + top, (k * tr.ds) / 9, 0.22]].map((c) => [c[0], c[1], c[2], c[3]]); }, side > 0);
     }
   }
   for (const [name, g] of parts) {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(g.P, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(g.U, 2)); geo.setIndex(g.I); geo.computeVertexNormals();
     const material = (mats[name] || new THREE.MeshStandardMaterial({ color: 0xb98a56, roughness: 0.95 })).clone();
-    material.side = THREE.DoubleSide;
+    material.side = name === deck.skirt ? THREE.DoubleSide : THREE.FrontSide;
+    if (name === deck.skirt) material.color.multiplyScalar(0.72); // en sombra, como el pie de los acantilados
     if (material.map) { material.map = material.map.clone(); material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping; material.map.needsUpdate = true; }
-    const mesh = new THREE.Mesh(geo, material); mesh.receiveShadow = true; group.add(mesh);
+    const mesh = new THREE.Mesh(geo, material); mesh.receiveShadow = true; mesh.userData.deck = name; group.add(mesh);
   }
   return group;
 }
@@ -122,7 +155,7 @@ float gn(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix
 
 export function buildModelWorld(tr, th, opt = {}) {
   const scene = new THREE.Scene(); scene.fog = new THREE.Fog(th.fog, th.fogNear, th.fogFar);
-  const sky = skyDome(th); scene.add(sky);
+  const sky = th.sea ? seaSky({ ...th.sea, sunDir: th.sunDir }) : skyDome(th); scene.add(sky);
   scene.add(new THREE.HemisphereLight(th.hemiSky, th.hemiGround, th.hemiI));
   const sun = new THREE.DirectionalLight(th.sun, th.sunI); sun.position.set(...th.sunDir); scene.add(sun, sun.target);
   sun.userData.dir = new THREE.Vector3(...th.sunDir).normalize();
@@ -131,12 +164,13 @@ export function buildModelWorld(tr, th, opt = {}) {
     const c = sun.shadow.camera; c.left = -45; c.right = 45; c.top = 45; c.bottom = -45; c.near = 1; c.far = 320; c.updateProjectionMatrix();
     sun.userData.dist = 110; sun.shadow.bias = -0.00015; sun.shadow.normalBias = 0.025;
   }
+  if (th.sea) scene.add(seaWater(th.sea), mistBanks(th.sea));
   if (th.floor) { // mar o llanura hasta el horizonte, por debajo del modelo
     const floor = new THREE.Mesh(new THREE.CircleGeometry(1900, 48).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: th.floor.color }));
     floor.position.y = th.floor.y; scene.add(floor);
   }
   scene.add(finishLine(tr, th));
-  if (th.edgePosts) scene.add(edgePosts(tr));
+  if (th.edgePosts) scene.add(edgePosts(tr, th.style.deck, th.style.deck && th.style.deck.walls));
   // el modelo se comparte entre carreras: se añade una copia ligera (misma geometría)
   const add = (model) => { scene.add((th.vivid ? vividCopy(model, th.model, th.vivid) : model).clone(true)); if (th.style.deck) scene.add(deckMesh(tr, th.style.deck, model)); };
   if (cache[th.model]) add(cache[th.model]); else loadTrackModel(th.model).then(add).catch((e) => console.warn('Circuito no disponible', String(e)));

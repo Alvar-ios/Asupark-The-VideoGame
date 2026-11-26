@@ -12,7 +12,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { weld, simplify, prune } from '@gltf-transform/functions';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
-import { reshapeProfile, rebuild, deckMaterials } from './track-rebuild.mjs';
+import { reshapeProfile, steerAway, rebuild, deckMaterials, aprons } from './track-rebuild.mjs';
 
 const SRC = process.argv[2];
 if (!SRC) { console.log('Uso: node tools/prep-tracks.mjs <carpeta>'); process.exit(1); }
@@ -22,7 +22,7 @@ const TRACKS = {
   misty: {
     file: 'boom_karts_misty_cliffs.glb',
     scale: 26, half: 5.3,
-    dropNodes: /^(DynamicProps|LightmapCube|SceneReferences|Camera|StartLine)/,
+    dropNodes: /^(DynamicProps|LightmapCube|SceneReferences|Camera|StartLine|Ocean)/,
     road: { node: /^CliffsRoad(.00[123])?$/ }, // la franja de hormigón (CliffsRoad) también es calzada
     keep: [[4.95, 6.0, 6.5, 9.3]], // ahí el camino va partido por la roca: se respetan los puntos dados [x0, x1, z0, z1]
     startY: -0.11,
@@ -34,14 +34,17 @@ const TRACKS = {
     solids: true, // las rocas, paredes y demás decorado que invade la pista se pueden chocar
     // calzada reconstruida: sin gran salto ni escalones (distancias en metros desde el primer punto del trazado)
     rebuild: {
+      // alturas en metros sobre la recta de abajo. El trampolín original sube hasta 15,3 m en el metro 495: se sube
+      // con él hasta el mismo borde y la rampa baja desde allí, ya en el aire, sin atravesar la montaña
+      base: 82, lip: [490, 508],
       profile: [
-        { from: 446, to: 478, flat: true }, // fuera el trampolín de antes del cortado
-        { from: 478, to: 34 }, // rampa seguida desde la meseta hasta la playa
-        { from: 34, to: 80, flat: true }, // recta de meta llana
+        { from: 456, to: 495, a: 12.35, b: 15.3 },
+        { from: 495, to: 58, a: 15.3, b: 0 },
+        { from: 58, to: 82, a: 0, b: 0 }, // recta de meta llana
       ],
-      startAt: 64, clear: 2.8,
-      cut: [[468, 40]], // en estos metros no queda nada dentro del ancho de la pista
-      sides: [[352, 446, -1]], // la pared de la bajada cruza el camino: se retira entera hacia la izquierda
+      startAt: 70,
+      sides: [[352, 446, -1]], // la pared de la bajada cruza el camino en diagonal: se esquiva siempre por el mismo lado
+      keep: /lighthouse/i, boulder: /^Rock_|TriPlanar/i, clear: 3.3, pass: 1.7, // la calzada se aparta hasta dejar las paredes a 3,3 m del eje; solo se corta lo que quede a menos de 1,7
       floor: /CliffsGround|concrete|FinishLine/i, soft: /grass|plant|shrub|decal/i, remove: /RoadBlock|Trafficbarrier|FinishLine/i,
       deck: /CliffsGround\.00|concrete/, skirt: 'DarkGreyCliff',
     },
@@ -252,20 +255,25 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   const line = centreLine(cfg, hit);
   if (cfg.flat) { const mid = [...line.Y].sort((a, b) => a - b)[line.Y.length >> 1]; line.Y = line.Y.map(() => mid); }
   const S = cfg.scale;
-  let deck = null, ramp = null;
+  let deck = null, ramp = null, apron = null, wallPoints = null;
   if (cfg.rebuild) {
     reshapeProfile(cfg, line);
+    steerAway(cfg, line, solidSegments({ ...cfg, half: cfg.half + 4 }, line, tris, tris.filter((t) => cfg.rebuild.floor.test(t.mat.getName()))));
     deck = deckMaterials(cfg, line, tris);
     { // la rampa es toda de tierra
       const op = cfg.rebuild.profile[1], a = line.index(op.from + 4), b = line.index(op.to), dirt = deck.find((m) => /Ground/.test(m)), n = deck.length;
       for (let k = 0; k <= (b - a + n) % n; k++) deck[(a + k) % n] = dirt;
     }
+    const walls = solidSegments({ ...cfg, half: cfg.half + 9 }, line, tris, tris.filter((t) => cfg.rebuild.floor.test(t.mat.getName())));
+    const before = tris;
     tris = rebuild(cfg, line, tris);
+    apron = aprons(cfg, line, tris, walls, before);
+    wallPoints = walls;
     // la meta se lleva al tramo llano: se gira la lista para que empiece allí
     const k = line.index(cfg.rebuild.startAt), turn = (a) => a.slice(k).concat(a.slice(0, k));
     const op = cfg.rebuild.profile[1], from = line.index(op.from), to = line.index(op.to), n = line.P.length;
     ramp = [(from - k + n) % n, (to - k + n) % n];
-    line.P = turn(line.P); line.Y = turn(line.Y); deck = turn(deck);
+    line.P = turn(line.P); line.Y = turn(line.Y); deck = turn(deck); apron = apron.map(turn);
   }
   const solids = cfg.solids ? solidSegments(cfg, line, tris, cfg.rebuild ? tris.filter((t) => cfg.rebuild.floor.test(t.mat.getName())) : road) : null;
   if (solids) {
@@ -280,6 +288,7 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   }
   const cx = line.P.reduce((n, p) => n + p[0], 0) / line.P.length, cz = line.P.reduce((n, p) => n + p[1], 0) / line.P.length, y0 = Math.min(...line.Y);
   const place = (p) => [(p[0] - cx) * S, (p[1] - y0) * S + 2, (p[2] - cz) * S]; // el punto más bajo de la calzada queda a 2 m
+  if (process.env.FRAME) console.log(id, 'FRAME', JSON.stringify({ cx, cz, y0, S }));
   const nodes = line.P.map(([x, z], i) => [+((x - cx) * S).toFixed(2), +((z - cz) * S).toFixed(2), +((line.Y[i] - y0) * S + 2).toFixed(2)]);
   // cuántas muestras caen fuera de la calzada (control de calidad del trazado)
   const off = line.P.filter(([x, z]) => !hit(x, z).length).length;
@@ -288,7 +297,8 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   data[id] = { half: cfg.half, wall: +(cfg.half + (cfg.wallExtra ?? 2.5)).toFixed(2), nodes: every.map((n) => [n[0], n[1]]), profile: cfg.rebuild ? nodes : every, start: [nodes[0][0], nodes[0][1]] };
   if (deck) {
     const names = [...new Set(deck)];
-    data[id].deck = { materials: names, skirt: cfg.rebuild.skirt, index: every.map((_, i) => names.indexOf(deck[i * step])), ramp: ramp.map((v) => +(v / nodes.length).toFixed(4)) };
+    data[id].deck = { materials: names, skirt: cfg.rebuild.skirt, index: every.map((_, i) => names.indexOf(deck[i * step])), ramp: ramp.map((v) => +(v / nodes.length).toFixed(4)), apron: apron.map((w) => every.map((_, i) => +w[i * step].toFixed(1))) };
+    console.log(id, 'tramos con arcén de relleno:', data[id].deck.apron.map((w) => w.filter(Boolean).length).join(' y '), 'de', every.length);
   }
   if (solids) {
     // [x1, z1, x2, z2, altura de la calzada] en metros del juego
@@ -303,6 +313,14 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
     data[id].paved = pavedGrid(cfg, tris, place, nodes);
     const g = data[id].paved, bits = Buffer.from(g.data, 'base64'), on = (x, z) => { const n = Math.floor((z - g.z) / g.cell) * g.w + Math.floor((x - g.x) / g.cell); return (bits[n >> 3] >> (n & 7)) & 1; };
     console.log(id, 'mapa del suelo', g.w + 'x' + g.h, '| puntos del eje fuera del asfalto:', nodes.filter((n) => !on(n[0], n[1])).length, 'de', nodes.length);
+  }
+  if (wallPoints) { // un punto [x, z, altura] cada metro y medio de pared cercana a la pista
+    const seen = new Set(), out = [];
+    for (const q of wallPoints) for (let k = 0; k <= 2; k++) {
+      const x = (q.a[0] + (q.b[0] - q.a[0]) * k / 2 - cx) * S, z = (q.a[1] + (q.b[1] - q.a[1]) * k / 2 - cz) * S, y = (q.y - y0) * S + 2, key = Math.round(x / 1.5) + ',' + Math.round(z / 1.5) + ',' + Math.round(y / 2);
+      if (!seen.has(key) && nodes.some((n) => Math.abs(n[2] - y) < 2.2 && Math.hypot(n[0] - x, n[1] - z) < 9)) { seen.add(key); out.push([+x.toFixed(1), +z.toFixed(1), +y.toFixed(1)]); }
+    }
+    data[id].deck.walls = out;
   }
   // sello: el juego no usa un modelo que no sea el de estos datos
   data[id].rev = crypto.createHash('sha1').update(JSON.stringify(data[id])).update(fs.readFileSync(new URL('./track-rebuild.mjs', import.meta.url))).update(fs.readFileSync(new URL(import.meta.url))).digest('hex').slice(0, 10);

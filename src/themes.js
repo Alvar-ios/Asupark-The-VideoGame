@@ -162,10 +162,12 @@ export const THEMES = {
   },
   // circuitos importados: el escenario es su modelo y la física sigue la línea central sacada de la calzada
   misty: {
-    id: 'misty', name: 'Misty Cliffs', sub: 'Camino de tierra por una isla: un puente, la subida al faro en espiral y un gran descenso', seed: 'misty-1', model: 'misty', envName: 'camino de tierra', fiction: true, edgePosts: true, noKerbs: true,
-    style: modelStyle('misty'), floor: { color: 0x1f5f74, y: -3.5 },
-    skyTop: 0x4d86c6, skyHor: 0xcfe0e8, fog: 0xc4d8e0, fogNear: 220, fogFar: 1500, ground: 0x1f5f74, grass: 0x5d7f3a, dirt: 0xa57d4c, road: 0xb98c5a, kerb1: 0xb98c5a, kerb2: 0xb98c5a,
-    wall1: 0x8a6439, wall2: 0xe8dcc0, mount: 0x4d6b3f, sun: 0xfff1d8, sunDir: [-0.4, 0.7, 0.45], hemiSky: 0xe4f0ff, hemiGround: 0x8c8266, hemiI: 1.7, sunI: 1.5, night: false, temp: 17, humidity: 0.6, wind: [2, 0.8], gripMul: 1, offroad: 0.8, offroadGrip: 0.85, surface: undefined,
+    id: 'misty', name: 'Misty Cliffs', sub: 'Camino de tierra por una isla: un puente, la subida al faro en espiral y un gran descenso', seed: 'misty-2', model: 'misty', envName: 'camino de tierra', fiction: true, edgePosts: true, noKerbs: true,
+    style: modelStyle('misty'),
+    // mar a la altura del del modelo (1,22 m); el horizonte acaba en el mismo color que la niebla
+    sea: { level: 1.22, water: 0x2d7f8c, deep: 0x1b5a70, foam: 0xbfe3df, skyTop: 0x4f86b8, skyMid: 0x9fc4d8, haze: 0xd5dfdc, cloud: 0xfbf6ec, mist: 0xe6ece9, glow: 0xffd9a0 },
+    skyTop: 0x4f86b8, skyHor: 0xd5dfdc, fog: 0xd5dfdc, fogNear: 110, fogFar: 880, ground: 0x1f5f74, grass: 0x5d7f3a, dirt: 0xa57d4c, road: 0xb98c5a, kerb1: 0xb98c5a, kerb2: 0xb98c5a,
+    wall1: 0x8a6439, wall2: 0xe8dcc0, mount: 0x4d6b3f, sun: 0xffe6bd, sunDir: [-0.55, 0.52, 0.5], hemiSky: 0xd8ecf5, hemiGround: 0x9a8a6c, hemiI: 1.55, sunI: 1.85, night: false, temp: 17, humidity: 0.6, wind: [2, 0.8], gripMul: 1, offroad: 0.8, offroadGrip: 0.85, surface: undefined,
   },
   mariocircuit: {
     id: 'mariocircuit', name: 'Mario Circuit 3', sub: 'El clásico de 16 bits: asfalto ancho, arena a los lados y muros de bloques de colores', seed: 'mario3-1', model: 'mario3', fiction: true, noKerbs: true,

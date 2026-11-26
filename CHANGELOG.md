@@ -4,6 +4,13 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.126
+- Misty Cliffs: se respeta el modelo original. Cuando una roca estorba se aparta la calzada (hasta 2,7 m) en lugar de cortar o mover la montaña. Ya no se arrancan piezas del paisaje.
+- La rampa sube con el camino original hasta el borde del cortado y baja desde allí, sin atravesar la montaña.
+- Rellenos de tierra y zócalos de roca donde se veía el mar por debajo de las paredes. Cuerdas solo en los bordes sin pared.
+- Mar y cielo nuevos: el horizonte se difumina en bruma, con nubes, bancos de niebla y oleaje. Luz más cálida. Se quitan las dos láminas de mar del modelo, que acababan en seco.
+- El trazado cambia: se reinician los récords y fantasmas de Misty.
+
 ## 0.0.125
 - La app ya no puede mezclar versiones: se recarga cuando hay una nueva (nunca en mitad de una vuelta) y no usa un modelo de circuito que no sea el de su código. Con una app vieja abierta, Misty salía sin suelo y con muros invisibles.
 - Antes de la vuelta lanzada el kart va sobre raíles por el centro: no puede chocar.
