@@ -9,17 +9,17 @@ import { SKIN_DATA } from './skins-data.js';
 const FIT = {
   kart: { hip: [0, 0.215, -0.24], wheel: [0, 0.49, 0.17], r: 0.13, tilt: 0.6, foot: [0.19, 0.19, 0.6] },
   pizza: { hip: [0, 0.225, -0.24], wheel: [0, 0.525, 0.15], r: 0.12, tilt: 0.6, foot: [0.19, 0.2, 0.58] },
-  estandar: { hip: [0, 0.35, -0.27], wheel: [0, 0.57, 0.135], r: 0.185, tilt: 0.55, foot: [0.2, 0.27, 0.46] },
-  caramelo1: { hip: [0, 0.25, -0.2], wheel: [0, 0.5, 0.13], r: 0.095, tilt: 0.6, cockpit: true },
-  caramelo2: { hip: [0, 0.14, -0.2], wheel: [0, 0.39, 0.13], r: 0.09, tilt: 0.6, cockpit: true },
-  caramelo3: { hip: [0, 0.19, -0.16], wheel: [0, 0.45, 0.17], r: 0.09, tilt: 0.6, cockpit: true },
-  caramelo4: { hip: [0, 0.255, -0.2], wheel: [0, 0.495, 0.14], r: 0.095, tilt: 0.6, cockpit: true },
-  caramelo5: { hip: [0, 0.4, -0.12], wheel: [0, 0.66, 0.2], r: 0.095, tilt: 0.6, cockpit: true },
+  estandar: { hip: [0, 0.285, -0.22], wheel: [0, 0.475, 0.11], r: 0.15, tilt: 0.55, foot: [0.165, 0.22, 0.38], size: 0.8, crouch: 0.34 },
+  caramelo1: { hip: [0, 0.24, -0.2], wheel: [0, 0.47, 0.11], r: 0.085, tilt: 0.6, cockpit: true, size: 0.84, crouch: 0.24 },
+  caramelo2: { hip: [0, 0.15, -0.2], wheel: [0, 0.36, 0.1], r: 0.075, tilt: 0.6, cockpit: true, size: 0.76, crouch: 0.34 },
+  caramelo3: { hip: [0, 0.17, -0.16], wheel: [0, 0.39, 0.13], r: 0.08, tilt: 0.6, cockpit: true, size: 0.78, crouch: 0.32 },
+  caramelo4: { hip: [0, 0.255, -0.2], wheel: [0, 0.48, 0.11], r: 0.085, tilt: 0.6, cockpit: true, size: 0.84, crouch: 0.24 },
+  caramelo5: { hip: [0, 0.4, -0.12], wheel: [0, 0.63, 0.17], r: 0.085, tilt: 0.6, cockpit: true, size: 0.84, crouch: 0.2 },
 };
 export function pilotFit(skin) {
   if (!skin) return FIT.kart;
   const base = FIT[skin] || (skin.startsWith('pizza') ? FIT.pizza : FIT.kart);
-  const st = SKIN_DATA[skin] && SKIN_DATA[skin].parts.steer;
+  const st = SKIN_DATA[skin] && SKIN_DATA[skin].parts.steer; // si el modelo trae el volante suelto, manda su sitio
   return st ? { ...base, wheel: st.c } : base;
 }
 export const STEER_TURN = 1.15; // radianes de volante a tope
@@ -103,17 +103,22 @@ export function buildPilot({ helmet, suit = SUIT_DEFAULT, fit = FIT.kart }) {
   const visor = new THREE.MeshStandardMaterial({ color: hex(visorColor), roughness: 0.06, metalness: 0.85, envMapIntensity: 1.6 });
   const mesh = (geo, mat, parent, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; parent.add(m); return m; };
 
+  // en los karts pequeños el piloto se encoge desde la cadera: sus puntos de apoyo se pasan a su propia escala
+  const size = fit.size || 1, crouch = fit.crouch || 0;
   const hip = new THREE.Vector3(...fit.hip);
+  root.scale.setScalar(size); root.position.copy(hip).multiplyScalar(1 - size);
+  const local = (v) => new THREE.Vector3(...v).sub(hip).multiplyScalar(1 / size).add(hip);
+  const wheelR = fit.r / size;
   const torso = new THREE.Group(); torso.position.copy(hip); root.add(torso);
-  const RECLINE = -0.2;
+  const RECLINE = -0.2 + crouch; // agazapado: el tronco se echa hacia delante
   // tronco: cintura estrecha y pecho ancho, un poco aplanado de delante atrás
   const profile = [[0.001, -0.02], [0.11, 0], [0.105, 0.09], [0.122, 0.2], [0.142, 0.29], [0.128, 0.345], [0.07, 0.385], [0.001, 0.39]].map(([r, y]) => new THREE.Vector2(r, y));
   const body = mesh(new THREE.LatheGeometry(profile, 20), chest, torso); body.scale.set(1.08, 1, 0.78); body.rotation.y = -Math.PI / 2;
   mesh(new THREE.SphereGeometry(0.115, 14, 10), cloth, torso, 0, 0.01, 0).scale.set(1.05, 0.7, 0.85); // caderas
   for (const s of [-1, 1]) mesh(new THREE.SphereGeometry(0.066, 12, 10), trim, torso, s * 0.14, 0.31, 0); // hombreras
   mesh(new THREE.CylinderGeometry(0.052, 0.062, 0.07, 14), gear, torso, 0, 0.395, 0.004); // protector de cuello
-  const neck = new THREE.Group(); neck.position.set(0, 0.43, 0.01); torso.add(neck);
-  const head = new THREE.Group(); head.position.set(0, 0.085, 0.012); neck.add(head);
+  const neck = new THREE.Group(); neck.position.set(0, 0.43 - crouch * 0.07, 0.01 + crouch * 0.05); torso.add(neck);
+  const head = new THREE.Group(); head.position.set(0, 0.085 - crouch * 0.06, 0.012 + crouch * 0.03); neck.add(head);
   mesh(new THREE.SphereGeometry(0.128, 32, 24), shell, head).scale.set(1, 1.03, 1.1);
   mesh(new THREE.SphereGeometry(0.1305, 28, 10, Math.PI / 2 - 1.08, 2.16, 1.2, 0.52), visor, head).scale.set(1, 1.03, 1.1); // visera
   mesh(new THREE.SphereGeometry(0.1315, 28, 4, Math.PI / 2 - 1.12, 2.24, 1.72, 0.07), gear, head).scale.set(1, 1.03, 1.1); // borde inferior de la visera
@@ -121,17 +126,17 @@ export function buildPilot({ helmet, suit = SUIT_DEFAULT, fit = FIT.kart }) {
   for (const s of [-1, 1]) mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.012, 12), gear, head, s * 0.128, 0.004, 0).rotation.z = Math.PI / 2; // tornillos de la visera
 
   // brazos hasta el aro del volante
-  const wheel = new THREE.Vector3(...fit.wheel), n = steerAxis(fit.tilt), right = new THREE.Vector3(-1, 0, 0), upW = new THREE.Vector3().crossVectors(n, right);
+  const wheel = local(fit.wheel), n = steerAxis(fit.tilt), right = new THREE.Vector3(-1, 0, 0), upW = new THREE.Vector3().crossVectors(n, right);
   const shoulderLocal = (s) => new THREE.Vector3(s * 0.155, 0.305, 0);
   const restShoulder = shoulderLocal(1).applyEuler(new THREE.Euler(RECLINE, 0, 0)).add(hip);
-  const reach = restShoulder.distanceTo(tmpC.copy(wheel).add(new THREE.Vector3(fit.r, 0, 0)));
+  const reach = restShoulder.distanceTo(tmpC.copy(wheel).add(new THREE.Vector3(wheelR, 0, 0)));
   const armLen = Math.min(0.3, Math.max(0.2, reach * 0.54));
   const arms = [1, -1].map((s) => ({ s, move: limb(root, cloth, cloth, 0.043, 0.036, armLen, armLen), glove: mesh(new THREE.SphereGeometry(0.043, 12, 10), gear, root), cuff: mesh(new THREE.CylinderGeometry(0.041, 0.041, 0.035, 12), trim, root) }));
 
   // piernas hasta los pedales (no en las carrocerías cerradas, que las tapan)
   let legs = [];
   if (!fit.cockpit) {
-    const [fx, fy, fz] = fit.foot, legReach = new THREE.Vector3(0.09, hip.y, hip.z).distanceTo(new THREE.Vector3(fx, fy, fz));
+    const foot = local(fit.foot), fx = foot.x, fy = foot.y, fz = foot.z, legReach = new THREE.Vector3(0.09, hip.y, hip.z).distanceTo(new THREE.Vector3(fx, fy, fz));
     const legLen = Math.min(0.5, Math.max(0.28, legReach * 0.55));
     legs = [1, -1].map((s) => { const move = limb(root, cloth, cloth, 0.062, 0.048, legLen, legLen); const boot = mesh(new THREE.CapsuleGeometry(0.048, 0.085, 4, 10), gear, root); const end = move(new THREE.Vector3(s * 0.085, hip.y + 0.02, hip.z + 0.03), new THREE.Vector3(s * fx, fy, fz), new THREE.Vector3(s * 0.25, 1, 0)); boot.position.copy(end).add(new THREE.Vector3(0, 0.035, 0.015)); boot.rotation.x = 0.45; return boot; });
   }
@@ -142,7 +147,7 @@ export function buildPilot({ helmet, suit = SUIT_DEFAULT, fit = FIT.kart }) {
     euler.set(RECLINE + st.pitch, 0, st.lean); torso.rotation.copy(euler);
     for (const a of arms) {
       const th = (a.s > 0 ? Math.PI - 0.1 : 0.1) - turn; // a las nueve y a las tres; al girar, las manos van con el aro
-      hand.copy(wheel).addScaledVector(right, Math.cos(th) * fit.r).addScaledVector(upW, Math.sin(th) * fit.r);
+      hand.copy(wheel).addScaledVector(right, Math.cos(th) * wheelR).addScaledVector(upW, Math.sin(th) * wheelR);
       shoulder.copy(shoulderLocal(a.s)).applyEuler(euler).add(hip);
       const end = a.move(shoulder, hand, pole.set(a.s * 0.8, -0.6, -0.15));
       a.glove.position.copy(end); a.cuff.position.copy(end).lerp(shoulder, 0.17); a.cuff.quaternion.setFromUnitVectors(UP, tmpC.copy(shoulder).sub(end).normalize());

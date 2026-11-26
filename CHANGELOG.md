@@ -4,6 +4,11 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.121
+- El kart es mucho más rápido: punta de 47 m/s en lugar de 35 (el antiguo dorado llegaba a 38), más aceleración y agarre. Hay que frenar antes de las curvas. Pasa a llamarse «Kart de serie».
+- Garaje, tienda y catálogo: colores y pinturas como cuadrados redondeados y todas las casillas con el borde del color de su rareza.
+- Kart estándar más pequeño. En los karts pequeños el piloto es menor y va agazapado.
+
 ## 0.0.120
 - Un solo kart: el Kart de alquiler, que empieza solo en rojo. Desaparece el selector de color libre y el segundo kart; todos corren igual.
 - 12 carrocerías nuevas como objetos: 6 de pizzería (raras), 5 de caramelo (épicas) y el Kart estándar (legendaria).

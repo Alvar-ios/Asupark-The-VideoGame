@@ -17,14 +17,12 @@ const GRAD = {
   gold: () => [[0, '#fff3b8'], [0.38, '#f6bd2f'], [0.55, '#8a5a00'], [0.72, '#ffd65a'], [1, '#b57f0c']],
 };
 let gid = 0;
-// pontones y morro de un kart visto desde arriba, pintados con el acabado
+// muestra de color o pintura: un cuadrado redondeado con su acabado
 export function paintSvg(item) {
   const id = 'kxp' + (gid++), stops = GRAD[item.finish](item.color).map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('');
-  const glow = item.finish === 'neon' ? `<ellipse cx="32" cy="32" rx="27" ry="25" fill="${item.color}" opacity=".22"/>` : '';
-  return `<svg viewBox="0 0 64 64" aria-hidden="true">${glow}<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">${stops}</linearGradient></defs>
-    <g fill="#15171b"><rect x="3" y="12" width="9" height="13" rx="3"/><rect x="52" y="12" width="9" height="13" rx="3"/><rect x="2" y="40" width="11" height="16" rx="3"/><rect x="51" y="40" width="11" height="16" rx="3"/></g>
-    <g fill="url(#${id})" stroke="rgba(0,0,0,.55)" stroke-width="1.2"><path d="M17 16q15-12 30 0l-3 7H20z"/><path d="M26 22h12l3 13H23z"/><path d="M14 28h8v24h-8q-4-12 0-24z"/><path d="M50 28h-8v24h8q4-12 0-24z"/><rect x="20" y="55" width="24" height="5" rx="2.5"/></g>
-    <rect x="25" y="38" width="14" height="14" rx="4" fill="#23262e"/><circle cx="32" cy="34" r="5" fill="none" stroke="#e8eaee" stroke-width="2"/></svg>`;
+  const glow = item.finish === 'neon' ? `<rect x="3" y="3" width="58" height="58" rx="15" fill="${item.color}" opacity=".3"/>` : '';
+  const shine = item.finish === 'matte' ? '' : '<path d="M11 24q2-13 15-13h17q-20 6-32 25z" fill="#fff" opacity=".28"/>';
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">${glow}<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">${stops}</linearGradient></defs><rect x="6" y="6" width="52" height="52" rx="12" fill="url(#${id})" stroke="rgba(255,255,255,.28)" stroke-width="1.4"/>${shine}</svg>`;
 }
 
 // mono del piloto: torso con sus franjas, guantes y casco neutro

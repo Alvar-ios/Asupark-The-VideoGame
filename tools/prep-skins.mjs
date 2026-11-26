@@ -59,11 +59,11 @@ async function texture(out, src, name, cache) {
 }
 
 // parts: { body: tris, wheel_FL: tris, ..., steer: tris } ya en las coordenadas del archivo original
-async function write(id, parts, turn) {
+async function write(id, parts, turn, size = 1) {
   const rot = (p) => (turn === 'x' ? [-p[2], p[1], p[0]] : [p[0], p[1], p[2]]); // 'x': el morro mira a +X y se gira a +Z
   const map = (t) => ({ ...t, v: t.v.map((v) => ({ p: rot(v.p), n: rot(v.n), uv: v.uv })) });
   const turned = Object.fromEntries(Object.entries(parts).map(([k, list]) => [k, list.map(map)]));
-  const all = bounds(Object.values(turned).flat()), s = Math.min(LENGTH / all.size[2], MAX_WIDTH / all.size[0]);
+  const all = bounds(Object.values(turned).flat()), s = size * Math.min(LENGTH / all.size[2], MAX_WIDTH / all.size[0]);
   const fit = (p) => [(p[0] - all.mid[0]) * s, (p[1] - all.mn[1]) * s, (p[2] - all.mid[2]) * s];
 
   const out = new Document(); const buf = out.createBuffer(); const scene = out.createScene('kart');
@@ -114,7 +114,7 @@ const read = async (f) => readTris(await io.read(path.join(SRC, f)));
     const w = Object.keys(wheels).find((k) => t.chain.includes(wheels[k]));
     parts[w || (t.chain.includes(dot('torus')) ? 'steer' : 'body')].push(t);
   }
-  data.estandar = await write('estandar', parts, 'z');
+  data.estandar = await write('estandar', parts, 'z', 0.83);
 }
 // ---------- karts de caramelo (cinco, uno por sufijo) ----------
 {
