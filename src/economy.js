@@ -10,8 +10,16 @@ export const RARITY = {
   legendary: { name: 'Legendaria', color: '#ffc400', dup: 2000, price: { gems: 150 } },
 };
 
-// type paint: color y acabado de la carrocería. type helmet: casco «base|dibujo|visera|patrón» (el mismo formato que guarda el perfil).
+// type paint: color y acabado del Kart de alquiler (finish gloss = color liso). type decal: calcomanía encima del color.
+// type kart: carrocería completa (skin); todos corren igual. type suit: ropa del piloto.
+// type helmet: casco «base|dibujo|visera|patrón» (el mismo formato que guarda el perfil).
+// De salida solo se tiene el rojo de serie: el resto de colores salen en las cajas.
+const color = (id, name, hex) => ({ id, type: 'paint', rarity: 'common', name, color: hex, finish: 'gloss' });
+const kart = (skin, rarity, name) => ({ id: 'k-' + skin, type: 'kart', rarity, name, skin });
+const suit = (id, rarity, name, main, accent, extra, more = {}) => ({ id, type: 'suit', rarity, name, suit: { main, accent, extra, ...more } });
 export const ITEMS = [
+  color('c-naranja', 'Naranja', '#f08a1c'), color('c-amarillo', 'Amarillo', '#f3c026'), color('c-verde', 'Verde', '#28a745'), color('c-azul', 'Azul', '#2d5fd0'),
+  color('c-morado', 'Morado', '#7d3fc4'), color('c-rosa', 'Rosa', '#e8559a'), color('c-blanco', 'Blanco', '#f2f2f2'), color('c-negro', 'Negro', '#16181d'),
   { id: 'p-cemento', type: 'paint', rarity: 'common', name: 'Gris cemento', color: '#8d9299', finish: 'matte' },
   { id: 'p-noche', type: 'paint', rarity: 'common', name: 'Azul noche mate', color: '#1b2a52', finish: 'matte' },
   { id: 'p-militar', type: 'paint', rarity: 'common', name: 'Verde militar', color: '#55603a', finish: 'matte' },
@@ -32,6 +40,26 @@ export const ITEMS = [
   { id: 'p-cromo', type: 'paint', rarity: 'legendary', name: 'Cromo', color: '#e9edf3', finish: 'chrome' },
   { id: 'p-oro', type: 'paint', rarity: 'legendary', name: 'Oro líquido', color: '#f6bd2f', finish: 'gold' },
   { id: 'h-campeon', type: 'helmet', rarity: 'legendary', name: 'Casco Campeón', helmet: 'f6bd2f|ffffff|111827|8' },
+  // calcomanías (raras)
+  { id: 'd-franjas', type: 'decal', rarity: 'rare', name: 'Franjas dobles', decal: 'franjas' },
+  { id: 'd-cuadros', type: 'decal', rarity: 'rare', name: 'Bandera a cuadros', decal: 'cuadros' },
+  { id: 'd-camuflaje', type: 'decal', rarity: 'rare', name: 'Camuflaje', decal: 'camuflaje' },
+  { id: 'd-llamas', type: 'decal', rarity: 'rare', name: 'Llamas', decal: 'llamas' },
+  { id: 'd-rayo', type: 'decal', rarity: 'rare', name: 'Rayo', decal: 'rayo' },
+  // karts completos
+  kart('pizza1', 'rare', 'Pizzería Selva'), kart('pizza2', 'rare', 'Pizzería Corazón'), kart('pizza3', 'rare', 'Pizzería Impacto'),
+  kart('pizza4', 'rare', 'Pizzería Circo'), kart('pizza5', 'rare', 'Pizzería Relámpago'), kart('pizza6', 'rare', 'Pizzería Estrellas'),
+  kart('caramelo1', 'epic', 'Tarta de chuches'), kart('caramelo2', 'epic', 'Piruleta'), kart('caramelo3', 'epic', 'Menta helada'),
+  kart('caramelo4', 'epic', 'Bizcocho'), kart('caramelo5', 'epic', 'Pastel de fresa'),
+  kart('estandar', 'legendary', 'Kart estándar'),
+  // ropa del piloto
+  suit('s-taller', 'common', 'Mono de taller', '2f4a7a', 'e8ecf2', '1b1d22'),
+  suit('s-pista', 'common', 'Mono de pista', 'b3161c', 'ffffff', '1b1d22'),
+  suit('s-bosque', 'common', 'Mono de bosque', '1f5c3a', 'e8e4d0', '14161b'),
+  suit('s-hielo', 'rare', 'Mono de hielo', 'dfe5ee', '1d6fd6', '16264f'),
+  suit('s-carbono', 'rare', 'Mono de carbono', '17191e', '9dff00', '0b0c0f'),
+  suit('s-llamas', 'epic', 'Mono en llamas', '16181d', 'ff6a00', 'ffc400', { style: 'flames' }),
+  suit('s-oro', 'legendary', 'Mono de oro', 'd9a52a', '111827', 'f4f4f4', { metal: true }),
 ];
 export const itemById = (id) => ITEMS.find((i) => i.id === id) || null;
 
@@ -67,11 +95,15 @@ export const ALL_MISSIONS_BONUS = { gems: 3 };
 const KEY = 'dr.wallet';
 const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
 const prevDay = (k) => new Date(Date.parse(k + 'T00:00:00Z') - 864e5).toISOString().slice(0, 10);
-const blank = () => ({ v: 1, pts: 0, gems: 0, owned: {}, paint: null, boxDay: null, streak: { day: null, n: 0 }, missions: null });
+const SLOTS = ['paint', 'decal', 'kart', 'suit'];
+const blank = () => ({ v: 2, pts: 0, gems: 0, owned: {}, look: {}, boxDay: null, streak: { day: null, n: 0 }, missions: null });
 
-export function createEconomy({ storage, dayKey, random = Math.random }) {
+// unlockAll(): la cuenta con código lo tiene todo puesto a su disposición, sin tocar lo conseguido de verdad
+export function createEconomy({ storage, dayKey, random = Math.random, unlockAll = () => false }) {
   let st;
   try { st = { ...blank(), ...(JSON.parse(storage.getItem(KEY)) || {}) }; } catch (_) { st = blank(); }
+  if (st.paint) { st.look = { ...st.look, paint: st.paint }; delete st.paint; } // saldo guardado con la versión anterior
+  const has = (id) => !!itemById(id) && (unlockAll() || !!st.owned[id]);
   const listeners = [];
   const save = () => { try { storage.setItem(KEY, JSON.stringify(st)); } catch (_) { /* sin almacenamiento */ } for (const f of listeners) f(); };
   const give = (r = {}) => { st.pts += r.pts || 0; st.gems += r.gems || 0; };
@@ -113,13 +145,19 @@ export function createEconomy({ storage, dayKey, random = Math.random }) {
   // tres ofertas que cambian cada día: una común, una rara y una épica (las legendarias solo salen en cajas)
   const offers = () => ['common', 'rare', 'epic'].map((r) => { const pool = ITEMS.filter((i) => i.rarity === r); return pool[hash(dayKey() + r) % pool.length]; });
   function buy(id) {
-    const it = itemById(id); if (!it || st.owned[id] || !offers().some((o) => o.id === id)) return false;
+    const it = itemById(id); if (!it || has(id) || !offers().some((o) => o.id === id)) return false;
     const price = RARITY[it.rarity].price; if (!canPay(price)) return false;
     pay(price); st.owned[id] = 1; save(); return true;
   }
-  const equipPaint = (id) => { if (id && (!st.owned[id] || itemById(id).type !== 'paint')) return false; st.paint = id || null; save(); return true; };
-  const paint = () => (st.paint && st.owned[st.paint] ? itemById(st.paint) : null);
-  const owned = () => ITEMS.filter((i) => st.owned[i.id]);
+  // pone un objeto; elegir color o calcomanía vuelve al Kart de alquiler, que es el único que los lleva
+  function equip(id) {
+    const it = itemById(id); if (!it || !SLOTS.includes(it.type) || !has(id)) return false;
+    st.look = { ...st.look, [it.type]: id }; if (it.type === 'paint' || it.type === 'decal') delete st.look.kart;
+    save(); return true;
+  }
+  const unequip = (slot) => { if (!SLOTS.includes(slot)) return; delete st.look[slot]; save(); };
+  const look = () => Object.fromEntries(SLOTS.map((s) => [s, st.look[s] && has(st.look[s]) ? itemById(st.look[s]) : null]));
+  const owned = () => ITEMS.filter((i) => has(i.id));
 
   // ---------- racha ----------
   function streak() {
@@ -168,7 +206,7 @@ export function createEconomy({ storage, dayKey, random = Math.random }) {
 
   return {
     get pts() { return st.pts; }, get gems() { return st.gems; },
-    has: (id) => !!st.owned[id], owned, paint, equipPaint,
+    has, owned, look, equip, unequip,
     canOpen, dailyReady, openBox, reel, offers, buy,
     streak, claimStreak, missions, track, claimMission, pending,
     onChange: (f) => listeners.push(f),

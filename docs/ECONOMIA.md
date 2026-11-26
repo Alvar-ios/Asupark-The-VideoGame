@@ -66,7 +66,20 @@ Medias calculadas sin contar lo que devuelven los repetidos.
 
 ## Qué hay en las cajas ahora
 
-20 objetos provisionales que ya funcionan: 11 pinturas (mate, metalizadas, neón, cromo y oro) y 9 cascos. Los colores básicos y los 12 cascos de siempre siguen gratis. Ningún objeto cambia las prestaciones.
+52 objetos. Ninguno cambia las prestaciones: todos los karts corren igual.
+
+De salida solo se tiene el Kart de alquiler en rojo, el mono de serie y los 12 cascos de siempre.
+
+| Rareza | Objetos | Contenido |
+|---|---|---|
+| Común | 19 | 8 colores lisos, 4 pinturas mate, 4 cascos y 3 monos |
+| Rara | 18 | 6 karts de pizzería, 5 calcomanías, 3 pinturas metalizadas, 2 cascos y 2 monos |
+| Épica | 10 | 5 karts de caramelo, 2 pinturas neón, 2 cascos y 1 mono |
+| Legendaria | 5 | Kart estándar, pinturas cromo y oro, 1 casco y 1 mono |
+
+La probabilidad de cada rareza se reparte a partes iguales entre sus objetos. Para quien juega a diario, una legendaria concreta (por ejemplo, el Kart estándar) sale de media cada 25 semanas: si parece demasiado, se puede dar más peso a los karts dentro de su rareza.
+
+Quien introduce el código de cuenta completa en Ajustes lo tiene todo en ese dispositivo, sin que cambie lo conseguido de verdad. Es solo para probar: el código viaja dentro de la app como huella y habrá que sustituirlo por un permiso de cuenta en el servidor.
 
 ## Antes de dar valor real al saldo
 

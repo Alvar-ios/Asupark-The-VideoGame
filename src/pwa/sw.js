@@ -1,5 +1,5 @@
 // Service worker de KartlosApp: instalable, arranque rápido y notificaciones push.
-const V = 'kx-v4';
+const V = 'kx-v5';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => { for (const k of await caches.keys()) if (k !== V) await caches.delete(k); await self.clients.claim(); })()));
 self.addEventListener('fetch', (e) => {

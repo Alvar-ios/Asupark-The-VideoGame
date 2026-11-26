@@ -75,6 +75,25 @@ for (const i of ITEMS) { assert.ok(RARITY[i.rarity], i.id); if (i.type === 'helm
   const e = make(); const [first] = e.offers(); assert.equal(e.offers().length, 3);
   assert.equal(e.buy(first.id), false, 'sin saldo no compra'); e.test.give({ pts: 5000 }); assert.equal(e.buy(first.id), true); assert.equal(e.buy(first.id), false, 'no se compra dos veces');
   assert.equal(e.buy('p-oro'), false, 'las legendarias no se venden');
-  assert.equal(e.equipPaint('p-oro'), false, 'no se puede poner lo que no se tiene');
+  assert.equal(e.equip('p-oro'), false, 'no se puede poner lo que no se tiene');
+}
+// de salida no se tiene ningún color; al elegir un color se vuelve al kart de alquiler
+{
+  const e = make(); assert.equal(e.owned().length, 0); assert.equal(e.equip('c-azul'), false);
+  const all = createEconomy({ storage: memory(), dayKey: () => day, random, unlockAll: () => true });
+  assert.equal(all.owned().length, ITEMS.length, 'con el código está todo');
+  assert.ok(all.equip('k-estandar')); assert.equal(all.look().kart.skin, 'estandar');
+  assert.ok(all.equip('d-llamas')); assert.equal(all.look().kart, null); assert.equal(all.look().decal.decal, 'llamas');
+  assert.ok(all.equip('c-azul')); all.unequip('decal'); assert.equal(all.look().decal, null); assert.equal(all.look().paint.id, 'c-azul');
+}
+// lo desbloqueado por código no se queda al quitar el código
+{
+  const s = memory(); let on = true; const e = createEconomy({ storage: s, dayKey: () => day, random, unlockAll: () => on });
+  e.equip('k-estandar'); on = false; assert.equal(e.look().kart, null); assert.equal(e.has('k-estandar'), false);
+}
+// el saldo de la versión anterior conserva la pintura puesta
+{
+  const s = memory(); s.setItem('dr.wallet', JSON.stringify({ v: 1, pts: 5, gems: 0, owned: { 'p-cromo': 1 }, paint: 'p-cromo', streak: { day: null, n: 0 } }));
+  assert.equal(make(s).look().paint.id, 'p-cromo');
 }
 console.log('Economía: todo correcto');

@@ -3,66 +3,44 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { buildSet, canvasTex, rngFrom } from './boxprops.js';
+import { CARTONS, faceTex, flapTex, innerTex, edgeTex, tapeTex } from './boxart.js';
 import { BOXES, RARITY } from './economy.js';
 import { prizeCard, prizeLabel, amount, itemArt, itemKind, oddsList } from './rewards.js';
 
-const SKINS = {
-  daily: { body: '#1b1d23', band: '#ffc400', ink: '#ffffff', edge: 0xd5dae3, glow: 0xffd24a, label: 'CAJA DIARIA' },
-  pit: { body: '#b3141b', band: '#ffffff', ink: '#ffffff', edge: 0xe4e7ec, glow: 0xff6a4d, label: 'CAJA DE BOXES' },
-  podium: { body: '#15120c', band: '#f6bd2f', ink: '#f6bd2f', edge: 0xf6bd2f, glow: 0xffe08a, label: 'CAJA PODIO' },
-};
 const W = 1.5, H = 1.1, T = 0.05; // ancho, alto y grosor de la caja
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-function faceTex(skin, small) {
-  return canvasTex(512, 384, (x, w, h) => {
-    x.fillStyle = skin.body; x.fillRect(0, 0, w, h);
-    for (let i = 0; i < 900; i++) { x.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
-    // franjas de competición en diagonal
-    x.save(); x.translate(w * 0.72, 0); x.transform(1, 0, -0.42, 1, 0, 0); x.fillStyle = skin.band; x.fillRect(0, 0, 46, h); x.fillRect(62, 0, 16, h); x.restore();
-    // piano abajo
-    for (let i = -1; i < 11; i++) { x.fillStyle = i % 2 ? '#f4f4f0' : '#dc1f17'; x.beginPath(); x.moveTo(i * 56, h); x.lineTo(i * 56 + 30, h - 58); x.lineTo(i * 56 + 86, h - 58); x.lineTo(i * 56 + 56, h); x.fill(); }
-    // logotipo: el circuito en forma de K
-    x.save(); x.translate(small ? 150 : 40, small ? 60 : 46); x.scale(4.4, 4.4); x.lineJoin = 'round'; x.strokeStyle = skin.ink; x.lineWidth = 4.4; x.stroke(new Path2D('M10 9h9v11.5L31 9h10L27.5 24 41 39H31L19 27.5V39h-9z')); x.fillStyle = '#ffc400'; x.strokeStyle = skin.body; x.lineWidth = 2; x.beginPath(); x.arc(10, 24, 4.6, 0, 7); x.fill(); x.stroke(); x.restore();
-    if (!small) { x.font = 'italic 800 62px KartDisplay, Impact, sans-serif'; x.fillStyle = skin.ink; x.textBaseline = 'alphabetic'; x.fillText(skin.label, 40, 292); }
-    x.strokeStyle = 'rgba(0,0,0,.45)'; x.lineWidth = 14; x.strokeRect(0, 0, w, h);
-  });
-}
-const flapTex = (skin) => canvasTex(512, 256, (x, w, h) => {
-  x.fillStyle = skin.body; x.fillRect(0, 0, w, h);
-  for (let i = 0; i < 16; i++) for (let j = 0; j < 2; j++) { x.fillStyle = (i + j) % 2 ? '#f4f4f0' : '#111216'; x.fillRect(i * 32, h - 76 + j * 32, 32, 32); }
-  x.fillStyle = skin.band; x.fillRect(0, 36, w, 22); x.fillRect(0, 70, w, 8);
-  x.strokeStyle = 'rgba(0,0,0,.45)'; x.lineWidth = 10; x.strokeRect(0, 0, w, h);
-});
 
 function buildBox(skin) {
   const root = new THREE.Group(), tilt = new THREE.Group(), squash = new THREE.Group();
   root.add(tilt); tilt.add(squash);
-  const mat = (o) => new THREE.MeshStandardMaterial({ roughness: 0.46, metalness: 0.22, ...o });
-  const front = mat({ map: faceTex(skin, false) }), side = mat({ map: faceTex(skin, true) }), inner = mat({ color: 0x0c0d11, roughness: 0.9, emissive: skin.glow, emissiveIntensity: 0.12 });
-  const metal = mat({ color: skin.edge, roughness: 0.24, metalness: 0.95 });
+  const card = (o) => new THREE.MeshStandardMaterial({ roughness: 0.93, metalness: 0, envMapIntensity: 0.4, ...o });
+  const front = card({ map: faceTex(skin, false, 11) }), side = card({ map: faceTex(skin, true, 23) }), back = card({ map: faceTex(skin, false, 41) });
+  const inner = card({ map: innerTex(skin, 5), emissive: skin.glow, emissiveIntensity: 0.1 });
+  const edge = card({ map: edgeTex(skin) }), crease = card({ color: skin.shade });
+  const tape = new THREE.MeshStandardMaterial({ map: tapeTex(skin), roughness: 0.38, metalness: 0.05, envMapIntensity: 0.9 });
   const add = (geo, m, x, y, z, parent = squash) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; o.receiveShadow = true; parent.add(o); return o; };
   const wallGeo = new THREE.BoxGeometry(W, H, T);
   // materiales por cara de cada pared: [+x, -x, +y, -y, +z (fuera), -z (dentro)]
-  const wall = (outer) => [metal, metal, metal, metal, outer, inner];
-  for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2, w = add(wallGeo, wall(i % 2 ? side : front), Math.sin(a) * (W - T) / 2, H / 2, Math.cos(a) * (W - T) / 2); w.rotation.y = a; }
+  const wall = (outer) => [crease, crease, edge, edge, outer, inner];
+  [front, side, back, side].forEach((outer, i) => { const a = i * Math.PI / 2, w = add(wallGeo, wall(outer), Math.sin(a) * (W - T) / 2, H / 2, Math.cos(a) * (W - T) / 2); w.rotation.y = a; });
   add(new THREE.BoxGeometry(W - 0.02, T, W - 0.02), inner, 0, T / 2, 0);
-  // cantoneras y remaches de maletín de equipo
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    add(new THREE.BoxGeometry(0.085, H + 0.02, 0.085), metal, sx * W / 2, H / 2, sz * W / 2);
-    for (const y of [0.03, H - 0.01]) add(new THREE.SphereGeometry(0.075, 14, 10), metal, sx * W / 2, y, sz * W / 2);
-  }
-  for (const y of [0.025, H - 0.012]) for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2, e = add(new THREE.BoxGeometry(W, 0.05, 0.05), metal, Math.sin(a) * W / 2, y, Math.cos(a) * W / 2); e.rotation.y = a; }
-  // cierres
-  for (const x of [-0.36, 0.36]) { add(new THREE.BoxGeometry(0.17, 0.2, 0.05), metal, x, H - 0.2, W / 2 + 0.02); add(new THREE.BoxGeometry(0.08, 0.07, 0.04), mat({ color: 0x111216 }), x, H - 0.25, W / 2 + 0.055); }
+  // aristas dobladas: un listón apenas redondeado en cada esquina
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(new THREE.CylinderGeometry(0.026, 0.026, H - 0.004, 8), crease, sx * (W / 2 - 0.022), H / 2, sz * (W / 2 - 0.022));
+  // precinto del fondo, que sube un poco por los lados
+  for (const sx of [-1, 1]) add(new THREE.BoxGeometry(0.008, 0.2, 0.2), tape, sx * (W / 2 + 0.002), 0.1, 0);
   // cuatro solapas con bisagra en el borde de arriba
-  const lidTop = mat({ map: flapTex(skin) }), flaps = [];
+  const flaps = [];
   for (let i = 0; i < 4; i++) {
     const yaw = new THREE.Group(); yaw.rotation.y = i * Math.PI / 2; squash.add(yaw);
-    const hinge = new THREE.Group(); hinge.position.set(0, H + (i % 2 ? 0.012 : 0.048), W / 2); yaw.add(hinge);
-    const depth = i % 2 ? W * 0.47 : W * 0.5;
-    add(new THREE.BoxGeometry(W - 0.07, 0.034, depth), [metal, metal, lidTop, inner, metal, metal], 0, 0, -depth / 2, hinge);
-    add(new THREE.CylinderGeometry(0.026, 0.026, W - 0.16, 10).rotateZ(Math.PI / 2), metal, 0, 0, 0, hinge);
+    const upper = i % 2 === 0;
+    const hinge = new THREE.Group(); hinge.position.set(0, H + (upper ? 0.04 : 0.012), W / 2 - 0.012); yaw.add(hinge);
+    const depth = upper ? W * 0.488 : W * 0.46;
+    add(new THREE.BoxGeometry(W - 0.05, 0.028, depth), [edge, edge, card({ map: flapTex(skin, 51 + i) }), inner, edge, edge], 0, 0, -depth / 2, hinge);
+    add(new THREE.CylinderGeometry(0.016, 0.016, W - 0.08, 8).rotateZ(Math.PI / 2), crease, 0, -0.004, 0, hinge);
+    if (upper) { // media tira de precinto en cada solapa de arriba: al abrir, se parte por la junta
+      add(new THREE.BoxGeometry(W - 0.04, 0.006, 0.115), tape, 0, 0.018, -depth + 0.058, hinge);
+      for (const sx of [-1, 1]) add(new THREE.BoxGeometry(0.006, 0.17, 0.115), tape, sx * (W / 2 - 0.018), -0.07, -depth + 0.058, hinge);
+    }
     flaps.push({ hinge, a: 0, v: 0, rest: 0 });
   }
   return { root, tilt, squash, flaps, inner };
@@ -191,7 +169,7 @@ export function createBoxShow(ctx) {
     fx.power += (fx.target - fx.power) * Math.min(1, dt * 7);
     const flick = 0.9 + Math.sin(t * 17) * 0.05 + Math.sin(t * 7.3) * 0.05, dim = phase === 'reel' || phase === 'prize' ? 0.6 : 1;
     fx.beamMat.opacity = fx.power * 0.55 * flick * dim * (phase === 'windup' ? 0.4 : 1); fx.beam.rotation.y += dt * 0.7;
-    fx.halo.material.opacity = fx.power * 0.75 * dim; fx.light.intensity = fx.power * 16 * flick; box.inner.emissiveIntensity = 0.12 + fx.power * 1.1;
+    fx.halo.material.opacity = fx.power * 0.75 * dim; fx.light.intensity = fx.power * 16 * flick; box.inner.emissiveIntensity = 0.1 + fx.power * 1.1;
     fx.beam.position.y = P.y + H + 2.2; fx.halo.position.y = P.y + H; fx.light.position.y = P.y + H + 0.1;
     const sh = Math.max(0.25, 1 - P.y * 0.22); fx.shadow.scale.setScalar(0.7 + sh * 0.35); fx.shadow.material.opacity = sh;
     for (const d of fx.dust) { if (d.life <= 0) { d.s.material.opacity = 0; continue; } d.life -= dt * 1.5; d.s.position.addScaledVector(d.v, dt); d.v.multiplyScalar(Math.pow(0.12, dt)); d.s.scale.setScalar(0.25 + (1 - d.life) * 1.1); d.s.material.opacity = Math.max(0, d.life) * 0.6; }
@@ -272,7 +250,7 @@ export function createBoxShow(ctx) {
     scene = null; box = null; fx = null;
   }
   async function open(boxId) {
-    id = boxId; const skin = SKINS[id];
+    id = boxId; const skin = CARTONS[id];
     try { await document.fonts.load('italic 800 60px KartDisplay'); } catch (_) { /* se dibuja con la fuente de reserva */ }
     build(); box = buildBox(skin); scene.add(box.root); fx = buildFx(skin);
     Object.assign(P, { y: reduced() ? 0 : 5.6, vy: 0, rx: 0.22, rz: -0.28, wx: 1.5, wz: -1.2, s: 0, sv: 0, yaw: -2.6, yawV: 2.6 });

@@ -4,6 +4,16 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.120
+- Un solo kart: el Kart de alquiler, que empieza solo en rojo. Desaparece el selector de color libre y el segundo kart; todos corren igual.
+- 12 carrocerías nuevas como objetos: 6 de pizzería (raras), 5 de caramelo (épicas) y el Kart estándar (legendaria).
+- 8 colores (comunes), que se van consiguiendo, y 5 calcomanías (raras): franjas, cuadros, camuflaje, llamas y rayo.
+- Primera versión del piloto: propio, hecho por piezas, con el casco del perfil y 8 monos. Se sienta en cada kart, mueve las manos con el volante, mira hacia la curva y se inclina.
+- Garaje rehecho: carrocería, color, calcomanía, mono, casco y dorsal.
+- Código de cuenta completa en Ajustes y pantalla de catálogo con todo el contenido.
+- La caja pasa a ser un paquete de recambios de cartón con precinto, etiqueta y pegatinas; las animaciones se mantienen.
+- Créditos de los modelos en Ajustes y en `docs/CREDITOS.md`.
+
 ## 0.0.119
 - Sonido: la vista previa del motor del Garaje ya no sigue sonando por encima del motor en carrera (fallo desde la 0.0.117).
 - Rendimiento: los muros de neumáticos se dibujan por parcelas, solo los que se ven, con menos triángulos y sin sombra. En Asupark, de unos 1.970.000 triángulos por fotograma a unos 310.000.

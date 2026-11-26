@@ -178,6 +178,27 @@ body.in-box #app,body.in-box #menu,body.in-box .overlay,body.in-box #songToast{d
 
 html.ui2 .bx .bx-prize h3{margin:0!important;font:400 32px/1.05 var(--fd)!important;color:#fff!important;text-transform:none!important;letter-spacing:0!important}
 html.ui2 .bx .bx-title b{letter-spacing:0}
-#app[data-tab=shop] #hmNav .kx-ind{opacity:0}
+#app:is([data-tab=shop],[data-tab=catalog]) #hmNav .kx-ind{opacity:0}
 html.ui2 .kx-times .nom{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #app .kx-mission button .kx-coin circle:first-child{stroke:#15171b;stroke-width:1.8}
+
+/* ---------- garaje, catálogo y código ---------- */
+.kx-bodies{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scroll-snap-type:x proximity;scrollbar-width:thin}
+#app .kx-bodies button{flex:0 0 112px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 5px 8px;border:2px solid var(--line);border-bottom:4px solid var(--rc,#6b7280);border-radius:12px;background:var(--card);font-size:12px;line-height:1.2}
+#app .kx-bodies button.on{border-color:var(--y);background:#2a2510}
+#app .kx-kartpic{display:block;width:100%;height:62px;object-fit:contain}
+.kx-kartpic.rental{background:url(./assets/thumbs/kart.webp) center/contain no-repeat}
+#app .kx-finishes button[style]{border-bottom-width:4px;border-bottom-color:var(--rc)}
+#app .kx-helmetrow{display:flex;align-items:center;gap:10px;width:100%;margin-top:8px;padding:8px 12px;border:2px solid var(--line);border-radius:12px;background:var(--card);text-align:left}
+#app .kx-helmetrow .art svg{width:40px;height:36px;display:block}
+#app .kx-helmetrow em{margin-left:auto;font-style:normal;font-size:13px;color:var(--y)}
+#app .kx-item .art .kx-kartpic{height:62px}
+.bx-art .kx-kartpic{width:100%;height:100%;object-fit:contain}
+.kx-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px}
+#app .kx-tabs button{flex:0 0 auto;min-height:38px;padding:0 13px;border:2px solid var(--line);border-radius:10px;background:var(--box);font-size:13px;white-space:nowrap}
+#app .kx-tabs button.on{border-color:var(--y);background:var(--y);color:#15171b}
+.kx-codebox{display:flex;gap:8px}
+.kx-codebox[hidden],.kx-codeon[hidden]{display:none}
+#settings .kx-codebox input{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.35);color:#fff;font-size:16px;-webkit-user-select:text;user-select:text;touch-action:manipulation}
+.kx-codeon{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.kx-codeon p{flex:1 0 100%;margin:0;font-size:14px}
+.kx-credits{margin-top:10px;font-size:13px;color:#b9c0cc}.kx-credits summary{cursor:pointer;font-weight:700}.kx-credits p{margin:6px 0 0;line-height:1.4}

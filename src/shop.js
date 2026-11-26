@@ -2,19 +2,10 @@
 import { BOXES, RARITY, ITEMS } from './economy.js';
 import { COIN, GEM, amount, itemArt, itemKind, oddsList } from './rewards.js';
 import { msToReset } from './daily.js';
+import { boxSvg } from './boxart.js';
+export { boxSvg };
 
 const hms = (ms) => { const s = Math.max(0, Math.round(ms / 1000)), p = (n) => String(n).padStart(2, '0'); return `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`; };
-// dibujo de cada caja: maletín de equipo con solapas, bordillo y el color de la caja
-export const boxSvg = (id) => {
-  const [body, side, accent] = { daily: ['#23262e', '#16181e', '#ffc400'], pit: ['#c01820', '#8c0f16', '#ffffff'], podium: ['#2a2418', '#17130c', '#f6bd2f'] }[id];
-  return `<svg class="kx-boxart" viewBox="0 0 120 100" aria-hidden="true"><ellipse cx="60" cy="92" rx="46" ry="6" fill="#000" opacity=".4"/>
-    <path d="M18 38l42 12v40L18 76z" fill="${body}"/><path d="M60 50l42-12v38L60 90z" fill="${side}"/><path d="M18 38l42-12 42 12-42 12z" fill="#0a0b0e"/>
-    <path d="M18 38L6 24l40-13 14 15z" fill="${body}" stroke="${accent}" stroke-width="1.5"/><path d="M102 38l12-14-40-13-14 15z" fill="${side}" stroke="${accent}" stroke-width="1.5"/>
-    <path d="M18 62l42 13v7L18 69z" fill="#fff"/><path d="M24 64l8 2.500v7L24 71zM40 69l8 2.500v7L40 76zM56 74l4 1.200v7L56 81z" fill="#dc1f17"/>
-    <path d="M60 75l42-12v7L60 82z" fill="${accent}"/><path d="M33 47h5v6l7-5 6 2-8 7 9 10-6-2-8-8v6l-5-2z" fill="${accent}"/>
-    <path d="M18 38l42 12 42-12M60 50v40" fill="none" stroke="#c9ced8" stroke-width="2"/></svg>`;
-};
-
 export function initShop({ $, esc, eco, helmetSvg, openBox, equip, isEquipped, testMode, toast }) {
   const box = () => $('kxShop');
   let ask = null; // compra pendiente de confirmar
@@ -40,7 +31,7 @@ export function initShop({ $, esc, eco, helmetSvg, openBox, equip, isEquipped, t
       ${testMode ? `<section class="kx-card kx-test"><h3>Modo de pruebas</h3><p class="kx-note">Solo para probar la tienda. Se quitará cuando el saldo pase al servidor.</p>
         <div><button type="button" data-test="money">Sumar 2.000 puntos y 100 gemas</button><button type="button" data-test="box">Recuperar la caja diaria</button><button type="button" data-test="reset">Vaciar todo</button></div></section>` : ''}`;
   }
-  const card = (it, action) => `<article class="kx-item" style="--rc:${RARITY[it.rarity].color}"><span class="art">${itemArt(it, helmetSvg)}</span><b>${esc(it.name)}</b><small>${itemKind(it)} ${RARITY[it.rarity].name.toLowerCase()}</small>${action}</article>`;
+  const card = (it, action) => `<article class="kx-item" style="--rc:${RARITY[it.rarity].color}"><span class="art">${itemArt(it, helmetSvg)}</span><b>${esc(it.name)}</b><small>${itemKind(it)}, ${RARITY[it.rarity].name.toLowerCase()}</small>${action}</article>`;
   const keep = () => { const m = $('kxMain'), y = m.scrollTop; render(); m.scrollTop = y; };
 
   $('kxShop').addEventListener('click', (e) => {

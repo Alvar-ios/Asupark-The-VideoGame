@@ -8,16 +8,32 @@ import { initTimes, timeRows } from './times.js';
 import { initShop } from './shop.js';
 import { initMissions } from './missions.js';
 import { boxSvg } from './shop.js';
+import { initCatalog } from './catalog.js';
 
 const TABS = ['champs', 'garage', 'race', 'times', 'profile'];
 
 export function initHome(ctx) {
-  const { $, acc, esc, LG, PF, helmetSvg, circuits, circuit, rows, race, daily, fmt, carName, garage, buildHelmets, eco, walletHtml, box, equip, isEquipped, testMode } = ctx;
+  const { $, acc, esc, LG, PF, helmetSvg, circuits, circuit, rows, race, daily, fmt, carName, garage, buildHelmets, eco, walletHtml, box, equip, isEquipped, testMode, code } = ctx;
   const app = $('app'), main = $('kxMain');
   initSanctions({ $, acc, esc });
   let tab = 'race', trackKey = null;
 
-  const GR = initGarage({ $, esc, garage, openShop: () => go('shop') });
+  const GR = initGarage({ $, esc, garage, helmetSvg, openShop: () => go('shop'), openProfile: () => go('profile') });
+  const CAT = initCatalog({ $, esc, eco, helmetSvg, equip, isEquipped, circuits, openTrack: (k) => openTrack(k) });
+  // código de cuenta completa, en Ajustes
+  function paintCode() {
+    const on = code.active();
+    $('kxCodeIn').parentElement.hidden = on; $('kxCodeOn').hidden = !on;
+  }
+  function enterCode() {
+    const v = $('kxCodeIn').value; if (!v.trim()) return;
+    if (!code.enter(v)) { $('kxCodeMsg').textContent = 'Ese código no es válido.'; return; }
+    $('kxCodeIn').value = ''; $('kxCodeMsg').textContent = ''; paintCode(); refreshAll();
+  }
+  $('kxCodeGo').onclick = enterCode;
+  $('kxCodeIn').addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') enterCode(); });
+  $('kxCodeCat').onclick = () => { $('settings').classList.add('hidden'); go('catalog'); };
+  $('kxCodeOff').onclick = () => { code.clear(); paintCode(); refreshAll(); };
   const SH = initShop({ $, esc, eco, helmetSvg, equip, isEquipped, testMode, toast: ctx.toast, openBox: (id) => box.open(id) });
   const MI = initMissions({ $, esc, eco });
   // saldo arriba a la derecha y aviso de la caja gratis en la portada
@@ -55,11 +71,12 @@ export function initHome(ctx) {
     else if (tab === 'profile') { PF.enter(); buildHelmets(); }
     else if (tab === 'track') renderTrack();
     else if (tab === 'shop') SH.render();
+    else if (tab === 'catalog') CAT.render();
   }
   const NAV = { leagues: 'champs', garage: 'garage', home: 'race', board: 'times', profile: 'profile' };
   $('hmNav').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) go(NAV[b.dataset.go]); });
   $('hmMusic').onclick = () => { $('settings').classList.add('hidden'); $('musicBtn').click(); };
-  $('hmSet').onclick = () => $('setBtn').click();
+  $('hmSet').onclick = () => { paintCode(); $('setBtn').click(); };
   app.addEventListener('keydown', (e) => { if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) e.stopPropagation(); });
 
   // ---------- correr: circuitos para entrenar ----------
@@ -80,7 +97,7 @@ export function initHome(ctx) {
       <button type="button" class="kx-cta" data-a="go">Salir a pista</button>
       <p class="kx-lead center">Salida lanzada y vueltas ilimitadas.</p>
       <div id="kxTrackRows" class="kx-rows"></div>`;
-    garage.shot(k.id, 240, 150).then((u) => { const im = $('kxLineImg'); if (im && u) im.src = u; });
+    garage.shot(240, 150).then((u) => { const im = $('kxLineImg'); if (im && u) im.src = u; });
     const res = await rows(key); if (trackKey !== key || tab !== 'track') return;
     const first = res.rows[0];
     $('kxRec').textContent = first ? fmt(first.ms / 1000) : 'Libre';
@@ -202,6 +219,8 @@ export function initHome(ctx) {
   document.addEventListener('click', (e) => { if (e.target.closest('#lgClose,#dyClose')) refresh(400); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && !$('menu').classList.contains('hidden')) refresh(); });
 
+  function refreshAll() { champSig = ''; paintMoney(); MI.paintTab(); render(); }
   go('race');
-  return { go, refresh: () => { champSig = ''; paintMoney(); MI.paintTab(); render(); } };
+  paintCode();
+  return { go, refresh: refreshAll };
 }

@@ -2,6 +2,9 @@
 import * as THREE from 'three';
 import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { parseGlb } from './glbload.js';
+import { SKIN_DATA } from './skins-data.js';
+import { applyDecal } from './decals.js';
+import { pilotFit, steerAxis } from './pilot.js';
 export const MODEL = {
   m3: { hi: './assets/car_m3_hi.glb.gz', lo: './assets/car_m3_lo.glb.gz', paint: /^Material$/ },
   qashqai: { hi: './assets/car_qashqai_hi.glb.gz', lo: './assets/car_qashqai_lo.glb.gz', paint: /carpaint/i, paintMat: { metalness: 0.08, roughness: 0.22, envMapIntensity: 0.85, clearcoat: 1, clearcoatRoughness: 0.05 } },
@@ -38,6 +41,8 @@ export const MODEL = {
   minis: { hi: './assets/car_minis_hi.glb.gz', lo: './assets/car_minis_lo.glb.gz', paint: /^COOPER$/, length: 3.7 },
 };
 MODEL.superkart = { ...MODEL.kart, gold: true }; // Kart Dorado: mismo modelo, pintura y dorsal dorados
+// carrocerías completas (tools/prep-skins.mjs): conservan sus propias texturas y sirven para cerca y para lejos
+for (const [skin, d] of Object.entries(SKIN_DATA)) { const url = `./assets/skin_${skin}.glb.gz`; MODEL['skin_' + skin] = { hi: url, lo: url, paint: /(?!)/, length: d.length, kart: true, skin }; }
 const cache = {}, pending = {};
 export const modelCarReady = (id, lod = 'hi') => !!(cache[id] && cache[id][lod]);
 export function loadModelCar(id, lods = ['hi', 'lo']) {
@@ -47,6 +52,7 @@ export function loadModelCar(id, lods = ['hi', 'lo']) {
     cache[id] = cache[id] || {};
     for (const l of lods) {
       if (cache[id][l]) continue;
+      if (MODEL[id].hi === MODEL[id].lo && Object.values(cache[id])[0]) { cache[id][l] = Object.values(cache[id])[0]; continue; }
       const g = await parseGlb(MODEL[id][l]);
       g.scene.traverse((o) => { if (!o.isMesh) return; try { const n = toCreasedNormals(o.geometry, Math.PI / 4); o.geometry.dispose(); o.geometry = n; } catch (e) { o.geometry.computeVertexNormals(); } });
       cache[id][l] = g.scene;
@@ -67,7 +73,7 @@ function applyFinish(m, color, finish) {
   m.map = null; m.roughnessMap = null; m.metalnessMap = null; // si no, los mapas del modelo anulan el acabado
 }
 
-export function buildModelCar(id, color, lod = 'hi', num = 7, finish = null) {
+export function buildModelCar(id, color, lod = 'hi', num = 7, finish = null, decal = null) {
   const src = cache[id][lod] || cache[id].lo || cache[id].hi, cfg = MODEL[id];
   const model = src.clone(true);
   const root = new THREE.Group(), tilt = new THREE.Group(), orientation = new THREE.Group();
@@ -114,6 +120,10 @@ export function buildModelCar(id, color, lod = 'hi', num = 7, finish = null) {
     else if (isPaint && cfg.kart) { m.color = new THREE.Color(color); m.metalness = 0; m.roughness = 0.55; paints.add(m); }
     else if (isPaint) { m.color = new THREE.Color(color); if (m.map) m.map = null; m.metalness = 0.32; m.roughness = 0.34; if ('clearcoat' in m) { m.clearcoat = 0.7; m.clearcoatRoughness = 0.12; } if (cfg.paintMat) Object.assign(m, cfg.paintMat); paints.add(m); }
   });
+  if (decal && paints.size) { // la calcomanía necesita saber dónde cae cada punto del kart
+    root.updateMatrixWorld(true);
+    model.traverse((o) => { if (o.isMesh && paints.has(o.material)) applyDecal(o.material, decal, o.matrixWorld.clone()); });
+  }
   if (cfg.tails) for (const [x, y, z, w, h] of cfg.tails) for (const sd of [-1, 1]) { // pilotos traseros que el modelo no trae (se encienden al frenar)
     const lamp = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.05), tail); lamp.position.set(sd * x, y, z); model.add(lamp);
   }
@@ -134,6 +144,9 @@ export function buildModelCar(id, color, lod = 'hi', num = 7, finish = null) {
     }
     wheels.push({ pivot, spin, front: k[0] === 'F' });
   }
+  let steer = null; // volante suelto: gira con el piloto
+  { let part = null; model.traverse((o) => { if (o.name === 'steer') part = o; });
+    if (part) { const pivot = new THREE.Group(); box.setFromObject(part); box.getCenter(c); orientation.worldToLocal(c); pivot.position.copy(c); orientation.add(pivot); pivot.attach(part); steer = { pivot, axis: steerAxis(pilotFit(cfg.skin).tilt) }; } }
   const flames = new THREE.Group();
   const fm = new THREE.MeshBasicMaterial({ color: 0x5ad0ff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
   for (const s of [-1, 1]) flames.add(new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.4, 8).rotateX(-Math.PI / 2).translate(s * flameX, flameY, flameZ), fm));
@@ -143,8 +156,8 @@ export function buildModelCar(id, color, lod = 'hi', num = 7, finish = null) {
     flames.add(cone, core); flames.position.set(-0.12, 0.2, -1.02);
   }
   flames.visible = false; tilt.add(flames);
-  if (cfg.kart) addKartNumber(orientation, num, !!cfg.gold);
-  return { root, tilt, wheels, tail, flames, W, paint: [...paints][0] || { color: new THREE.Color() }, paints };
+  if (cfg.kart && !cfg.skin) addKartNumber(orientation, num, !!cfg.gold);
+  return { root, tilt, wheels, steer, tail, flames, W, paint: [...paints][0] || { color: new THREE.Color() }, paints };
 }
 
 // dorsal del kart: placa blanca con el número en el morro y a cada lado (coordenadas en metros, morro +Z)
