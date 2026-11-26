@@ -90,7 +90,7 @@ function ps2View(th) {
 // ---------- pistas ----------
 const tracks = [];
 function addTrack(key, name, sub, seed, style, th) { const tr = buildTrack(seed, style); tracks.push({ key, name, sub, tr, th }); }
-const pickFor = (k) => pickDaily(k, k === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => (k !== 'madring' || k >= '2026-11-10') && (k !== 'magarigawa' || k >= '2026-11-11') && (k !== 'muralla' || k >= '2026-11-12') && (k !== 'rally' || k >= '2026-11-13') && (k !== 'palomring' || k >= '2026-11-14') && k !== 'italia'), (th) => CARS.filter((c) => (th === 'karting' || th === 'kartlos' || th === 'muralla') ? c.group === 'karts' : c.group !== 'karts').map((c) => c.id));
+const pickFor = (k) => pickDaily(k, k === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => (k !== 'madring' || k >= '2026-11-10') && (k !== 'magarigawa' || k >= '2026-11-11') && (k !== 'muralla' || k >= '2026-11-12') && (k !== 'rally' || k >= '2026-11-13') && (k !== 'palomring' || k >= '2026-11-14') && k !== 'italia'), () => ['kart']); // reto solo de karts: todos con la misma conducción
 const dailyKey = dailyKeyNow(), dailyPick = pickFor(dailyKey);
 // el reto de ese día cambió de circuito a mitad de jornada: fuera el progreso local y el fantasma del circuito anterior
 if (dailyKey === DAILY_LOCK_DAY && !store.get('purge.daily-madring')) { try { localStorage.removeItem('dr.daily'); } catch (e) { /* sin almacenamiento */ } store.set('dr.dailyref', null); store.set('purge.daily-madring', true); }
@@ -547,6 +547,7 @@ function makeField(ti) {
 }
 async function startRace(restart = false) {
   if (S.daily && restart) return; // el reto del día no se puede reiniciar
+  sound.stopPreview(true); // si no, su ralentí sigue pisando al motor en carrera (salidas desde el reto, que no pasan por el botón de correr)
   sound.init(CARS[sel.car].id);
   const gpMode = sel.mode === 'gp';
   if (gpMode && (!restart || !S.gp)) S.gp = { phase: 'quali', qBest: null, grid: null };
@@ -708,6 +709,13 @@ async function startRace(restart = false) {
   $('pos').nextElementSibling.textContent = '/' + S.cars.length;
   const tw = S.mode === 'race' || !!S.gp; $('h-pos').style.display = 'none'; $('h-lap').style.display = tw ? 'none' : ''; $('tower').style.display = tw ? '' : 'none'; $('tower').innerHTML = ''; document.body.classList.toggle('race', tw); towerT = 1;
   updateCamera(0, true);
+  warmScene();
+}
+// prepara ya los programas de todo lo que hay en la escena; lo oculto (fantasmas, llamas) si no, se prepara al aparecer y da un tirón
+function warmScene() {
+  const hidden = []; S.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+  try { renderer.compile(S.scene, camera); } catch (e) { console.warn('No se pudo preparar la escena', e); }
+  for (const o of hidden) o.visible = false;
 }
 function setLights(n) { const l = $('lights').children; for (let i = 0; i < l.length; i++) l[i].classList.toggle('on', i < n); $('lights').classList.toggle('hidden', n < 0); }
 
@@ -993,7 +1001,9 @@ function sectorDone(i, t) {
 function setGhost(slot, ct, gold, name) {
   const old = S[slot]; if (old && old.root.parent) old.root.parent.remove(old.root);
   S[slot] = null; if (!ct || !S.scene || !carAssetReady(ct, 'lo')) return;
-  const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold, name || lb.name); m.root.visible = false; S.scene.add(m.root); S[slot] = m;
+  const m = buildCarMesh(0xffffff, ct.kind, 'lo'); makeGhost(m.root, gold, name || lb.name); S.scene.add(m.root);
+  try { renderer.compile(m.root, camera, S.scene); } catch (e) { /* se prepara al dibujarse */ }
+  m.root.visible = false; S[slot] = m;
 }
 function dailyLap(c, lt, done) {
   const d = S.daily, valid = !S.lapInvalid && lt > 8; S.lapInvalid = false;
@@ -1639,6 +1649,7 @@ const garageApi = {
   num: () => kartNum(),
   pick(id) { const i = CARS.findIndex((c) => c.id === id); if (i < 0) return; sel.car = i; sel.carId = id; store.set('sel', sel); MP.key = ''; buildMenu(); this.rev(); },
   rev() { sound.init(); sound.enginePreview(CARS[sel.car].id); },
+  hush() { sound.stopPreview(); },
   setColor(hex) { eco.equipPaint(null); sel.colors[CARS[sel.car].id] = hex; store.set('sel', sel); MP.key = ''; buildMenu(); },
   setNum(n) { sel.kartNum = n; store.set('sel', sel); MP.key = ''; },
   // foto del kart con el mismo modelo que se conduce

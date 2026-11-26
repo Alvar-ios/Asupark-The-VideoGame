@@ -4,6 +4,12 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.119
+- Sonido: la vista previa del motor del Garaje ya no sigue sonando por encima del motor en carrera (fallo desde la 0.0.117).
+- Rendimiento: los muros de neumáticos se dibujan por parcelas, solo los que se ven, con menos triángulos y sin sombra. En Asupark, de unos 1.970.000 triángulos por fotograma a unos 310.000.
+- Los materiales de la pista y de los fantasmas se preparan antes de salir, para evitar el tirón al cruzar la meta.
+- Reto del día: siempre con el Kart de alquiler (en Asupark salía por descarte), y la pantalla lo dice.
+
 ## 0.0.118
 - Android: arreglado el desplazamiento con el dedo en Correr, ficha de circuito, Garaje y Perfil (una regla antigua desactivaba los gestos).
 - Arreglado: desde la pausa, «Ver clasificación» y «Ajustes» quedaban tapados (error de la 0.0.117).

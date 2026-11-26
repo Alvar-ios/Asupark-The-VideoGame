@@ -37,6 +37,7 @@ export function initHome(ctx) {
   function go(next, opts = {}) {
     if (!$('leagues').classList.contains('hidden')) $('lgClose').click();
     MI.close();
+    if (next !== 'garage') garage.hush(); // el motor de la vista previa solo suena en el garaje
     tab = next;
     app.dataset.tab = next;
     for (const p of main.querySelectorAll('.kx-page')) p.hidden = p.dataset.page !== next;

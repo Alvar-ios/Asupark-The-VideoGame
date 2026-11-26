@@ -1201,19 +1201,26 @@ function tireWallMesh(tr, th) {
     tires.push([x, tr.Y[i] + bankOff(tr, i, l), z, outer && a > 0.04 ? 4 : outer && a > 0.022 ? 3 : 2]); // el doble de alto en las curvas, por el lado exterior
   }
   let total = 0; for (const t of tires) total += t[3];
-  const geo = new THREE.TorusGeometry(0.25, 0.11, 5, 10); geo.rotateX(Math.PI / 2); geo.scale(1, 1.25, 1); geo.translate(0, 0.14, 0);
-  const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), total);
-  const d = new THREE.Object3D(), c = new THREE.Color(); let n = 0;
+  const geo = new THREE.TorusGeometry(0.25, 0.11, 4, 8); geo.rotateX(Math.PI / 2); geo.scale(1, 1.25, 1); geo.translate(0, 0.14, 0);
+  const mat = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true });
+  // un solo bloque con todos obligaba a dibujarlos siempre, también los de detrás: por parcelas, la cámara descarta las que no ve
+  const CELL = 36, cells = new Map(), cellOf = (t) => Math.floor(t[0] / CELL) + ',' + Math.floor(t[2] / CELL);
+  for (const t of tires) { const k = cellOf(t); const cl = cells.get(k) || cells.set(k, { size: 0, used: 0 }).get(k); cl.size += t[3]; }
+  const group = new THREE.Group(); group.userData.noShadow = true;
+  for (const cl of cells.values()) { cl.mesh = new THREE.InstancedMesh(geo, mat, cl.size); cl.mesh.castShadow = false; cl.mesh.receiveShadow = true; group.add(cl.mesh); }
+  const d = new THREE.Object3D(), c = new THREE.Color();
   tires.forEach((t, q) => {
+    const cl = cells.get(cellOf(t));
     const paint = Math.floor(q / 11) % 9 === 0 ? (Math.floor(q / 99) % 2 ? 0xc9c9c4 : 0x9c2a22) : 0; // casi todas negras; alguna pintada y desgastada
     for (let h = 0; h < t[3]; h++) {
-      d.position.set(t[0] + (rnd() - 0.5) * 0.05, t[1] + h * 0.27, t[2] + (rnd() - 0.5) * 0.05); d.rotation.set((rnd() - 0.5) * 0.12, rnd() * 6.28, (rnd() - 0.5) * 0.12); d.updateMatrix(); m.setMatrixAt(n, d.matrix);
+      d.position.set(t[0] + (rnd() - 0.5) * 0.05, t[1] + h * 0.27, t[2] + (rnd() - 0.5) * 0.05); d.rotation.set((rnd() - 0.5) * 0.12, rnd() * 6.28, (rnd() - 0.5) * 0.12); d.updateMatrix(); cl.mesh.setMatrixAt(cl.used, d.matrix);
       if (paint && h === 0) c.setHex(paint).multiplyScalar(0.8 + rnd() * 0.15); else { const v = 0.07 + rnd() * 0.06; c.setRGB(v, v, v * 1.05); }
-      m.setColorAt(n++, c);
+      cl.mesh.setColorAt(cl.used++, c);
     }
   });
-  m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; m.frustumCulled = false; m.castShadow = false;
-  return m;
+  for (const cl of cells.values()) { cl.mesh.instanceMatrix.needsUpdate = true; if (cl.mesh.instanceColor) cl.mesh.instanceColor.needsUpdate = true; cl.mesh.computeBoundingSphere(); }
+  if (!total) geo.dispose();
+  return group;
 }
 let hayCache = null;
 function hayTex() { // balas de paja con cuerdas: 2 balas por cada 4 m de valla
@@ -2893,7 +2900,7 @@ export function buildWorld(tr, th, opt = {}) {
   if (th.deco !== 'kart' && !th.wallTop && !th.rally) scene.add(brakingMarks(tr, th));
   const walls = th.privateClub ? new THREE.Group() : wallMesh(tr, th, q.stride); // en el club las vallas siguen la escapatoria (magarigawa.js)
   walls.receiveShadow = true;
-  walls.castShadow = !!q.shadows;
+  walls.castShadow = !!q.shadows && !walls.userData.noShadow;
   scene.add(walls);
 
   if (th.deco === 'kart') {
