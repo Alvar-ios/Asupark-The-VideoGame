@@ -66,7 +66,11 @@ function deckMesh(tr, deck, model) {
     const name = deck.materials[deck.index[Math.round((i / N) * K) % K]];
     strip(name, i, (k) => [-1, -0.5, 0, 0.5, 1].map((f) => [f * edge(k, f || 1), tr.Y[k % N], (f + 1) / 2]), false);
     for (const side of [-1, 1]) {
-      strip(deck.skirt, i, (k) => [[side * edge(k, side), tr.Y[k % N] - 0.01, 0], [side * (edge(k, side) + 1.5), tr.Y[k % N] - drop[k % N], drop[k % N] / 6]].map((c) => [c[0], c[1], (k * tr.ds) / 6, c[2]]), side > 0);
+      // faldón de roca; en lo alto empieza con un arcén casi plano que llega hasta el pie de las paredes
+      strip(deck.skirt, i, (k) => {
+        const y = tr.Y[k % N], e = edge(k, side), high = Math.max(0, Math.min(1, (y - 6) / 4)), out = 0.2 + high * 2.6, low = y - drop[k % N];
+        return [[e, y - 0.01, 0], [e + out, y - 0.05 - high * 0.3, out / 6], [e + out + 1.3, low, (out + drop[k % N]) / 6]].map((c) => [side * c[0], c[1], (k * tr.ds) / 6, c[2]]);
+      }, side > 0);
     }
   }
   for (const [name, g] of parts) {

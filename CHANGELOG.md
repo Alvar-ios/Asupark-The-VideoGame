@@ -4,6 +4,9 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.124
+- Misty Cliffs: arcén de roca en los tramos altos, que tapa la rendija por la que se veía el mar al pie de las paredes.
+
 ## 0.0.123
 - Ajustes rehecho: nada se aplasta ni queda tapado, interruptores claros y campo de código visible. Cabecera y botón «Listo» fijos.
 - Misty Cliffs: calzada reconstruida con las mismas alturas que usa la física (el kart ya no se hunde ni flota), rampa seguida en lugar del gran salto, meta en la recta llana y sin escalones. Las rocas invaden menos (siempre queda paso) y el piloto automático las atraviesa.
