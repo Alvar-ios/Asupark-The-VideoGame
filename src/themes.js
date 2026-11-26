@@ -1,3 +1,4 @@
+import { TRACK_DATA } from './tracks-data.js';
 import { NODES as IT_NODES, START as IT_START, HILLS as IT_HILLS } from './italia.js';
 import { NODES as MU_NODES, START as MU_START, CROSS as MU_CROSS, HILLS as MU_HILLS } from './muralla-data.js';
 import { NODES as MG_NODES, START as MG_START, HILLS as MG_HILLS, RUNOFF as MG_RUNOFF } from './magarigawa-data.js';
@@ -5,6 +6,12 @@ import { NODES as PR_NODES, START as PR_START, CROSS as PR_CROSS, RAMP_U as PR_R
 import { NODES as RA_NODES, START as RA_START, HILLS as RA_HILLS, FORDS as RA_FORDS } from './rally-data.js';
 import { hashStr } from './rng.js';
 import { isVisibleTrack } from './visible.js';
+
+// trazado de un circuito importado (src/tracks-data.js)
+function modelStyle(id) {
+  const d = TRACK_DATA[id];
+  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, imported: true, startNear: d.start, scale: 1, half: d.half, wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: true, noKerb: true };
+}
 
 export const THEMES = {
   pruebas: {
@@ -153,8 +160,21 @@ export const THEMES = {
     wall1: 0xd8cbb0, wall2: 0xb5532f, mount: 0x6d7f6a, sun: 0xff9340, sunDir: [-0.5, 0.17, -0.85],
     hemiSky: 0x93a5d6, hemiGround: 0xb77c52, hemiI: 1.32, sunI: 4.0, deco: 'madrid', treeCount: 1, treeCol: 0x3d5a2c, night: false, temp: 24, humidity: 0.45, wind: [2, 0.5], gripMul: 1, offroad: 0.6, slope: 1.1,
   },
+  // circuitos importados: el escenario es su modelo y la física sigue la línea central sacada de la calzada
+  misty: {
+    id: 'misty', name: 'Misty Cliffs', sub: 'Camino de tierra por una isla: un puente, la subida al faro en espiral y un gran descenso', seed: 'misty-1', model: 'misty', envName: 'camino de tierra', fiction: true, edgePosts: true, noKerbs: true,
+    style: modelStyle('misty'), floor: { color: 0x1f5f74, y: -3.5 },
+    skyTop: 0x4d86c6, skyHor: 0xcfe0e8, fog: 0xc4d8e0, fogNear: 220, fogFar: 1500, ground: 0x1f5f74, grass: 0x5d7f3a, dirt: 0xa57d4c, road: 0xb98c5a, kerb1: 0xb98c5a, kerb2: 0xb98c5a,
+    wall1: 0x8a6439, wall2: 0xe8dcc0, mount: 0x4d6b3f, sun: 0xfff1d8, sunDir: [-0.4, 0.7, 0.45], hemiSky: 0xe4f0ff, hemiGround: 0x8c8266, hemiI: 1.7, sunI: 1.5, night: false, temp: 17, humidity: 0.6, wind: [2, 0.8], gripMul: 1, offroad: 0.8, offroadGrip: 0.85, surface: undefined,
+  },
+  mariocircuit: {
+    id: 'mariocircuit', name: 'Mario Circuit 3', sub: 'El clásico de 16 bits: asfalto ancho, arena a los lados y muros de bloques de colores', seed: 'mario3-1', model: 'mario3', fiction: true, noKerbs: true,
+    style: modelStyle('mario3'), floor: { color: 0x7fa94a, y: 0.6 },
+    skyTop: 0x3f8fe0, skyHor: 0xbfe3ff, fog: 0xc8e4f6, fogNear: 300, fogFar: 1900, ground: 0xc9a561, grass: 0xc9a561, dirt: 0xc9a561, road: 0x55565a, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
+    wall1: 0x2f9d3f, wall2: 0xd43a30, mount: 0x6a8f4a, sun: 0xfff6e0, sunDir: [-0.35, 0.8, 0.4], hemiSky: 0xffffff, hemiGround: 0xb59a68, hemiI: 1.7, sunI: 1.4, night: false, temp: 25, humidity: 0.35, wind: [1, 0.5], gripMul: 1, offroad: 0.55, offroadGrip: 0.7,
+  },
   muralla: {
-    id: 'muralla', name: 'Gran Muralla, China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,
+    id: 'muralla', fiction: true, name: 'Gran Muralla, China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,
     style: {
       fixedNodes: MU_NODES, startNear: MU_START, scale: 1, half: 3.0, widthMax: 4.4, wall: 5.2, minR: 5.5, sep: 10.5, extraSmooth: 3, noKerb: true, baseY: 34,
       cross: MU_CROSS, bridgeH: 0.1, bridgePlat: 8, bridgeRamp: 20, bridgeSpan: 9,
@@ -222,7 +242,7 @@ export const THEMES = {
     hemiSky: 0xe3efff, hemiGround: 0x75716a, hemiI: 1.0, sunI: 1.25, deco: 'industrial', industrial: true, treeCol: 0x77746d, treeCount: 0, night: false, temp: 23, humidity: 0.3, wind: [2, 0.5], gripMul: 1, offroad: 0.6,
   },
 };
-const ALL_THEME_LIST = ['pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
+const ALL_THEME_LIST = ['misty', 'mariocircuit', 'pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
 // solo circuitos visibles (ver src/visible.js)
 export const THEME_LIST = ALL_THEME_LIST.filter(isVisibleTrack);
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];

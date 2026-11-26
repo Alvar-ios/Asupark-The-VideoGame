@@ -112,10 +112,10 @@ function generate(seed, style, attempt) {
   const kap = curvatureOf(P, ds);
   let maxK = 0;
   for (let i = 0; i < N; i++) maxK = Math.max(maxK, Math.abs(kap[i]));
-  if (1 / maxK < (style.minR || 30)) return null;
+  if (!style.imported && 1 / maxK < (style.minR || 30)) return null; // los importados se respetan tal cual
   // separación entre tramos no contiguos (salvo en un cruce deliberado: style.cross = [x, z, radio], donde un tramo pasa por encima del otro)
   const cr = style.cross ? [style.cross[0] * sc, style.cross[1] * sc, style.cross[2] * sc] : null;
-  for (let i = 0; i < N; i += 2) {
+  for (let i = 0; i < N && !style.imported; i += 2) {
     for (let j = i + 1; j < N; j += 2) {
       const gap = Math.min(j - i, N - (j - i)) * ds;
       if (gap < 90) continue;
@@ -327,7 +327,42 @@ export function buildTrack(seed, style) {
     }
     Y[i] = h;
   }
+  if (style.profile) followProfile(tr, style.profile);
+  if (style.solids) tr.solids = solidGrid(style.solids);
+  if (style.edges) { // muros donde están las barreras del modelo: [izquierda, derecha] por fracción de vuelta
+    tr.wallEdge = style.edges.map((arr) => {
+      const K = arr.length, near = Float32Array.from({ length: tr.N }, (_, i) => arr[Math.round((i / tr.N) * K) % K]);
+      return near;
+    });
+  }
   return tr;
+}
+
+export const SOLID_CELL = 6;
+// obstáculos de un circuito importado, repartidos en una rejilla para consultar solo los cercanos
+function solidGrid(list) {
+  const grid = new Map();
+  for (const s of list) {
+    for (let i = Math.floor((Math.min(s[0], s[2]) - 1.5) / SOLID_CELL); i <= Math.floor((Math.max(s[0], s[2]) + 1.5) / SOLID_CELL); i++) {
+      for (let j = Math.floor((Math.min(s[1], s[3]) - 1.5) / SOLID_CELL); j <= Math.floor((Math.max(s[1], s[3]) + 1.5) / SOLID_CELL); j++) { const k = i * 4096 + j; let cell = grid.get(k); if (!cell) grid.set(k, (cell = [])); cell.push(s); }
+    }
+  }
+  return grid;
+}
+
+// alturas de un circuito importado: cada muestra toma la del perfil [x, z, y], avanzando siempre hacia delante para
+// no saltar de nivel en los puentes y cruces
+function followProfile(tr, P) {
+  const n = P.length, d2 = (j, x, z) => { const q = P[((j % n) + n) % n]; return (q[0] - x) ** 2 + (q[1] - z) ** 2; };
+  let j = 0; for (let k = 1; k < n; k++) if (d2(k, tr.X[0], tr.Z[0]) < d2(j, tr.X[0], tr.Z[0])) j = k;
+  for (let i = 0; i < tr.N; i++) {
+    const x = tr.X[i], z = tr.Z[i];
+    let best = j; for (let k = -2; k <= 5; k++) if (d2(j + k, x, z) < d2(best, x, z)) best = j + k;
+    j = best;
+    const at = (k) => P[((k % n) + n) % n], a = at(j), prev = d2(j - 1, x, z) < d2(j + 1, x, z), u0 = prev ? at(j - 1) : a, u1 = prev ? a : at(j + 1);
+    const ex = u1[0] - u0[0], ez = u1[1] - u0[1], t = Math.max(0, Math.min(1, ((x - u0[0]) * ex + (z - u0[1]) * ez) / (ex * ex + ez * ez || 1)));
+    tr.Y[i] = u0[2] + (u1[2] - u0[2]) * t;
+  }
 }
 
 // Proyección de un punto sobre la pista. hint<0 => búsqueda completa.

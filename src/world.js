@@ -14,6 +14,7 @@ import { murallaDecor } from './muralla.js';
 import { italiaDecor } from './italia.js';
 import { rallyDecor } from './rally.js';
 import { industrialDecor } from './industrial.js';
+import { buildModelWorld } from './trackmodel.js';
 
 const col = (hex) => new THREE.Color(hex);
 
@@ -2833,6 +2834,7 @@ function brakingMarks(tr, th) {
 export function buildWorld(tr, th, opt = {}) {
   th = rainTheme(th);
   setRoad(tr);
+  if (th.model) return buildModelWorld(tr, th, opt);
   const q = opt.mobile ? { stride: 2, density: 0.5, mountains: 22, shadows: !!opt.shadows } : { stride: 1, density: 1, mountains: 46, shadows: !!opt.shadows };
   const scene = new THREE.Scene();
   const rng = rngFromSeed('scenery:' + tr.seed);

@@ -14,6 +14,7 @@ import { initUx, toastEl } from './ux.js';
 import { initUiToggle } from './uimode.js';
 import { createEconomy, itemById, ITEMS } from './economy.js';
 import { buildPilot, pilotFit, STEER_TURN, SUIT_DEFAULT } from './pilot.js';
+import { loadTrackModel } from './trackmodel.js';
 import { createBoxShow } from './box3d.js';
 import { walletHtml } from './shop.js';
 import { timeRows } from './times.js';
@@ -91,7 +92,7 @@ function ps2View(th) {
 // ---------- pistas ----------
 const tracks = [];
 function addTrack(key, name, sub, seed, style, th) { const tr = buildTrack(seed, style); tracks.push({ key, name, sub, tr, th }); }
-const pickFor = (k) => pickDaily(k, k === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((k) => (k !== 'madring' || k >= '2026-11-10') && (k !== 'magarigawa' || k >= '2026-11-11') && (k !== 'muralla' || k >= '2026-11-12') && (k !== 'rally' || k >= '2026-11-13') && (k !== 'palomring' || k >= '2026-11-14') && k !== 'italia'), () => ['kart']); // reto solo de karts: todos con la misma conducción
+const pickFor = (k) => pickDaily(k, k === DAILY_LOCK_DAY ? ['madring'] : THEME_LIST.filter((id) => (id !== 'misty' && id !== 'mariocircuit') || k >= '2026-11-27').filter((k) => (k !== 'madring' || k >= '2026-11-10') && (k !== 'magarigawa' || k >= '2026-11-11') && (k !== 'muralla' || k >= '2026-11-12') && (k !== 'rally' || k >= '2026-11-13') && (k !== 'palomring' || k >= '2026-11-14') && k !== 'italia'), () => ['kart']); // reto solo de karts: todos con la misma conducción
 const dailyKey = dailyKeyNow(), dailyPick = pickFor(dailyKey);
 // el reto de ese día cambió de circuito a mitad de jornada: fuera el progreso local y el fantasma del circuito anterior
 if (dailyKey === DAILY_LOCK_DAY && !store.get('purge.daily-madring')) { try { localStorage.removeItem('dr.daily'); } catch (e) { /* sin almacenamiento */ } store.set('dr.dailyref', null); store.set('purge.daily-madring', true); }
@@ -244,7 +245,7 @@ const playerDrv = () => ({ flag: lb.flag, helm: lb.helmet });
 const drvOf = (c) => (c && c.isPlayer ? playerDrv() : c && c.driver) || null;
 const drvIc = (d, sm) => d ? `<span class="flag${sm ? ' sm' : ''}">${flagSvg(d.flag)}</span><span class="hel${sm ? ' sm' : ''}">${helmetSvg(d.helm)}</span>` : '';
 const FLAG_NAMES = { es: 'España', pt: 'Portugal', fr: 'Francia', de: 'Alemania', it: 'Italia', gb: 'Reino Unido', ie: 'Irlanda', nl: 'Países Bajos', be: 'Bélgica', ch: 'Suiza', at: 'Austria', pl: 'Polonia', ro: 'Rumanía', ua: 'Ucrania', se: 'Suecia', mc: 'Mónaco', us: 'Estados Unidos', mx: 'México', co: 'Colombia', ar: 'Argentina', br: 'Brasil', pe: 'Perú', ma: 'Marruecos', jp: 'Japón', pr: 'Orgullo' };
-const COUNTRY = { pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'España'], asupark: ['es', 'España'], kartlos: ['ae', 'Kartlos'], madring: ['es', 'España'], magarigawa: ['jp', 'Japón'], muralla: ['cn', 'China'], rally: ['ke', 'Kenia'], palomring: ['sk', 'Palomar'], italia: ['it', 'Italia'] };
+const COUNTRY = { misty: ['sk', 'Isla del faro'], mariocircuit: ['sk', 'Reino Champiñón'], pruebas: ['es', 'España'], monaco: ['mc', 'Mónaco'], spa: ['be', 'Bélgica'], valle: ['br', 'Brasil'], desierto: ['mx', 'México'], neon: ['jp', 'Japón'], nieve: ['ch', 'Suiza'], prisma: ['jp', 'Circuito Mario'], amazonas: ['pe', 'Perú'], karting: ['es', 'España'], asupark: ['es', 'España'], kartlos: ['ae', 'Kartlos'], madring: ['es', 'España'], magarigawa: ['jp', 'Japón'], muralla: ['cn', 'China'], rally: ['ke', 'Kenia'], palomring: ['sk', 'Palomar'], italia: ['it', 'Italia'] };
 const countryOf = (t) => COUNTRY[t.th.id] || COUNTRY[t.key] || COUNTRY.pruebas;
 function drawPreview(cv, tr, th, w = 300, h = 130, kw = 1) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2), x = cv.getContext('2d');
@@ -262,7 +263,7 @@ function drawPreview(cv, tr, th, w = 300, h = 130, kw = 1) {
 }
 
 const groupOf = (c) => GROUPS.find((g) => g.id === c.group) || GROUPS[1];
-const envLabel = (t) => (t.th.weather === 'rain' ? 'lluvia' : t.th.surface === 'snow' ? 'nieve' : t.th.surface === 'dirt' ? 'tierra' : 'asfalto seco');
+const envLabel = (t) => t.th.envName || (t.th.weather === 'rain' ? 'lluvia' : t.th.surface === 'snow' ? 'nieve' : t.th.surface === 'dirt' ? 'tierra' : 'asfalto seco');
 const narrowMenu = () => window.innerWidth <= 760;
 function setView(v) {
   $('menu').dataset.view = v; if (v !== 'garage') sound.stopPreview();
@@ -277,7 +278,7 @@ $('pickCar').onclick = () => { if ($('menu').dataset.view === 'garage') { setVie
 $('flyClose').onclick = () => setView('home');
 window.addEventListener('keydown', (e) => { if (S.state === 'menu' && $('menu').dataset.view === 'tracks' && (e.code === 'ArrowLeft' || e.code === 'ArrowRight')) { $(e.code === 'ArrowLeft' ? 'stPrev' : 'stNext').click(); e.preventDefault(); e.stopPropagation(); } }, true);
 window.addEventListener('keydown', (e) => { if (e.code === 'Escape' && S.state === 'menu' && $('menu').dataset.view !== 'home') { setView('home'); e.stopPropagation(); } }, true);
-const MAP_LL = { pruebas: [36.7, -6.0], monaco: [43.74, 7.42], spa: [51.0, 5.6], valle: [-23.7, -46.7], desierto: [19.4, -99.1], neon: [35.7, 139.7], prisma: [34.7, 135.5], nieve: [47.1, 8.6], amazonas: [-12.0, -77.0], karting: [42.4, -1.2], asupark: [38.4, -3.2], kartlos: [25.2, 55.3], madring: [40.47, -3.6], magarigawa: [35.05, 139.92], muralla: [40.43, 116.57], rally: [-0.4, 36.9], palomring: [58, -34], italia: [45.99, 9.26] };
+const MAP_LL = { misty: [48.5, -28], mariocircuit: [33, -40], pruebas: [36.7, -6.0], monaco: [43.74, 7.42], spa: [51.0, 5.6], valle: [-23.7, -46.7], desierto: [19.4, -99.1], neon: [35.7, 139.7], prisma: [34.7, 135.5], nieve: [47.1, 8.6], amazonas: [-12.0, -77.0], karting: [42.4, -1.2], asupark: [38.4, -3.2], kartlos: [25.2, 55.3], madring: [40.47, -3.6], magarigawa: [35.05, 139.92], muralla: [40.43, 116.57], rally: [-0.4, 36.9], palomring: [58, -34], italia: [45.99, 9.26] };
 const CONTS = [{ id: 'eu', name: 'Europa', ll: [46, 8], z: 2.35, ids: ['pruebas', 'monaco', 'spa', 'nieve', 'karting', 'asupark', 'madring', 'italia'] }, { id: 'am', name: 'América', ll: [-2, -72], z: 3.0, ids: ['valle', 'desierto', 'amazonas'] }, { id: 'as', name: 'Asia', ll: [31, 96], z: 3.6, ids: ['neon', 'prisma', 'kartlos', 'magarigawa', 'muralla'] }, { id: 'af', name: 'África', ll: [2, 24], z: 2.7, ids: ['rally'] }, { id: 'sk', name: 'Cielo', ll: [58, -34], z: 3.2, ids: ['palomring'] }];
 const contOf = (t) => CONTS.find((c) => c.ids.includes(t.th.id)) || CONTS[0];
 let globe = null, wmCont = null, wmWorld = false;
@@ -582,7 +583,7 @@ async function startRace(restart = false) {
   button.disabled = true; button.classList.add('ld-btn'); button.innerHTML = lp(18) + 'Preparando el kart…'; status.hidden = true;
   const pt = CARS[sel.car], pool = CARS.filter((_, i) => i !== sel.car);
   const need = [pt, ...(S.mode === 'race' ? S.rivalTypes : [])]; // los mismos rivales que luego se crean (antes no coincidían y la carrera se quedaba en «cargando»)
-  try { await ensureModels(need, pt); await loadSkin(skinOf()); }
+  try { await ensureModels(need, pt); await loadSkin(skinOf()); const m = tracks[sel.track].th.model; if (m) await loadTrackModel(m); }
   catch (e) {
     console.error('No se pudo cargar un modelo de coche', e);
     status.textContent = `No se inició la carrera: no se pudo cargar ${e.message.replace(/^.*modelo /i, '')}. Revisa la conexión y vuelve a intentarlo.`;
@@ -604,7 +605,7 @@ async function startRace(restart = false) {
   const reuse = !!(restart && S.raceScene && S.sig === sig && S.scene);
   S.trackInfo = ti; S.tr = tr; S.th = ti.th;
   const weatherName = { rain: 'LLUVIA, PISTA MOJADA', snow: 'NIEVE, BAJA ADHERENCIA', dust: 'TIERRA, POLVO', dirt: 'TIERRA, POLVO', clear: 'ASFALTO, SECO' };
-  $('weatherLabel').textContent = weatherName[ti.th.weather || ti.th.surface] || 'ASFALTO, SECO';
+  $('weatherLabel').textContent = ti.th.envName ? ti.th.envName.toUpperCase() : weatherName[ti.th.weather || ti.th.surface] || 'ASFALTO, SECO';
   $('weatherBadge').className = ti.th.weather || ti.th.surface || '';
   store.set('sel', sel);
   if (!reuse) {
@@ -684,7 +685,7 @@ async function startRace(restart = false) {
     order.forEach((c, k) => { c.grid = k + 1; if (c !== player) c.ai.skill = c.ai.base; placeCar(c, tr, -7 - 10 * (k >> 1), (k & 1 ? 1 : -1) * latG, 0); });
     S.ghostBest = null;
   } else {
-    placeCar(player, tr, -260, 0, 18); S.auto = true; S.autoAi = { lane: 0, skill: AI_TOP * 0.5 }; flashCount(''); showMsg('PILOTO AUTOMÁTICO', 4200, 'cy'); // contrarreloj: salida lanzada, el crono arranca al cruzar la meta
+    placeCar(player, tr, ti.th.model ? -170 : -260, 0, 18); S.auto = true; S.autoAi = { lane: 0, skill: AI_TOP * 0.5 }; flashCount(''); showMsg('PILOTO AUTOMÁTICO', 4200, 'cy'); // contrarreloj: salida lanzada, el crono arranca al cruzar la meta
     migrateGroupBest(ti.key + '.' + tr.seed, type.group);
     const rec = S.ghostRecs && S.ghostRecs.g, trec = S.ghostRecs && S.ghostRecs.t; // gris: tu mejor vuelta, dorado: la mejor del circuito
     const sameG = !!(rec && trec && Math.abs(rec.time - trec.time) < 1e-6), showGray = sel.ghostMine !== false, showGold = sel.ghostBest !== false;
@@ -902,7 +903,7 @@ function stepAll() {
   }
   trackSectors(p);
   if (!p.finished && p.D >= 0) { const k = Math.floor((p.D % tr.len) / 10); if (S.curProf[k] < 0) S.curProf[k] = S.t - p.lapStart; }
-  if (S.auto && S.mode === 'tt' && p.D < 0 && -p.D / Math.max(20, p.speed) <= 6.5) { S.auto = false; S.autoHandT = S.t; showMsg('¡TU CONTROL! ACELERA', 1800, 'cy'); } // contrarreloj: el piloto automático suelta unos segundos antes de la meta para que llegues lanzado
+  if (S.auto && S.mode === 'tt' && p.D < 0 && -p.D / Math.max(20, p.speed) <= (S.th.model ? 3.5 : 6.5)) { S.auto = false; S.autoHandT = S.t; showMsg('¡TU CONTROL! ACELERA', 1800, 'cy'); } // contrarreloj: el piloto automático suelta unos segundos antes de la meta para que llegues lanzado
   if (S.auto && S.mode === 'tt' && p.D >= 0) { S.auto = false; flashCount('¡YA!'); }
   if (S.mode === 'tt' && !p.crossed && p.D >= 0) { p.crossed = true; p.lapStart = S.t; S.curProf.fill(-1); S.ghostRec = []; S.deltaS = null; }
   if (S.mode === 'tt' && p.crossed && !p.finished && S.step % 3 === 0) S.ghostRec.push(p.x, p.y, p.z, p.psi);
@@ -1649,7 +1650,7 @@ const LG = initLeagues({ onList: (msg) => { if (APP) APP.go('champs', { msg }); 
 // datos de la app: circuitos, tiempos y garaje
 const trackAt = (key) => tracks.find((t) => t.key === key);
 const placeOf = (t) => { const [cc, cname] = countryOf(t); return cc === 'es' ? 'España' : cname; };
-const circuitCards = () => tracks.filter((t) => t.key !== 'daily').map((t) => ({ key: t.key, name: t.name, meta: `${placeOf(t)}, ${Math.round(t.tr.len)} m`, art: trackSvg(t.tr) }));
+const circuitCards = () => tracks.filter((t) => t.key !== 'daily').map((t) => ({ key: t.key, fiction: !!t.th.fiction, name: t.name, meta: `${placeOf(t)}, ${Math.round(t.tr.len)} m`, art: trackSvg(t.tr) }));
 function circuitInfo(key) {
   const t = trackAt(key); let best = null;
   for (const c of CARS) { const r = store.get('pb.' + t.key + '.' + t.tr.seed + '.' + c.id); if (r && r.lap != null && (best == null || r.lap * 1000 < best)) best = Math.round(r.lap * 1000); }

@@ -4,6 +4,12 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.122
+- Dos circuitos importados, jugables en la fila nueva «Circuitos ficticios» (junto con la Gran Muralla): Misty Cliffs y Mario Circuit 3. Entran en el sorteo del reto diario a partir del 27 de noviembre.
+- La física sigue la línea central sacada de la calzada del propio modelo, con sus alturas; en Mario Circuit 3 los muros están donde las barreras.
+- En Misty Cliffs las rocas y paredes que invaden el camino son sólidas. El corte de la recta baja se desciende pegado al suelo (todavía sin salto).
+- Herramienta nueva: `tools/prep-tracks.mjs`.
+
 ## 0.0.121
 - El kart es mucho más rápido: punta de 47 m/s en lugar de 35 (el antiguo dorado llegaba a 38), más aceleración y agarre. Hay que frenar antes de las curvas. Pasa a llamarse «Kart de serie».
 - Garaje, tienda y catálogo: colores y pinturas como cuadrados redondeados y todas las casillas con el borde del color de su rareza.

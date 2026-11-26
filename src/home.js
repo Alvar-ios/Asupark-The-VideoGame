@@ -81,9 +81,11 @@ export function initHome(ctx) {
 
   // ---------- correr: circuitos para entrenar ----------
   function renderCircuits() {
-    $('hmTracks').innerHTML = circuits().map((c) => `<button type="button" class="kx-track" data-track="${c.key}">${c.art}<b>${esc(c.name)}</b><span>${esc(c.meta)}</span></button>`).join('');
+    const card = (c) => `<button type="button" class="kx-track" data-track="${c.key}">${c.art}<b>${esc(c.name)}</b><span>${esc(c.meta)}</span></button>`;
+    $('hmTracks').innerHTML = circuits().filter((c) => !c.fiction).map(card).join('');
+    $('hmFiction').innerHTML = circuits().filter((c) => c.fiction).map(card).join('');
   }
-  $('hmTracks').addEventListener('click', (e) => { const b = e.target.closest('[data-track]'); if (b) openTrack(b.dataset.track); });
+  for (const id of ['hmTracks', 'hmFiction']) $(id).addEventListener('click', (e) => { const b = e.target.closest('[data-track]'); if (b) openTrack(b.dataset.track); });
 
   // ---------- ficha de circuito ----------
   function openTrack(key) { trackKey = key; go('track'); }

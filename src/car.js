@@ -1,5 +1,5 @@
 // Física arcade del coche (sin dependencias de three)
-import { ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi, rainAt } from './track.js';
+import { SOLID_CELL, ROAD_HALF, WALL, setRoad, locate, pointAt, wrapPi, rainAt } from './track.js';
 import { puddleAt, mudAt, oilAt, smoothstep, surfaceAt, applyRunoff } from './surface.js';
 import { isVisibleCar } from './visible.js';
 const LOOSE = { dirt: 1, gravel: 1, snow: 1, sand: 0.9, grass: 0.8, ice: 0.6, wet: 0.5 };
@@ -265,6 +265,8 @@ export function stepCar(c, inp, dt, tr, env) {
     c.drifting = false;
   }
 
+  if (tr.solids) hitSolids(c, tr, loc);
+
   // pianos (bordillos): solo existen en el interior de las curvas. Al ser más altos por dentro, te lanzan suavemente hacia fuera (hacia el centro de la pista), sin frenar:
   // ayudan a cerrar la curva si los pisas con ganas y vibran un poco.
   const KW = isKartKind(c.type.kind) ? 2.8 : Math.min(1.9, WALL - HW - 0.2), side = loc.lat >= 0 ? 1 : -1, over = Math.abs(loc.lat) - (HW - 0.15);
@@ -308,6 +310,42 @@ export function stepCar(c, inp, dt, tr, env) {
   c.D = c.lap * tr.len + loc.s;
   if (ground && Math.abs(loc.lat) < HW) { c.safeT += dt; if (c.safeT > 0.6) { c.safeT = 0; c.safeD = c.D; } }
   if (c.speed < 1.5) c.stuckT += dt; else c.stuckT = 0;
+}
+
+// choque con las rocas y paredes de un circuito importado: el kart es un círculo y cada obstáculo un segmento
+function hitSolids(c, tr, loc) {
+  const R = c.type.radius * 0.85;
+  for (let pass = 0; pass < 2; pass++) {
+    const cell = tr.solids.get(Math.floor(c.x / SOLID_CELL) * 4096 + Math.floor(c.z / SOLID_CELL)); if (!cell) return;
+    let touched = false;
+    for (const s of cell) {
+      if (Math.abs(s[4] - c.y) > 2.2) continue; // otro nivel (por debajo o por encima de un puente)
+      const ex = s[2] - s[0], ez = s[3] - s[1], len2 = ex * ex + ez * ez || 1;
+      const k = clamp(((c.x - s[0]) * ex + (c.z - s[1]) * ez) / len2, 0, 1), qx = s[0] + ex * k, qz = s[1] + ez * k;
+      let nx = c.x - qx, nz = c.z - qz; const d = Math.hypot(nx, nz);
+      // lado del que venía: si en este paso lo ha cruzado, se le devuelve a ese lado
+      const now = ex * (c.z - s[1]) - ez * (c.x - s[0]), before = ex * (c.pz - s[1]) - ez * (c.px - s[0]);
+      const crossed = now * before < 0 && k > 0 && k < 1;
+      if (d >= R && !crossed) continue;
+      if (crossed || d < 1e-4) { const side = Math.sign(before) || 1, l = Math.sqrt(len2); nx = -ez / l * side; nz = ex / l * side; c.x = qx + nx * R; c.z = qz + nz * R; }
+      else { nx /= d; nz /= d; c.x = qx + nx * R; c.z = qz + nz * R; }
+      const vn = c.vx * nx + c.vz * nz;
+      if (vn < 0) {
+        c.vx -= 1.3 * vn * nx; c.vz -= 1.3 * vn * nz;
+        const keep = 1 - Math.min(0.28, -vn * 0.01); c.vx *= keep; c.vz *= keep;
+        if (-vn > 3) c.events.push({ t: 'wall', v: -vn, side: Math.sign((qx - c.x) * -loc.tz + (qz - c.z) * loc.tx) || 1 });
+        c.drifting = false; touched = true;
+      }
+      // si el morro apunta contra la roca, se va girando para resbalar a lo largo de ella en el sentido de la pista
+      if (Math.sin(c.psi) * nx + Math.cos(c.psi) * nz < -0.05) {
+        const l = Math.sqrt(len2), along = (ex * loc.tx + ez * loc.tz) >= 0 ? 1 : -1, gx = ex / l * along + nx * 0.45, gz = ez / l * along + nz * 0.45;
+        c.psi += clamp(wrapPi(Math.atan2(gx, gz) - c.psi) * 0.09, -0.045, 0.045);
+        touched = true;
+      }
+    }
+    if (!touched) return;
+  }
+  locate(tr, c.x, c.z, c.hint, loc); c.hint = loc.i;
 }
 
 // Aceleración: más progresiva (0-100 km/h en ~5 s y máxima en ~25 s); marchas más largas
