@@ -5,10 +5,10 @@ import { buildTrack, locate } from '../src/track.js';
 import { CARS, makeCar, stepCar } from '../src/car.js';
 
 const th = THEMES.misty, tr = buildTrack(th.seed, th.style), type = CARS[0], env = { ...th, gripMul: 1 };
-const list = [...new Set([...tr.solids.values()].flat())].filter((s) => Math.hypot(s[2] - s[0], s[3] - s[1]) > 1.2);
-assert.ok(list.length > 50, 'el circuito tiene obstáculos');
+const list = [...new Set([...tr.solids.values()].flat())].filter((s) => Math.hypot(s[2] - s[0], s[3] - s[1]) > 0.35);
+assert.ok(list.length > 30, 'el circuito tiene obstáculos');
 let tried = 0, through = 0;
-for (let k = 0; k < list.length; k += 3) {
+for (let k = 0; k < list.length; k += Math.max(1, Math.floor(list.length / 120))) {
   const s = list[k], ex = s[2] - s[0], ez = s[3] - s[1], l = Math.hypot(ex, ez), mx = (s[0] + s[2]) / 2, mz = (s[1] + s[3]) / 2;
   for (const side of [-1, 1]) {
     const nx = -ez / l * side, nz = ex / l * side, x = mx + nx * 1.4, z = mz + nz * 1.4;

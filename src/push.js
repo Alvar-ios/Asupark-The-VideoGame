@@ -33,10 +33,11 @@ export function initPush({ $, acc, esc }) {
   const box = $('pushBox');
   async function renderBox(msg) {
     if (!box) return;
-    if (!supported()) { box.innerHTML = `<p class="keys" style="display:block">${isIOS() && !isStandalone() ? 'En iPhone, instala la app (Compartir → Añadir a pantalla de inicio) para recibir avisos.' : 'Este navegador no admite avisos.'}</p>`; return; }
-    if (!acc.loggedIn) { box.innerHTML = '<p class="keys" style="display:block">Entra en tu perfil para activar los avisos del reto.</p>'; return; }
+    if (!supported()) { box.innerHTML = `<p class="st-note">${isIOS() && !isStandalone() ? 'En iPhone, instala la app (Compartir → Añadir a pantalla de inicio) para recibir avisos.' : 'Este navegador no admite avisos.'}</p>`; return; }
+    if (!acc.loggedIn) { box.innerHTML = '<p class="st-note">Entra en tu perfil para activar los avisos del reto.</p>'; return; }
     const on = !!(S.sub && S.prefs);
-    box.innerHTML = `<button type="button" class="tog${on ? ' on' : ''}" data-p="master">Avisos: ${on ? 'SÍ' : 'NO'}</button>${on ? Object.keys(LABEL).map((k) => `<button type="button" class="tog${S.prefs[k] ? ' on' : ''}" data-p="${k}">${esc(LABEL[k])}: ${S.prefs[k] ? 'SÍ' : 'NO'}</button>`).join('') : ''}${msg ? `<p class="keys" style="display:block;color:#ff9a9a">${esc(msg)}</p>` : ''}`;
+    const row = (k, label, v) => `<button type="button" class="st-row st-sw${v ? ' on' : ''}" role="switch" aria-checked="${v}" data-p="${k}"><span>${esc(label)}</span><i aria-hidden="true"></i></button>`;
+    box.innerHTML = row('master', 'Avisos en este dispositivo', on) + (on ? Object.keys(LABEL).map((k) => row(k, LABEL[k], !!S.prefs[k])).join('') : '') + (msg ? `<p class="st-note err">${esc(msg)}</p>` : '');
   }
   if (box) box.addEventListener('click', async (e) => {
     const b = e.target.closest('button'); if (!b) return; const k = b.dataset.p;

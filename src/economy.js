@@ -20,46 +20,59 @@ const suit = (id, rarity, name, main, accent, extra, more = {}) => ({ id, type: 
 export const ITEMS = [
   color('c-naranja', 'Naranja', '#f08a1c'), color('c-amarillo', 'Amarillo', '#f3c026'), color('c-verde', 'Verde', '#28a745'), color('c-azul', 'Azul', '#2d5fd0'),
   color('c-morado', 'Morado', '#7d3fc4'), color('c-rosa', 'Rosa', '#e8559a'), color('c-blanco', 'Blanco', '#f2f2f2'), color('c-negro', 'Negro', '#16181d'),
-  { id: 'p-cemento', type: 'paint', rarity: 'common', name: 'Gris cemento', color: '#8d9299', finish: 'matte' },
-  { id: 'p-noche', type: 'paint', rarity: 'common', name: 'Azul noche mate', color: '#1b2a52', finish: 'matte' },
+  color('c-turquesa', 'Turquesa', '#12b5b0'), color('c-cielo', 'Cielo', '#63b7f2'),
+  { id: 'p-cemento', type: 'paint', rarity: 'common', name: 'Cemento', color: '#8d9299', finish: 'matte' },
+  { id: 'p-noche', type: 'paint', rarity: 'common', name: 'Medianoche', color: '#1b2a52', finish: 'matte' },
   { id: 'p-militar', type: 'paint', rarity: 'common', name: 'Verde militar', color: '#55603a', finish: 'matte' },
-  { id: 'p-granate', type: 'paint', rarity: 'common', name: 'Granate mate', color: '#6e1423', finish: 'matte' },
-  { id: 'h-asfalto', type: 'helmet', rarity: 'common', name: 'Casco Asfalto', helmet: '3a3f48|ffc400|111827|2' },
-  { id: 'h-mandarina', type: 'helmet', rarity: 'common', name: 'Casco Mandarina', helmet: 'ff7a1a|ffffff|111827|3' },
-  { id: 'h-hielo', type: 'helmet', rarity: 'common', name: 'Casco Hielo', helmet: 'cfe8ff|1b2a52|111827|1' },
-  { id: 'h-oliva', type: 'helmet', rarity: 'common', name: 'Casco Oliva', helmet: '55603a|e8e4d0|111827|2' },
-  { id: 'p-azulmetal', type: 'paint', rarity: 'rare', name: 'Azul metalizado', color: '#1f6fe0', finish: 'metal' },
-  { id: 'p-rojometal', type: 'paint', rarity: 'rare', name: 'Rojo metalizado', color: '#c40f16', finish: 'metal' },
-  { id: 'p-plata', type: 'paint', rarity: 'rare', name: 'Plata de fábrica', color: '#b9c1cc', finish: 'metal' },
-  { id: 'h-meta', type: 'helmet', rarity: 'rare', name: 'Casco Línea de meta', helmet: 'ffffff|111827|e63946|4' },
-  { id: 'h-mitades', type: 'helmet', rarity: 'rare', name: 'Casco Dos mitades', helmet: '1d6fd6|f4d000|111827|7' },
+  { id: 'p-granate', type: 'paint', rarity: 'common', name: 'Vino tinto', color: '#6e1423', finish: 'matte' },
+  { id: 'h-asfalto', type: 'helmet', rarity: 'common', name: 'Asfalto', helmet: '3a3f48|ffc400|111827|2' },
+  { id: 'h-mandarina', type: 'helmet', rarity: 'common', name: 'Mandarina', helmet: 'ff7a1a|ffffff|111827|3' },
+  { id: 'h-hielo', type: 'helmet', rarity: 'common', name: 'Glaciar', helmet: 'cfe8ff|1b2a52|111827|1' },
+  { id: 'h-oliva', type: 'helmet', rarity: 'common', name: 'Safari', helmet: '55603a|e8e4d0|111827|2' },
+  { id: 'p-azulmetal', type: 'paint', rarity: 'rare', name: 'Zafiro', color: '#1f6fe0', finish: 'metal' },
+  { id: 'p-rojometal', type: 'paint', rarity: 'rare', name: 'Rubí', color: '#c40f16', finish: 'metal' },
+  { id: 'p-plata', type: 'paint', rarity: 'rare', name: 'Plata', color: '#b9c1cc', finish: 'metal' },
+  { id: 'h-meta', type: 'helmet', rarity: 'rare', name: 'Última vuelta', helmet: 'ffffff|111827|e63946|4' },
+  { id: 'h-mitades', type: 'helmet', rarity: 'rare', name: 'Bicolor', helmet: '1d6fd6|f4d000|111827|7' },
   { id: 'p-lima', type: 'paint', rarity: 'epic', name: 'Lima neón', color: '#9dff00', finish: 'neon' },
   { id: 'p-magenta', type: 'paint', rarity: 'epic', name: 'Magenta neón', color: '#ff1fa8', finish: 'neon' },
-  { id: 'h-llamas', type: 'helmet', rarity: 'epic', name: 'Casco Llamas', helmet: '16181d|ff6a00|e5e7eb|5' },
-  { id: 'h-rayo', type: 'helmet', rarity: 'epic', name: 'Casco Rayo', helmet: '4c1d95|ffe14d|111827|6' },
+  { id: 'h-llamas', type: 'helmet', rarity: 'epic', name: 'Fogonazo', helmet: '16181d|ff6a00|e5e7eb|5' },
+  { id: 'h-rayo', type: 'helmet', rarity: 'epic', name: 'Voltio', helmet: '4c1d95|ffe14d|111827|6' },
   { id: 'p-cromo', type: 'paint', rarity: 'legendary', name: 'Cromo', color: '#e9edf3', finish: 'chrome' },
-  { id: 'p-oro', type: 'paint', rarity: 'legendary', name: 'Oro líquido', color: '#f6bd2f', finish: 'gold' },
-  { id: 'h-campeon', type: 'helmet', rarity: 'legendary', name: 'Casco Campeón', helmet: 'f6bd2f|ffffff|111827|8' },
-  // calcomanías (raras)
-  { id: 'd-franjas', type: 'decal', rarity: 'rare', name: 'Franjas dobles', decal: 'franjas' },
-  { id: 'd-cuadros', type: 'decal', rarity: 'rare', name: 'Bandera a cuadros', decal: 'cuadros' },
+  { id: 'p-oro', type: 'paint', rarity: 'legendary', name: 'Oro', color: '#f6bd2f', finish: 'gold' },
+  { id: 'h-campeon', type: 'helmet', rarity: 'legendary', name: 'Leyenda', helmet: 'f6bd2f|ffffff|111827|8' },
+  // calcomanías (raras y épicas)
+  { id: 'd-franjas', type: 'decal', rarity: 'rare', name: 'Doble banda', decal: 'franjas' },
+  { id: 'd-cuadros', type: 'decal', rarity: 'rare', name: 'A cuadros', decal: 'cuadros' },
   { id: 'd-camuflaje', type: 'decal', rarity: 'rare', name: 'Camuflaje', decal: 'camuflaje' },
-  { id: 'd-llamas', type: 'decal', rarity: 'rare', name: 'Llamas', decal: 'llamas' },
-  { id: 'd-rayo', type: 'decal', rarity: 'rare', name: 'Rayo', decal: 'rayo' },
+  { id: 'd-llamas', type: 'decal', rarity: 'rare', name: 'Llamarada', decal: 'llamas' },
+  { id: 'd-rayo', type: 'decal', rarity: 'rare', name: 'Alto voltaje', decal: 'rayo' },
+  { id: 'd-topos', type: 'decal', rarity: 'rare', name: 'Lunares', decal: 'topos' },
+  { id: 'd-flechas', type: 'decal', rarity: 'rare', name: 'A fondo', decal: 'flechas' },
+  { id: 'd-estrellas', type: 'decal', rarity: 'rare', name: 'Constelación', decal: 'estrellas' },
+  { id: 'd-tigre', type: 'decal', rarity: 'epic', name: 'Tigre', decal: 'tigre' },
+  { id: 'd-panal', type: 'decal', rarity: 'epic', name: 'Colmena', decal: 'panal' },
+  { id: 'd-galaxia', type: 'decal', rarity: 'legendary', name: 'Nebulosa', decal: 'galaxia' },
+  { id: 'h-cereza', type: 'helmet', rarity: 'common', name: 'Cereza', helmet: 'a30f2d|ffd9e0|111827|3' },
+  { id: 'h-pantano', type: 'helmet', rarity: 'rare', name: 'Tóxico', helmet: '16181d|9dff00|111827|6' },
+  { id: 'h-aurora', type: 'helmet', rarity: 'epic', name: 'Aurora', helmet: '0f766e|f0abfc|111827|7' },
   // karts completos
-  kart('pizza1', 'rare', 'Pizzería Selva'), kart('pizza2', 'rare', 'Pizzería Corazón'), kart('pizza3', 'rare', 'Pizzería Impacto'),
-  kart('pizza4', 'rare', 'Pizzería Circo'), kart('pizza5', 'rare', 'Pizzería Relámpago'), kart('pizza6', 'rare', 'Pizzería Estrellas'),
-  kart('caramelo1', 'epic', 'Tarta de chuches'), kart('caramelo2', 'epic', 'Piruleta'), kart('caramelo3', 'epic', 'Menta helada'),
-  kart('caramelo4', 'epic', 'Bizcocho'), kart('caramelo5', 'epic', 'Pastel de fresa'),
-  kart('estandar', 'legendary', 'Kart estándar'),
+  kart('pizza1', 'rare', 'Estallido'), kart('pizza2', 'rare', 'Chicle'), kart('pizza3', 'rare', 'Zarpazo'),
+  kart('pizza4', 'rare', 'Carpa'), kart('pizza5', 'rare', 'Chispazo'), kart('pizza6', 'rare', 'Verbena'),
+  kart('caramelo1', 'epic', 'Dónut'), kart('caramelo2', 'epic', 'Piruleta'), kart('caramelo3', 'epic', 'Menta'),
+  kart('caramelo4', 'epic', 'Barquillo'), kart('caramelo5', 'epic', 'Cumpleaños'),
+  kart('estandar', 'legendary', 'Turbo rojo'),
   // ropa del piloto
-  suit('s-taller', 'common', 'Mono de taller', '2f4a7a', 'e8ecf2', '1b1d22'),
-  suit('s-pista', 'common', 'Mono de pista', 'b3161c', 'ffffff', '1b1d22'),
-  suit('s-bosque', 'common', 'Mono de bosque', '1f5c3a', 'e8e4d0', '14161b'),
-  suit('s-hielo', 'rare', 'Mono de hielo', 'dfe5ee', '1d6fd6', '16264f'),
-  suit('s-carbono', 'rare', 'Mono de carbono', '17191e', '9dff00', '0b0c0f'),
-  suit('s-llamas', 'epic', 'Mono en llamas', '16181d', 'ff6a00', 'ffc400', { style: 'flames' }),
-  suit('s-oro', 'legendary', 'Mono de oro', 'd9a52a', '111827', 'f4f4f4', { metal: true }),
+  suit('s-taller', 'common', 'Taller', '2f4a7a', 'e8ecf2', '1b1d22'),
+  suit('s-pista', 'common', 'Escudería', 'b3161c', 'ffffff', '1b1d22'),
+  suit('s-bosque', 'common', 'Bosque', '1f5c3a', 'e8e4d0', '14161b'),
+  suit('s-ciruela', 'common', 'Ciruela', '4c2a72', 'f3c026', '17191e'),
+  suit('s-sol', 'rare', 'Amanecer', 'f08a1c', '16264f', 'f4f4f4'),
+  suit('s-hielo', 'rare', 'Polar', 'dfe5ee', '1d6fd6', '16264f'),
+  suit('s-carbono', 'rare', 'Carbono', '17191e', '9dff00', '0b0c0f'),
+  suit('s-llamas', 'epic', 'Brasas', '16181d', 'ff6a00', 'ffc400', { style: 'flames' }),
+  suit('s-neon', 'epic', 'Fiebre rosa', 'ff1fa8', '16181d', '9dff00', { style: 'flames' }),
+  suit('s-oro', 'legendary', 'Podio de oro', 'd9a52a', '111827', 'f4f4f4', { metal: true }),
 ];
 export const itemById = (id) => ITEMS.find((i) => i.id === id) || null;
 
@@ -116,10 +129,11 @@ export function createEconomy({ storage, dayKey, random = Math.random, unlockAll
     for (const r of table) { x -= r[1]; if (x < 0) return r[0]; }
     return table[table.length - 1][0];
   }
-  function prizeFrom(row) {
+  // fresh: solo entre lo que aún no se tiene; si ya está toda esa rareza, sale uno cualquiera (y se paga en puntos)
+  function prizeFrom(row, fresh = false) {
     const [kind, amount] = row.split(':');
     if (kind === 'pts' || kind === 'gems') return { kind, amount: +amount, rarity: kind === 'gems' ? 'rare' : +amount >= 250 ? 'rare' : 'common' };
-    const pool = ITEMS.filter((i) => i.rarity === kind);
+    const all = ITEMS.filter((i) => i.rarity === kind), left = fresh ? all.filter((i) => !st.owned[i.id]) : all, pool = left.length ? left : all;
     return { kind: 'item', item: pool[Math.floor(random() * pool.length)], rarity: kind };
   }
   const dailyReady = () => st.boxDay !== dayKey();
@@ -128,7 +142,7 @@ export function createEconomy({ storage, dayKey, random = Math.random, unlockAll
   function openBox(id) {
     const box = BOXES[id]; if (!box || !canOpen(id)) return null;
     if (id === 'daily') st.boxDay = dayKey(); else pay(box.cost);
-    const prize = prizeFrom(pickRow(box.table));
+    const prize = prizeFrom(pickRow(box.table), true);
     if (prize.kind === 'item') {
       if (st.owned[prize.item.id]) { prize.dup = RARITY[prize.rarity].dup; st.pts += prize.dup; }
       else st.owned[prize.item.id] = 1;

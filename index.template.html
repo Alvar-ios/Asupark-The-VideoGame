@@ -1932,25 +1932,36 @@ html.ui2 #menu .hm-install button.x{background:none;border:0;box-shadow:none;col
   <button id="boardClose" class="big">Cerrar</button></div></div>
 <div id="musicPick" class="overlay hidden" style="z-index:9"><div class="panel rbox" style="text-align:left;max-width:520px"><h1 style="font-size:32px">Música</h1><p class="keys" style="display:block;margin:0 0 8px">Toca una canción para escucharla. Al terminar, el resto suena en aleatorio.</p><div id="songList"></div><button id="musicClose" class="big">Listo</button></div></div>
 <div id="sanction" class="overlay hidden" style="z-index:14"><div class="panel rbox snc-panel" style="text-align:left;max-width:560px"><h1 style="font-size:30px">Comunicado</h1><div id="sancBody"></div><button id="sancClose" class="big" type="button">Cerrar</button></div></div>
-<div id="settings" class="overlay hidden" style="z-index:9"><div class="panel rbox set-panel" style="text-align:left;max-width:520px"><h1 style="font-size:32px">Ajustes</h1>
-  <h3>Sonido</h3>
-  <div class="row" style="gap:8px"><button id="hmMusic" class="tog" type="button">Elegir canción</button></div>
-  <div class="row set-tg" style="gap:8px"><button id="sndBtn" class="tog on">Sonido: SÍ</button><button id="musicOnBtn" class="tog on">Música: SÍ</button><button id="raceMusicBtn" class="tog">Música al conducir: NO</button></div>
-  <h3>Conducción</h3>
-  <div class="row set-tg" style="gap:8px"><button id="autoGas" class="tog">Acelerador automático: NO</button><button id="ctlMode" class="tog">Control: BOTONES</button><button id="fsBtn" class="tog">Pantalla completa</button></div>
-  <p class="keys" style="display:block;margin-top:8px"><b>WASD</b> o flechas para conducir, <b>ESPACIO</b> freno de mano, <b>R</b> recolocar, <b>T</b> reiniciar, <b>C</b> cámara, <b>ESC</b> pausa, también con mando</p>
-  <h3>Avisos</h3>
-  <div id="pushBox" class="row" style="gap:8px"></div>
-  <h3>Gráficos</h3>
-  <div id="gfxSel" class="seg"><button data-v="auto">Auto</button><button data-v="high">Alta</button><button data-v="medium">Media</button><button data-v="low">Baja</button></div>
-  <p class="keys" style="display:block">Auto baja la calidad solo si el juego va lento. «Baja» quita las sombras y reduce la resolución: úsala si va a tirones en el móvil.</p>
-  <h3>Código</h3>
-  <div class="kx-codebox"><input id="kxCodeIn" type="text" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Introduce un código" aria-label="Código"><button id="kxCodeGo" class="tog" type="button">Activar</button></div>
-  <div id="kxCodeOn" class="kx-codeon" hidden><p>Cuenta completa activada en este dispositivo: tienes todo el contenido.</p><button id="kxCodeCat" class="tog on" type="button">Ver catálogo</button><button id="kxCodeOff" class="tog" type="button">Desactivar</button></div>
-  <p id="kxCodeMsg" class="keys" style="display:block" role="status"></p>
-  <details class="kx-credits"><summary>Créditos de los modelos 3D</summary><p>Karts adaptados de modelos publicados en Sketchfab con licencia CC BY 4.0: «standard kart», de amogusstrikesback2; «Fnaf SB Go Karts», de RISE OF PHOENIX, y «Sugar rush karts», de Razy. Circuitos: «boom karts misty cliffs», de amogusstrikesback2, y «SNES Mario Circuit 3», de Fortnite (jkimmel694).</p></details>
-  <p class="keys" style="display:block;text-align:center">KartlosApp {{VERSION}}</p>
-  <button id="setClose" class="big">Listo</button></div></div>
+<div id="settings" class="overlay hidden" style="z-index:9"><div class="st-panel" role="dialog" aria-label="Ajustes">
+  <div class="st-head"><h1>Ajustes</h1></div>
+  <div class="st-body">
+    <section class="st-card"><h3>Sonido</h3>
+      <button id="sndBtn" class="st-row st-sw on" type="button" role="switch" aria-checked="true"><span>Sonido</span><i aria-hidden="true"></i></button>
+      <button id="musicOnBtn" class="st-row st-sw on" type="button" role="switch" aria-checked="true"><span>Música</span><i aria-hidden="true"></i></button>
+      <button id="raceMusicBtn" class="st-row st-sw" type="button" role="switch" aria-checked="false"><span>Música al conducir</span><i aria-hidden="true"></i></button>
+      <button id="hmMusic" class="st-row st-go" type="button"><span>Elegir canción</span></button>
+    </section>
+    <section class="st-card"><h3>Conducción</h3>
+      <button id="autoGas" class="st-row st-sw" type="button" role="switch" aria-checked="false"><span>Acelerador automático</span><i aria-hidden="true"></i></button>
+      <button id="ctlMode" class="st-row st-val" type="button"><span>Control táctil</span><b>Botones</b></button>
+      <button id="fsBtn" class="st-row st-go" type="button"><span>Pantalla completa</span></button>
+      <p class="st-note st-pc"><b>WASD</b> o flechas para conducir, <b>ESPACIO</b> freno de mano, <b>R</b> recolocar, <b>T</b> reiniciar, <b>C</b> cámara, <b>ESC</b> pausa, también con mando</p>
+    </section>
+    <section class="st-card"><h3>Gráficos</h3>
+      <div id="gfxSel" class="st-seg"><button type="button" data-v="auto">Auto</button><button type="button" data-v="high">Alta</button><button type="button" data-v="medium">Media</button><button type="button" data-v="low">Baja</button></div>
+      <p class="st-note">Si el juego va a tirones en el móvil, elige «Baja»: quita las sombras y reduce la resolución.</p>
+    </section>
+    <section class="st-card"><h3>Avisos</h3><div id="pushBox" class="st-push"></div></section>
+    <section class="st-card"><h3>Código</h3>
+      <div class="kx-codebox"><input id="kxCodeIn" type="text" maxlength="24" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="Escribe tu código" aria-label="Código"><button id="kxCodeGo" type="button">Activar</button></div>
+      <div id="kxCodeOn" class="kx-codeon" hidden><p>Cuenta completa activada en este dispositivo: tienes todo el contenido.</p><button id="kxCodeCat" type="button">Ver catálogo</button><button id="kxCodeOff" type="button" class="alt">Desactivar</button></div>
+      <p id="kxCodeMsg" class="st-note" role="status"></p>
+    </section>
+    <details class="kx-credits"><summary>Créditos de los modelos 3D</summary><p>Karts adaptados de modelos publicados en Sketchfab con licencia CC BY 4.0: «standard kart», de amogusstrikesback2; «Fnaf SB Go Karts», de RISE OF PHOENIX, y «Sugar rush karts», de Razy. Circuitos: «boom karts misty cliffs», de amogusstrikesback2, y «SNES Mario Circuit 3», de Fortnite (jkimmel694).</p></details>
+    <p class="st-version">KartlosApp {{VERSION}}</p>
+  </div>
+  <div class="st-foot"><button id="setClose" type="button">Listo</button></div>
+</div></div>
 <div id="pause" class="overlay hidden"><div class="panel rbox"><h1>Pausa</h1><button id="resumeBtn" class="big">Continuar</button><button id="restartBtn" class="big ghost">Reiniciar</button><button id="pauseCar" class="big ghost">Cambiar de kart</button><button id="pauseTrack" class="big ghost">Cambiar de circuito</button><button id="pauseBoard" class="big ghost">Ver clasificación</button><button id="endBtn" class="big ghost">Terminar y ver tiempos</button><button id="setBtn2" class="big ghost">Ajustes</button><button id="menuBtn" class="big ghost">Menú principal</button></div></div>
 <div id="results" class="overlay hidden"><div class="panel rbox"><h1 id="rTitle">META</h1><div class="big-n" id="rBig">1º</div><div id="rNew"></div><div id="rTable"></div><button id="againBtn" class="big">Otra vez</button><button id="shareBtn" class="big wa"></button><button id="boardBtn2" class="big ghost">Clasificación completa</button><button id="menuBtn2" class="big ghost">Menú principal</button></div></div>
 <script src="./config.js"></script>

@@ -5,8 +5,8 @@ Se han modificado: orientación, escala, ruedas separadas y texturas reducidas (
 
 | En el juego | Archivo original | Subido por | Enlace |
 |---|---|---|---|
-| Kart estándar | standard kart | amogusstrikesback2 | https://sketchfab.com/3d-models/standard-kart-2e0996e9b43e4a9385c4e0ee64cbb169 |
-| Pizzería (6) | Fnaf SB Go Karts | RISE OF PHOENIX | https://sketchfab.com/3d-models/fnaf-sb-go-karts-db8a1e200ca249b4a690d5e29a50b94b |
+| Turbo rojo | standard kart | amogusstrikesback2 | https://sketchfab.com/3d-models/standard-kart-2e0996e9b43e4a9385c4e0ee64cbb169 |
+| Karts raros (6) | Fnaf SB Go Karts | RISE OF PHOENIX | https://sketchfab.com/3d-models/fnaf-sb-go-karts-db8a1e200ca249b4a690d5e29a50b94b |
 | Tarta de chuches, Piruleta, Menta helada, Bizcocho, Pastel de fresa | Sugar rush karts, Storybook | Razy | https://sketchfab.com/3d-models/sugar-rush-karts-storybook-05cffff8f28b4d18965b5b7e0e3b05f3 |
 
 ## Circuitos (v0.0.122)
@@ -16,8 +16,9 @@ Se han modificado: orientación, escala, ruedas separadas y texturas reducidas (
 | Misty Cliffs | boom karts misty cliffs | amogusstrikesback2 | https://sketchfab.com/3d-models/boom-karts-misty-cliffs-749d38ab2441491da0759b25863292fc |
 | Mario Circuit 3 | Mario Kart 8 Deluxe, SNES Mario Circuit 3 | Fortnite (jkimmel694) | https://sketchfab.com/3d-models/mario-kart-8-deluxe-snes-mario-circuit-3-71ba7c86cd7d475cb5e21a1c87243520 |
 
-Declaran CC BY 4.0. Se han modificado: escala, texturas reducidas, geometría aligerada y piezas de fondo quitadas
-(tools/prep-tracks.mjs). Para quitar uno: borrar su tema en `src/themes.js`, su entrada en `src/visible.js` y su
+Declaran CC BY 4.0. Se han modificado (tools/prep-tracks.mjs y tools/track-rebuild.mjs): escala, texturas reducidas y
+geometría. En Misty Cliffs se ha rehecho la calzada, se ha sustituido el cortado por una rampa y se han retirado rocas
+que cerraban el paso. En Mario Circuit 3 se han quitado las copias duplicadas, aligerado piezas cercanas y cambiado colores. Para quitar uno: borrar su tema en `src/themes.js`, su entrada en `src/visible.js` y su
 archivo `src/assets/track_*.glb.gz`.
 
 ## Aviso antes de abrir la app al público

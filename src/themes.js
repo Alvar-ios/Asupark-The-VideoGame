@@ -10,7 +10,7 @@ import { isVisibleTrack } from './visible.js';
 // trazado de un circuito importado (src/tracks-data.js)
 function modelStyle(id) {
   const d = TRACK_DATA[id];
-  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, imported: true, startNear: d.start, scale: 1, half: d.half, wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: true, noKerb: true };
+  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, deck: d.deck, imported: true, startNear: d.start, scale: 1, half: d.half, wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: true, noKerb: true };
 }
 
 export const THEMES = {
@@ -169,9 +169,15 @@ export const THEMES = {
   },
   mariocircuit: {
     id: 'mariocircuit', name: 'Mario Circuit 3', sub: 'El clásico de 16 bits: asfalto ancho, arena a los lados y muros de bloques de colores', seed: 'mario3-1', model: 'mario3', fiction: true, noKerbs: true,
-    style: modelStyle('mario3'), floor: { color: 0x7fa94a, y: 0.6 },
-    skyTop: 0x3f8fe0, skyHor: 0xbfe3ff, fog: 0xc8e4f6, fogNear: 300, fogFar: 1900, ground: 0xc9a561, grass: 0xc9a561, dirt: 0xc9a561, road: 0x55565a, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
-    wall1: 0x2f9d3f, wall2: 0xd43a30, mount: 0x6a8f4a, sun: 0xfff6e0, sunDir: [-0.35, 0.8, 0.4], hemiSky: 0xffffff, hemiGround: 0xb59a68, hemiI: 1.7, sunI: 1.4, night: false, temp: 25, humidity: 0.35, wind: [1, 0.5], gripMul: 1, offroad: 0.55, offroadGrip: 0.7,
+    // el modelo es de colores planos: aquí se les da color propio, vetas y manchas (grain: fuerza, size: metros por mancha)
+    vivid: {
+      material_12: { color: 0x58a83a, grain: 0.22, size: 14 }, material_13: { color: 0x3f8f52, grain: 0.2, size: 22, bands: 0.1 }, material_15: { color: 0x5cb340, grain: 0.2, size: 18, bands: 0.12 },
+      material_4: { color: 0xffffff, emissive: 0x59616b, grain: 0.06, size: 9 }, material_20: { color: 0x2f8a36, grain: 0.22, size: 3 }, material_14: { color: 0x23602a },
+      material_6: { grain: 0.2, size: 2.6 }, material_19: { grain: 0.1, size: 1.2 },
+    },
+    style: modelStyle('mario3'), floor: { color: 0x58a83a, y: 0.6 },
+    skyTop: 0x2f7fe0, skyHor: 0xbfe6ff, fog: 0xbfe0f6, fogNear: 420, fogFar: 2600, ground: 0xc9a561, grass: 0xc9a561, dirt: 0xc9a561, road: 0x55565a, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
+    wall1: 0x2f9d3f, wall2: 0xd43a30, mount: 0x6a8f4a, sun: 0xfff6e0, sunDir: [-0.35, 0.8, 0.4], hemiSky: 0xffffff, hemiGround: 0xb59a68, hemiI: 1.25, sunI: 1.75, night: false, temp: 25, humidity: 0.35, wind: [1, 0.5], gripMul: 1, offroad: 0.55, offroadGrip: 0.7,
   },
   muralla: {
     id: 'muralla', fiction: true, name: 'Gran Muralla, China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,

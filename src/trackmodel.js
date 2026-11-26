@@ -43,6 +43,74 @@ function edgePosts(tr) {
   return g;
 }
 
+// Calzada reconstruida (circuitos con desniveles): se dibuja con las mismas alturas que usa la física, así el kart
+// nunca se hunde ni flota. Lleva las texturas del propio modelo y un faldón de roca a los lados.
+function deckMesh(tr, deck, model) {
+  const mats = {}; model.traverse((o) => { if (o.isMesh && o.material.name && !mats[o.material.name]) mats[o.material.name] = o.material; });
+  const N = tr.N, K = deck.index.length, tile = tr.len / Math.max(1, Math.round(tr.len / 5)), group = new THREE.Group();
+  const edge = (i, side) => (tr.wallEdge ? tr.wallEdge[side < 0 ? 0 : 1][i % N] : tr.wall) + 0.4;
+  const point = (i, lat, y) => [tr.X[i % N] - tr.TZ[i % N] * lat, y, tr.Z[i % N] + tr.TX[i % N] * lat];
+  const parts = new Map();
+  const part = (name) => parts.get(name) || parts.set(name, { P: [], U: [], I: [] }).get(name);
+  // una tira entre la muestra i y la siguiente; cada columna es [lateral, altura, u]
+  const strip = (name, i, cols, flip) => {
+    const g = part(name), base = g.P.length / 3;
+    for (const k of [i, i + 1]) for (const c of cols(k)) { g.P.push(...point(k, c[0], c[1])); g.U.push(c[2], c[3] ?? (k * tr.ds) / tile); }
+    const w = g.P.length / 3 - base >> 1;
+    for (let c = 0; c + 1 < w; c++) { const a = base + c, b = a + 1, d = a + w, e = d + 1; if (flip) g.I.push(a, d, b, b, d, e); else g.I.push(a, b, d, b, e, d); }
+  };
+  const [r0, r1] = deck.ramp.map((v) => v * N), onRamp = (i) => (r0 <= r1 ? i >= r0 && i <= r1 : i >= r0 || i <= r1);
+  const soft = (i) => { let n = 0; for (let d = -6; d <= 6; d++) n += onRamp((i + d + N) % N) ? 1 : 0; return n / 13; };
+  const drop = Float32Array.from({ length: N }, (_, i) => 1.3 + soft(i) * Math.max(0, tr.Y[i] - 2.4)); // en la rampa baja hasta el suelo
+  for (let i = 0; i < N; i++) {
+    const name = deck.materials[deck.index[Math.round((i / N) * K) % K]];
+    strip(name, i, (k) => [-1, -0.5, 0, 0.5, 1].map((f) => [f * edge(k, f || 1), tr.Y[k % N], (f + 1) / 2]), false);
+    for (const side of [-1, 1]) {
+      strip(deck.skirt, i, (k) => [[side * edge(k, side), tr.Y[k % N] - 0.01, 0], [side * (edge(k, side) + 1.5), tr.Y[k % N] - drop[k % N], drop[k % N] / 6]].map((c) => [c[0], c[1], (k * tr.ds) / 6, c[2]]), side > 0);
+    }
+  }
+  for (const [name, g] of parts) {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(g.P, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(g.U, 2)); geo.setIndex(g.I); geo.computeVertexNormals();
+    const material = (mats[name] || new THREE.MeshStandardMaterial({ color: 0xb98a56, roughness: 0.95 })).clone();
+    material.side = THREE.DoubleSide;
+    if (material.map) { material.map = material.map.clone(); material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping; material.map.needsUpdate = true; }
+    const mesh = new THREE.Mesh(geo, material); mesh.receiveShadow = true; group.add(mesh);
+  }
+  return group;
+}
+
+// Modelos de colores planos: color más vivo y manchas suaves calculadas por posición, sin texturas nuevas
+const vividCache = {};
+function vividCopy(model, id, table) {
+  if (vividCache[id]) return vividCache[id];
+  const copy = model.clone(true), done = new Map();
+  copy.traverse((o) => {
+    if (!o.isMesh) return; const set = table[o.material.name]; if (!set) return;
+    let m = done.get(o.material);
+    if (!m) {
+      m = o.material.clone(); done.set(o.material, m);
+      if (set.color != null) { m.map = null; m.color.setHex(set.color); }
+      if (set.emissive != null) m.emissive.setHex(set.emissive);
+      if (set.grain) {
+        const k = { value: new THREE.Vector3(set.grain, 1 / set.size, set.bands || 0) };
+        m.onBeforeCompile = (sh) => {
+          sh.uniforms.uGrain = k;
+          sh.vertexShader = 'varying vec3 vPlace;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvPlace=(modelMatrix*vec4(transformed,1.0)).xyz;');
+          sh.fragmentShader = `uniform vec3 uGrain; varying vec3 vPlace;
+float gh(vec3 p){ return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453); }
+float gn(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(mix(gh(i),gh(i+vec3(1,0,0)),f.x),mix(gh(i+vec3(0,1,0)),gh(i+vec3(1,1,0)),f.x),f.y),mix(mix(gh(i+vec3(0,0,1)),gh(i+vec3(1,0,1)),f.x),mix(gh(i+vec3(0,1,1)),gh(i+vec3(1,1,1)),f.x),f.y),f.z); }
+` + sh.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+{ float a=gn(vPlace*uGrain.y), b=gn(vPlace*uGrain.y*3.7+7.0); diffuseColor.rgb*=1.0+uGrain.x*((a-0.5)*1.5+(b-0.5)*0.8); diffuseColor.rgb*=1.0+uGrain.z*(step(0.5,fract(vPlace.y*0.12+a*0.4))-0.5); }`);
+        };
+        m.customProgramCacheKey = () => 'grain';
+      }
+    }
+    o.material = m;
+  });
+  return (vividCache[id] = copy);
+}
+
 export function buildModelWorld(tr, th, opt = {}) {
   const scene = new THREE.Scene(); scene.fog = new THREE.Fog(th.fog, th.fogNear, th.fogFar);
   const sky = skyDome(th); scene.add(sky);
@@ -61,7 +129,7 @@ export function buildModelWorld(tr, th, opt = {}) {
   scene.add(finishLine(tr, th));
   if (th.edgePosts) scene.add(edgePosts(tr));
   // el modelo se comparte entre carreras: se añade una copia ligera (misma geometría)
-  const add = (model) => { const copy = model.clone(true); scene.add(copy); };
+  const add = (model) => { scene.add((th.vivid ? vividCopy(model, th.model, th.vivid) : model).clone(true)); if (th.style.deck) scene.add(deckMesh(tr, th.style.deck, model)); };
   if (cache[th.model]) add(cache[th.model]); else loadTrackModel(th.model).then(add).catch((e) => console.warn('Circuito no disponible', String(e)));
   return { scene, sky, sun, updateWind() {}, updateWeather() {} };
 }

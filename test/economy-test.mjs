@@ -27,6 +27,16 @@ for (const i of ITEMS) { assert.ok(RARITY[i.rarity], i.id); if (i.type === 'helm
   let dups = 0; for (let i = 0; i < 400; i++) { e.test.give({ pts: 600 }); const before = e.pts, r = e.openBox('pit'); if (r.dup) { dups++; assert.equal(e.pts, before - 600 + RARITY[r.rarity].dup); } else assert.equal(e.pts, before - 600); }
   assert.ok(dups > 0); assert.ok(e.pts >= 0);
 }
+// no sale nada repetido mientras quede algo de esa rareza sin conseguir
+{
+  const e = make(), got = new Set();
+  for (let i = 0; i < 600; i++) {
+    e.test.give({ pts: 600 }); const r = e.openBox('pit'), left = ITEMS.filter((x) => x.rarity === r.rarity && !got.has(x.id));
+    if (left.length) { assert.ok(!r.dup, 'repetido quedando ' + left.length + ' de ' + r.rarity); assert.ok(!got.has(r.item.id)); } else assert.equal(r.dup, RARITY[r.rarity].dup);
+    got.add(r.item.id);
+  }
+  assert.equal(got.size, ITEMS.length, 'con cajas suficientes se consigue todo');
+}
 // las frecuencias reales siguen la tabla
 {
   const e = make(), count = {}, N = 60000;

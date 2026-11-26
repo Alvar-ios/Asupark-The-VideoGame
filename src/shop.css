@@ -197,10 +197,7 @@ html.ui2 .kx-times .nom{min-width:0;overflow:hidden;text-overflow:ellipsis;white
 .kx-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px}
 #app .kx-tabs button{flex:0 0 auto;min-height:38px;padding:0 13px;border:2px solid var(--line);border-radius:10px;background:var(--box);font-size:13px;white-space:nowrap}
 #app .kx-tabs button.on{border-color:var(--y);background:var(--y);color:#15171b}
-.kx-codebox{display:flex;gap:8px}
-.kx-codebox[hidden],.kx-codeon[hidden]{display:none}
-#settings .kx-codebox input{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.35);color:#fff;font-size:16px;-webkit-user-select:text;user-select:text;touch-action:manipulation}
-.kx-codeon{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.kx-codeon p{flex:1 0 100%;margin:0;font-size:14px}
+.kx-odds-note{margin:8px 0 0;font-size:12px;line-height:1.35;color:#9aa3b2}
 .kx-credits{margin-top:10px;font-size:13px;color:#b9c0cc}.kx-credits summary{cursor:pointer;font-weight:700}.kx-credits p{margin:6px 0 0;line-height:1.4}
 
 /* casillas de aspecto: cuadrado redondeado, dibujo grande, nombre debajo y borde según la rareza */
@@ -215,3 +212,54 @@ html.ui2 .kx-times .nom{min-width:0;overflow:hidden;text-overflow:ellipsis;white
 .kx-item{border:2px solid color-mix(in srgb,var(--rc) 75%,transparent);border-radius:16px;background:radial-gradient(circle at 50% 26%,color-mix(in srgb,var(--rc) 24%,transparent),transparent 66%),var(--box)}
 .kx-item .art{background:none;height:72px}
 #app .kx-item .art svg{width:68px;height:68px}
+
+/* ===== Ajustes: cabecera fija, lista que se desplaza y botón de cierre debajo (sin tapar nada) ===== */
+#settings .st-panel{display:flex;flex-direction:column;width:min(560px,100%);max-height:100%;margin:auto;background:#1b1e24;border-radius:14px;box-shadow:0 8px 0 #000;overflow:hidden;text-align:left;color:#fff}
+#settings .st-head{flex:none;padding:14px 18px 10px;border-bottom:3px solid #ffc400}
+#settings .st-head h1{margin:0!important;font-size:30px!important;line-height:1.1;text-align:left;color:#fff}
+#settings .st-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 12px 14px}
+#settings .st-body,#settings .st-body *{touch-action:pan-y}
+#settings .st-card{margin:0 0 12px;padding:10px 10px 12px;border-radius:12px;background:#262a32}
+#settings .st-card h3{margin:0 2px 8px!important;font-size:18px!important;line-height:1.2;color:#fff}
+#settings .st-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;margin:0 0 6px;padding:8px 12px;border:0;border-radius:9px;background:#343944;color:#fff;font:700 15px/1.25 var(--fb,inherit);text-align:left;cursor:pointer}
+#settings .st-row:last-child{margin-bottom:0}
+#settings .st-sw i{flex:none;position:relative;width:50px;height:28px;border-radius:7px;background:#12141a;box-shadow:inset 0 0 0 2px #596070}
+#settings .st-sw i::after{content:"";position:absolute;top:5px;left:5px;width:18px;height:18px;border-radius:4px;background:#8b93a3;transition:transform .16s ease,background .16s ease}
+#settings .st-sw.on i{background:#ffc400;box-shadow:none}
+#settings .st-sw.on i::after{transform:translateX(22px);background:#15171b}
+#settings .st-val b{flex:none;padding:5px 10px;border-radius:7px;background:#ffc400;color:#15171b;font-size:13px}
+#settings .st-go::after{content:"";flex:none;width:9px;height:9px;border-top:3px solid #ffc400;border-right:3px solid #ffc400;transform:rotate(45deg);margin-right:4px}
+#settings .st-seg{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:5px;border-radius:10px;background:#12141a}
+#settings .st-seg button{min-width:0;min-height:42px;padding:6px 2px;border:0;border-radius:7px;background:transparent;color:#fff;font:800 14px var(--fb,inherit);cursor:pointer}
+#settings .st-seg button.on{background:#ffc400;color:#15171b}
+#settings .st-note{margin:8px 2px 0;color:#b4bccb;font-size:13px;line-height:1.4}
+#settings .st-note:empty{display:none}
+#settings .st-note.err{color:#ff9a9a}
+#settings .st-push .st-note:first-child{margin-top:0}
+body.mobile #settings .st-pc{display:none}
+#settings .kx-codebox{display:flex;gap:8px}
+#settings .kx-codebox[hidden],#settings .kx-codeon[hidden]{display:none}
+#settings #kxCodeIn{flex:1 1 0;width:100%;min-width:0;min-height:48px;padding:10px 12px;border:2px solid #596070;border-radius:9px;background:#fff;color:#15171b;font:800 16px var(--fb,inherit);-webkit-user-select:text;user-select:text;touch-action:manipulation}
+#settings #kxCodeIn:focus{outline:3px solid #ffc400;outline-offset:1px;border-color:#15171b}
+#settings .kx-codebox button,#settings .kx-codeon button{flex:none;min-height:48px;padding:8px 18px;border:0;border-radius:9px;background:#ffc400;color:#15171b;font:900 15px var(--fb,inherit);cursor:pointer}
+#settings .kx-codeon{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#settings .kx-codeon p{flex:1 0 100%;margin:0;font-size:14px;line-height:1.4}
+#settings .kx-codeon button.alt{background:#343944;color:#fff}
+#settings .st-version{margin:12px 0 0;text-align:center;color:#8b93a3;font-size:12px}
+#settings .st-foot{flex:none;padding:10px 12px max(14px,env(safe-area-inset-bottom));background:#1b1e24;border-top:1px solid rgba(255,255,255,.12)}
+#settings .st-foot button{width:100%;min-height:50px;border:0;border-radius:9px;background:#ffc400;box-shadow:0 4px 0 #a87f00;color:#15171b;font:900 20px var(--fb,inherit);cursor:pointer}
+@media (max-width:620px){
+  html body #settings#settings{padding:0!important;align-items:stretch!important}
+  html body #settings .st-panel{width:100%;height:100%;max-height:100%;border-radius:0;box-shadow:none}
+  html body #settings .st-head{padding-top:max(14px,env(safe-area-inset-top))}
+}
+@media (orientation:landscape) and (max-height:540px){
+  html body #settings#settings{padding:6px max(8px,env(safe-area-inset-right)) 6px max(8px,env(safe-area-inset-left))!important}
+  #settings .st-panel{width:min(820px,100%);height:100%}
+  #settings .st-head{padding:6px 14px 5px}
+  #settings .st-head h1{font-size:22px!important}
+  #settings .st-body{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;align-content:start;align-items:start}
+  #settings .st-body>:is(.kx-credits,.st-version){grid-column:1/-1}
+  #settings .st-foot{padding:6px 12px 8px}
+  #settings .st-foot button{min-height:40px;font-size:17px}
+}

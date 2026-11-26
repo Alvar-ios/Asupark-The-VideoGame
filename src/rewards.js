@@ -52,4 +52,4 @@ export const oddsList = (box) => `<ul class="kx-odds">${box.table.map(([row, pct
   const name = kind === 'pts' ? `${n} puntos` : kind === 'gems' ? `${n} gemas` : `Objeto ${RARITY[kind].name.toLowerCase()}`;
   const color = RARITY[kind] ? RARITY[kind].color : kind === 'gems' ? '#22c8f0' : '#ffc400';
   return `<li><i style="background:${color}"></i><span>${name}</span><b>${String(pct).replace('.', ',')} %</b></li>`;
-}).join('')}</ul>`;
+}).join('')}</ul><p class="kx-odds-note">No salen objetos repetidos mientras te quede alguno de esa rareza.</p>`;

@@ -4,6 +4,15 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.123
+- Ajustes rehecho: nada se aplasta ni queda tapado, interruptores claros y campo de código visible. Cabecera y botón «Listo» fijos.
+- Misty Cliffs: calzada reconstruida con las mismas alturas que usa la física (el kart ya no se hunde ni flota), rampa seguida en lugar del gran salto, meta en la recta llana y sin escalones. Las rocas invaden menos (siempre queda paso) y el piloto automático las atraviesa.
+- Mario Circuit 3: vuelven las colinas del fondo, colores más vivos, nubes blancas y se quitan las piezas duplicadas del modelo.
+- Piloto más detallado (casco integral, guantes con dedos, peto, botas) y con más animación (peso del cuerpo, golpes, respiración, puño en alto al acabar).
+- Las cajas ya no dan repetidos mientras quede algo de esa rareza.
+- 14 objetos nuevos (6 calcomanías, 3 cascos, 3 monos y 2 colores) y nombres nuevos. Los cascos y monos ya no llevan el tipo en el nombre.
+- Caché de la app renovada.
+
 ## 0.0.122
 - Dos circuitos importados, jugables en la fila nueva «Circuitos ficticios» (junto con la Gran Muralla): Misty Cliffs y Mario Circuit 3. Entran en el sorteo del reto diario a partir del 27 de noviembre.
 - La física sigue la línea central sacada de la calzada del propio modelo, con sus alturas; en Mario Circuit 3 los muros están donde las barreras.

@@ -297,6 +297,8 @@ function buildMap() {
   drawPreview($('trCv'), t.tr, t.th, 520, 280, 1.5);
   $('wmGo').onclick = () => setView('home');
 }
+// interruptores de Ajustes
+function setSwitch(id, on) { const b = $(id); b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }
 function buildMenu() {
   { const t0 = tracks[sel.track], c0 = CARS[sel.car]; if (!sel.group) sel.group = groupOf(c0).id;
     $('pickTrackName').textContent = t0.name; $('pickTrackSub').textContent = `${countryOf(t0)[1]}, ${(t0.tr.len / 1000).toFixed(1)} km, ${envLabel(t0)}`; $('pickTrackFlag').innerHTML = flagSvg(countryOf(t0)[0]);
@@ -335,10 +337,8 @@ function buildMenu() {
   $('diffWrap').style.display = sel.mode === 'race' ? '' : 'none'; $('modeInfo').textContent = { tt: 'Salida lanzada y vueltas ilimitadas: persigue el récord de tu grupo.', race: 'Carrera rápida: 3 vueltas contra 3 rivales.', gp: 'Gran Premio: 3 vueltas de clasificación y 5 de carrera contra 5 pilotos. Sales en la posición que consigas.' }[sel.mode] || '';
   for (const b of $('modeSel').children) b.classList.toggle('on', b.dataset.v === sel.mode);
   for (const b of $('diffSel').children) b.classList.toggle('on', +b.dataset.v === sel.diff);
-  buildPaints(); sound.setMuted(!!sel.mute); $('sndBtn').classList.toggle('on', !sel.mute); $('sndBtn').textContent = 'Sonido: ' + (sel.mute ? 'NO' : 'SÍ');
-  $('musicOnBtn').classList.toggle('on', sel.music !== false); $('musicOnBtn').textContent = 'Música: ' + (sel.music !== false ? 'SÍ' : 'NO');
-  $('raceMusicBtn').classList.toggle('on', !!sel.raceMusic); $('raceMusicBtn').textContent = 'Música al conducir: ' + (sel.raceMusic ? 'SÍ' : 'NO');
-  $('autoGas').classList.toggle('on', sel.autoGas); $('autoGas').textContent = 'Acelerador automático: ' + (sel.autoGas ? 'SÍ' : 'NO');
+  buildPaints(); sound.setMuted(!!sel.mute);
+  setSwitch('sndBtn', !sel.mute); setSwitch('musicOnBtn', sel.music !== false); setSwitch('raceMusicBtn', !!sel.raceMusic); setSwitch('autoGas', !!sel.autoGas);
 }
 $('raceMusicBtn').onclick = () => { sel.raceMusic = !sel.raceMusic; store.set('sel', sel); buildMenu(); };
 // volumen fijo y estándar: motor al 20 % y música al 50 %; solo se elige si suena la música
@@ -359,7 +359,7 @@ function buildPaints() {
 }
 $('autoGas').onclick = () => { sel.autoGas = !sel.autoGas; buildMenu(); };
 // control por mitades: toca a la izquierda para girar a la izquierda y a la derecha para girar a la derecha (el acelerador va solo)
-const applyCtl = () => { document.body.classList.toggle('halves-mode', halvesOn()); const b = $('ctlMode'); if (b) { b.classList.toggle('on', sel.touchMode === 'halves'); b.textContent = 'Control: ' + (sel.touchMode === 'halves' ? 'MITADES + ACEL. AUTO' : 'BOTONES'); } };
+const applyCtl = () => { document.body.classList.toggle('halves-mode', halvesOn()); const b = $('ctlMode'); if (b) { b.classList.toggle('on', sel.touchMode === 'halves'); b.querySelector('b').textContent = sel.touchMode === 'halves' ? 'Media pantalla' : 'Botones'; } };
 $('ctlMode').onclick = () => { sel.touchMode = sel.touchMode === 'halves' ? 'buttons' : 'halves'; store.set('sel', sel); applyCtl(); };
 applyCtl();
 {
@@ -406,7 +406,7 @@ function buildCarMesh(color, kind, lod = 'lo', num = 7, finish = null, decal = n
 const loadSkin = (skin) => (skin ? loadModelCar('skin_' + skin, ['lo']) : Promise.resolve());
 function buildPlayerKart(lod, o = {}) {
   const type = CARS[0], skin = o.skin !== undefined ? o.skin : skinOf();
-  const m = skin && modelCarReady('skin_' + skin, 'lo') ? buildCarMesh(0xffffff, 'skin_' + skin, 'lo', kartNum()) : buildCarMesh(paintOf(type), type.kind, lod, kartNum(), finishOf(), decalOf());
+  const m = skin && modelCarReady('skin_' + skin, 'lo') ? buildCarMesh(0xffffff, 'skin_' + skin, 'lo', kartNum()) : buildCarMesh(o.paint || paintOf(type), type.kind, lod, kartNum(), finishOf(), o.decal !== undefined ? o.decal : decalOf());
   if (o.pilot !== false) {
     const worn = eco.look().suit, fit = pilotFit(skin);
     m.pilot = buildPilot({ helmet: lb.helmet, suit: worn ? worn.suit : SUIT_DEFAULT, fit });
@@ -874,6 +874,7 @@ function stepAll() {
   const aiIn = S.aiIn || (S.aiIn = { steer: 0, throttle: 0, brake: 0, drift: false });
   for (const c of S.cars) {
     if (c === p) {
+      p.noSolids = !!(p.finished || S.auto); // el piloto automático atraviesa las rocas como un fantasma
       if (p.finished || S.auto) {
         aiInput(p, tr, S.prof[p.type.id], p.finished ? { lane: 0, skill: 0.7 } : S.autoAi, aiIn);
         if (S.auto && p.speed > 34) { aiIn.throttle = 0; aiIn.brake = Math.max(aiIn.brake, 0.15); } // crucero: respeta la línea y las curvas, sin pasarse de 34 m/s
@@ -1302,7 +1303,7 @@ function updateCarVisual(c, dt) {
   }
   c.wheelSpin += (c.vf / (ks < 1 ? 0.9 : 0.4)) * dt; // el kart gira más despacio visualmente: a su velocidad real los radios hacen efecto estroboscópico
   for (const w of m.wheels) { w.spin.rotation.x = c.wheelSpin; if (w.front) w.pivot.rotation.y = -c.steer * 0.4; }
-  if (m.pilot) { const turned = m.pilot.update(dt, { steer: c.steer, sf, brake: c.brake, throttle: c.throttle, bump: c.bounce }); if (m.steer) m.steer.pivot.quaternion.setFromAxisAngle(m.steer.axis, -turned * STEER_TURN); }
+  if (m.pilot) { const turned = m.pilot.update(dt, { steer: c.steer, sf, brake: c.brake, throttle: c.throttle, bump: c.bounce, cheer: !!c.finished }); if (m.steer) m.steer.pivot.quaternion.setFromAxisAngle(m.steer.axis, -turned * STEER_TURN); }
   m.tail.color.setHex(c.brake > 0.1 ? 0xff2a2a : 0x8a0f0f);
   if (m.hl) updateHeadlights(m, c.brake);
   c.blob.visible = !QUAL.shadows; c.blob.position.set(x, c.loc.h + 0.09, z); c.blob.rotation.y = psi;

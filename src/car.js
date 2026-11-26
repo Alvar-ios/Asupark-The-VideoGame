@@ -265,7 +265,7 @@ export function stepCar(c, inp, dt, tr, env) {
     c.drifting = false;
   }
 
-  if (tr.solids) hitSolids(c, tr, loc);
+  if (tr.solids && !c.noSolids) hitSolids(c, tr, loc);
 
   // pianos (bordillos): solo existen en el interior de las curvas. Al ser más altos por dentro, te lanzan suavemente hacia fuera (hacia el centro de la pista), sin frenar:
   // ayudan a cerrar la curva si los pisas con ganas y vibran un poco.
