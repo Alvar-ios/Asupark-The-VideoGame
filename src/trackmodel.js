@@ -44,13 +44,28 @@ function edgePosts(tr, deck, walls) {
     const line = [];
     for (let i = 0; i + every <= tr.N; i += every) {
       const l = side * ((tr.wallEdge ? tr.wallEdge[side < 0 ? 0 : 1][i] : tr.wall) + 0.2), x = tr.X[i] - tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l;
-      if (walled(i, side, x, z)) { line.push(null); continue; }
+      if (walled(i, side, x, z) || (tr.wallEdge && tr.wallEdge[side < 0 ? 0 : 1][i] < tr.wall - 0.1)) { line.push(null); continue; } // donde hay escalón ya hay muro
       d.position.set(x, tr.Y[i], z); d.updateMatrix(); posts.setMatrixAt(k++, d.matrix); line.push(new THREE.Vector3(x, tr.Y[i] + 0.62, z));
     }
     for (let i = 0; i < line.length; i++) if (line[i] && line[(i + 1) % line.length]) ropeAt.push(line[i], line[(i + 1) % line.length]);
   }
   posts.count = k; posts.computeBoundingSphere();
   const g = new THREE.Group(); g.add(posts, new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(ropeAt), new THREE.LineBasicMaterial({ color: 0xe8dcc0 })));
+  return g;
+}
+
+// donde el muro no es una barrera del modelo (hierba abierta), una fila de neumáticos lo marca
+function edgeTyres(tr) {
+  const geo = new THREE.TorusGeometry(0.27, 0.11, 6, 12).rotateX(Math.PI / 2), mats = [new THREE.MeshLambertMaterial({ color: 0x1b1b1d }), new THREE.MeshLambertMaterial({ color: 0x2c5fc0 })];
+  const spots = [[], []], far = Math.max(...tr.wallEdge[0], ...tr.wallEdge[1]) - 0.05;
+  for (const side of [-1, 1]) for (let i = 0; i < tr.N; i += 1) {
+    const l = tr.wallEdge[side < 0 ? 0 : 1][i]; if (l < far) continue;
+    const x = tr.X[i] - tr.TZ[i] * side * (l + 0.3), z = tr.Z[i] + tr.TX[i] * side * (l + 0.3);
+    if (spots[0].concat(spots[1]).slice(-6).some((p) => Math.hypot(p[0] - x, p[2] - z) < 0.62)) continue;
+    for (let k = 0; k < 2; k++) spots[(Math.floor(i / 3) + k) % 2].push([x, tr.Y[i] + 0.11 + k * 0.22, z]);
+  }
+  const g = new THREE.Group(), d = new THREE.Object3D();
+  spots.forEach((list, m) => { const mesh = new THREE.InstancedMesh(geo, mats[m], list.length); list.forEach((p, k) => { d.position.set(...p); d.updateMatrix(); mesh.setMatrixAt(k, d.matrix); }); mesh.computeBoundingSphere(); g.add(mesh); });
   return g;
 }
 
@@ -97,7 +112,8 @@ function deckMesh(tr, deck, model) {
     strip(name, i, (k) => [-1, -0.5, 0, 0.5, 1].map((f) => [f * edge(k, f || 1), tr.Y[k % N], (f + 1) / 2]), false);
     for (const side of [-1, 1]) {
       if (folds(i, side)) continue;
-      if (floorBelow(i, side) >= 0 && floorBelow(i + 1, side) >= 0) {
+      // (si por debajo pasa otro tramo de la pista, el faldón no baja hasta el suelo: cruzaría ese tramo)
+      if (!under(i) && !under((i + 1) % N) && floorBelow(i, side) >= 0 && floorBelow(i + 1, side) >= 0) {
         strip(deck.skirt, i, (k) => { const y = tr.Y[k % N], e = edge(k, side), d = floorBelow(k, side) + 0.25; return [[e, y - 0.07, 0], [e + 0.12, y - Math.min(d, 0.3), 0.02], [e + 0.2, y - d, d / 13]].map((c) => [side * c[0], c[1], (k * tr.ds) / 13, c[2]]); }, side > 0);
         continue;
       }
@@ -185,6 +201,7 @@ export function buildModelWorld(tr, th, opt = {}) {
     floor.position.y = th.floor.y; scene.add(floor);
   }
   scene.add(finishLine(tr, th));
+  if (th.edgeTyres && tr.wallEdge) scene.add(edgeTyres(tr));
   if (th.edgePosts) scene.add(edgePosts(tr, th.style.deck, th.style.deck && th.style.deck.walls));
   // el modelo se comparte entre carreras: se añade una copia ligera (misma geometría)
   const add = (model) => { scene.add((th.vivid ? vividCopy(model, th.model, th.vivid) : model).clone(true)); if (th.style.deck) scene.add(deckMesh(tr, th.style.deck, model)); };

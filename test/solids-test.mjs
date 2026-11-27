@@ -6,7 +6,7 @@ import { CARS, makeCar, stepCar } from '../src/car.js';
 
 const th = THEMES.misty, tr = buildTrack(th.seed, th.style), type = CARS[0], env = { ...th, gripMul: 1 };
 const list = [...new Set([...tr.solids.values()].flat())].filter((s) => Math.hypot(s[2] - s[0], s[3] - s[1]) > 0.35);
-assert.ok(list.length > 30, 'el circuito tiene obstáculos');
+assert.ok(list.length > 8, 'el circuito tiene obstáculos'); // desde 0.0.130 los objetos pequeños del paso se quitan enteros: quedan las rocas grandes
 let tried = 0, through = 0;
 for (let k = 0; k < list.length; k += Math.max(1, Math.floor(list.length / 120))) {
   const s = list[k], ex = s[2] - s[0], ez = s[3] - s[1], l = Math.hypot(ex, ez), mx = (s[0] + s[2]) / 2, mz = (s[1] + s[3]) / 2;
@@ -23,6 +23,6 @@ for (let k = 0; k < list.length; k += Math.max(1, Math.floor(list.length / 120))
     }
   }
 }
-assert.ok(tried > 20, `embestidas probadas: ${tried}`);
+assert.ok(tried > 10, `embestidas probadas: ${tried}`);
 assert.ok(through <= tried * 0.02, `atravesados ${through} de ${tried}`);
 console.log(`Obstáculos sólidos: ${tried} embestidas a 40 m/s, ${through} atravesadas`);

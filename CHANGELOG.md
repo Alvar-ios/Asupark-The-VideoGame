@@ -4,6 +4,14 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.130
+- Misty Cliffs: fuera la roca que tapaba la entrada de la cueva. Era un faldón de roca que la app añadía bajo el tramo de arriba y bajaba hasta cruzar el camino de abajo.
+- Carteles, postes y piedras pequeñas que pisan el camino se quitan enteros: no quedan objetos rotos ni invisibles con los que chocar.
+- Los escalones del modelo junto al camino (como el muro de hormigón de la bajada) se quedan como en el original y hacen de muro. Fuera la rampa rara.
+- Kartódromo: un 20 % más grande. La hierba frena mucho más y se corre por todo lo que no es hierba.
+- Kartódromo: neumáticos, muros, vallas y edificios se chocan. Donde no hay barrera, una fila de neumáticos a 7 m impide atajar.
+- Kartódromo: se reinician sus récords y fantasmas.
+
 ## 0.0.129
 - Circuito nuevo: Kartódromo Nóvaya Zariá, un club de karting real con nombre inventado. Salida junto al edificio azul, hacia la izquierda mirándolo. Modelo de 826.000 a 139.000 triángulos y de 155 a 6,8 MB.
 - Se corre por el asfalto, las placas de hormigón y los pianos; la hierba frena mucho.

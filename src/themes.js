@@ -182,10 +182,10 @@ export const THEMES = {
     wall1: 0x2f9d3f, wall2: 0xd43a30, mount: 0x6a8f4a, sun: 0xfff6e0, sunDir: [-0.35, 0.8, 0.4], hemiSky: 0xffffff, hemiGround: 0xb59a68, hemiI: 1.25, sunI: 1.75, night: false, temp: 25, humidity: 0.35, wind: [1, 0.5], gripMul: 1, offroad: 0.34, offroadGrip: 0.62, rollingDrag: 0.3, steerOffroad: 0.72,
   },
   lider: {
-    id: 'lider', name: 'Kartódromo Nóvaya Zariá', sub: 'Club de karting al aire libre: horquillas enlazadas, placas de hormigón y pianos altos', seed: 'lider-1', model: 'lider', noKerbs: true, kerbRough: true, // pianos altos: el kart bota y la cámara tiembla
-    style: { ...modelStyle('lider'), aiLook: 0.5 }, floor: { color: 0x4f6b37, y: -1.6 },
+    id: 'lider', name: 'Kartódromo Nóvaya Zariá', sub: 'Club de karting al aire libre: horquillas enlazadas, placas de hormigón y pianos altos', seed: 'lider-2', model: 'lider', noKerbs: true, kerbRough: true, // pianos altos: el kart bota y la cámara tiembla
+    style: { ...modelStyle('lider'), aiLook: 0.6 }, edgeTyres: true, floor: { color: 0x4f6b37, y: -1.6 },
     skyTop: 0x5b8fd0, skyHor: 0xdbe5ec, fog: 0xd9e2e8, fogNear: 260, fogFar: 1700, ground: 0x4f6b37, grass: 0x5b7a3d, dirt: 0x7a6a50, road: 0x4a4c50, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
-    wall1: 0x1f1f22, wall2: 0x2c5fc0, mount: 0x6a7f5a, sun: 0xfff1dc, sunDir: [-0.45, 0.62, 0.45], hemiSky: 0xe6eef8, hemiGround: 0x6d6a58, hemiI: 1.25, sunI: 1.9, night: false, temp: 18, humidity: 0.55, wind: [2, 0.6], gripMul: 1, offroad: 0.34, offroadGrip: 0.62, rollingDrag: 0.3, steerOffroad: 0.72,
+    wall1: 0x1f1f22, wall2: 0x2c5fc0, mount: 0x6a7f5a, sun: 0xfff1dc, sunDir: [-0.45, 0.62, 0.45], hemiSky: 0xe6eef8, hemiGround: 0x6d6a58, hemiI: 1.25, sunI: 1.9, night: false, temp: 18, humidity: 0.55, wind: [2, 0.6], gripMul: 1, offroad: 0.2, offroadGrip: 0.5, rollingDrag: 0.6, steerOffroad: 0.6, // la hierba frena mucho más que en Mario
   },
   muralla: {
     id: 'muralla', fiction: true, name: 'Gran Muralla, China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,

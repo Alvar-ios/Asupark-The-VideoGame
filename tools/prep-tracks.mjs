@@ -12,7 +12,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { weld, simplify, prune } from '@gltf-transform/functions';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
-import { reshapeProfile, steerAway, rebuild, deckMaterials, aprons, ground } from './track-rebuild.mjs';
+import { reshapeProfile, steerAway, rebuild, deckMaterials, aprons, ground, steps } from './track-rebuild.mjs';
 
 const SRC = process.argv[2];
 if (!SRC) { console.log('Uso: node tools/prep-tracks.mjs <carpeta>'); process.exit(1); }
@@ -52,12 +52,15 @@ const TRACKS = {
   },
   lider: {
     file: 'karting_club_lider__outdoor_race_track_ready.glb',
-    scale: 1, half: 3.3, gameHalf: 3.3, step: 1, // curvas muy cerradas: un punto cada 2,5 m; // pista de unos 6,5 m
+    scale: 1.2, half: 4, gameHalf: 4, step: 1, // a escala real se quedaba pequeño para el kart: un 20 % más grande; // curvas muy cerradas: un punto cada 2,5 m; // pista de unos 6,5 m
     dropNodes: /^(sky|LEP500|kart_model)/, // cielo, tendido eléctrico lejano y un kart de exposición
     road: { materials: ['racetrack', 'conc_plates_clever', 'kerb_with_rubber'] },
     // asfalto, placas de hormigón (se corre por ellas), pianos, líneas pintadas y marcas de goma: todo lo demás frena
     paved: ['racetrack', 'kerb_with_rubber', 'conc_plates_clever', 'conc_plates_darkgrey', 'conc_plates_grey', 'conc_plates_lightgrey', 'conc', 'conc2', 'conc_t3', 'conc_t4', 'conc_t9', 'conc_t89_1', 'conc_t89_2', 'road_marking_lined', 'road_marking_plane', 'Material_12932', 'GROOVE_3', 'skids', 'dust', 'decal_concrete_patch_1', 'decal_concrete_patch_2', 'Cracks1', 'Material_5034', 'Material_12663'],
     kerbs: ['kerb_with_rubber'], // pianos altos: sacuden el kart
+    pavedExcept: /green|grass|Trees/i, // se corre por todo lo que no sea hierba (mirando la superficie de arriba)
+    solids: true, solidH: 0.45, // neumáticos, muros, vallas y edificios se chocan (cortados a la altura de un neumático)
+    edgeMax: 7, // a más de 7 m del eje, muro: no se puede atajar por la hierba
     barriers: ['black_tyre', 'blue_tyre', 'red_tyre', 'white_tyre', 'Material_4867', 'Material_4879', 'Material_3906', 'Material_3925', 'grey_armc', 'blue_armco', 'white_metal_barrier', 'red_metal_barrier', 'black_armco', 'black_armco_0', 'armco_orange', 'Material_5073', 'fence'],
     tile: ['racetrack', 'green', 'grass_terrain', 'black_tyre', 'blue_tyre', 'red_tyre', 'conc_plates_clever', 'kerb_with_rubber', 'Trees_Sheet'],
     texBig: ['racetrack', 'kerb_with_rubber', 'conc_plates_clever', 'green', 'grass_terrain', 'road_marking_lined', 'Trees_Sheet'], // se ven de cerca: más resolución
@@ -176,7 +179,7 @@ function solidSegments(cfg, line, tris, road) {
     const cuts = [];
     for (let i = 0; i < L; i++) {
       if (steep[i]) continue; // en el gran descenso la pared del cortado queda «dentro» de la bajada
-      const y = line.Y[i] + 1.1 / S; if (y <= lo || y >= hi) continue; // los escalones bajos no cuentan: de ellos se ocupa el muro lateral
+      const y = line.Y[i] + (cfg.solidH ?? 1.1) / S; if (y <= lo || y >= hi) continue; // los escalones bajos no cuentan: de ellos se ocupa el muro lateral
       const hit = []; for (const [a, b] of [[A, B], [B, C], [C, A]]) if ((a[1] - y) * (b[1] - y) < 0) { const k = (y - a[1]) / (b[1] - a[1]); hit.push([a[0] + (b[0] - a[0]) * k, a[2] + (b[2] - a[2]) * k]); }
       if (hit.length !== 2) continue;
       const mx = (hit[0][0] + hit[1][0]) / 2, mz = (hit[0][1] + hit[1][1]) / 2, d = Math.hypot(line.P[i][0] - mx, line.P[i][1] - mz);
@@ -197,7 +200,7 @@ function barrierEdges(cfg, line, tris) {
     if (!cfg.barriers.includes(t.mat.getName())) continue;
     for (let a = 0; a <= 6; a++) for (let b = 0; b <= 6 - a; b++) { const c = 6 - a - b, x = (a * t.v[0].p[0] + b * t.v[1].p[0] + c * t.v[2].p[0]) / 6, z = (a * t.v[0].p[2] + b * t.v[1].p[2] + c * t.v[2].p[2]) / 6; occ.add(Math.round(x / cell) + ',' + Math.round(z / cell)); }
   }
-  const min = cfg.half + 0.9, max = cfg.half + 9;
+  const min = cfg.half + 0.9, max = cfg.edgeMax ?? cfg.half + 9;
   return [-1, 1].map((side) => line.P.map(([x, z], i) => {
     const P = line.P, a = P[(i - 1 + P.length) % P.length], b = P[(i + 1) % P.length], tx = b[0] - a[0], tz = b[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = -tz / l * side, nz = tx / l * side;
     for (let d = cfg.half; d < max; d += 0.4) if (occ.has(Math.round((x + nx * d / S) / cell) + ',' + Math.round((z + nz * d / S) / cell))) return Math.max(min, d - 0.5);
@@ -217,6 +220,24 @@ function pavedGrid(cfg, tris, place, nodes, list = cfg.paved) {
       if (a >= -0.02 && b >= -0.02 && a + b <= 1.02) bits[(j * w + i) >> 3] |= 1 << ((j * w + i) & 7);
     }
   }
+  return { x: x0, z: z0, w, h, cell, data: Buffer.from(bits).toString('base64') };
+}
+
+// mapa del suelo mirando desde arriba: en cada celda manda la superficie más alta (cerca del nivel de la pista)
+function topGrid(cfg, tris, place, nodes, except) {
+  const cell = 0.3, xs = nodes.map((n) => n[0]), zs = nodes.map((n) => n[1]), ys = nodes.map((n) => n[2]), x0 = Math.floor(Math.min(...xs) - 16), z0 = Math.floor(Math.min(...zs) - 16), ylo = Math.min(...ys) - 1.5, yhi = Math.max(...ys) + 1;
+  const w = Math.ceil((Math.max(...xs) + 16 - x0) / cell), h = Math.ceil((Math.max(...zs) + 16 - z0) / cell), top = new Float32Array(w * h).fill(-1e9), ok = new Uint8Array(w * h);
+  for (const t of tris) {
+    const [A, B, C] = t.v.map((v) => place(v.p)), u = B.map((v, k) => v - A[k]), q = C.map((v, k) => v - A[k]), ny = u[2] * q[0] - u[0] * q[2], l = Math.hypot(u[1] * q[2] - u[2] * q[1], ny, u[0] * q[1] - u[1] * q[0]);
+    if (!l || Math.abs(ny) / l < 0.7 || Math.max(A[1], B[1], C[1]) > yhi || Math.min(A[1], B[1], C[1]) < ylo) continue;
+    const good = except.test(t.mat.getName()) ? 0 : 1, den = (B[2] - C[2]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[2] - C[2]); if (Math.abs(den) < 1e-9) continue;
+    for (let j = Math.max(0, Math.floor((Math.min(A[2], B[2], C[2]) - z0) / cell)); j <= Math.min(h - 1, Math.floor((Math.max(A[2], B[2], C[2]) - z0) / cell)); j++) for (let i = Math.max(0, Math.floor((Math.min(A[0], B[0], C[0]) - x0) / cell)); i <= Math.min(w - 1, Math.floor((Math.max(A[0], B[0], C[0]) - x0) / cell)); i++) {
+      const x = x0 + (i + 0.5) * cell, z = z0 + (j + 0.5) * cell, a = ((B[2] - C[2]) * (x - C[0]) + (C[0] - B[0]) * (z - C[2])) / den, b = ((C[2] - A[2]) * (x - C[0]) + (A[0] - C[0]) * (z - C[2])) / den;
+      if (a < -0.02 || b < -0.02 || a + b > 1.02) continue;
+      const y = a * A[1] + b * B[1] + (1 - a - b) * C[1], n = j * w + i; if (y > top[n] - 0.005) { top[n] = y; ok[n] = good; }
+    }
+  }
+  const bits = new Uint8Array(Math.ceil(w * h / 8)); for (let n = 0; n < w * h; n++) if (ok[n]) bits[n >> 3] |= 1 << (n & 7);
   return { x: x0, z: z0, w, h, cell, data: Buffer.from(bits).toString('base64') };
 }
 
@@ -282,7 +303,7 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   const line = centreLine(cfg, hit);
   if (cfg.flat) { const mid = [...line.Y].sort((a, b) => a - b)[line.Y.length >> 1]; line.Y = line.Y.map(() => mid); }
   const S = cfg.scale;
-  let deck = null, ramp = null, apron = null, plinth = null, under = null, wallPoints = null;
+  let deck = null, ramp = null, apron = null, plinth = null, under = null, walled = null, wallPoints = null;
   if (cfg.rebuild) {
     reshapeProfile(cfg, line);
     steerAway(cfg, line, solidSegments({ ...cfg, half: cfg.half + 4 }, line, tris, tris.filter((t) => cfg.rebuild.floor.test(t.mat.getName()))));
@@ -296,12 +317,13 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
     tris = rebuild(cfg, line, tris);
     ({ apron, plinth } = aprons(cfg, line, tris, walls, before));
     under = ground(cfg, line, tris, cfg.half + (cfg.wallExtra ?? 0.25) + 0.4);
+    walled = steps(cfg, line, tris, cfg.half + (cfg.wallExtra ?? 0.25));
     wallPoints = walls;
     // la meta se lleva al tramo llano: se gira la lista para que empiece allí
     const k = line.index(cfg.rebuild.startAt), turn = (a) => a.slice(k).concat(a.slice(0, k));
     const op = cfg.rebuild.profile[1], from = line.index(op.from), to = line.index(op.to), n = line.P.length;
     ramp = [(from - k + n) % n, (to - k + n) % n];
-    line.P = turn(line.P); line.Y = turn(line.Y); deck = turn(deck); apron = apron.map(turn); plinth = plinth.map(turn); under = under.map(turn);
+    line.P = turn(line.P); line.Y = turn(line.Y); deck = turn(deck); apron = apron.map(turn); plinth = plinth.map(turn); under = under.map(turn); walled = walled.map(turn);
   }
   const solids = cfg.solids ? solidSegments(cfg, line, tris, cfg.rebuild ? tris.filter((t) => cfg.rebuild.floor.test(t.mat.getName())) : road) : null;
   if (solids) {
@@ -337,9 +359,9 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   }
   if (cfg.barriers) data[id].edges = barrierEdges(cfg, line, tris).map((e) => average(e, 2).filter((_, i) => i % step === 0).map((v) => +v.toFixed(2)));
   console.log(id, 'vuelta', Math.round(len), 'm, desnivel', (Math.max(...nodes.map((n) => n[2])) - 2).toFixed(1), 'm, puntos fuera de la calzada', off, 'de', line.P.length);
-  if (cfg.rebuild) data[id].edges = [0, 1].map(() => every.map(() => data[id].wall));
+  if (cfg.rebuild) data[id].edges = walled.map((w) => every.map((_, i) => +w[i * step].toFixed(2)));
   if (cfg.paved) {
-    data[id].paved = pavedGrid(cfg, tris, place, nodes);
+    data[id].paved = cfg.pavedExcept ? topGrid(cfg, tris, place, nodes, cfg.pavedExcept) : pavedGrid(cfg, tris, place, nodes);
     if (cfg.kerbs) data[id].kerbs = pavedGrid(cfg, tris, place, nodes, cfg.kerbs);
     if (cfg.gameHalf) data[id].gameHalf = cfg.gameHalf;
     const g = data[id].paved, bits = Buffer.from(g.data, 'base64'), on = (x, z) => { const n = Math.floor((z - g.z) / g.cell) * g.w + Math.floor((x - g.x) / g.cell); return (bits[n >> 3] >> (n & 7)) & 1; };

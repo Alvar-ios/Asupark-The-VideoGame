@@ -164,6 +164,10 @@ export function rebuild(cfg, line, tris) {
   for (const t of tris) if (R.boulder.test(t.mat.getName())) { const e = size.get(t.chain[0]) || [[1e9, 1e9, 1e9], [-1e9, -1e9, -1e9]]; for (const v of t.v) for (let k = 0; k < 3; k++) { e[0][k] = Math.min(e[0][k], v.p[k]); e[1][k] = Math.max(e[1][k], v.p[k]); } size.set(t.chain[0], e); }
   const small = (name) => { const e = size.get(name); return e && Math.max(e[1][0] - e[0][0], e[1][2] - e[0][2]) * S < 9; };
   for (const t of tris) if (R.boulder.test(t.mat.getName()) && small(t.chain[0]) && !blocked.has(t.chain[0]) && [centre(t), ...t.v.map((v) => v.p)].some((p) => { const q = nearest(p, 0.5, 3); return q && q.d < R.pass + 0.9 && q.dy > -0.2 && q.dy < 2.4; })) blocked.add(t.chain[0]);
+  const box = new Map();
+  for (const t of tris) { const e = box.get(t.chain[0]) || [[1e9, 1e9, 1e9], [-1e9, -1e9, -1e9]]; for (const v of t.v) for (let k = 0; k < 3; k++) { e[0][k] = Math.min(e[0][k], v.p[k]); e[1][k] = Math.max(e[1][k], v.p[k]); } box.set(t.chain[0], e); }
+  const smallObj = (name) => { const e = box.get(name); return Math.max(e[1][0] - e[0][0], e[1][1] - e[0][1], e[1][2] - e[0][2]) * S < 6; };
+  for (const t of tris) if (!blocked.has(t.chain[0]) && !isFloor(t) && !isSoft(t) && !R.keep.test(t.mat.getName()) && smallObj(t.chain[0]) && t.v.some((v) => { const q = nearest(v.p, 0.3, 2.2); return q && q.d < edge - 0.2; })) blocked.add(t.chain[0]);
   const list = refine(cfg, line, tris.filter((t) => !blocked.has(t.chain[0])), 1.2, edge + 1.5);
 
   const kept = []; let cut = 0;
@@ -171,8 +175,11 @@ export function rebuild(cfg, line, tris) {
     const points = [centre(t), ...t.v.map((v) => v.p)];
     const zone = nearest(centre(t), 3, 4.5), kept0 = !zone || !reshaped(zone.s);
     if (kept0 && (isFloor(t) || isSoft(t))) {
+      // caras verticales del suelo (escalones y bordillos) dentro de la calzada: con el suelo ya bajado quedarían como cuñas que se atraviesan
+      { const [A, B, C] = t.v.map((v) => v.p), u = B.map((v, k) => v - A[k]), w = C.map((v, k) => v - A[k]), ny = u[2] * w[0] - u[0] * w[2], l = Math.hypot(u[1] * w[2] - u[2] * w[1], ny, u[0] * w[1] - u[1] * w[0]) || 1, q = nearest(centre(t), 0.6, 1.6);
+        if (Math.abs(ny) / l < 0.5 && q && q.d < edge + 0.3 && Math.max(A[1], B[1], C[1]) < q.y + 0.35 / S) continue; } // los escalones altos se quedan: hacen de muro
       // bajo la calzada, justo debajo; en el metro y medio de fuera, en rampa suave (si no, quedaba un escalón como un muro)
-      kept.push({ ...t, v: t.v.map((v) => { const p = nearest(v.p, 1.5, 1.2); if (!p || p.d > edge + 2) return v; const top = p.y + (-0.1 + Math.max(0, p.d - edge - 0.5) * 0.7) / S; return v.p[1] > top ? { ...v, p: [v.p[0], top, v.p[2]] } : v; }) });
+      kept.push({ ...t, v: t.v.map((v) => { const p = nearest(v.p, 1.5, 1.2); return p && p.d < edge + 0.5 && p.dy > -0.1 && p.dy < 0.35 ? { ...v, p: [v.p[0], p.y - 0.1 / S, v.p[2]] } : v; }) });
       continue;
     }
     if (isFloor(t)) {
@@ -191,7 +198,7 @@ export function rebuild(cfg, line, tris) {
     if (points.some((p) => { const q = nearest(p, 0.5, 3); return q && q.d < R.pass && q.dy > -0.2 && q.dy < 2.6; })) { cut++; continue; }
     // fuera de la rampa: la roca que quede dentro de la calzada, a ras de ella, se baja justo debajo (solo esos vértices)
     if (kept0 && !(/DarkGreyCliff/i.test(t.mat.getName()) || R.boulder.test(t.mat.getName()))) { kept.push(t); continue; } // carteles y vallas, intactos
-    if (kept0) { kept.push({ ...t, v: t.v.map((v) => { const p = nearest(v.p, 0.2, 1.3); return p && p.d < edge + 0.3 && p.dy > -0.1 ? { ...v, p: [v.p[0], p.y - 0.12 / S, v.p[2]] } : v; }) }); continue; }
+    if (kept0) { kept.push({ ...t, v: t.v.map((v) => { const p = nearest(v.p, 0.2, 0.6); return p && p.d < edge + 1.2 && p.dy > -0.1 ? { ...v, p: [v.p[0], p.y - 0.12 / S, v.p[2]] } : v; }) }); continue; }
     // restos bajos que asomarían unos centímetros por encima de la calzada: se hunden, sin quitar la pieza
     const rock = /DarkGreyCliff/i.test(t.mat.getName()) || R.boulder.test(t.mat.getName()), near = t.v.map((v) => nearest(v.p, 3, rock ? 1.1 : 0.4));
     if (near.every(Boolean) && near.every((q) => q.d < edge - 0.15)) { kept.push({ ...t, v: t.v.map((v, k) => (near[k].dy > -0.08 ? { ...v, p: [v.p[0], near[k].y - 0.08 / S, v.p[2]] } : v)) }); continue; }
@@ -267,4 +274,12 @@ export function ground(cfg, line, tris, lat) {
     const at = sideways(cfg, line, i, side), [x, z] = at(lat); const d = Math.min(below(x, z, line.Y[i]), below(...at(lat + 0.3), line.Y[i]));
     return d < 14 ? Math.max(0, d) : -1;
   }));
+}
+
+// escalones del suelo junto a la calzada (más de 35 cm): ahí va el muro, a cada lado y en cada muestra (m desde el eje)
+// (en la bajada del faro, R.fixed, la calzada va algo por debajo del camino original: eso no cuenta como escalón)
+export function steps(cfg, line, tris, wall) {
+  const R = cfg.rebuild, n = line.P.length, high = floorQuery(cfg, tris, 0.6, 1.8, R.floor);
+  const raw = [-1, 1].map((side) => line.P.map((_, i) => { if (reshaped(R, line.cum[i]) || (R.fixed || []).some(([a, b]) => line.cum[i] >= a && line.cum[i] <= b)) return wall; const at = sideways(cfg, line, i, side); for (let d = 2.6; d < wall; d += 0.2) { const [x, z] = at(d); if (high(x, z, line.Y[i])) return Math.max(3.4, d - 0.3); } return wall; }));
+  return raw.map((w) => w.map((_, i) => Math.min(...[-2, -1, 0, 1, 2].map((k) => w[wrap(i + k, n)]))));
 }
