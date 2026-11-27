@@ -8,6 +8,10 @@
 const wrap = (i, n) => ((i % n) + n) % n;
 const smooth = (t) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 
+// tramo donde se ha cambiado el perfil (la rampa): solo ahí se reconstruye el suelo
+export function inReshaped(R, s) { const from = R.profile[0].from, to = R.profile[R.profile.length - 1].to; return from < to ? s >= from && s <= to : s >= from || s <= to; }
+const reshaped = inReshaped;
+
 // ---------- perfil ----------
 export function reshapeProfile(cfg, line) {
   const S = cfg.scale, n = line.P.length, cum = [0];
@@ -105,6 +109,7 @@ export function steerAway(cfg, line, walls) {
   for (let it = 0; it < 40; it++) {
     const shift = line.P.map((_, i) => {
       const [left, right] = measure(i), a = Math.max(0, left + R.clear), b = Math.min(0, right - R.clear);
+      if ((R.fixed || []).some(([s0, s1]) => line.cum[i] >= s0 && line.cum[i] <= s1)) return -off[i] * 0.5; // aquí el camino original ya libra la roca
       return a && b ? (left + right) / 2 : a || b;
     });
     if (shift.every((v) => Math.abs(v) < 0.05)) break;
@@ -144,30 +149,12 @@ function sideways(cfg, line, i, side) {
   return (d) => [x - tz * side * d / cfg.scale, z + tx * side * d / cfg.scale];
 }
 
-// bordillo de piedra: en qué muestras y lados lo tenía el original (donde la pista da a una caída) y hasta dónde llega.
-// Devuelve, por lado, la distancia del eje al arranque del bordillo nuevo (0 = ese lado no lleva)
-export function rims(cfg, line, tris, deck) {
-  const R = cfg.rebuild, n = line.P.length, edge = cfg.half + (cfg.wallExtra ?? 0.25), stone = floorQuery(cfg, tris, -1.5, 1.7, R.rim);
-  return [-1, 1].map((side) => {
-    let found = line.P.map((_, i) => {
-      if (R.rim.test(deck[i] || '')) return 0; // plataforma entera de piedra (faro): ya tiene su valla
-      const at = sideways(cfg, line, i, side); let outer = 0;
-      for (let d = edge - 2.4; d <= edge + 3.6; d += 0.2) { const [px, pz] = at(d); if (stone(px, pz, line.Y[i])) outer = d; }
-      return outer ? Math.max(edge, outer - 0.5) : 0;
-    });
-    // sin huecos sueltos ni trozos de un par de muestras
-    found = found.map((v, i) => v || (found[wrap(i - 1, n)] && found[wrap(i + 1, n)] ? (found[wrap(i - 1, n)] + found[wrap(i + 1, n)]) / 2 : found[wrap(i - 2, n)] && found[wrap(i + 1, n)] ? found[wrap(i + 1, n)] : 0));
-    found = found.map((v, i) => { if (!v) return 0; let run = 1; for (let d = 1; d < 4 && found[wrap(i + d, n)]; d++) run++; for (let d = 1; d < 4 && found[wrap(i - d, n)]; d++) run++; return run >= 4 ? v : 0; });
-    return found.map((v, i) => { if (!v) return 0; let t = 0, c = 0; for (let d = -3; d <= 3; d++) { const q = found[wrap(i + d, n)]; if (q) { t += q; c++; } } return t / c; });
-  });
-}
-
-export function rebuild(cfg, line, tris, rim) {
+export function rebuild(cfg, line, tris) {
   const R = cfg.rebuild, S = cfg.scale, edge = cfg.half + (cfg.wallExtra ?? 0.25), nearest = makeNearest(cfg, line);
   const isFloor = (t) => R.floor.test(t.mat.getName()) || (cfg.road.node && t.chain.some((c) => cfg.road.node.test(c)));
   const isSoft = (t) => R.soft.test(t.mat.getName()) || t.chain.some((c) => R.soft.test(c));
   const centre = (t) => [0, 1, 2].map((k) => (t.v[0].p[k] + t.v[1].p[k] + t.v[2].p[k]) / 3);
-  const from = R.profile[0].from, to = R.profile[R.profile.length - 1].to, reshaped = (s) => (from < to ? s >= from && s <= to : s >= from || s <= to);
+  const reshaped = (s) => inReshaped(R, s);
 
   // carteles y vallas sueltas que pisen la pista: fuera enteros
   const blocked = new Set();
@@ -182,9 +169,11 @@ export function rebuild(cfg, line, tris, rim) {
   const kept = []; let cut = 0;
   for (const t of list) {
     const points = [centre(t), ...t.v.map((v) => v.p)];
-    if (rim && R.rim.test(t.mat.getName())) {
-      const q = nearest(centre(t), 2.5, 3), r = q && rim[q.lat < 0 ? 0 : 1][q.i];
-      if (r && q.d < r + 1.5 && q.dy < 0.9) continue; // el saliente de piedra que va alto por la pared se queda
+    const zone = nearest(centre(t), 3, 4.5), kept0 = !zone || !reshaped(zone.s);
+    if (kept0 && (isFloor(t) || isSoft(t))) {
+      // bajo la calzada, justo debajo; en el metro y medio de fuera, en rampa suave (si no, quedaba un escalón como un muro)
+      kept.push({ ...t, v: t.v.map((v) => { const p = nearest(v.p, 1.5, 1.2); if (!p || p.d > edge + 2) return v; const top = p.y + (-0.1 + Math.max(0, p.d - edge - 0.5) * 0.7) / S; return v.p[1] > top ? { ...v, p: [v.p[0], top, v.p[2]] } : v; }) });
+      continue;
     }
     if (isFloor(t)) {
       // suelo viejo debajo de la calzada nueva (o asomando sobre ella): fuera
@@ -196,15 +185,13 @@ export function rebuild(cfg, line, tris, rim) {
       continue;
     }
     if (R.keep.test(t.mat.getName())) { kept.push(t); continue; }
-    // donde la pista ha quedado algo más baja que el escalón original, la roca de debajo asomaría: se rebaja a ras
-    if (R.trim && /DarkGreyCliff/i.test(t.mat.getName())) {
-      const low = t.v.map((v) => nearest(v.p, 3, 1.6));
-      if (low.every((q) => q && q.d < edge + 2.2) && low.every((q) => R.trim.some(([a, b, side]) => q.s >= a && q.s <= b && q.lat * side > -0.8))) { kept.push({ ...t, v: t.v.map((v, k) => (low[k].d < edge + 1.2 && low[k].dy > -0.25 ? { ...v, p: [v.p[0], low[k].y - 0.28 / S, v.p[2]] } : v)) }); continue; }
-    }
     // el canto del trampolín asoma al empezar la bajada: en esos metros se limpia todo el ancho, solo a ras de calzada
     if (R.lip && points.some((p) => { const q = nearest(p, 0.4, 1.3); return q && q.s >= R.lip[0] && q.s <= R.lip[1] && q.d < edge - 1.3 && q.dy > -0.35; })) { cut++; continue; }
     // decorado: solo se quita lo que todavía cierra el paso, a la altura del kart y casi en el centro
     if (points.some((p) => { const q = nearest(p, 0.5, 3); return q && q.d < R.pass && q.dy > -0.2 && q.dy < 2.6; })) { cut++; continue; }
+    // fuera de la rampa: la roca que quede dentro de la calzada, a ras de ella, se baja justo debajo (solo esos vértices)
+    if (kept0 && !(/DarkGreyCliff/i.test(t.mat.getName()) || R.boulder.test(t.mat.getName()))) { kept.push(t); continue; } // carteles y vallas, intactos
+    if (kept0) { kept.push({ ...t, v: t.v.map((v) => { const p = nearest(v.p, 0.2, 1.3); return p && p.d < edge + 0.3 && p.dy > -0.1 ? { ...v, p: [v.p[0], p.y - 0.12 / S, v.p[2]] } : v; }) }); continue; }
     // restos bajos que asomarían unos centímetros por encima de la calzada: se hunden, sin quitar la pieza
     const rock = /DarkGreyCliff/i.test(t.mat.getName()) || R.boulder.test(t.mat.getName()), near = t.v.map((v) => nearest(v.p, 3, rock ? 1.1 : 0.4));
     if (near.every(Boolean) && near.every((q) => q.d < edge - 0.15)) { kept.push({ ...t, v: t.v.map((v, k) => (near[k].dy > -0.08 ? { ...v, p: [v.p[0], near[k].y - 0.08 / S, v.p[2]] } : v)) }); continue; }
@@ -216,14 +203,13 @@ export function rebuild(cfg, line, tris, rim) {
 }
 
 // arcenes: donde entre la calzada y una pared ya no queda suelo (se vería el mar por debajo), hasta dónde rellenar
-export function aprons(cfg, line, tris, walls, before, rim) {
+export function aprons(cfg, line, tris, walls, before) {
   const R = cfg.rebuild, S = cfg.scale, n = line.P.length, edge = cfg.half + (cfg.wallExtra ?? 0.25);
   const had = floorQuery(cfg, before, -1.4, 1.6, R.floor), has = floorQuery(cfg, tris, -1.6, 0.8, R.floor), low = Math.min(...line.Y);
   const covered = floorQuery(cfg, before, 0.4, 18); // hay montaña o meseta encima
   const plinth = [0, 1].map(() => new Array(n).fill(0));
   const out = [-1, 1].map((side, which) => line.P.map(([x, z], i) => {
-    // con bordillo, la tierra llega justo hasta él: por fuera va la pared de roca
-    if (rim[which][i]) return rim[which][i] > edge + 0.15 ? rim[which][i] : 0;
+    if (!reshaped(R, line.cum[i])) return 0; // fuera de la rampa el suelo del modelo sigue ahí
     const a = line.P[wrap(i - 1, n)], b = line.P[wrap(i + 1, n)], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, tx = (b[0] - a[0]) / l, tz = (b[1] - a[1]) / l;
     // 1) hueco que hemos abierto: había suelo y ya no lo hay. Se rellena hasta el último punto así
     let hole = 0;
@@ -250,7 +236,7 @@ export function aprons(cfg, line, tris, walls, before, rim) {
     return reach;
   }));
   // se ensancha un poco a lo largo para que no queden dientes
-  const apron = out.map((w, which) => w.map((v, i) => { if (v || rim[which][i]) return v; const near = [-1, 1].map((d) => (rim[which][wrap(i + d, n)] ? 0 : w[wrap(i + d, n)])).filter(Boolean); return near.length ? Math.min(...near) : 0; }));
+  const apron = out.map((w) => w.map((v, i) => { if (v) return v; const near = [-1, 1].map((d) => w[wrap(i + d, n)]).filter(Boolean); return near.length ? Math.min(...near) : 0; }));
   return { apron, plinth };
 }
 
@@ -265,4 +251,20 @@ export function deckMaterials(cfg, line, tris) {
   const raw = votes.map((v) => ([...v].sort((a, b) => b[1] - a[1])[0] || [null])[0]);
   const fallback = raw.find((x) => x && /Ground/.test(x));
   return raw.map((_, i) => { const c = new Map(); for (let d = -4; d <= 4; d++) { const m = raw[wrap(i + d, raw.length)]; if (m) c.set(m, (c.get(m) || 0) + 1); } return ([...c].sort((a, b) => b[1] - a[1])[0] || [fallback])[0]; });
+}
+
+// por lado y muestra, cuántos metros hay desde el borde de la calzada (a `lat` m del eje) hasta lo primero que haya debajo
+// (-1 en la rampa o si no hay nada en 14 m)
+export function ground(cfg, line, tris, lat) {
+  const S = cfg.scale, cell = 2 / S, grid = new Map(), n = line.P.length;
+  for (const t of tris) { const xs = t.v.map((v) => v.p[0]), zs = t.v.map((v) => v.p[2]); for (let i = Math.floor(Math.min(...xs) / cell); i <= Math.floor(Math.max(...xs) / cell); i++) for (let j = Math.floor(Math.min(...zs) / cell); j <= Math.floor(Math.max(...zs) / cell); j++) { const k = i + ',' + j; (grid.get(k) || grid.set(k, []).get(k)).push(t); } }
+  const below = (x, z, y) => { let best = 1e9; for (const t of grid.get(Math.floor(x / cell) + ',' + Math.floor(z / cell)) || []) {
+    const [A, B, C] = t.v.map((v) => v.p), den = (B[2] - C[2]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[2] - C[2]); if (Math.abs(den) < 1e-12) continue;
+    const a = ((B[2] - C[2]) * (x - C[0]) + (C[0] - B[0]) * (z - C[2])) / den, b = ((C[2] - A[2]) * (x - C[0]) + (A[0] - C[0]) * (z - C[2])) / den; if (a < -1e-4 || b < -1e-4 || a + b > 1.0001) continue;
+    const d = (y - (a * A[1] + b * B[1] + (1 - a - b) * C[1])) * S; if (d > -0.05 && d < best) best = d; } return best; };
+  return [-1, 1].map((side) => line.P.map((_, i) => {
+    if (reshaped(cfg.rebuild, line.cum[i])) return -1;
+    const at = sideways(cfg, line, i, side), [x, z] = at(lat); const d = Math.min(below(x, z, line.Y[i]), below(...at(lat + 0.3), line.Y[i]));
+    return d < 14 ? Math.max(0, d) : -1;
+  }));
 }

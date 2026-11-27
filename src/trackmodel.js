@@ -76,8 +76,8 @@ function deckMesh(tr, deck, model) {
   const sample = (list, side, k) => { const w = list[side < 0 ? 0 : 1], f = ((k % N) / N) * K, a = Math.floor(f) % K, b = (a + 1) % K; return w[a] && w[b] ? w[a] + (w[b] - w[a]) * (f - Math.floor(f)) : Math.max(w[a], w[b]); };
   // ¿ese punto cae sobre otro tramo de la calzada a una altura parecida?
   const over = (i, side, lat) => { const px = tr.X[i % N] - tr.TZ[i % N] * side * lat, pz = tr.Z[i % N] + tr.TX[i % N] * side * lat; for (let j = 0; j < N; j++) { const apart = Math.min((j - i + N) % N, (i - j + N) % N); if (apart > 8 && Math.abs(tr.Y[j] - tr.Y[i % N]) < 3 && Math.hypot(tr.X[j] - px, tr.Z[j] - pz) < edge(j, 1) + 0.8) return true; } return false; };
-  const rimAt = (k, side) => { const v = deck.rim ? sample(deck.rim, side, k) : 0; return v ? Math.max(v, edge(k, side) - 0.4) : 0; };
-  const rimmed = (i, side) => rimAt(i, side) > 0 && rimAt(i + 1, side) > 0 && !over(i, side, rimAt(i, side) + 0.7);
+  // fuera de la rampa el suelo del modelo sigue debajo: el faldón baja justo hasta él (ni flota ni tapa nada)
+  const floorBelow = (k, side) => { if (!deck.ground) return -1; const w = deck.ground[side < 0 ? 0 : 1], f = ((k % N) / N) * K, a = Math.floor(f) % K, b = (a + 1) % K; return w[a] < 0 || w[b] < 0 ? -1 : w[a] + (w[b] - w[a]) * (f - Math.floor(f)); };
   const [r0, r1] = deck.ramp.map((v) => v * N), onRamp = (i) => (r0 <= r1 ? i >= r0 && i <= r1 : i >= r0 || i <= r1);
   const soft = (i) => { let n = 0; for (let d = -6; d <= 6; d++) n += onRamp((i + d + N) % N) ? 1 : 0; return n / 13; };
   // en la rampa el faldón baja hasta el suelo; en lo alto es un buen canto de roca, salvo si debajo pasa otro tramo
@@ -96,15 +96,11 @@ function deckMesh(tr, deck, model) {
     const name = deck.materials[deck.index[Math.round((i / N) * K) % K]];
     strip(name, i, (k) => [-1, -0.5, 0, 0.5, 1].map((f) => [f * edge(k, f || 1), tr.Y[k % N], (f + 1) / 2]), false);
     for (const side of [-1, 1]) {
-      if (rimmed(i, side)) {
-        // bordillo de piedra, como en el original, y debajo la pared de roca que cae
-        const flat = side < 0, wallDown = (k) => (tr.Y[k % N] > 5 && !under(k % N) ? Math.max(5, drop[k % N]) : drop[k % N]), along = (k) => (k * tr.ds) / 5;
-        strip('rim:top', i, (k) => { const r = rimAt(k, side), y = tr.Y[k % N]; return [[side * (r - 0.18), y + 0.02, 0.1, along(k)], [side * (r + 0.95), y + 0.05, 0.9, along(k)]]; }, flat);
-        strip('rim:lip', i, (k) => { const r = rimAt(k, side), y = tr.Y[k % N]; return [[side * (r + 0.95), y + 0.05, 0.9, along(k)], [side * (r + 0.97), y - 0.34, 1, along(k)]]; }, flat);
-        strip(deck.skirt, i, (k) => { const r = rimAt(k, side), y = tr.Y[k % N], d = wallDown(k); return [[r + 0.8, y - 0.3, 0], [r + 0.95, y - d * 0.5, d / 26], [r + 1.1, y - d, d / 13]].map((c) => [side * c[0], c[1], (k * tr.ds) / 13, c[2]]); }, side > 0);
+      if (folds(i, side)) continue;
+      if (floorBelow(i, side) >= 0 && floorBelow(i + 1, side) >= 0) {
+        strip(deck.skirt, i, (k) => { const y = tr.Y[k % N], e = edge(k, side), d = floorBelow(k, side) + 0.25; return [[e, y - 0.07, 0], [e + 0.12, y - Math.min(d, 0.3), 0.02], [e + 0.2, y - d, d / 13]].map((c) => [side * c[0], c[1], (k * tr.ds) / 13, c[2]]); }, side > 0);
         continue;
       }
-      if (folds(i, side)) continue;
       // faldón de roca; en lo alto empieza con un arcén casi plano que llega hasta el pie de las paredes
       strip(deck.skirt, i, (k) => {
         const y = tr.Y[k % N], e = edge(k, side), out = 0.45, low = y - drop[k % N];
@@ -132,10 +128,8 @@ function deckMesh(tr, deck, model) {
   for (const [name, g] of parts) {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(g.P, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(g.U, 2)); geo.setIndex(g.I); geo.computeVertexNormals();
-    const stone = name.startsWith('rim:');
-    const material = (mats[stone ? 'concrete' : name] || new THREE.MeshStandardMaterial({ color: stone ? 0xcfccc4 : 0xb98a56, roughness: 0.95 })).clone();
-    material.side = name === deck.skirt || stone ? THREE.DoubleSide : THREE.FrontSide;
-    if (name === 'rim:lip') material.color.multiplyScalar(0.78);
+    const material = (mats[name] || new THREE.MeshStandardMaterial({ color: 0xb98a56, roughness: 0.95 })).clone();
+    material.side = name === deck.skirt ? THREE.DoubleSide : THREE.FrontSide;
     if (name === deck.skirt) material.color.multiplyScalar(0.72); // en sombra, como el pie de los acantilados
     if (material.map) { material.map = material.map.clone(); material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping; material.map.needsUpdate = true; }
     const mesh = new THREE.Mesh(geo, material); mesh.receiveShadow = true; mesh.userData.deck = name; group.add(mesh);

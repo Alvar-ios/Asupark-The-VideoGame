@@ -162,7 +162,7 @@ export const THEMES = {
   },
   // circuitos importados: el escenario es su modelo y la física sigue la línea central sacada de la calzada
   misty: {
-    id: 'misty', name: 'Misty Cliffs', sub: 'Camino de tierra por una isla: un puente, la subida al faro en espiral y un gran descenso', seed: 'misty-2', model: 'misty', envName: 'camino de tierra', fiction: true, edgePosts: true, noKerbs: true,
+    id: 'misty', name: 'Misty Cliffs', sub: 'Camino de tierra por una isla: un puente, la subida al faro en espiral y un gran descenso', seed: 'misty-3', model: 'misty', envName: 'camino de tierra', fiction: true, edgePosts: true, noKerbs: true,
     style: modelStyle('misty'),
     // mar a la altura del del modelo (1,22 m); el horizonte acaba en el mismo color que la niebla
     sea: { level: 1.22, water: 0x2d7f8c, deep: 0x1b5a70, foam: 0xbfe3df, skyTop: 0x4f86b8, skyMid: 0x9fc4d8, haze: 0xd5dfdc, cloud: 0xfbf6ec, mist: 0xe6ece9, glow: 0xffd9a0 },

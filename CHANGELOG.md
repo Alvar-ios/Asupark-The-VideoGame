@@ -4,6 +4,11 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.128
+- Misty Cliffs: fuera de la rampa el suelo y la roca del modelo ya no se cortan. Solo se hunden bajo la calzada, y el borde baja en rampa suave. Sin agujeros entre roca, tierra y exterior, ni piezas flotando.
+- Fuera los bordillos y zócalos añadidos: queda el borde de piedra original. El faldón de la calzada baja justo hasta el suelo que tiene debajo.
+- Bajada del faro: la calzada sigue el camino original. Se reinician récords y fantasmas de Misty.
+
 ## 0.0.127
 - Misty Cliffs, cueva: vuelve el borde de piedra clara del original con su pared de roca cayendo al foso. Se quitan las bandas planas de tierra que lo tapaban.
 - La roca de la cueva queda cerrada: ya no se ve el mar por la pared. Se conserva el saliente de piedra alto.
