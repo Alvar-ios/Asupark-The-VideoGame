@@ -330,6 +330,8 @@ export function buildTrack(seed, style) {
   if (style.profile) followProfile(tr, style.profile);
   if (style.solids) tr.solids = solidGrid(style.solids);
   if (style.paved) { const g = style.paved, raw = atob(g.data), bits = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) bits[i] = raw.charCodeAt(i); tr.paved = { x: g.x, z: g.z, w: g.w, h: g.h, cell: g.cell, bits }; }
+  if (style.aiLook) tr.aiLook = style.aiLook;
+  if (style.kerbs) { const g = style.kerbs, raw = atob(g.data), bits = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) bits[i] = raw.charCodeAt(i); tr.kerbMap = { x: g.x, z: g.z, w: g.w, h: g.h, cell: g.cell, bits }; }
   if (style.edges) { // muros donde están las barreras del modelo: [izquierda, derecha] por fracción de vuelta
     tr.wallEdge = style.edges.map((arr) => {
       const K = arr.length, near = Float32Array.from({ length: tr.N }, (_, i) => arr[Math.round((i / tr.N) * K) % K]);

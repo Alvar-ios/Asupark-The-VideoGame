@@ -97,6 +97,12 @@ export function makeCar(type, name, isPlayer) {
 }
 
 const tmp = { x: 0, y: 0, z: 0, tx: 0, tz: 1 };
+// 1 si ese punto pisa un piano del modelo
+function onKerbMap(tr, x, z) {
+  const g = tr.kerbMap, i = Math.floor((x - g.x) / g.cell), j = Math.floor((z - g.z) / g.cell);
+  if (i < 0 || j < 0 || i >= g.w || j >= g.h) return 0;
+  const n = j * g.w + i; return (g.bits[n >> 3] >> (n & 7)) & 1;
+}
 // 1 si el punto queda fuera del asfalto y los pianos
 function offPaved(tr, x, z) {
   const g = tr.paved, i = Math.floor((x - g.x) / g.cell), j = Math.floor((z - g.z) / g.cell);
@@ -304,6 +310,20 @@ export function stepCar(c, inp, dt, tr, env) {
     c.vx += loc.tz * side * push * dt; c.vz += -loc.tx * side * push * dt;
     c.psi += clamp(wrapPi(Math.atan2(loc.tx, loc.tz) - c.psi), -0.4, 0.4) * 0.35 * depth * dt; // y el morro tiende a alinearse con la pista
     if (env.kerbRough && kartK === 1) { const f = Math.exp(-0.45 * depth * dt); c.vx *= f; c.vz *= f; c.vx += (Math.random() - 0.5) * 0.9 * depth; c.vz += (Math.random() - 0.5) * 0.9 * depth; } // pianos altos y rugosos: frenan un poco y sacuden
+  }
+  // pianos altos del modelo: cada rueda que los pisa da un golpe seco que desplaza y gira el kart, y se agarra menos
+  if (tr.kerbMap && !c.air) {
+    const l = onKerbMap(tr, c.x + rx * 0.55, c.z + rz * 0.55), r = onKerbMap(tr, c.x - rx * 0.55, c.z - rz * 0.55), on = l + r;
+    if (on) {
+      c.onKerb = true;
+      if (c.speed > 6) {
+        const k = clamp(c.speed / 25, 0.3, 1.2), beat = Math.sin(c.kerbPhase = (c.kerbPhase || 0) + c.speed * dt * 2.2) > 0 ? 1 : -0.4; // un golpe por cada banda del piano
+        const kick = (l - r) * 1.6 * k * beat; // pisando con un solo lado, el golpe empuja hacia fuera del piano y tuerce el morro
+        c.vx -= rx * kick * dt * 6; c.vz -= rz * kick * dt * 6;
+        c.psi += (l - r) * 0.22 * k * beat * dt + (Math.random() - 0.5) * 0.5 * k * on * dt;
+        const f = Math.exp(-0.18 * on * dt); c.vx *= f; c.vz *= f;
+      }
+    }
   }
   // altura y saltos
   const hNew = loc.h;

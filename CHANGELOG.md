@@ -4,6 +4,12 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.129
+- Circuito nuevo: Kartódromo Nóvaya Zariá, un club de karting real con nombre inventado. Salida junto al edificio azul, hacia la izquierda mirándolo. Modelo de 826.000 a 139.000 triángulos y de 155 a 6,8 MB.
+- Se corre por el asfalto, las placas de hormigón y los pianos; la hierba frena mucho.
+- Pianos altos: cada rueda que los pisa da golpes que desplazan y giran el kart y quitan algo de agarre. El kart bota y la cámara tiembla.
+- No entra en el sorteo del reto diario hasta que se dé por bueno.
+
 ## 0.0.128
 - Misty Cliffs: fuera de la rampa el suelo y la roca del modelo ya no se cortan. Solo se hunden bajo la calzada, y el borde baja en rampa suave. Sin agujeros entre roca, tierra y exterior, ni piezas flotando.
 - Fuera los bordillos y zócalos añadidos: queda el borde de piedra original. El faldón de la calzada baja justo hasta el suelo que tiene debajo.

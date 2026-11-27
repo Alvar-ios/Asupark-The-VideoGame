@@ -21,6 +21,17 @@ geometría. En Misty Cliffs se ha rehecho la calzada, se ha sustituido el salto 
 piezas que cerraban el paso y se ha cambiado el mar del modelo por uno propio (src/seascape.js). En Mario Circuit 3 se han quitado las copias duplicadas, aligerado piezas cercanas y cambiado colores. Para quitar uno: borrar su tema en `src/themes.js`, su entrada en `src/visible.js` y su
 archivo `src/assets/track_*.glb.gz`.
 
+## Kartódromo Nóvaya Zariá (v0.0.129)
+
+| En el juego | Archivo original | Autor | Enlace |
+|---|---|---|---|
+| Kartódromo Nóvaya Zariá | Karting Club Lider, Outdoor Race Track [Ready] | Nikita Teploukhov (skril4ek) | https://sketchfab.com/3d-models/karting-club-lider-outdoor-race-track-ready-2d9ba05c6eed439d858ee325286122c0 |
+
+Licencia CC BY-NC 4.0: hay que citar al autor y **no se puede usar con fines comerciales** (cobrar, anuncios) sin su
+permiso. El modelo reproduce un club real con su nombre y logo; en el juego lleva un nombre inventado. Modificado con
+tools/prep-tracks.mjs: sin cielo, tendido eléctrico ni kart de exposición, texturas reducidas y camiones, remolques y
+neumáticos simplificados.
+
 ## Aviso antes de abrir la app al público
 
 La etiqueta CC BY la pone quien sube el archivo y solo vale sobre lo que sea suyo. Estos modelos reproducen

@@ -55,7 +55,7 @@ export function buildSpeedProfile(tr, T) {
 export function aiInput(c, tr, prof, ai, out) {
   setRoad(tr);
   const N = tr.N, speed = c.speed, LN = racingLine(tr);
-  const li = (c.hint + Math.max(3, Math.floor(((ai.la0 || 7.9) + (ai.la1 || 0.58) * speed) / tr.ds))) % N;
+  const li = (c.hint + Math.max(3, Math.floor(((ai.la0 || 7.9) + (ai.la1 || 0.58) * speed) * (tr.aiLook || 1) / tr.ds))) % N; // en pistas estrechas mira más cerca: si no, corta las curvas por la hierba
   const lane = ai.lane || 0;
   const tx = LN.X[li] + -tr.TZ[li] * lane * 0.3, tz = LN.Z[li] + tr.TX[li] * lane * 0.3;
   const sn = Math.sin(c.psi), cs = Math.cos(c.psi);

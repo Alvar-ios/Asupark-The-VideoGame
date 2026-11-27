@@ -10,7 +10,7 @@ import { isVisibleTrack } from './visible.js';
 // trazado de un circuito importado (src/tracks-data.js)
 function modelStyle(id) {
   const d = TRACK_DATA[id];
-  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, deck: d.deck, paved: d.paved, imported: true, startNear: d.start, scale: 1, half: d.paved ? 4.3 : d.half, wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: true, noKerb: true };
+  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, deck: d.deck, paved: d.paved, kerbs: d.kerbs, imported: true, startNear: d.start, scale: 1, half: d.gameHalf ?? (d.paved ? 4.3 : d.half), wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: true, noKerb: true };
 }
 
 export const THEMES = {
@@ -181,6 +181,12 @@ export const THEMES = {
     skyTop: 0x2f7fe0, skyHor: 0xbfe6ff, fog: 0xbfe0f6, fogNear: 420, fogFar: 2600, ground: 0xc9a561, grass: 0xc9a561, dirt: 0xc9a561, road: 0x55565a, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
     wall1: 0x2f9d3f, wall2: 0xd43a30, mount: 0x6a8f4a, sun: 0xfff6e0, sunDir: [-0.35, 0.8, 0.4], hemiSky: 0xffffff, hemiGround: 0xb59a68, hemiI: 1.25, sunI: 1.75, night: false, temp: 25, humidity: 0.35, wind: [1, 0.5], gripMul: 1, offroad: 0.34, offroadGrip: 0.62, rollingDrag: 0.3, steerOffroad: 0.72,
   },
+  lider: {
+    id: 'lider', name: 'Kartódromo Nóvaya Zariá', sub: 'Club de karting al aire libre: horquillas enlazadas, placas de hormigón y pianos altos', seed: 'lider-1', model: 'lider', noKerbs: true, kerbRough: true, // pianos altos: el kart bota y la cámara tiembla
+    style: { ...modelStyle('lider'), aiLook: 0.5 }, floor: { color: 0x4f6b37, y: -1.6 },
+    skyTop: 0x5b8fd0, skyHor: 0xdbe5ec, fog: 0xd9e2e8, fogNear: 260, fogFar: 1700, ground: 0x4f6b37, grass: 0x5b7a3d, dirt: 0x7a6a50, road: 0x4a4c50, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
+    wall1: 0x1f1f22, wall2: 0x2c5fc0, mount: 0x6a7f5a, sun: 0xfff1dc, sunDir: [-0.45, 0.62, 0.45], hemiSky: 0xe6eef8, hemiGround: 0x6d6a58, hemiI: 1.25, sunI: 1.9, night: false, temp: 18, humidity: 0.55, wind: [2, 0.6], gripMul: 1, offroad: 0.34, offroadGrip: 0.62, rollingDrag: 0.3, steerOffroad: 0.72,
+  },
   muralla: {
     id: 'muralla', fiction: true, name: 'Gran Muralla, China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,
     style: {
@@ -250,7 +256,7 @@ export const THEMES = {
     hemiSky: 0xe3efff, hemiGround: 0x75716a, hemiI: 1.0, sunI: 1.25, deco: 'industrial', industrial: true, treeCol: 0x77746d, treeCount: 0, night: false, temp: 23, humidity: 0.3, wind: [2, 0.5], gripMul: 1, offroad: 0.6,
   },
 };
-const ALL_THEME_LIST = ['misty', 'mariocircuit', 'pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
+const ALL_THEME_LIST = ['lider', 'misty', 'mariocircuit', 'pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
 // solo circuitos visibles (ver src/visible.js)
 export const THEME_LIST = ALL_THEME_LIST.filter(isVisibleTrack);
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];

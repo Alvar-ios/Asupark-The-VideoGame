@@ -50,6 +50,25 @@ const TRACKS = {
       deck: /CliffsGround\.00|concrete/, skirt: 'DarkGreyCliff',
     },
   },
+  lider: {
+    file: 'karting_club_lider__outdoor_race_track_ready.glb',
+    scale: 1, half: 3.3, gameHalf: 3.3, step: 1, // curvas muy cerradas: un punto cada 2,5 m; // pista de unos 6,5 m
+    dropNodes: /^(sky|LEP500|kart_model)/, // cielo, tendido eléctrico lejano y un kart de exposición
+    road: { materials: ['racetrack', 'conc_plates_clever', 'kerb_with_rubber'] },
+    // asfalto, placas de hormigón (se corre por ellas), pianos, líneas pintadas y marcas de goma: todo lo demás frena
+    paved: ['racetrack', 'kerb_with_rubber', 'conc_plates_clever', 'conc_plates_darkgrey', 'conc_plates_grey', 'conc_plates_lightgrey', 'conc', 'conc2', 'conc_t3', 'conc_t4', 'conc_t9', 'conc_t89_1', 'conc_t89_2', 'road_marking_lined', 'road_marking_plane', 'Material_12932', 'GROOVE_3', 'skids', 'dust', 'decal_concrete_patch_1', 'decal_concrete_patch_2', 'Cracks1', 'Material_5034', 'Material_12663'],
+    kerbs: ['kerb_with_rubber'], // pianos altos: sacuden el kart
+    barriers: ['black_tyre', 'blue_tyre', 'red_tyre', 'white_tyre', 'Material_4867', 'Material_4879', 'Material_3906', 'Material_3925', 'grey_armc', 'blue_armco', 'white_metal_barrier', 'red_metal_barrier', 'black_armco', 'black_armco_0', 'armco_orange', 'Material_5073', 'fence'],
+    tile: ['racetrack', 'green', 'grass_terrain', 'black_tyre', 'blue_tyre', 'red_tyre', 'conc_plates_clever', 'kerb_with_rubber', 'Trees_Sheet'],
+    texBig: ['racetrack', 'kerb_with_rubber', 'conc_plates_clever', 'green', 'grass_terrain', 'road_marking_lined', 'Trees_Sheet'], // se ven de cerca: más resolución
+    // camiones, remolques y neumáticos traen muchísimo detalle que no se ve desde el kart
+    ratio: { trailer_base: 0.04, truck_blue: 0.05, Body: 0.08, trailer_big: 0.2, Tires: 0.15, black_tyre: 0.22, blue_tyre: 0.22, red_tyre: 0.22, white_tyre: 0.3, conc_plates_clever: 0.25, green: 0.12, material: 0.2, Pillar: 0.3, Ladder_Metallic: 0.25, Vertical_Tank_Metallic: 0.3, racetrack: 1, kerb_with_rubber: 1, road_marking_lined: 1, road_marking_plane: 1, Trees_Sheet: 1, '*': 0.5 },
+    sloppy: { trailer_base: 0.04, truck_blue: 0.06, Body: 0.12, trailer_big: 0.25, Tires: 0.2 },
+    error: 0.02, errorFor: { racetrack: 0.001, kerb_with_rubber: 0.001, conc_plates_clever: 0.012, road_marking_lined: 0.001, black_tyre: 0.01, blue_tyre: 0.01, red_tyre: 0.01 }, // decorado lejano: más simple
+    // plano de 900 px (9 px por metro): x = -40 + px/9, z = -52 + py/9. Salida junto al edificio azul, hacia el norte
+    map: (px, py) => [-40 + px / 9, -52 + py / 9],
+    path: [[792, 463], [795, 380], [795, 300], [790, 230], [775, 160], [740, 100], [690, 72], [620, 62], [560, 62], [500, 70], [455, 90], [420, 125], [395, 175], [370, 225], [345, 270], [320, 310], [295, 345], [260, 358], [232, 330], [228, 290], [240, 250], [255, 200], [255, 150], [245, 100], [215, 68], [170, 62], [130, 80], [110, 120], [105, 180], [102, 250], [100, 330], [98, 420], [105, 490], [130, 540], [175, 565], [230, 565], [285, 540], [320, 490], [350, 440], [380, 390], [410, 330], [440, 280], [480, 235], [530, 205], [590, 200], [640, 215], [680, 250], [695, 300], [698, 360], [695, 430], [680, 490], [650, 540], [600, 585], [540, 610], [460, 628], [380, 645], [300, 662], [220, 680], [160, 700], [115, 740], [100, 800], [115, 860], [160, 895], [220, 905], [280, 885], [340, 845], [400, 805], [460, 770], [520, 745], [590, 735], [660, 738], [720, 728], [770, 690], [795, 630], [795, 550]],
+  },
   mario3: {
     file: 'mario_kart_8_deluxe_-_snes_mario_circuit_3.glb',
     scale: 0.0342, half: 5.5, flat: true,
@@ -187,11 +206,11 @@ function barrierEdges(cfg, line, tris) {
 }
 
 // mapa del suelo en celdas de 30 cm: un bit a 1 donde hay asfalto o piano
-function pavedGrid(cfg, tris, place, nodes) {
+function pavedGrid(cfg, tris, place, nodes, list = cfg.paved) {
   const cell = 0.3, xs = nodes.map((n) => n[0]), zs = nodes.map((n) => n[1]), x0 = Math.floor(Math.min(...xs) - 16), z0 = Math.floor(Math.min(...zs) - 16);
   const w = Math.ceil((Math.max(...xs) + 16 - x0) / cell), h = Math.ceil((Math.max(...zs) + 16 - z0) / cell), bits = new Uint8Array(Math.ceil(w * h / 8));
   for (const t of tris) {
-    if (!cfg.paved.includes(t.mat.getName())) continue;
+    if (!list.includes(t.mat.getName())) continue;
     const [A, B, C] = t.v.map((v) => place(v.p)), den = (B[2] - C[2]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[2] - C[2]); if (Math.abs(den) < 1e-9) continue;
     for (let j = Math.max(0, Math.floor((Math.min(A[2], B[2], C[2]) - z0) / cell)); j <= Math.min(h - 1, Math.floor((Math.max(A[2], B[2], C[2]) - z0) / cell)); j++) for (let i = Math.max(0, Math.floor((Math.min(A[0], B[0], C[0]) - x0) / cell)); i <= Math.min(w - 1, Math.floor((Math.max(A[0], B[0], C[0]) - x0) / cell)); i++) {
       const x = x0 + (i + 0.5) * cell, z = z0 + (j + 0.5) * cell, a = ((B[2] - C[2]) * (x - C[0]) + (C[0] - B[0]) * (z - C[2])) / den, b = ((C[2] - A[2]) * (x - C[0]) + (A[0] - C[0]) * (z - C[2])) / den;
@@ -210,7 +229,7 @@ async function writeModel(id, cfg, tris, place, rev) {
   const texCache = new Map();
   const texture = async (src) => {
     if (!src) return null; if (texCache.has(src)) return texCache.get(src);
-    const meta = await sharp(Buffer.from(src.getImage())).metadata(), w = Math.min(512, meta.width), h = Math.max(1, Math.round(w * meta.height / meta.width));
+    const meta = await sharp(Buffer.from(src.getImage())).metadata(), w = Math.min(src.big ? 1024 : 512, meta.width), h = Math.max(1, Math.round(w * meta.height / meta.width));
     const alpha = meta.hasAlpha && !(await sharp(Buffer.from(src.getImage())).stats()).isOpaque;
     const base = sharp(Buffer.from(src.getImage())).resize(w, h);
     const data = alpha ? await base.png({ compressionLevel: 9, palette: true }).toBuffer() : await base.flatten({ background: '#000' }).jpeg({ quality: 82 }).toBuffer();
@@ -222,7 +241,8 @@ async function writeModel(id, cfg, tris, place, rev) {
     const name = m.getName(), P = new Float32Array(list.length * 9), N = new Float32Array(list.length * 9), U = new Float32Array(list.length * 6), C = list[0].v[0].c ? new Float32Array(list.length * 9) : null;
     let i = 0; for (const t of list) for (const v of t.v) { P.set(place(v.p), i * 3); if (!cfg.ratio) N.set(v.n, i * 3); U.set(v.uv, i * 2); if (C) C.set(v.c || [1, 1, 1], i * 3); i++; }
     let nm = matCache.get(m); if (!nm) { nm = out.createMaterial(name).setBaseColorFactor(m.getBaseColorFactor()).setMetallicFactor(0).setRoughnessFactor(0.95).setDoubleSided(m.getDoubleSided()).setAlphaMode(m.getAlphaMode()).setAlphaCutoff(m.getAlphaCutoff()).setEmissiveFactor(m.getEmissiveFactor());
-    matCache.set(m, nm); nm.setBaseColorTexture(await texture(m.getBaseColorTexture())); nm.setEmissiveTexture(await texture(m.getEmissiveTexture())); }
+    matCache.set(m, nm); if ((cfg.texBig || []).includes(name)) { for (const t of [m.getBaseColorTexture(), m.getEmissiveTexture()]) if (t) t.big = true; }
+    nm.setBaseColorTexture(await texture(m.getBaseColorTexture())); nm.setEmissiveTexture(await texture(m.getEmissiveTexture())); }
     const prim = out.createPrimitive().setMaterial(nm).setAttribute('POSITION', out.createAccessor().setType('VEC3').setArray(P).setBuffer(buf)).setAttribute('TEXCOORD_0', out.createAccessor().setType('VEC2').setArray(U).setBuffer(buf));
     if (!cfg.ratio) prim.setAttribute('NORMAL', out.createAccessor().setType('VEC3').setArray(N).setBuffer(buf));
     if (C) prim.setAttribute('COLOR_0', out.createAccessor().setType('VEC3').setArray(C).setBuffer(buf));
@@ -232,7 +252,13 @@ async function writeModel(id, cfg, tris, place, rev) {
   if (cfg.ratio) { // aligerar: cada material con su proporción
     await MeshoptSimplifier.ready;
     const { simplifyPrimitive } = await import('@gltf-transform/functions');
-    for (const mesh of out.getRoot().listMeshes()) for (const prim of mesh.listPrimitives()) { const r = cfg.ratio[prim.getMaterial().getName()] ?? cfg.ratio['*']; if (r < 1 && prim.getIndices().getCount() > 900) simplifyPrimitive(prim, { simplifier: MeshoptSimplifier, ratio: r, error: cfg.error }); }
+    for (const mesh of out.getRoot().listMeshes()) for (const prim of mesh.listPrimitives()) { const r = cfg.ratio[prim.getMaterial().getName()] ?? cfg.ratio['*']; if (r < 1 && prim.getIndices().getCount() > 900) simplifyPrimitive(prim, { simplifier: MeshoptSimplifier, ratio: r, error: (cfg.errorFor || {})[prim.getMaterial().getName()] ?? cfg.error });
+      // piezas sueltas muy detalladas (camiones, neumáticos): se simplifican sin respetar bordes, a lo bruto
+      const sl = (cfg.sloppy || {})[prim.getMaterial().getName()];
+      if (sl && prim.getIndices().getCount() > 900) { const idx = prim.getIndices(), pos = prim.getAttribute('POSITION'), src = new Uint32Array(idx.getArray()), target = Math.floor(src.length * sl / 3) * 3; const [res] = MeshoptSimplifier.simplifySloppy(src, pos.getArray(), 3, null, target, 1); idx.setArray(new Uint32Array(res)); }
+    }
+    const { compactPrimitive } = await import('@gltf-transform/functions');
+    for (const mesh of out.getRoot().listMeshes()) for (const prim of mesh.listPrimitives()) compactPrimitive(prim); // fuera los vértices que ya no usa nadie
     await out.transform(prune());
     // sin normales de origen (así se pueden fusionar los vértices): se calculan suaves después de aligerar
     for (const mesh of out.getRoot().listMeshes()) for (const prim of mesh.listPrimitives()) {
@@ -295,7 +321,7 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   // cuántas muestras caen fuera de la calzada (control de calidad del trazado)
   const off = line.P.filter(([x, z]) => !hit(x, z).length).length;
   let len = 0; for (let i = 0; i < nodes.length; i++) { const a = nodes[i], b = nodes[(i + 1) % nodes.length]; len += Math.hypot(b[0] - a[0], b[1] - a[1]); }
-  const step = 3, every = nodes.filter((_, i) => i % step === 0);
+  const step = cfg.step ?? 3, every = nodes.filter((_, i) => i % step === 0);
   data[id] = { half: cfg.half, wall: +(cfg.half + (cfg.wallExtra ?? 2.5)).toFixed(2), nodes: every.map((n) => [n[0], n[1]]), profile: cfg.rebuild ? nodes : every, start: [nodes[0][0], nodes[0][1]] };
   if (deck) {
     const names = [...new Set(deck)];
@@ -314,6 +340,8 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   if (cfg.rebuild) data[id].edges = [0, 1].map(() => every.map(() => data[id].wall));
   if (cfg.paved) {
     data[id].paved = pavedGrid(cfg, tris, place, nodes);
+    if (cfg.kerbs) data[id].kerbs = pavedGrid(cfg, tris, place, nodes, cfg.kerbs);
+    if (cfg.gameHalf) data[id].gameHalf = cfg.gameHalf;
     const g = data[id].paved, bits = Buffer.from(g.data, 'base64'), on = (x, z) => { const n = Math.floor((z - g.z) / g.cell) * g.w + Math.floor((x - g.x) / g.cell); return (bits[n >> 3] >> (n & 7)) & 1; };
     console.log(id, 'mapa del suelo', g.w + 'x' + g.h, '| puntos del eje fuera del asfalto:', nodes.filter((n) => !on(n[0], n[1])).length, 'de', nodes.length);
   }

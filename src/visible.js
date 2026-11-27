@@ -3,6 +3,7 @@
 export const VISIBLE_CARS = ['kart']; // un solo kart: lo demás son aspectos (colores, calcomanías y carrocerías)
 // karting = Fórmula 0, asupark = Asupark (karts propios), muralla = Gran Muralla (circuito de karts sobre la muralla)
 // misty y mariocircuit son importados; con muralla forman la fila de circuitos ficticios
-export const VISIBLE_TRACKS = ['karting', 'asupark', 'muralla', 'misty', 'mariocircuit'];
+// lider = kartódromo importado (circuito real, nombre inventado)
+export const VISIBLE_TRACKS = ['karting', 'asupark', 'lider', 'muralla', 'misty', 'mariocircuit'];
 export const isVisibleCar = (c) => VISIBLE_CARS.includes(c.id);
 export const isVisibleTrack = (k) => VISIBLE_TRACKS.includes(k);
