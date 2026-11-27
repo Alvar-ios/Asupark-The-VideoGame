@@ -12,6 +12,7 @@ import { computeWalk, walkwayMesh } from './walkway.js';
 import { magarigawaDecor } from './magarigawa.js';
 import { murallaDecor } from './muralla.js';
 import { italiaDecor } from './italia.js';
+import { lumenDecor, popDecor } from './fantasy.js';
 import { rallyDecor } from './rally.js';
 import { industrialDecor } from './industrial.js';
 import { buildModelWorld } from './trackmodel.js';
@@ -2558,7 +2559,9 @@ function scenery(tr, th, scene, rng, q) {
 // Se añade después de la decoración existente, así que no altera la colocación de árboles ni montañas.
 function outerDecor(tr, th, scene, rng, q, clearance, cxm, czm, R) {
   if (th.industrial) { windLeaves.length = 0; industrialDecor(tr, th, scene, rng, q, clearance, cxm, czm, R); return; }
-  if (th.id === 'italia') { windLeaves.length = 0; makeBirds(tr, scene, q.density < 1 ? 4 : 8); return; } // todo su entorno lo construye italia.js
+  if (th.id === 'italia') { windLeaves.length = 0; makeBirds(tr, scene, q.density < 1 ? 4 : 8); return; }
+  if (th.id === 'lumen') { windLeaves.length = 0; return; } // todo su entorno lo construye fantasy.js
+  if (th.id === 'pop') { windLeaves.length = 0; makeBirds(tr, scene, q.density < 1 ? 4 : 8); return; } // todo su entorno lo construye italia.js
   if (th.id === 'muralla') { windLeaves.length = 0; backdrop(scene, 'karst', cxm, czm, R, 1250); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
   if (th.id === 'magarigawa') { windLeaves.length = 0; backdrop(scene, 'jungle', cxm, czm, R, 1500); makeBirds(tr, scene, q.density < 1 ? 5 : 7); return; }
   if (th.id === 'palomring') { windLeaves.length = 0; fillWorld(tr, th, scene, rng, q, clearance, cxm, czm, R); makeBirds(tr, scene, q.density < 1 ? 8 : 16); return; }
@@ -2988,6 +2991,8 @@ export function buildWorld(tr, th, opt = {}) {
   if (th.id === 'magarigawa') magarigawaDecor(tr, th, scene, q);
   if (th.id === 'muralla') murallaDecor(tr, th, scene, q);
   if (th.id === 'italia') italiaDecor(tr, th, scene, q);
+  if (th.id === 'lumen') lumenDecor(tr, th, scene, q, extraAnim);
+  if (th.id === 'pop') popDecor(tr, th, scene, q, extraAnim);
   if (th.id === 'rally') rallyDecor(tr, th, scene, q, extraAnim);
   const info = scenery(tr, th, scene, rng, q);
   const windDummy = new THREE.Object3D();

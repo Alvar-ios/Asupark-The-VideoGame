@@ -4,6 +4,7 @@ import { NODES as MU_NODES, START as MU_START, CROSS as MU_CROSS, HILLS as MU_HI
 import { NODES as MG_NODES, START as MG_START, HILLS as MG_HILLS, RUNOFF as MG_RUNOFF } from './magarigawa-data.js';
 import { NODES as PR_NODES, START as PR_START, CROSS as PR_CROSS, RAMP_U as PR_RAMP, TUNNEL as PR_TUNNEL, HILLS as PR_HILLS } from './palomring-data.js';
 import { NODES as RA_NODES, START as RA_START, HILLS as RA_HILLS, FORDS as RA_FORDS } from './rally-data.js';
+import { LUMEN, POP } from './fantasy-data.js';
 import { hashStr } from './rng.js';
 import { isVisibleTrack } from './visible.js';
 
@@ -189,6 +190,29 @@ export const THEMES = {
     skyTop: 0x7d8fa6, skyHor: 0xc9d1d8, fog: 0xc3cbd2, fogNear: 220, fogFar: 1500, ground: 0x4a6236, grass: 0x56713c, dirt: 0x6e6450, road: 0x3f4145, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
     wall1: 0xe8c21f, wall2: 0x1f1f22, mount: 0x67755e, sun: 0xeef2f7, sunDir: [-0.35, 0.7, 0.4], hemiSky: 0xdde5ee, hemiGround: 0x5d5c52, hemiI: 1.35, sunI: 1.35, night: false, temp: 14, humidity: 0.85, wind: [3, 0.6], gripMul: 1, offroad: 0.45, offroadGrip: 0.75, rollingDrag: 0.25, steerOffroad: 0.85, // hierba lenta, pero menos que en el kartódromo
   },
+  // circuitos de fantasía con decorado propio y animado (fantasy.js)
+  lumen: {
+    id: 'lumen', fiction: true, name: 'Bahía Lumen', sub: 'Paseo marítimo al anochecer: un ocho con puente, noria, faro y fuegos artificiales sobre el mar', seed: 'lumen-1', privateClub: true, ownTerrain: true, ownEdge: true, dusk: true, exposure: 1.1,
+    style: {
+      fixedNodes: LUMEN.nodes, startNear: LUMEN.start, scale: 1, half: 6, wall: 9.5, minR: 10, sep: 24, cross: LUMEN.cross, bridgeH: 7, bridgePlat: 18, bridgeRamp: 60,
+      chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], hillPts: LUMEN.hills, hillSmooth: 8, noAir: true,
+    },
+    skyTop: 0x2b3f7a, skyHor: 0xff9a6a, fog: 0xc98a78, fogNear: 160, fogFar: 1600,
+    ground: 0x5f7d3b, grass: 0xc9bfae, dirt: 0xc9bfae, road: 0x74767e, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
+    wall1: 0xc9bba4, wall2: 0xf1ece2, mount: 0x56637a, sun: 0xffa060, sunDir: [-0.25, 0.14, -0.95],
+    hemiSky: 0x9aa8e0, hemiGround: 0x8a6a58, hemiI: 1.7, sunI: 3.0, deco: 'madrid', treeCount: 1, treeCol: 0x3f7a35, night: false, temp: 21, humidity: 0.6, wind: [2, 0.6], gripMul: 1, offroad: 0.75, offroadGrip: 0.82,
+  },
+  pop: {
+    id: 'pop', fiction: true, name: 'Valle Pop', sub: 'Colinas de colores: muros de bloques de juguete, globos aerostáticos, molinos y una grada que no para de saltar', seed: 'pop-1', privateClub: true, ownTerrain: true, ownEdge: true, runoffCol: 0xe9d59c,
+    style: {
+      fixedNodes: POP.nodes, startNear: POP.start, scale: 1, half: 6.5, wall: 10, minR: 10, sep: 24, runoff: { gravel: 3.4, open: [] },
+      chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], hillPts: POP.hills, hillSmooth: 10, noAir: true,
+    },
+    skyTop: 0x3d8fe8, skyHor: 0xcdeeff, fog: 0xd2ebf8, fogNear: 320, fogFar: 2300,
+    ground: 0x63b13d, grass: 0x63b13d, dirt: 0xe9d59c, road: 0x8b8c92, kerb1: 0xe94b4b, kerb2: 0xffffff,
+    wall1: 0xe94b4b, wall2: 0xffcc33, mount: 0x7a9a6a, sun: 0xfff4dc, sunDir: [-0.4, 0.75, 0.45],
+    hemiSky: 0xffffff, hemiGround: 0x7aa050, hemiI: 1.3, sunI: 1.7, deco: 'madrid', treeCount: 1, treeCol: 0x4fae3a, night: false, temp: 23, humidity: 0.4, wind: [2, 0.5], gripMul: 1, offroad: 0.45, offroadGrip: 0.7, rollingDrag: 0.25, steerOffroad: 0.8,
+  },
   muralla: {
     id: 'muralla', fiction: true, name: 'Gran Muralla, China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,
     style: {
@@ -258,7 +282,7 @@ export const THEMES = {
     hemiSky: 0xe3efff, hemiGround: 0x75716a, hemiI: 1.0, sunI: 1.25, deco: 'industrial', industrial: true, treeCol: 0x77746d, treeCount: 0, night: false, temp: 23, humidity: 0.3, wind: [2, 0.5], gripMul: 1, offroad: 0.6,
   },
 };
-const ALL_THEME_LIST = ['lemans', 'lider', 'misty', 'castle', 'pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
+const ALL_THEME_LIST = ['lemans', 'lider', 'misty', 'castle', 'lumen', 'pop', 'pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
 // solo circuitos visibles (ver src/visible.js)
 export const THEME_LIST = ALL_THEME_LIST.filter(isVisibleTrack);
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];

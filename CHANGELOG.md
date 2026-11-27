@@ -4,6 +4,11 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.135
+- Circuito nuevo: Bahía Lumen (1,16 km), paseo marítimo al anochecer. Es un ocho con puente, sube al pueblo por la colina y tiene farolas, guirnaldas de bombillas que parpadean, palmeras, una noria y un tiovivo que giran, un faro con el haz barriendo la bahía, barcas que se mecen y fuegos artificiales sobre el mar.
+- Circuito nuevo: Valle Pop (1,43 km), colinas de dibujos animados. Tiene muros de bloques de colores, arena junto a la pista, globos aerostáticos que flotan, molinos y molinillos que giran, una grada con público que salta, banderines, flores, un estanque y casitas de colores.
+- Los dos son diseños propios, en la fila de circuitos ficticios. No entran en el reto diario hasta que se den por buenos.
+
 ## 0.0.134
 - Circuito nuevo: Circuito del Castillo (499 m), con túnel bajo el castillo y un puente que cruza la pista. Entra en el sorteo del reto diario desde el 28 de noviembre; el reto de hoy no cambia.
 - Se retira Mario Circuit 3. Sus récords y retos pasados dejan de mostrarse.
