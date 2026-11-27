@@ -22,51 +22,37 @@ const TRACKS = {
   misty: {
     file: 'boom_karts_misty_cliffs.glb',
     scale: 26, half: 5.3,
-    dropNodes: /^(DynamicProps|LightmapCube|SceneReferences|Camera|StartLine|Ocean)/,
+    dropNodes: /^(DynamicProps|LightmapCube|SceneReferences|Camera|StartLine|Ocean|startFrame)/, // fuera también el arco de salida con el logo del juego original
     road: { node: /^CliffsRoad(.00[123])?$/ }, // la franja de hormigón (CliffsRoad) también es calzada
     keep: [[4.95, 6.0, 6.5, 9.3]], // ahí el camino va partido por la roca: se respetan los puntos dados [x0, x1, z0, z1]
     startY: -0.11,
     // plano de 900 px: x = 2.5 + px/150, z = 3.8 + py/150
     map: (px, py) => [2.5 + px / 150, 3.8 + py / 150],
     path: [[300, 994], [260, 999], [215, 985], [170, 955], [140, 910], [122, 860], [118, 810], [130, 765], [165, 735], [220, 722], [275, 712], [305, 690], [316, 650], [311, 600], [308, 550], [320, 515], [350, 503], [378, 480], [390, 440], [396, 400], [398, 365], [425, 335], [470, 310], [520, 305], [565, 318], [600, 345], [625, 375], [650, 405], [680, 422], [712, 415], [745, 395], [775, 360], [790, 325], [790, 295], [770, 268], [730, 255], [690, 248], [660, 222], [625, 180], [590, 140], [560, 118], [525, 108], [490, 118], [465, 145], [458, 185], [470, 225], [500, 250], [525, 265], [525, 292], [515, 330], [487, 380], [467, 422], [468, 478], [460, 525], [443, 570], [428, 600], [413, 630], [406, 660], [402, 690], [407, 720], [423, 750], [450, 780], [495, 806], [538, 826], [565, 865], [570, 915], [550, 955], [520, 992], [480, 1003], [440, 1000], [400, 996], [350, 993]],
-    wallExtra: 0.25, // los bordes son precipicios: el muro invisible va en el borde de la calzada
+    wallExtra: 0.4, // los bordes son precipicios: el muro invisible va en el borde de la calzada
     stepTol: 0.55, // un escalón mayor que esto (m) ya no es la misma calzada
     solids: true, // las rocas, paredes y demás decorado que invade la pista se pueden chocar
-    // calzada reconstruida: sin gran salto ni escalones (distancias en metros desde el primer punto del trazado)
-    rebuild: {
-      // alturas en metros sobre la recta de abajo. El trampolín original sube hasta 15,3 m en el metro 495: se sube
-      // con él hasta el mismo borde y la rampa baja desde allí, ya en el aire, sin atravesar la montaña
-      base: 82, lip: [490, 508],
-      profile: [
-        { from: 456, to: 495, a: 12.35, b: 15.3 },
-        { from: 495, to: 58, a: 15.3, b: 0 },
-        { from: 58, to: 82, a: 0, b: 0 }, // recta de meta llana
-      ],
-      startAt: 70,
-      fixed: [[318, 352]], // bajada del faro: se respeta el camino original
-      sides: [[352, 446, -1]], // la pared de la bajada cruza el camino en diagonal: se esquiva siempre por el mismo lado
-      keep: /lighthouse/i, boulder: /^Rock_|TriPlanar/i, clear: 3.3, pass: 1.7, // la calzada se aparta hasta dejar las paredes a 3,3 m del eje; solo se corta lo que quede a menos de 1,7
-      floor: /CliffsGround|concrete|FinishLine/i, soft: /grass|plant|shrub|decal/i, remove: /RoadBlock|Trafficbarrier|FinishLine/i,
-      deck: /CliffsGround\.00|concrete/, skirt: 'DarkGreyCliff',
-    },
+    // el modelo tal cual: el kart pisa la altura real del suelo (mapa de alturas) y el gran salto es un salto de verdad
+    startAt: 70, gaps: true, heights: true, step: 1,
   },
   lider: {
     file: 'karting_club_lider__outdoor_race_track_ready.glb',
-    scale: 1.2, half: 4, gameHalf: 4, step: 1, // a escala real se quedaba pequeño para el kart: un 20 % más grande; // curvas muy cerradas: un punto cada 2,5 m; // pista de unos 6,5 m
+    scale: 1.65, half: 5.4, gameHalf: 5.4, step: 1, // a escala real el kart parecía enorme: todo el recinto un 65 % más grande; // curvas muy cerradas: un punto cada 2,5 m; // pista de unos 6,5 m
     dropNodes: /^(sky|LEP500|kart_model)/, // cielo, tendido eléctrico lejano y un kart de exposición
     road: { materials: ['racetrack', 'conc_plates_clever', 'kerb_with_rubber'] },
     // asfalto, placas de hormigón (se corre por ellas), pianos, líneas pintadas y marcas de goma: todo lo demás frena
     paved: ['racetrack', 'kerb_with_rubber', 'conc_plates_clever', 'conc_plates_darkgrey', 'conc_plates_grey', 'conc_plates_lightgrey', 'conc', 'conc2', 'conc_t3', 'conc_t4', 'conc_t9', 'conc_t89_1', 'conc_t89_2', 'road_marking_lined', 'road_marking_plane', 'Material_12932', 'GROOVE_3', 'skids', 'dust', 'decal_concrete_patch_1', 'decal_concrete_patch_2', 'Cracks1', 'Material_5034', 'Material_12663'],
     kerbs: ['kerb_with_rubber'], // pianos altos: sacuden el kart
     pavedExcept: /green|grass|Trees/i, // se corre por todo lo que no sea hierba (mirando la superficie de arriba)
-    solids: true, solidH: 0.45, // neumáticos, muros, vallas y edificios se chocan (cortados a la altura de un neumático)
-    edgeMax: 7, // a más de 7 m del eje, muro: no se puede atajar por la hierba
+    // neumáticos, muros, vallas y edificios se chocan; donde la hierba no tiene barrera se pone una fila de neumáticos
+    blockers: ['black_tyre', 'blue_tyre', 'red_tyre', 'white_tyre', 'Material_4867', 'Material_4879', 'Material_3906', 'Material_3925', 'grey_armc', 'blue_armco', 'white_metal_barrier', 'red_metal_barrier', 'black_armco', 'black_armco_0', 'armco_orange', 'Material_5073', 'fence', 'fence_pillar', 'Pillar', 'Concrete', 'trailer_base', 'truck_blue', 'Body', 'trailer_big', 'Vertical_Tank_Metallic', 'Metal_Support_Metallic'],
+    tyreGap: 3, edgeMax: 40,
     barriers: ['black_tyre', 'blue_tyre', 'red_tyre', 'white_tyre', 'Material_4867', 'Material_4879', 'Material_3906', 'Material_3925', 'grey_armc', 'blue_armco', 'white_metal_barrier', 'red_metal_barrier', 'black_armco', 'black_armco_0', 'armco_orange', 'Material_5073', 'fence'],
     tile: ['racetrack', 'green', 'grass_terrain', 'black_tyre', 'blue_tyre', 'red_tyre', 'conc_plates_clever', 'kerb_with_rubber', 'Trees_Sheet'],
     texBig: ['racetrack', 'kerb_with_rubber', 'conc_plates_clever', 'green', 'grass_terrain', 'road_marking_lined', 'Trees_Sheet'], // se ven de cerca: más resolución
     // camiones, remolques y neumáticos traen muchísimo detalle que no se ve desde el kart
     ratio: { trailer_base: 0.04, truck_blue: 0.05, Body: 0.08, trailer_big: 0.2, Tires: 0.15, black_tyre: 0.22, blue_tyre: 0.22, red_tyre: 0.22, white_tyre: 0.3, conc_plates_clever: 0.25, green: 0.12, material: 0.2, Pillar: 0.3, Ladder_Metallic: 0.25, Vertical_Tank_Metallic: 0.3, racetrack: 1, kerb_with_rubber: 1, road_marking_lined: 1, road_marking_plane: 1, Trees_Sheet: 1, '*': 0.5 },
-    sloppy: { trailer_base: 0.04, truck_blue: 0.06, Body: 0.12, trailer_big: 0.25, Tires: 0.2 },
+    sloppy: { trailer_base: 0.25 }, // más bajo, los camiones se deshacían
     error: 0.02, errorFor: { racetrack: 0.001, kerb_with_rubber: 0.001, conc_plates_clever: 0.012, road_marking_lined: 0.001, black_tyre: 0.01, blue_tyre: 0.01, red_tyre: 0.01 }, // decorado lejano: más simple
     // plano de 900 px (9 px por metro): x = -40 + px/9, z = -52 + py/9. Salida junto al edificio azul, hacia el norte
     map: (px, py) => [-40 + px / 9, -52 + py / 9],
@@ -241,6 +227,73 @@ function topGrid(cfg, tris, place, nodes, except) {
   return { x: x0, z: z0, w, h, cell, data: Buffer.from(bits).toString('base64') };
 }
 
+// alturas de la calzada cada 0,5 m (cm, -32768 = nada). Donde hay dos niveles se queda el más cercano al eje
+function heightGrid(cfg, road, place, nodes) {
+  const cell = 0.5, xs = nodes.map((n) => n[0]), zs = nodes.map((n) => n[1]), x0 = Math.floor(Math.min(...xs) - 12), z0 = Math.floor(Math.min(...zs) - 12);
+  const w = Math.ceil((Math.max(...xs) + 12 - x0) / cell), h = Math.ceil((Math.max(...zs) + 12 - z0) / cell), out = new Int16Array(w * h).fill(-32768), want = new Float32Array(w * h).fill(NaN);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) { const x = x0 + (i + 0.5) * cell, z = z0 + (j + 0.5) * cell; let bd = 1e9, y = NaN; for (const n of nodes) { const d = (n[0] - x) ** 2 + (n[1] - z) ** 2; if (d < bd) { bd = d; y = n[2]; } } if (bd < (cfg.half + 2) ** 2) want[j * w + i] = y; }
+  for (const t of road) {
+    const [A, B, C] = t.v.map((v) => place(v.p)), den = (B[2] - C[2]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[2] - C[2]); if (Math.abs(den) < 1e-9) continue;
+    for (let j = Math.max(0, Math.floor((Math.min(A[2], B[2], C[2]) - z0) / cell)); j <= Math.min(h - 1, Math.floor((Math.max(A[2], B[2], C[2]) - z0) / cell)); j++) for (let i = Math.max(0, Math.floor((Math.min(A[0], B[0], C[0]) - x0) / cell)); i <= Math.min(w - 1, Math.floor((Math.max(A[0], B[0], C[0]) - x0) / cell)); i++) {
+      const n = j * w + i; if (Number.isNaN(want[n])) continue;
+      const x = x0 + (i + 0.5) * cell, z = z0 + (j + 0.5) * cell, a = ((B[2] - C[2]) * (x - C[0]) + (C[0] - B[0]) * (z - C[2])) / den, b = ((C[2] - A[2]) * (x - C[0]) + (A[0] - C[0]) * (z - C[2])) / den;
+      if (a < -0.01 || b < -0.01 || a + b > 1.01) continue;
+      const y = a * A[1] + b * B[1] + (1 - a - b) * C[1]; if (Math.abs(y - want[n]) > 2.5) continue;
+      if (out[n] === -32768 || Math.abs(y - want[n]) < Math.abs(out[n] / 100 - want[n])) out[n] = Math.round(y * 100);
+    }
+  }
+  console.log('  mapa de alturas', w + 'x' + h, 'celdas con suelo', out.filter((v) => v !== -32768).length);
+  return { x: x0, z: z0, w, h, cell, data: Buffer.from(out.buffer).toString('base64') };
+}
+
+// barreras del modelo (neumáticos, vallas, muros) como obstáculos: se rasterizan en celdas de 0,35 m y su contorno son
+// los tramos contra los que se choca. Donde la hierba no tiene barrera, una fila de neumáticos nueva cierra el atajo
+function blockerSegments(cfg, tris, place, nodes, data) {
+  const cell = 0.35, xs = nodes.map((n) => n[0]), zs = nodes.map((n) => n[1]), ys = nodes.map((n) => n[2]), x0 = Math.floor(Math.min(...xs) - 30), z0 = Math.floor(Math.min(...zs) - 30);
+  const ylo = Math.min(...ys) - 1.2, yhi = Math.max(...ys) + 1.8, w = Math.ceil((Math.max(...xs) + 30 - x0) / cell), h = Math.ceil((Math.max(...zs) + 30 - z0) / cell), occ = new Uint8Array(w * h);
+  const mark = (x, z) => { const i = Math.floor((x - x0) / cell), j = Math.floor((z - z0) / cell); if (i >= 0 && j >= 0 && i < w && j < h) occ[j * w + i] = 1; };
+  for (const t of tris) {
+    if (!cfg.blockers.includes(t.mat.getName())) continue;
+    const P = t.v.map((v) => place(v.p)); if (Math.max(...P.map((p) => p[1])) < ylo || Math.min(...P.map((p) => p[1])) > yhi) continue;
+    const span = Math.max(...[[0, 1], [1, 2], [2, 0]].map(([a, b]) => Math.hypot(P[b][0] - P[a][0], P[b][2] - P[a][2]))), k = Math.max(2, Math.ceil(span / (cell * 0.5)));
+    for (let a = 0; a <= k; a++) for (let b = 0; b <= k - a; b++) { const c = k - a - b; mark((a * P[0][0] + b * P[1][0] + c * P[2][0]) / k, (a * P[0][2] + b * P[1][2] + c * P[2][2]) / k); }
+  }
+  // suelo de carrera (asfalto, hormigón, pianos)
+  const g = data.paved, bits = Buffer.from(g.data, 'base64'), paved = (x, z) => { const i = Math.floor((x - g.x) / g.cell), j = Math.floor((z - g.z) / g.cell); if (i < 0 || j < 0 || i >= g.w || j >= g.h) return false; const n = j * g.w + i; return !!((bits[n >> 3] >> (n & 7)) & 1); };
+  const blocked = (x, z) => { const i = Math.floor((x - x0) / cell), j = Math.floor((z - z0) / cell); return i >= 0 && j >= 0 && i < w && j < h && occ[j * w + i]; };
+  const near = (x, z, r) => nodes.some((n) => (n[0] - x) ** 2 + (n[1] - z) ** 2 < r * r);
+  // fila de neumáticos donde la hierba no tiene barrera
+  const tyres = [], N = nodes.length, half = cfg.gameHalf ?? cfg.half;
+  for (const side of [-1, 1]) {
+    let prev = null;
+    for (let i = 0; i < N; i++) {
+      const a = nodes[(i - 1 + N) % N], b = nodes[(i + 1) % N], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, nx = -(b[1] - a[1]) / l * side, nz = (b[0] - a[0]) / l * side, [x, z, y] = nodes[i];
+      let e = 0; while (e < 25 && paved(x + nx * e, z + nz * e)) e += 0.2;
+      const open = e > half + 5; if (open) e = half + 2.5; // explanada (aparcamiento, boxes): la fila va sobre el asfalto
+      // si al otro lado de la hierba vuelve a haber pista (otro tramo), la fila va por la mitad: así no se ataja de un tramo a otro
+      let gap = 99; if (!open) for (let q = e + 0.2; q < e + 25; q += 0.2) if (paved(x + nx * q, z + nz * q)) { gap = q - e; break; }
+      const d = e + Math.min(cfg.tyreGap ?? 2.5, gap / 2), px = x + nx * d, pz = z + nz * d;
+      let ok = (open || (e < 25 && gap > 1.2 && !paved(px, pz))) && !near(px, pz, half + 0.4);
+      for (let q = e; ok && q < d + 5; q += 0.3) if (blocked(x + nx * q, z + nz * q)) ok = false; // ya hay barrera
+      if (ok) {
+        if (prev && Math.hypot(prev[0] - px, prev[2] - pz) < 4) { const steps = Math.ceil(Math.hypot(prev[0] - px, prev[2] - pz) / 0.6); for (let k = 1; k <= steps; k++) tyres.push([prev[0] + (px - prev[0]) * k / steps, y, prev[2] + (pz - prev[2]) * k / steps]); }
+        else tyres.push([px, y, pz]);
+        prev = [px, y, pz];
+      } else prev = null;
+    }
+  }
+  for (const [x, , z] of tyres) for (let dx = -0.35; dx <= 0.35; dx += 0.17) for (let dz = -0.35; dz <= 0.35; dz += 0.17) if (dx * dx + dz * dz < 0.13) mark(x + dx, z + dz);
+  // por la calzada siempre se pasa (neumáticos sueltos del modelo sobre la pista)
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (occ[j * w + i] && near(x0 + (i + 0.5) * cell, z0 + (j + 0.5) * cell, half - 0.4)) occ[j * w + i] = 0;
+  // contorno: un tramo por cada lado de celda ocupada que da a una libre, unidos en línea recta
+  const yAt = (x, z) => { let bd = 1e9, y = 0; for (const n of nodes) { const d = (n[0] - x) ** 2 + (n[1] - z) ** 2; if (d < bd) { bd = d; y = n[2]; } } return y; };
+  const segs = [];
+  for (let j = 0; j < h; j++) { let run = null; for (let i = 0; i <= w; i++) { const edge = i < w && j > 0 && occ[j * w + i] !== occ[(j - 1) * w + i]; if (edge && !run) run = i; if (!edge && run != null) { segs.push([x0 + run * cell, z0 + j * cell, x0 + i * cell, z0 + j * cell]); run = null; } } }
+  for (let i = 0; i < w; i++) { let run = null; for (let j = 0; j <= h; j++) { const edge = j < h && i > 0 && occ[j * w + i] !== occ[j * w + i - 1]; if (edge && run == null) run = j; if (!edge && run != null) { segs.push([x0 + i * cell, z0 + run * cell, x0 + i * cell, z0 + j * cell]); run = null; } } }
+  const out = segs.filter((q) => near((q[0] + q[2]) / 2, (q[1] + q[3]) / 2, 30)).map((q) => [...q.map((v) => +v.toFixed(2)), +yAt((q[0] + q[2]) / 2, (q[1] + q[3]) / 2).toFixed(1)]);
+  return { solids: out, tyres: tyres.map((p) => p.map((v) => +v.toFixed(2))) };
+}
+
 async function writeModel(id, cfg, tris, place, rev) {
   const out = new Document(), buf = out.createBuffer(), scene = out.createScene('track').setExtras({ rev });
   const perMat = new Map(); for (const t of tris) perMat.set(t.mat, (perMat.get(t.mat) || 0) + 1);
@@ -301,6 +354,15 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   const road = tris.filter((t) => (cfg.road.node ? t.chain.some((c) => cfg.road.node.test(c)) : cfg.road.materials.includes(t.mat.getName())));
   const hit = makeGrid(road, cfg.half * 2 / cfg.scale);
   const line = centreLine(cfg, hit);
+  if (cfg.gaps) {
+    const n = line.P.length, miss = line.P.map(([x, z]) => !hit(x, z).length);
+    for (let i = 0; i < n; i++) if (miss[i] && !miss[(i - 1 + n) % n]) {
+      let j = i; while (miss[j % n] && j - i < n) j++;
+      const low = Math.min(line.Y[(i - 1 + n) % n], line.Y[j % n]); for (let k = i; k < j; k++) line.Y[k % n] = low;
+      console.log(id, 'hueco del salto:', ((j - i) * 2.5).toFixed(0), 'm');
+    }
+  }
+  if (cfg.startAt && !cfg.rebuild) { const k = Math.round(cfg.startAt / 2.5), turn = (a) => a.slice(k).concat(a.slice(0, k)); line.P = turn(line.P); line.Y = turn(line.Y); }
   if (cfg.flat) { const mid = [...line.Y].sort((a, b) => a - b)[line.Y.length >> 1]; line.Y = line.Y.map(() => mid); }
   const S = cfg.scale;
   let deck = null, ramp = null, apron = null, plinth = null, under = null, walled = null, wallPoints = null;
@@ -360,10 +422,16 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   if (cfg.barriers) data[id].edges = barrierEdges(cfg, line, tris).map((e) => average(e, 2).filter((_, i) => i % step === 0).map((v) => +v.toFixed(2)));
   console.log(id, 'vuelta', Math.round(len), 'm, desnivel', (Math.max(...nodes.map((n) => n[2])) - 2).toFixed(1), 'm, puntos fuera de la calzada', off, 'de', line.P.length);
   if (cfg.rebuild) data[id].edges = walled.map((w) => every.map((_, i) => +w[i * step].toFixed(2)));
+  if (cfg.heights) data[id].heights = heightGrid(cfg, road, place, nodes);
   if (cfg.paved) {
     data[id].paved = cfg.pavedExcept ? topGrid(cfg, tris, place, nodes, cfg.pavedExcept) : pavedGrid(cfg, tris, place, nodes);
     if (cfg.kerbs) data[id].kerbs = pavedGrid(cfg, tris, place, nodes, cfg.kerbs);
     if (cfg.gameHalf) data[id].gameHalf = cfg.gameHalf;
+    if (cfg.blockers) {
+      const { solids: segs, tyres } = blockerSegments(cfg, tris, place, nodes, data[id]);
+      data[id].solids = segs; data[id].tyres = tyres;
+      console.log(id, 'barreras:', segs.length, 'tramos de muro |', tyres.length, 'neumáticos añadidos');
+    }
     const g = data[id].paved, bits = Buffer.from(g.data, 'base64'), on = (x, z) => { const n = Math.floor((z - g.z) / g.cell) * g.w + Math.floor((x - g.x) / g.cell); return (bits[n >> 3] >> (n & 7)) & 1; };
     console.log(id, 'mapa del suelo', g.w + 'x' + g.h, '| puntos del eje fuera del asfalto:', nodes.filter((n) => !on(n[0], n[1])).length, 'de', nodes.length);
   }

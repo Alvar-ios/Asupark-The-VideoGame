@@ -13,7 +13,7 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 // línea de carrera: banda elástica que minimiza la curvatura dentro del ancho útil de la pista (entra abierto, corta el vértice, sale abierto)
 export function racingLine(tr) {
   if (tr._line) return tr._line;
-  const N = tr.N, w = Math.max(1.2, tr.half - AICFG.w), o = new Float32Array(N), nx = new Float32Array(N), nz = new Float32Array(N);
+  const N = tr.N, w = tr.aiHalf ?? Math.max(1.2, tr.half - AICFG.w), o = new Float32Array(N), nx = new Float32Array(N), nz = new Float32Array(N);
   for (let i = 0; i < N; i++) { nx[i] = -tr.TZ[i]; nz[i] = tr.TX[i]; }
   const Q = (i) => { i = (i + N) % N; return [tr.X[i] + nx[i] * o[i], tr.Z[i] + nz[i] * o[i]]; };
   for (let it = 0; it < 260; it++) {

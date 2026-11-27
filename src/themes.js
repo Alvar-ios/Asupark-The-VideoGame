@@ -8,9 +8,10 @@ import { hashStr } from './rng.js';
 import { isVisibleTrack } from './visible.js';
 
 // trazado de un circuito importado (src/tracks-data.js)
+// con el suelo del modelo (heights) hay saltos de verdad: noAir solo en los demás importados
 function modelStyle(id) {
   const d = TRACK_DATA[id];
-  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, deck: d.deck, paved: d.paved, kerbs: d.kerbs, imported: true, startNear: d.start, scale: 1, half: d.gameHalf ?? (d.paved ? 4.3 : d.half), wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: true, noKerb: true };
+  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, deck: d.deck, paved: d.paved, kerbs: d.kerbs, heights: d.heights, tyres: d.tyres, imported: true, startNear: d.start, scale: 1, half: d.gameHalf ?? (d.paved ? 4.3 : d.half), wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: !d.heights, noKerb: true };
 }
 
 export const THEMES = {
@@ -162,8 +163,8 @@ export const THEMES = {
   },
   // circuitos importados: el escenario es su modelo y la física sigue la línea central sacada de la calzada
   misty: {
-    id: 'misty', name: 'Misty Cliffs', sub: 'Camino de tierra por una isla: un puente, la subida al faro en espiral y un gran descenso', seed: 'misty-3', model: 'misty', envName: 'camino de tierra', fiction: true, edgePosts: true, noKerbs: true,
-    style: modelStyle('misty'),
+    id: 'misty', name: 'Misty Cliffs', sub: 'Camino de tierra por una isla: un puente, la subida al faro en espiral y un gran descenso', seed: 'misty-4', model: 'misty', envName: 'camino de tierra', fiction: true, edgePosts: true, noKerbs: true,
+    style: { ...modelStyle('misty'), aiHalf: 0.6, aiLook: 0.7 },
     // mar a la altura del del modelo (1,22 m); el horizonte acaba en el mismo color que la niebla
     sea: { level: 1.22, water: 0x2d7f8c, deep: 0x1b5a70, foam: 0xbfe3df, skyTop: 0x4f86b8, skyMid: 0x9fc4d8, haze: 0xd5dfdc, cloud: 0xfbf6ec, mist: 0xe6ece9, glow: 0xffd9a0 },
     skyTop: 0x4f86b8, skyHor: 0xd5dfdc, fog: 0xd5dfdc, fogNear: 110, fogFar: 880, ground: 0x1f5f74, grass: 0x5d7f3a, dirt: 0xa57d4c, road: 0xb98c5a, kerb1: 0xb98c5a, kerb2: 0xb98c5a,
@@ -182,8 +183,8 @@ export const THEMES = {
     wall1: 0x2f9d3f, wall2: 0xd43a30, mount: 0x6a8f4a, sun: 0xfff6e0, sunDir: [-0.35, 0.8, 0.4], hemiSky: 0xffffff, hemiGround: 0xb59a68, hemiI: 1.25, sunI: 1.75, night: false, temp: 25, humidity: 0.35, wind: [1, 0.5], gripMul: 1, offroad: 0.34, offroadGrip: 0.62, rollingDrag: 0.3, steerOffroad: 0.72,
   },
   lider: {
-    id: 'lider', name: 'Kartódromo Nóvaya Zariá', sub: 'Club de karting al aire libre: horquillas enlazadas, placas de hormigón y pianos altos', seed: 'lider-2', model: 'lider', noKerbs: true, kerbRough: true, // pianos altos: el kart bota y la cámara tiembla
-    style: { ...modelStyle('lider'), aiLook: 0.6 }, edgeTyres: true, floor: { color: 0x4f6b37, y: -1.6 },
+    id: 'lider', name: 'Kartódromo Nóvaya Zariá', sub: 'Club de karting al aire libre: horquillas enlazadas, placas de hormigón y pianos altos', seed: 'lider-3', model: 'lider', noKerbs: true, kerbRough: true, // pianos altos: el kart bota y la cámara tiembla
+    style: { ...modelStyle('lider'), aiLook: 0.6 }, floor: { color: 0x4f6b37, y: -1.6 },
     skyTop: 0x5b8fd0, skyHor: 0xdbe5ec, fog: 0xd9e2e8, fogNear: 260, fogFar: 1700, ground: 0x4f6b37, grass: 0x5b7a3d, dirt: 0x7a6a50, road: 0x4a4c50, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
     wall1: 0x1f1f22, wall2: 0x2c5fc0, mount: 0x6a7f5a, sun: 0xfff1dc, sunDir: [-0.45, 0.62, 0.45], hemiSky: 0xe6eef8, hemiGround: 0x6d6a58, hemiI: 1.25, sunI: 1.9, night: false, temp: 18, humidity: 0.55, wind: [2, 0.6], gripMul: 1, offroad: 0.2, offroadGrip: 0.5, rollingDrag: 0.6, steerOffroad: 0.6, // la hierba frena mucho más que en Mario
   },

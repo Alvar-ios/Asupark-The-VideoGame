@@ -57,13 +57,8 @@ function edgePosts(tr, deck, walls) {
 // donde el muro no es una barrera del modelo (hierba abierta), una fila de neumáticos lo marca
 function edgeTyres(tr) {
   const geo = new THREE.TorusGeometry(0.27, 0.11, 6, 12).rotateX(Math.PI / 2), mats = [new THREE.MeshLambertMaterial({ color: 0x1b1b1d }), new THREE.MeshLambertMaterial({ color: 0x2c5fc0 })];
-  const spots = [[], []], far = Math.max(...tr.wallEdge[0], ...tr.wallEdge[1]) - 0.05;
-  for (const side of [-1, 1]) for (let i = 0; i < tr.N; i += 1) {
-    const l = tr.wallEdge[side < 0 ? 0 : 1][i]; if (l < far) continue;
-    const x = tr.X[i] - tr.TZ[i] * side * (l + 0.3), z = tr.Z[i] + tr.TX[i] * side * (l + 0.3);
-    if (spots[0].concat(spots[1]).slice(-6).some((p) => Math.hypot(p[0] - x, p[2] - z) < 0.62)) continue;
-    for (let k = 0; k < 2; k++) spots[(Math.floor(i / 3) + k) % 2].push([x, tr.Y[i] + 0.11 + k * 0.22, z]);
-  }
+  const spots = [[], []];
+  tr.tyres.forEach(([x, y, z], i) => { for (let k = 0; k < 2; k++) spots[(Math.floor(i / 4) + k) % 2].push([x, y + 0.11 + k * 0.22, z]); });
   const g = new THREE.Group(), d = new THREE.Object3D();
   spots.forEach((list, m) => { const mesh = new THREE.InstancedMesh(geo, mats[m], list.length); list.forEach((p, k) => { d.position.set(...p); d.updateMatrix(); mesh.setMatrixAt(k, d.matrix); }); mesh.computeBoundingSphere(); g.add(mesh); });
   return g;
@@ -201,7 +196,7 @@ export function buildModelWorld(tr, th, opt = {}) {
     floor.position.y = th.floor.y; scene.add(floor);
   }
   scene.add(finishLine(tr, th));
-  if (th.edgeTyres && tr.wallEdge) scene.add(edgeTyres(tr));
+  if (tr.tyres && tr.tyres.length) scene.add(edgeTyres(tr));
   if (th.edgePosts) scene.add(edgePosts(tr, th.style.deck, th.style.deck && th.style.deck.walls));
   // el modelo se comparte entre carreras: se añade una copia ligera (misma geometría)
   const add = (model) => { scene.add((th.vivid ? vividCopy(model, th.model, th.vivid) : model).clone(true)); if (th.style.deck) scene.add(deckMesh(tr, th.style.deck, model)); };

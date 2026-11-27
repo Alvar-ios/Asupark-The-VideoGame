@@ -331,6 +331,9 @@ export function buildTrack(seed, style) {
   if (style.solids) tr.solids = solidGrid(style.solids);
   if (style.paved) { const g = style.paved, raw = atob(g.data), bits = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) bits[i] = raw.charCodeAt(i); tr.paved = { x: g.x, z: g.z, w: g.w, h: g.h, cell: g.cell, bits }; }
   if (style.aiLook) tr.aiLook = style.aiLook;
+  if (style.aiHalf != null) tr.aiHalf = style.aiHalf; // pistas con rocas dentro: el piloto automático va más por el centro
+  if (style.tyres) tr.tyres = style.tyres;
+  if (style.heights) { const g = style.heights, raw = atob(g.data), b = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) b[i] = raw.charCodeAt(i); tr.heights = { x: g.x, z: g.z, w: g.w, h: g.h, cell: g.cell, v: new Int16Array(b.buffer) }; }
   if (style.kerbs) { const g = style.kerbs, raw = atob(g.data), bits = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) bits[i] = raw.charCodeAt(i); tr.kerbMap = { x: g.x, z: g.z, w: g.w, h: g.h, cell: g.cell, bits }; }
   if (style.edges) { // muros donde están las barreras del modelo: [izquierda, derecha] por fracción de vuelta
     tr.wallEdge = style.edges.map((arr) => {

@@ -12,7 +12,7 @@ for (let k = 0; k < list.length; k += Math.max(1, Math.floor(list.length / 120))
   const s = list[k], ex = s[2] - s[0], ez = s[3] - s[1], l = Math.hypot(ex, ez), mx = (s[0] + s[2]) / 2, mz = (s[1] + s[3]) / 2;
   for (const side of [-1, 1]) {
     const nx = -ez / l * side, nz = ex / l * side, x = mx + nx * 1.4, z = mz + nz * 1.4;
-    const loc = locate(tr, x, z, -1, {}); if (Math.abs(loc.h - s[4]) > 1.5 || Math.abs(loc.lat) > tr.wallEdge[loc.lat < 0 ? 0 : 1][loc.i]) continue; // fuera de la pista no se puede estar
+    const loc = locate(tr, x, z, -1, {}); if (Math.abs(loc.h - s[4]) > 1.5 || Math.abs(loc.lat) > (tr.wallEdge ? tr.wallEdge[loc.lat < 0 ? 0 : 1][loc.i] : tr.wall)) continue; // fuera de la pista no se puede estar
     const c = makeCar(type, 'x', true);
     Object.assign(c, { x, z, px: x, pz: z, y: loc.h, py: loc.h, psi: Math.atan2(-nx, -nz), vx: -nx * 40, vz: -nz * 40, hint: loc.i, lastS: loc.s }); Object.assign(c.loc, loc);
     tried++;
