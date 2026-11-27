@@ -17,7 +17,7 @@ for (const [name, off] of [['en el centro', null], ['a ras del borde, dentro', -
 assert.ok(speed['a ras del borde, dentro'] > 110, 'por el asfalto no se frena');
 assert.ok(speed['una rueda fuera'] < 95, 'una rueda fuera frena');
 assert.ok(speed['las dos fuera, pegado al asfalto'] < 50, 'la arena pegada al asfalto frena mucho');
-for (const key of ['misty', 'mariocircuit', 'lider']) {
+for (const key of ['misty', 'mariocircuit', 'lider', 'lemans']) {
   const t = THEMES[key], track = buildTrack(t.seed, t.style), c = makeCar(CARS[0], 'x', true); placeCar(c, track, -170, 0, 18);
   let walls = 0, maxLat = 0, maxJump = 0, last = c.D, steps = 0; for (; c.D < 0 && steps < 4000; steps++) { railStep(c, track, 1 / 120); walls += c.events.filter((e) => e.t === 'wall').length; maxLat = Math.max(maxLat, Math.abs(c.loc.lat)); maxJump = Math.max(maxJump, Math.abs(c.D - last - c.speed / 120)); last = c.D; }
   console.log(key, 'raíles hasta la meta:', (steps / 120).toFixed(1), 's, golpes', walls, '| desvío máximo del centro', maxLat.toFixed(2), 'm | llega a', (c.speed * 3.6).toFixed(0), 'km/h');

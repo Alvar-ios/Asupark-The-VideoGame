@@ -4,6 +4,12 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.133
+- Circuito nuevo: Le Mans Karting (en mojado), 1,64 km, un 20 % más grande que la realidad. El modelo pasa de 63 MB a 7 MB.
+- Le Mans: se corre por todo lo que no sea hierba o arena. La hierba frena, pero bastante menos que en el kartódromo, y los pianos van a la misma velocidad que el asfalto.
+- Le Mans: barreras del modelo físicas y filas de neumáticos donde la hierba permitiría atajar. No entra en el reto diario hasta que se dé por bueno.
+- Las filas de neumáticos añadidas ocupan menos datos; las del kartódromo siguen igual.
+
 ## 0.0.132
 - Misty Cliffs, revisión completa: el kart ya no sale volando. Se lanzaba hasta 13 m en la entrada de la cueva y en las cuestas. Ahora solo despega en el gran salto.
 - Misty: fuera los choques contra nada. Los muros invisibles van donde el suelo del modelo se corta de verdad (cortado o escalón), no a un ancho fijo.

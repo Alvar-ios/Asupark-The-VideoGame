@@ -58,7 +58,11 @@ function edgePosts(tr, deck, walls) {
 function edgeTyres(tr) {
   const geo = new THREE.TorusGeometry(0.27, 0.11, 6, 12).rotateX(Math.PI / 2), mats = [new THREE.MeshLambertMaterial({ color: 0x1b1b1d }), new THREE.MeshLambertMaterial({ color: 0x2c5fc0 })];
   const spots = [[], []];
-  tr.tyres.forEach(([x, y, z], i) => { for (let k = 0; k < 2; k++) spots[(Math.floor(i / 4) + k) % 2].push([x, y + 0.11 + k * 0.22, z]); });
+  let n = 0;
+  for (const row of tr.tyres) for (let k = 0; k + 1 < row.length; k++) {
+    const [a, b] = [row[k], row[k + 1]], steps = Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[2] - a[2]) / 0.6));
+    for (let q = k ? 1 : 0; q <= steps; q++, n++) { const t = q / steps, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t, z = a[2] + (b[2] - a[2]) * t; for (let h = 0; h < 2; h++) spots[(Math.floor(n / 4) + h) % 2].push([x, y + 0.11 + h * 0.22, z]); }
+  }
   const g = new THREE.Group(), d = new THREE.Object3D();
   spots.forEach((list, m) => { const mesh = new THREE.InstancedMesh(geo, mats[m], list.length); list.forEach((p, k) => { d.position.set(...p); d.updateMatrix(); mesh.setMatrixAt(k, d.matrix); }); mesh.computeBoundingSphere(); g.add(mesh); });
   return g;

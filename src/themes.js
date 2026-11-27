@@ -188,6 +188,12 @@ export const THEMES = {
     skyTop: 0x5b8fd0, skyHor: 0xdbe5ec, fog: 0xd9e2e8, fogNear: 260, fogFar: 1700, ground: 0x4f6b37, grass: 0x5b7a3d, dirt: 0x7a6a50, road: 0x4a4c50, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
     wall1: 0x1f1f22, wall2: 0x2c5fc0, mount: 0x6a7f5a, sun: 0xfff1dc, sunDir: [-0.45, 0.62, 0.45], hemiSky: 0xe6eef8, hemiGround: 0x6d6a58, hemiI: 1.25, sunI: 1.9, night: false, temp: 18, humidity: 0.55, wind: [2, 0.6], gripMul: 1, offroad: 0.2, offroadGrip: 0.5, rollingDrag: 0.6, steerOffroad: 0.6, // la hierba frena mucho más que en Mario
   },
+  lemans: {
+    id: 'lemans', name: 'Le Mans Karting', sub: 'Circuito internacional en mojado: recta de boxes, enlazadas rápidas y horquillas cerradas', seed: 'lemans-1', model: 'lemans', noKerbs: true, kerbSoft: true,
+    style: { ...modelStyle('lemans'), aiLook: 0.6 }, floor: { color: 0x4a6236, y: -1.6 },
+    skyTop: 0x7d8fa6, skyHor: 0xc9d1d8, fog: 0xc3cbd2, fogNear: 220, fogFar: 1500, ground: 0x4a6236, grass: 0x56713c, dirt: 0x6e6450, road: 0x3f4145, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
+    wall1: 0xe8c21f, wall2: 0x1f1f22, mount: 0x67755e, sun: 0xeef2f7, sunDir: [-0.35, 0.7, 0.4], hemiSky: 0xdde5ee, hemiGround: 0x5d5c52, hemiI: 1.35, sunI: 1.35, night: false, temp: 14, humidity: 0.85, wind: [3, 0.6], gripMul: 1, offroad: 0.45, offroadGrip: 0.75, rollingDrag: 0.25, steerOffroad: 0.85, // hierba lenta, pero menos que en el kartódromo
+  },
   muralla: {
     id: 'muralla', fiction: true, name: 'Gran Muralla, China', sub: 'Karts sobre la muralla: horquillas apiladas, un puente y curvas pegadas a las almenas', seed: 'muralla-1', privateClub: true, ownTerrain: true, wallTop: true, noKerbs: true,
     style: {
@@ -257,7 +263,7 @@ export const THEMES = {
     hemiSky: 0xe3efff, hemiGround: 0x75716a, hemiI: 1.0, sunI: 1.25, deco: 'industrial', industrial: true, treeCol: 0x77746d, treeCount: 0, night: false, temp: 23, humidity: 0.3, wind: [2, 0.5], gripMul: 1, offroad: 0.6,
   },
 };
-const ALL_THEME_LIST = ['lider', 'misty', 'mariocircuit', 'pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
+const ALL_THEME_LIST = ['lemans', 'lider', 'misty', 'mariocircuit', 'pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
 // solo circuitos visibles (ver src/visible.js)
 export const THEME_LIST = ALL_THEME_LIST.filter(isVisibleTrack);
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];

@@ -318,10 +318,10 @@ export function stepCar(c, inp, dt, tr, env) {
       c.onKerb = true;
       if (c.speed > 6) {
         const k = clamp(c.speed / 25, 0.3, 1.2), beat = Math.sin(c.kerbPhase = (c.kerbPhase || 0) + c.speed * dt * 2.2) > 0 ? 1 : -0.4; // un golpe por cada banda del piano
-        const kick = (l - r) * 1.6 * k * beat; // pisando con un solo lado, el golpe empuja hacia fuera del piano y tuerce el morro
+        const soft = env.kerbSoft ? 0.25 : 1, kick = (l - r) * 1.6 * k * beat * soft; // pisando con un solo lado, el golpe empuja hacia fuera del piano y tuerce el morro
         c.vx -= rx * kick * dt * 6; c.vz -= rz * kick * dt * 6;
-        c.psi += (l - r) * 0.22 * k * beat * dt + (Math.random() - 0.5) * 0.5 * k * on * dt;
-        const f = Math.exp(-0.18 * on * dt); c.vx *= f; c.vz *= f;
+        c.psi += ((l - r) * 0.22 * k * beat * dt + (Math.random() - 0.5) * 0.5 * k * on * dt) * soft;
+        if (!env.kerbSoft) { const f = Math.exp(-0.18 * on * dt); c.vx *= f; c.vz *= f; }
       }
     }
   }

@@ -32,6 +32,15 @@ permiso. El modelo reproduce un club real con su nombre y logo; en el juego llev
 tools/prep-tracks.mjs: sin cielo, tendido eléctrico ni kart de exposición, texturas reducidas y camiones, remolques y
 neumáticos simplificados.
 
+## Le Mans Karting (v0.0.133)
+
+| En el juego | Archivo original | Autor | Enlace |
+|---|---|---|---|
+| Le Mans Karting | Le Mans Karting International wet | Dave Love (Tyler_Dave) | https://sketchfab.com/3d-models/le-mans-karting-international-wet-a5ee0af688784f3a92a1614818311da8 |
+
+Licencia CC BY 4.0: hay que citar al autor. Modificado con tools/prep-tracks.mjs: escala, texturas reducidas y geometría
+aligerada.
+
 ## Aviso antes de abrir la app al público
 
 La etiqueta CC BY la pone quien sube el archivo y solo vale sobre lo que sea suyo. Estos modelos reproducen

@@ -58,6 +58,23 @@ const TRACKS = {
     map: (px, py) => [-40 + px / 9, -52 + py / 9],
     path: [[792, 463], [795, 380], [795, 300], [790, 230], [775, 160], [740, 100], [690, 72], [620, 62], [560, 62], [500, 70], [455, 90], [420, 125], [395, 175], [370, 225], [345, 270], [320, 310], [295, 345], [260, 358], [232, 330], [228, 290], [240, 250], [255, 200], [255, 150], [245, 100], [215, 68], [170, 62], [130, 80], [110, 120], [105, 180], [102, 250], [100, 330], [98, 420], [105, 490], [130, 540], [175, 565], [230, 565], [285, 540], [320, 490], [350, 440], [380, 390], [410, 330], [440, 280], [480, 235], [530, 205], [590, 200], [640, 215], [680, 250], [695, 300], [698, 360], [695, 430], [680, 490], [650, 540], [600, 585], [540, 610], [460, 628], [380, 645], [300, 662], [220, 680], [160, 700], [115, 740], [100, 800], [115, 860], [160, 895], [220, 905], [280, 885], [340, 845], [400, 805], [460, 770], [520, 745], [590, 735], [660, 738], [720, 728], [770, 690], [795, 630], [795, 550]],
   },
+  lemans: {
+    file: 'le_mans_karting_international_wet.glb',
+    scale: 1.2, half: 5.1, gameHalf: 5.1, step: 1, // un poco más grande que la realidad, como el kartódromo
+    road: { materials: ['ROAD_01.002', 'GROOVE.002', 'RMBL_01_WET.002', 'RMBL_EDGE.002'] },
+    paved: [], pavedExcept: /GRASS|SAND|TREE|BRANCH|BARK|LONA/i, // se corre por todo lo que no sea hierba o arena
+    kerbs: ['RMBL_01_WET.002', 'RMBL_EDGE.002'],
+    barriers: ['BLOCK_YELLOW.002', 'BLOCK_BLACK.002', 'STOP_RAIL.002', 'TIRES_01.002', 'PITWALL.002', 'MARSHHUTFENCE.005'],
+    blockers: ['BLOCK_YELLOW.002', 'BLOCK_BLACK.002', 'STOP_RAIL.002', 'TIRES_01.002', 'PITWALL.002', 'MARSHHUTFENCE.005', 'FENCE_GREEN.002', 'FENCE_GREY.002', 'GARAGE_WAVE_WALL1.002', 'TWR_WALL_1.002', 'CONTAINER.002', 'BUILDING_01.002', 'BUILDING_02.002', 'E_BOX.005', 'TENTFRAME.002', 'BLACK.007'],
+    tyreGap: 3, edgeMax: 40,
+    tile: ['ROAD_01.002', 'GRASS_OUT_IN.002', 'ROAD_OUTSIDE_01.002', 'RMBL_02.002', 'EDGELINE.002', 'LINES.002', 'GROOVE.002', 'BLOCK_YELLOW.002', 'METAL_BRIDGE1.005'],
+    texBig: ['ROAD_01.002', 'RMBL_01_WET.002', 'RMBL_EDGE.002', 'GRASS_OUT_IN.002', 'LINES.002', 'EDGELINE.002', 'GROOVE.002', 'BLOCK_YELLOW.002'],
+    ratio: { 'ROAD_01.002': 1, 'RMBL_01_WET.002': 1, 'RMBL_EDGE.002': 1, 'EDGELINE.002': 1, 'LINES.002': 1, 'GROOVE.002': 1, 'METAL_BRIDGE1.005': 0.3, '*': 0.6 },
+    error: 0.01, errorFor: { 'ROAD_01.002': 0.001, 'BLOCK_YELLOW.002': 0.003 },
+    // plano de 4 px por metro: x = -40 + px/4, z = -130 + py/4. Salida junto al semáforo de la recta de boxes, hacia él
+    map: (px, py) => [-40 + px / 4, -130 + py / 4],
+    path: [[155, 960], [170, 1050], [215, 1140], [290, 1225], [370, 1235], [415, 1180], [405, 1115], [340, 1060], [305, 1000], [290, 900], [275, 780], [262, 650], [258, 560], [285, 500], [400, 472], [540, 468], [605, 500], [628, 580], [600, 655], [540, 688], [480, 660], [430, 632], [372, 642], [360, 700], [378, 800], [430, 858], [495, 890], [528, 960], [530, 1060], [560, 1160], [640, 1255], [720, 1335], [782, 1350], [808, 1300], [770, 1230], [700, 1160], [662, 1100], [682, 1030], [745, 975], [762, 900], [762, 700], [762, 500], [760, 380], [740, 305], [690, 300], [600, 325], [520, 355], [470, 360], [440, 325], [420, 255], [385, 212], [330, 202], [230, 215], [178, 260], [155, 330], [155, 500], [155, 700], [155, 860]],
+  },
   mario3: {
     file: 'mario_kart_8_deluxe_-_snes_mario_circuit_3.glb',
     scale: 0.0342, half: 5.5, flat: true,
@@ -85,13 +102,15 @@ function readTris(doc, cfg) {
     for (const prim of m.listPrimitives()) {
       if (cfg.dropMaterials && cfg.dropMaterials.includes(prim.getMaterial().getName())) continue;
       const pos = prim.getAttribute('POSITION'), nor = prim.getAttribute('NORMAL'), uv = prim.getAttribute('TEXCOORD_0'), col = prim.getAttribute('COLOR_0'), a = [0, 0, 0, 1], b = [0, 0];
-      const V = [];
+      const V = [], info = prim.getMaterial().getBaseColorTextureInfo(), tt = info && info.getExtension('KHR_texture_transform');
+      const tOff = tt ? tt.getOffset() : [0, 0], tSc = tt ? tt.getScale() : [1, 1], tRot = tt ? tt.getRotation() : 0, cr = Math.cos(tRot), sr = Math.sin(tRot);
       for (let i = 0; i < pos.getCount(); i++) {
         pos.getElement(i, a); const p = [M[0] * a[0] + M[4] * a[1] + M[8] * a[2] + M[12], M[1] * a[0] + M[5] * a[1] + M[9] * a[2] + M[13], M[2] * a[0] + M[6] * a[1] + M[10] * a[2] + M[14]];
         let q = [0, 1, 0]; if (nor) { nor.getElement(i, a); q = [M[0] * a[0] + M[4] * a[1] + M[8] * a[2], M[1] * a[0] + M[5] * a[1] + M[9] * a[2], M[2] * a[0] + M[6] * a[1] + M[10] * a[2]]; const l = Math.hypot(...q) || 1; q = q.map((v) => v / l); }
         if (uv) uv.getElement(i, b);
         let c = null; if (col) { const e = [1, 1, 1, 1]; col.getElement(i, e); c = e.slice(0, 3); }
-        V.push({ p, n: q, uv: [b[0], b[1]], c });
+        const su = b[0] * tSc[0], sv = b[1] * tSc[1];
+        V.push({ p, n: q, uv: tt ? [tOff[0] + cr * su + sr * sv, tOff[1] - sr * su + cr * sv] : [b[0], b[1]], c });
       }
       const idx = prim.getIndices() ? prim.getIndices().getArray() : V.map((_, i) => i);
       for (let i = 0; i < idx.length; i += 3) {
@@ -275,14 +294,10 @@ function blockerSegments(cfg, tris, place, nodes, data) {
       const d = e + Math.min(cfg.tyreGap ?? 2.5, gap / 2), px = x + nx * d, pz = z + nz * d;
       let ok = (open || (e < 25 && gap > 1.2 && !paved(px, pz))) && !near(px, pz, half + 0.4);
       for (let q = e; ok && q < d + 5; q += 0.3) if (blocked(x + nx * q, z + nz * q)) ok = false; // ya hay barrera
-      if (ok) {
-        if (prev && Math.hypot(prev[0] - px, prev[2] - pz) < 4) { const steps = Math.ceil(Math.hypot(prev[0] - px, prev[2] - pz) / 0.6); for (let k = 1; k <= steps; k++) tyres.push([prev[0] + (px - prev[0]) * k / steps, y, prev[2] + (pz - prev[2]) * k / steps]); }
-        else tyres.push([px, y, pz]);
-        prev = [px, y, pz];
-      } else prev = null;
+      // filas de neumáticos: polilíneas con un punto cada muestra (el juego pone los neumáticos y los muros entre puntos)
+      if (ok) { if (!(prev && Math.hypot(prev[0] - px, prev[2] - pz) < 4)) tyres.push([]); tyres[tyres.length - 1].push([px, y, pz]); prev = [px, y, pz]; } else prev = null;
     }
   }
-  for (const [x, , z] of tyres) for (let dx = -0.35; dx <= 0.35; dx += 0.17) for (let dz = -0.35; dz <= 0.35; dz += 0.17) if (dx * dx + dz * dz < 0.13) mark(x + dx, z + dz);
   // por la calzada siempre se pasa (neumáticos sueltos del modelo sobre la pista)
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (occ[j * w + i] && near(x0 + (i + 0.5) * cell, z0 + (j + 0.5) * cell, half - 0.4)) occ[j * w + i] = 0;
   // contorno: un tramo por cada lado de celda ocupada que da a una libre, unidos en línea recta
@@ -291,7 +306,9 @@ function blockerSegments(cfg, tris, place, nodes, data) {
   for (let j = 0; j < h; j++) { let run = null; for (let i = 0; i <= w; i++) { const edge = i < w && j > 0 && occ[j * w + i] !== occ[(j - 1) * w + i]; if (edge && !run) run = i; if (!edge && run != null) { segs.push([x0 + run * cell, z0 + j * cell, x0 + i * cell, z0 + j * cell]); run = null; } } }
   for (let i = 0; i < w; i++) { let run = null; for (let j = 0; j <= h; j++) { const edge = j < h && i > 0 && occ[j * w + i] !== occ[j * w + i - 1]; if (edge && run == null) run = j; if (!edge && run != null) { segs.push([x0 + i * cell, z0 + run * cell, x0 + i * cell, z0 + j * cell]); run = null; } } }
   const out = segs.filter((q) => near((q[0] + q[2]) / 2, (q[1] + q[3]) / 2, 30)).map((q) => [...q.map((v) => +v.toFixed(2)), +yAt((q[0] + q[2]) / 2, (q[1] + q[3]) / 2).toFixed(1)]);
-  return { solids: out, tyres: tyres.map((p) => p.map((v) => +v.toFixed(2))) };
+  const rows = tyres.filter((r) => r.length > 1);
+  for (const r of rows) for (let k = 0; k + 1 < r.length; k++) out.push([r[k][0], r[k][2], r[k + 1][0], r[k + 1][2], r[k][1]].map((v) => +v.toFixed(2)));
+  return { solids: out, tyres: rows.map((r) => r.map((p) => p.map((v) => +v.toFixed(1)))) };
 }
 
 // muros invisibles donde el suelo del modelo se acaba de verdad: un cortado o un escalón de más de 45 cm
@@ -468,7 +485,7 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
     if (cfg.blockers) {
       const { solids: segs, tyres } = blockerSegments(cfg, tris, place, nodes, data[id]);
       data[id].solids = segs; data[id].tyres = tyres;
-      console.log(id, 'barreras:', segs.length, 'tramos de muro |', tyres.length, 'neumáticos añadidos');
+      console.log(id, 'barreras:', segs.length, 'tramos de muro |', tyres.length, 'filas de neumáticos nuevas');
     }
     const g = data[id].paved, bits = Buffer.from(g.data, 'base64'), on = (x, z) => { const n = Math.floor((z - g.z) / g.cell) * g.w + Math.floor((x - g.x) / g.cell); return (bits[n >> 3] >> (n & 7)) & 1; };
     console.log(id, 'mapa del suelo', g.w + 'x' + g.h, '| puntos del eje fuera del asfalto:', nodes.filter((n) => !on(n[0], n[1])).length, 'de', nodes.length);
