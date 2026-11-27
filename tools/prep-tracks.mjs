@@ -12,7 +12,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { weld, simplify, prune } from '@gltf-transform/functions';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
-import { reshapeProfile, steerAway, rebuild, deckMaterials, aprons } from './track-rebuild.mjs';
+import { reshapeProfile, steerAway, rebuild, rims, deckMaterials, aprons } from './track-rebuild.mjs';
 
 const SRC = process.argv[2];
 if (!SRC) { console.log('Uso: node tools/prep-tracks.mjs <carpeta>'); process.exit(1); }
@@ -47,6 +47,8 @@ const TRACKS = {
       keep: /lighthouse/i, boulder: /^Rock_|TriPlanar/i, clear: 3.3, pass: 1.7, // la calzada se aparta hasta dejar las paredes a 3,3 m del eje; solo se corta lo que quede a menos de 1,7
       floor: /CliffsGround|concrete|FinishLine/i, soft: /grass|plant|shrub|decal/i, remove: /RoadBlock|Trafficbarrier|FinishLine/i,
       deck: /CliffsGround\.00|concrete/, skirt: 'DarkGreyCliff',
+      trim: [[318, 352, 1]], // salida de la plataforma del faro, lado derecho (desde, hasta, lado)
+      rim: /^concrete$/, // el bordillo de piedra clara que remata las caídas
     },
   },
   mario3: {
@@ -255,7 +257,7 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   const line = centreLine(cfg, hit);
   if (cfg.flat) { const mid = [...line.Y].sort((a, b) => a - b)[line.Y.length >> 1]; line.Y = line.Y.map(() => mid); }
   const S = cfg.scale;
-  let deck = null, ramp = null, apron = null, wallPoints = null;
+  let deck = null, ramp = null, apron = null, plinth = null, rim = null, wallPoints = null;
   if (cfg.rebuild) {
     reshapeProfile(cfg, line);
     steerAway(cfg, line, solidSegments({ ...cfg, half: cfg.half + 4 }, line, tris, tris.filter((t) => cfg.rebuild.floor.test(t.mat.getName()))));
@@ -266,14 +268,15 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
     }
     const walls = solidSegments({ ...cfg, half: cfg.half + 9 }, line, tris, tris.filter((t) => cfg.rebuild.floor.test(t.mat.getName())));
     const before = tris;
-    tris = rebuild(cfg, line, tris);
-    apron = aprons(cfg, line, tris, walls, before);
+    rim = rims(cfg, line, before, deck);
+    tris = rebuild(cfg, line, tris, rim);
+    ({ apron, plinth } = aprons(cfg, line, tris, walls, before, rim));
     wallPoints = walls;
     // la meta se lleva al tramo llano: se gira la lista para que empiece allí
     const k = line.index(cfg.rebuild.startAt), turn = (a) => a.slice(k).concat(a.slice(0, k));
     const op = cfg.rebuild.profile[1], from = line.index(op.from), to = line.index(op.to), n = line.P.length;
     ramp = [(from - k + n) % n, (to - k + n) % n];
-    line.P = turn(line.P); line.Y = turn(line.Y); deck = turn(deck); apron = apron.map(turn);
+    line.P = turn(line.P); line.Y = turn(line.Y); deck = turn(deck); apron = apron.map(turn); plinth = plinth.map(turn); rim = rim.map(turn);
   }
   const solids = cfg.solids ? solidSegments(cfg, line, tris, cfg.rebuild ? tris.filter((t) => cfg.rebuild.floor.test(t.mat.getName())) : road) : null;
   if (solids) {
@@ -297,7 +300,8 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
   data[id] = { half: cfg.half, wall: +(cfg.half + (cfg.wallExtra ?? 2.5)).toFixed(2), nodes: every.map((n) => [n[0], n[1]]), profile: cfg.rebuild ? nodes : every, start: [nodes[0][0], nodes[0][1]] };
   if (deck) {
     const names = [...new Set(deck)];
-    data[id].deck = { materials: names, skirt: cfg.rebuild.skirt, index: every.map((_, i) => names.indexOf(deck[i * step])), ramp: ramp.map((v) => +(v / nodes.length).toFixed(4)), apron: apron.map((w) => every.map((_, i) => +w[i * step].toFixed(1))) };
+    data[id].deck = { materials: names, skirt: cfg.rebuild.skirt, index: every.map((_, i) => names.indexOf(deck[i * step])), ramp: ramp.map((v) => +(v / nodes.length).toFixed(4)), apron: apron.map((w) => every.map((_, i) => +w[i * step].toFixed(1))), rim: rim.map((w) => every.map((_, i) => +w[i * step].toFixed(2))), plinth: plinth.map((w) => every.map((_, i) => +w[i * step])) };
+    console.log(id, 'tramos con bordillo:', data[id].deck.rim.map((w) => w.filter(Boolean).length).join(' y '), '| con zócalo:', data[id].deck.plinth.map((w) => w.filter(Boolean).length).join(' y '));
     console.log(id, 'tramos con arcén de relleno:', data[id].deck.apron.map((w) => w.filter(Boolean).length).join(' y '), 'de', every.length);
   }
   if (solids) {
