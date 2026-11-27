@@ -11,7 +11,7 @@ import { isVisibleTrack } from './visible.js';
 // con el suelo del modelo (heights) hay saltos de verdad: noAir solo en los demás importados
 function modelStyle(id) {
   const d = TRACK_DATA[id];
-  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, deck: d.deck, paved: d.paved, kerbs: d.kerbs, heights: d.heights, tyres: d.tyres, imported: true, startNear: d.start, scale: 1, half: d.gameHalf ?? (d.paved ? 4.3 : d.half), wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: !d.heights, noKerb: true };
+  return { fixedNodes: d.nodes, profile: d.profile, edges: d.edges, solids: d.solids, deck: d.deck, paved: d.paved, kerbs: d.kerbs, heights: d.heights, jumps: d.jumps, tyres: d.tyres, imported: true, startNear: d.start, scale: 1, half: d.gameHalf ?? (d.paved ? 4.3 : d.half), wall: d.edges ? Math.max(...d.edges[0], ...d.edges[1]) : d.wall, chicanes: 0, ramps: 0, pads: 0, rollers: 0, hill: 0, zones: [], runoff: { gravel: 0, open: [] }, noAir: !d.heights, noKerb: true };
 }
 
 export const THEMES = {
@@ -163,7 +163,7 @@ export const THEMES = {
   },
   // circuitos importados: el escenario es su modelo y la física sigue la línea central sacada de la calzada
   misty: {
-    id: 'misty', name: 'Misty Cliffs', sub: 'Camino de tierra por una isla: un puente, la subida al faro en espiral y un gran descenso', seed: 'misty-4', model: 'misty', envName: 'camino de tierra', fiction: true, edgePosts: true, noKerbs: true,
+    id: 'misty', name: 'Misty Cliffs', sub: 'Camino de tierra por una isla: un puente, la subida al faro en espiral y un gran descenso', seed: 'misty-5', model: 'misty', envName: 'camino de tierra', fiction: true, edgePosts: true, noKerbs: true,
     style: { ...modelStyle('misty'), aiHalf: 0.6, aiLook: 0.7 },
     // mar a la altura del del modelo (1,22 m); el horizonte acaba en el mismo color que la niebla
     sea: { level: 1.22, water: 0x2d7f8c, deep: 0x1b5a70, foam: 0xbfe3df, skyTop: 0x4f86b8, skyMid: 0x9fc4d8, haze: 0xd5dfdc, cloud: 0xfbf6ec, mist: 0xe6ece9, glow: 0xffd9a0 },

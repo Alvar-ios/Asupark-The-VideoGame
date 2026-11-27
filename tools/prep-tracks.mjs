@@ -33,7 +33,7 @@ const TRACKS = {
     stepTol: 0.55, // un escalón mayor que esto (m) ya no es la misma calzada
     solids: true, // las rocas, paredes y demás decorado que invade la pista se pueden chocar
     // el modelo tal cual: el kart pisa la altura real del suelo (mapa de alturas) y el gran salto es un salto de verdad
-    startAt: 70, gaps: true, heights: true, step: 1,
+    startAt: 70, gaps: true, heights: true, step: 1, walkEdges: true, // muros donde acaba el suelo
   },
   lider: {
     file: 'karting_club_lider__outdoor_race_track_ready.glb',
@@ -294,6 +294,37 @@ function blockerSegments(cfg, tris, place, nodes, data) {
   return { solids: out, tyres: tyres.map((p) => p.map((v) => +v.toFixed(2))) };
 }
 
+// muros invisibles donde el suelo del modelo se acaba de verdad: un cortado o un escalón de más de 45 cm
+function walkEdges(cfg, tris, place, nodes, step) {
+  const cell = 0.5, xs = nodes.map((n) => n[0]), zs = nodes.map((n) => n[1]), x0 = Math.floor(Math.min(...xs) - 20), z0 = Math.floor(Math.min(...zs) - 20);
+  const w = Math.ceil((Math.max(...xs) + 20 - x0) / cell), h = Math.ceil((Math.max(...zs) + 20 - z0) / cell), lv = [new Float32Array(w * h).fill(NaN), new Float32Array(w * h).fill(NaN)];
+  // hasta dos niveles por celda (la pista pasa por debajo de sí misma)
+  for (const t of tris) {
+    const [A, B, C] = t.v.map((v) => place(v.p)), u = B.map((v, k) => v - A[k]), q = C.map((v, k) => v - A[k]), ny = u[2] * q[0] - u[0] * q[2], l = Math.hypot(u[1] * q[2] - u[2] * q[1], ny, u[0] * q[1] - u[1] * q[0]);
+    if (!l || Math.abs(ny) / l < 0.6 || /water|ocean|grass|plant|shrub|decal/i.test(t.mat.getName())) continue;
+    const den = (B[2] - C[2]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[2] - C[2]); if (Math.abs(den) < 1e-9) continue;
+    for (let j = Math.max(0, Math.floor((Math.min(A[2], B[2], C[2]) - z0) / cell)); j <= Math.min(h - 1, Math.floor((Math.max(A[2], B[2], C[2]) - z0) / cell)); j++) for (let i = Math.max(0, Math.floor((Math.min(A[0], B[0], C[0]) - x0) / cell)); i <= Math.min(w - 1, Math.floor((Math.max(A[0], B[0], C[0]) - x0) / cell)); i++) {
+      const x = x0 + (i + 0.5) * cell, z = z0 + (j + 0.5) * cell, a = ((B[2] - C[2]) * (x - C[0]) + (C[0] - B[0]) * (z - C[2])) / den, b = ((C[2] - A[2]) * (x - C[0]) + (A[0] - C[0]) * (z - C[2])) / den;
+      if (a < -0.01 || b < -0.01 || a + b > 1.01) continue;
+      const y = a * A[1] + b * B[1] + (1 - a - b) * C[1], n = j * w + i;
+      // nivel 0 y 1: se guarda la superficie más alta de cada «piso» (separados más de 3 m)
+      if (Number.isNaN(lv[0][n]) || Math.abs(y - lv[0][n]) < 3) { if (Number.isNaN(lv[0][n]) || y > lv[0][n]) lv[0][n] = y; } else if (Number.isNaN(lv[1][n]) || y > lv[1][n]) lv[1][n] = y;
+    }
+  }
+  const at = (x, z, near) => { const i = Math.floor((x - x0) / cell), j = Math.floor((z - z0) / cell); if (i < 0 || j < 0 || i >= w || j >= h) return NaN; const a = lv[0][j * w + i], b = lv[1][j * w + i]; const c = [a, b].filter((v) => !Number.isNaN(v)); if (!c.length) return NaN; return c.reduce((p, v) => (Math.abs(v - near) < Math.abs(p - near) ? v : p)); };
+  const N = nodes.length, half = cfg.half, max = cfg.walkMax ?? 14;
+  const raw = [-1, 1].map((side) => nodes.map((p, i) => {
+    const a = nodes[(i - 1 + N) % N], b = nodes[(i + 1) % N], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, nx = -(b[1] - a[1]) / l * side, nz = (b[0] - a[0]) / l * side;
+    let prev = p[2], d = 1;
+    { const c0 = at(p[0], p[1], p[2]); if (Number.isNaN(c0) || Math.abs(c0 - p[2]) > 1) return half + 2.5; } // en el aire del salto no hay suelo a la altura del eje: margen para volar
+    for (; d < max; d += 0.25) { const y = at(p[0] + nx * d, p[1] + nz * d, prev); if (Number.isNaN(y) || Math.abs(y - prev) > 0.45) break; prev = y; }
+    return Math.max(half * 0.6, d - 0.25);
+  }));
+  const out = raw.map((r) => r.map((_, i) => Math.min(...[-3, -2, -1, 0, 1, 2, 3].map((k) => r[(i + k + N) % N]))));
+  console.log('  muros donde acaba el suelo: medio', (out.flat().reduce((a, b) => a + b, 0) / (2 * N)).toFixed(1), 'm, mínimo', Math.min(...out.flat()).toFixed(1));
+  return out.map((r) => r.filter((_, i) => i % step === 0).map((v) => +v.toFixed(2)));
+}
+
 async function writeModel(id, cfg, tris, place, rev) {
   const out = new Document(), buf = out.createBuffer(), scene = out.createScene('track').setExtras({ rev });
   const perMat = new Map(); for (const t of tris) perMat.set(t.mat, (perMat.get(t.mat) || 0) + 1);
@@ -419,10 +450,17 @@ for (const [id, cfg] of Object.entries(TRACKS)) {
     const tight = line.P.filter(([x, z], i) => solids.some((s) => Math.abs(s.y - line.Y[i]) < 1.5 / S && (() => { const [px, pz] = closest(s, x, z); return Math.hypot(x - px, z - pz) * S < 1.1; })())).length;
     console.log(id, 'obstáculos', data[id].solids.length, 'segmentos; muestras a menos de 1,1 m de uno:', tight);
   }
+  if (cfg.walkEdges) data[id].edges = walkEdges(cfg, tris, place, nodes, every.length === nodes.length ? 1 : step);
   if (cfg.barriers) data[id].edges = barrierEdges(cfg, line, tris).map((e) => average(e, 2).filter((_, i) => i % step === 0).map((v) => +v.toFixed(2)));
   console.log(id, 'vuelta', Math.round(len), 'm, desnivel', (Math.max(...nodes.map((n) => n[2])) - 2).toFixed(1), 'm, puntos fuera de la calzada', off, 'de', line.P.length);
   if (cfg.rebuild) data[id].edges = walled.map((w) => every.map((_, i) => +w[i * step].toFixed(2)));
-  if (cfg.heights) data[id].heights = heightGrid(cfg, road, place, nodes);
+  if (cfg.heights) {
+    data[id].heights = heightGrid(cfg, road, place, nodes);
+    // saltos de verdad: donde el perfil cae más de 1 m en 2,5 m. Solo ahí puede despegar el kart
+    const n = nodes.length, j = []; for (let i = 0; i < n; i++) if (nodes[i][2] - nodes[(i + 1) % n][2] > 1) j.push(i);
+    data[id].jumps = j.map((i) => [+(((i - 6 + n) % n) / n).toFixed(4), +(((i + 2) % n) / n).toFixed(4)]);
+    console.log(id, "saltos:", data[id].jumps.length);
+  }
   if (cfg.paved) {
     data[id].paved = cfg.pavedExcept ? topGrid(cfg, tris, place, nodes, cfg.pavedExcept) : pavedGrid(cfg, tris, place, nodes);
     if (cfg.kerbs) data[id].kerbs = pavedGrid(cfg, tris, place, nodes, cfg.kerbs);

@@ -325,14 +325,17 @@ export function stepCar(c, inp, dt, tr, env) {
       }
     }
   }
-  // altura y saltos
-  let hNew = loc.h;
-  if (tr.heights) { // circuitos con el suelo del modelo: la altura real bajo el kart (bacheado, peraltes y bordillos incluidos)
+  // altura y saltos. Los saltos se calculan siempre sobre el perfil (suave). En los circuitos con el suelo del modelo,
+  // el bacheado real (mapa de alturas) se suma después como un desplazamiento pequeño: así no lanza el kart por los aires
+  const hNew = loc.h;
+  let bump = 0;
+  if (tr.heights) {
     const g = tr.heights, fx = (c.x - g.x) / g.cell - 0.5, fz = (c.z - g.z) / g.cell - 0.5, i = Math.floor(fx), j = Math.floor(fz), u = fx - i, w = fz - j;
-    if (i >= 0 && j >= 0 && i + 1 < g.w && j + 1 < g.h) { // interpolado entre las cuatro celdas: sin escalones de celda a celda
-      let sum = 0, wt = 0; for (const [di, dj, k] of [[0, 0, (1 - u) * (1 - w)], [1, 0, u * (1 - w)], [0, 1, (1 - u) * w], [1, 1, u * w]]) { const v = g.v[(j + dj) * g.w + i + di]; if (v !== -32768 && Math.abs(v / 100 - loc.h) < 1.5) { sum += v / 100 * k; wt += k; } }
-      if (wt > 0.3) hNew = sum / wt;
+    if (i >= 0 && j >= 0 && i + 1 < g.w && j + 1 < g.h) { // interpolado entre las cuatro celdas
+      let sum = 0, wt = 0; for (const [di, dj, k] of [[0, 0, (1 - u) * (1 - w)], [1, 0, u * (1 - w)], [0, 1, (1 - u) * w], [1, 1, u * w]]) { const v = g.v[(j + dj) * g.w + i + di]; if (v !== -32768 && Math.abs(v / 100 - loc.h) < 1.2) { sum += v / 100 * k; wt += k; } }
+      if (wt > 0.3) bump = clamp(sum / wt - loc.h, -0.7, 0.7);
     }
+    c.y -= c.bumpA || 0; // a espacio del perfil
   }
   if (!c.air) {
     const dd = Math.max(0.05, Math.abs(vf) * dt);
@@ -340,8 +343,9 @@ export function stepCar(c, inp, dt, tr, env) {
     c.grad += (grad - c.grad) * 0.15;
     c.vUp = Math.max(c.vy, (c.vUp || 0) * 0.94); // recuerda la subida de los últimos instantes: el borde de la rampa no siempre cae en un solo paso
     const yBall = c.y + c.vUp * dt - 0.5 * G * dt * dt;
-    // despega al pasar el borde de una rampa, o (circuitos con el suelo del modelo) si el suelo cae más deprisa que una caída libre: un cortado, entonces cae, no baja pegado a la pared
-    if (!tr.noAir && ((c.vUp > 1.5 && hNew < yBall - 0.05) || (tr.heights && ((hNew - c.y) / dt - c.vy) / dt < -1.6 * G && hNew < c.y - 0.12))) {
+    // despega al pasar el borde de una rampa o, con el suelo del modelo, si el perfil cae de golpe (un cortado): entonces cae
+    const canJump = !tr.jumpZones || tr.jumpZones.some(([a, b]) => (a <= b ? loc.s >= a && loc.s <= b : loc.s >= a || loc.s <= b)); // con el suelo del modelo, solo en los saltos de verdad
+    if (!tr.noAir && canJump && ((c.vUp > 1.5 && hNew < yBall - 0.05) || (tr.heights && ((hNew - c.y) / dt - c.vy) / dt < -1.6 * G && hNew < c.y - 0.12))) {
       c.air = true; c.y = yBall; c.vy = c.vUp * 1.12 - G * dt; c.airTime = 0; c.vUp = 0;
       c.drifting = false;
       c.events.push({ t: 'takeoff', v: c.vy });
@@ -358,6 +362,7 @@ export function stepCar(c, inp, dt, tr, env) {
       c.events.push({ t: 'land', v: impact });
     }
   }
+  if (tr.heights) { c.bumpA = c.air ? (c.bumpA || 0) * 0.9 : (c.bumpA || 0) + (bump - (c.bumpA || 0)) * 0.3; c.y += c.bumpA; }
   // progreso
   let dS = loc.s - c.lastS;
   if (dS < -tr.len / 2) c.lap++; else if (dS > tr.len / 2) c.lap--;

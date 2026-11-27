@@ -4,6 +4,11 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.132
+- Misty Cliffs, revisión completa: el kart ya no sale volando. Se lanzaba hasta 13 m en la entrada de la cueva y en las cuestas. Ahora solo despega en el gran salto.
+- Misty: fuera los choques contra nada. Los muros invisibles van donde el suelo del modelo se corta de verdad (cortado o escalón), no a un ancho fijo.
+- Misty: se reinician récords y fantasmas.
+
 ## 0.0.131
 - Misty Cliffs vuelve al modelo original sin tocar: sin calzada nueva, rellenos ni recortes. El kart pisa la altura real del suelo (mapa de alturas) y el gran salto vuelve a ser un salto: rampa y caída a la playa.
 - Misty: las rocas, paredes y bordillos del modelo se chocan tal cual. Fuera también el arco de salida con el logo del juego original. Se reinician récords y fantasmas.
