@@ -14,11 +14,11 @@ Se han modificado: orientación, escala, ruedas separadas y texturas reducidas (
 | En el juego | Archivo original | Subido por | Enlace |
 |---|---|---|---|
 | Misty Cliffs | boom karts misty cliffs | amogusstrikesback2 | https://sketchfab.com/3d-models/boom-karts-misty-cliffs-749d38ab2441491da0759b25863292fc |
-| Mario Circuit 3 | Mario Kart 8 Deluxe, SNES Mario Circuit 3 | Fortnite (jkimmel694) | https://sketchfab.com/3d-models/mario-kart-8-deluxe-snes-mario-circuit-3-71ba7c86cd7d475cb5e21a1c87243520 |
+| Circuito del Castillo (v0.0.134) | castle circuit | amogusstrikesback2 | https://sketchfab.com/3d-models/castle-circuit-db0001c2032b4fc2b5840622ee40e95b |
 
 Declaran CC BY 4.0. Se han modificado (tools/prep-tracks.mjs y tools/track-rebuild.mjs): escala, texturas reducidas y
 geometría. En Misty Cliffs se ha rehecho la calzada, se ha sustituido el salto por una rampa, se han retirado las pocas
-piezas que cerraban el paso y se ha cambiado el mar del modelo por uno propio (src/seascape.js). En Mario Circuit 3 se han quitado las copias duplicadas, aligerado piezas cercanas y cambiado colores. Para quitar uno: borrar su tema en `src/themes.js`, su entrada en `src/visible.js` y su
+piezas que cerraban el paso y se ha cambiado el mar del modelo por uno propio (src/seascape.js). En el castillo se han quitado los carteles y el arco con el logo del juego original y el dirigible. Mario Circuit 3 se retiró en la v0.0.134. Para quitar uno: borrar su tema en `src/themes.js`, su entrada en `src/visible.js` y su
 archivo `src/assets/track_*.glb.gz`.
 
 ## Kartódromo Nóvaya Zariá (v0.0.129)

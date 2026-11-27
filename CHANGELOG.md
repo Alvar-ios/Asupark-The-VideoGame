@@ -4,6 +4,15 @@ Cada actualización sube la versión en `package.json`; el menú la muestra arri
 
 - (Sin versión nueva) `supabase/leagues3.sql`: añadido al repositorio el SQL de repeticiones, resultado de ayer, `league_hall`, `league_state` y `my_leagues` que ya estaba aplicado en Supabase.
 
+## 0.0.134
+- Circuito nuevo: Circuito del Castillo (499 m), con túnel bajo el castillo y un puente que cruza la pista. Entra en el sorteo del reto diario desde el 28 de noviembre; el reto de hoy no cambia.
+- Se retira Mario Circuit 3. Sus récords y retos pasados dejan de mostrarse.
+- Misty: el kart sigue la rampa hasta el borde y despega justo ahí, en vez de hundirse en ella y saltar después.
+- Misty: del hormigón del faro se baja libremente a la tierra; ya no lo frenan ni el escalón ni las señales pequeñas del borde.
+- Misty: quitada la rampita de tierra a la izquierda tras el faro, que llevaba contra la pared.
+- Misty: donde un muro invisible cierra el paso, una valla baja de postes y cuerda lo marca.
+- Le Mans: los neumáticos añadidos tienen el mismo color que los del circuito.
+
 ## 0.0.133
 - Circuito nuevo: Le Mans Karting (en mojado), 1,64 km, un 20 % más grande que la realidad. El modelo pasa de 63 MB a 7 MB.
 - Le Mans: se corre por todo lo que no sea hierba o arena. La hierba frena, pero bastante menos que en el kartódromo, y los pianos van a la misma velocidad que el asfalto.

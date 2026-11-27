@@ -44,7 +44,8 @@ function edgePosts(tr, deck, walls) {
     const line = [];
     for (let i = 0; i + every <= tr.N; i += every) {
       const l = side * ((tr.wallEdge ? tr.wallEdge[side < 0 ? 0 : 1][i] : tr.wall) + 0.2), x = tr.X[i] - tr.TZ[i] * l, z = tr.Z[i] + tr.TX[i] * l;
-      if (walled(i, side, x, z) || (tr.wallEdge && tr.wallEdge[side < 0 ? 0 : 1][i] < tr.wall - 0.1)) { line.push(null); continue; } // donde hay escalón ya hay muro
+      const s = (i / tr.N) * tr.len, flying = tr.jumpZones && tr.jumpZones.some(([a, b]) => s > a - 4 && s < b + 30);
+      if (walled(i, side, x, z) || flying) { line.push(null); continue; }
       d.position.set(x, tr.Y[i], z); d.updateMatrix(); posts.setMatrixAt(k++, d.matrix); line.push(new THREE.Vector3(x, tr.Y[i] + 0.62, z));
     }
     for (let i = 0; i < line.length; i++) if (line[i] && line[(i + 1) % line.length]) ropeAt.push(line[i], line[(i + 1) % line.length]);
@@ -55,8 +56,8 @@ function edgePosts(tr, deck, walls) {
 }
 
 // donde el muro no es una barrera del modelo (hierba abierta), una fila de neumáticos lo marca
-function edgeTyres(tr) {
-  const geo = new THREE.TorusGeometry(0.27, 0.11, 6, 12).rotateX(Math.PI / 2), mats = [new THREE.MeshLambertMaterial({ color: 0x1b1b1d }), new THREE.MeshLambertMaterial({ color: 0x2c5fc0 })];
+function edgeTyres(tr, colors = [0x1b1b1d, 0x2c5fc0]) {
+  const geo = new THREE.TorusGeometry(0.27, 0.11, 6, 12).rotateX(Math.PI / 2), mats = colors.map((color) => new THREE.MeshLambertMaterial({ color }));
   const spots = [[], []];
   let n = 0;
   for (const row of tr.tyres) for (let k = 0; k + 1 < row.length; k++) {
@@ -200,7 +201,7 @@ export function buildModelWorld(tr, th, opt = {}) {
     floor.position.y = th.floor.y; scene.add(floor);
   }
   scene.add(finishLine(tr, th));
-  if (tr.tyres && tr.tyres.length) scene.add(edgeTyres(tr));
+  if (tr.tyres && tr.tyres.length) scene.add(edgeTyres(tr, th.tyreColors));
   if (th.edgePosts) scene.add(edgePosts(tr, th.style.deck, th.style.deck && th.style.deck.walls));
   // el modelo se comparte entre carreras: se añade una copia ligera (misma geometría)
   const add = (model) => { scene.add((th.vivid ? vividCopy(model, th.model, th.vivid) : model).clone(true)); if (th.style.deck) scene.add(deckMesh(tr, th.style.deck, model)); };

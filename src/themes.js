@@ -170,18 +170,13 @@ export const THEMES = {
     skyTop: 0x4f86b8, skyHor: 0xd5dfdc, fog: 0xd5dfdc, fogNear: 110, fogFar: 880, ground: 0x1f5f74, grass: 0x5d7f3a, dirt: 0xa57d4c, road: 0xb98c5a, kerb1: 0xb98c5a, kerb2: 0xb98c5a,
     wall1: 0x8a6439, wall2: 0xe8dcc0, mount: 0x4d6b3f, sun: 0xffe6bd, sunDir: [-0.55, 0.52, 0.5], hemiSky: 0xd8ecf5, hemiGround: 0x9a8a6c, hemiI: 1.55, sunI: 1.85, night: false, temp: 17, humidity: 0.6, wind: [2, 0.8], gripMul: 1, offroad: 0.8, offroadGrip: 0.85, surface: undefined,
   },
-  mariocircuit: {
-    id: 'mariocircuit', name: 'Mario Circuit 3', sub: 'El clásico de 16 bits: asfalto ancho, arena a los lados y muros de bloques de colores', seed: 'mario3-1', model: 'mario3', fiction: true, noKerbs: true,
-    // el modelo es de colores planos: aquí se les da color propio, vetas y manchas (grain: fuerza, size: metros por mancha)
-    vivid: {
-      material_12: { color: 0x58a83a, grain: 0.22, size: 14 }, material_13: { color: 0x3f8f52, grain: 0.2, size: 22, bands: 0.1 }, material_15: { color: 0x5cb340, grain: 0.2, size: 18, bands: 0.12 },
-      material_4: { color: 0xffffff, emissive: 0x59616b, grain: 0.06, size: 9 }, material_20: { color: 0x2f8a36, grain: 0.22, size: 3 }, material_14: { color: 0x23602a },
-      material_6: { grain: 0.2, size: 2.6 }, material_19: { grain: 0.1, size: 1.2 },
-    },
-    style: modelStyle('mario3'), floor: { color: 0x58a83a, y: 0.6 },
-    skyTop: 0x2f7fe0, skyHor: 0xbfe6ff, fog: 0xbfe0f6, fogNear: 420, fogFar: 2600, ground: 0xc9a561, grass: 0xc9a561, dirt: 0xc9a561, road: 0x55565a, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
-    wall1: 0x2f9d3f, wall2: 0xd43a30, mount: 0x6a8f4a, sun: 0xfff6e0, sunDir: [-0.35, 0.8, 0.4], hemiSky: 0xffffff, hemiGround: 0xb59a68, hemiI: 1.25, sunI: 1.75, night: false, temp: 25, humidity: 0.35, wind: [1, 0.5], gripMul: 1, offroad: 0.34, offroadGrip: 0.62, rollingDrag: 0.3, steerOffroad: 0.72,
+  castle: {
+    id: 'castle', name: 'Circuito del Castillo', sub: 'Empedrado entre murallas: un túnel bajo el castillo, un puente sobre la pista y horquillas junto a la arena', seed: 'castle-1', model: 'castle', envName: 'empedrado', fiction: true, edgePosts: true, noKerbs: true,
+    style: { ...modelStyle('castle'), aiLook: 0.8, aiHalf: 2.4 }, // bajo el puente el arco es más estrecho que la pista floor: { color: 0x4f6e34, y: -1 },
+    skyTop: 0x4d8ad0, skyHor: 0xdbe6ee, fog: 0xd6e2ea, fogNear: 160, fogFar: 1100, ground: 0x4f6e34, grass: 0x5d7f3a, dirt: 0x8d7a5c, road: 0x7a746a, kerb1: 0x8d8478, kerb2: 0x8d8478,
+    wall1: 0x8a6439, wall2: 0xe8dcc0, mount: 0x5a7048, sun: 0xfff0d6, sunDir: [-0.45, 0.62, 0.4], hemiSky: 0xdfeaf5, hemiGround: 0x8a7d62, hemiI: 1.5, sunI: 1.8, night: false, temp: 19, humidity: 0.5, wind: [2, 0.6], gripMul: 1, offroad: 0.8, offroadGrip: 0.85,
   },
+
   lider: {
     id: 'lider', name: 'Kartódromo Nóvaya Zariá', sub: 'Club de karting al aire libre: horquillas enlazadas, placas de hormigón y pianos altos', seed: 'lider-3', model: 'lider', noKerbs: true, kerbRough: true, // pianos altos: el kart bota y la cámara tiembla
     style: { ...modelStyle('lider'), aiLook: 0.6 }, floor: { color: 0x4f6b37, y: -1.6 },
@@ -189,7 +184,7 @@ export const THEMES = {
     wall1: 0x1f1f22, wall2: 0x2c5fc0, mount: 0x6a7f5a, sun: 0xfff1dc, sunDir: [-0.45, 0.62, 0.45], hemiSky: 0xe6eef8, hemiGround: 0x6d6a58, hemiI: 1.25, sunI: 1.9, night: false, temp: 18, humidity: 0.55, wind: [2, 0.6], gripMul: 1, offroad: 0.2, offroadGrip: 0.5, rollingDrag: 0.6, steerOffroad: 0.6, // la hierba frena mucho más que en Mario
   },
   lemans: {
-    id: 'lemans', name: 'Le Mans Karting', sub: 'Circuito internacional en mojado: recta de boxes, enlazadas rápidas y horquillas cerradas', seed: 'lemans-1', model: 'lemans', noKerbs: true, kerbSoft: true,
+    id: 'lemans', name: 'Le Mans Karting', sub: 'Circuito internacional en mojado: recta de boxes, enlazadas rápidas y horquillas cerradas', seed: 'lemans-1', model: 'lemans', noKerbs: true, kerbSoft: true, tyreColors: [0x232326, 0x2e3038], // como los neumáticos del circuito
     style: { ...modelStyle('lemans'), aiLook: 0.6 }, floor: { color: 0x4a6236, y: -1.6 },
     skyTop: 0x7d8fa6, skyHor: 0xc9d1d8, fog: 0xc3cbd2, fogNear: 220, fogFar: 1500, ground: 0x4a6236, grass: 0x56713c, dirt: 0x6e6450, road: 0x3f4145, kerb1: 0xd43a30, kerb2: 0xf4f4f4,
     wall1: 0xe8c21f, wall2: 0x1f1f22, mount: 0x67755e, sun: 0xeef2f7, sunDir: [-0.35, 0.7, 0.4], hemiSky: 0xdde5ee, hemiGround: 0x5d5c52, hemiI: 1.35, sunI: 1.35, night: false, temp: 14, humidity: 0.85, wind: [3, 0.6], gripMul: 1, offroad: 0.45, offroadGrip: 0.75, rollingDrag: 0.25, steerOffroad: 0.85, // hierba lenta, pero menos que en el kartódromo
@@ -263,7 +258,7 @@ export const THEMES = {
     hemiSky: 0xe3efff, hemiGround: 0x75716a, hemiI: 1.0, sunI: 1.25, deco: 'industrial', industrial: true, treeCol: 0x77746d, treeCount: 0, night: false, temp: 23, humidity: 0.3, wind: [2, 0.5], gripMul: 1, offroad: 0.6,
   },
 };
-const ALL_THEME_LIST = ['lemans', 'lider', 'misty', 'mariocircuit', 'pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
+const ALL_THEME_LIST = ['lemans', 'lider', 'misty', 'castle', 'pruebas', 'monaco', 'spa', 'valle', 'desierto', 'neon', 'nieve', 'prisma', 'amazonas', 'karting', 'asupark', 'madring', 'magarigawa', 'muralla', 'rally', 'palomring', 'italia'];
 // solo circuitos visibles (ver src/visible.js)
 export const THEME_LIST = ALL_THEME_LIST.filter(isVisibleTrack);
 const DAILY_THEMES = ['valle', 'desierto', 'neon', 'nieve'];

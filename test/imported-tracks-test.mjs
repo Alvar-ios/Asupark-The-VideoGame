@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 const { THEMES } = await import('../src/themes.js');
 const { buildTrack, locate, pointAt } = await import('../src/track.js');
 const { CARS, makeCar, placeCar, stepCar, railStep } = await import('../src/car.js');
-const th = THEMES.mariocircuit, tr = buildTrack(th.seed, th.style), env = { ...th, gripMul: 1 }, g = tr.paved;
+const th = THEMES.lider, tr = buildTrack(th.seed, th.style), env = { ...th, gripMul: 1 }, g = tr.paved;
+tr.solids = null; tr.wallEdge = null; tr.wall = 40; // solo se mide el suelo: sin barreras
 const on = (x, z) => { const i = Math.floor((x - g.x) / g.cell), j = Math.floor((z - g.z) / g.cell), n = j * g.w + i; return (g.bits[n >> 3] >> (n & 7)) & 1; };
 // velocidad que se alcanza yendo recto con las dos ruedas en asfalto, una fuera y las dos fuera (recta larga de salida)
 const P = {}; const edgeAt = (s, side) => { let d = 0; while (d < 11) { pointAt(tr, s, side * d, P); if (!on(P.x, P.z)) break; d += 0.05; } return d; };
@@ -17,7 +18,7 @@ for (const [name, off] of [['en el centro', null], ['a ras del borde, dentro', -
 assert.ok(speed['a ras del borde, dentro'] > 110, 'por el asfalto no se frena');
 assert.ok(speed['una rueda fuera'] < 95, 'una rueda fuera frena');
 assert.ok(speed['las dos fuera, pegado al asfalto'] < 50, 'la arena pegada al asfalto frena mucho');
-for (const key of ['misty', 'mariocircuit', 'lider', 'lemans']) {
+for (const key of ['misty', 'castle', 'lider', 'lemans']) {
   const t = THEMES[key], track = buildTrack(t.seed, t.style), c = makeCar(CARS[0], 'x', true); placeCar(c, track, -170, 0, 18);
   let walls = 0, maxLat = 0, maxJump = 0, last = c.D, steps = 0; for (; c.D < 0 && steps < 4000; steps++) { railStep(c, track, 1 / 120); walls += c.events.filter((e) => e.t === 'wall').length; maxLat = Math.max(maxLat, Math.abs(c.loc.lat)); maxJump = Math.max(maxJump, Math.abs(c.D - last - c.speed / 120)); last = c.D; }
   console.log(key, 'raíles hasta la meta:', (steps / 120).toFixed(1), 's, golpes', walls, '| desvío máximo del centro', maxLat.toFixed(2), 'm | llega a', (c.speed * 3.6).toFixed(0), 'km/h');
